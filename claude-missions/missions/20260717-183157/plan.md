@@ -116,7 +116,7 @@ All assertions AS-001–AS-130 are covered by at least one feature (verified bel
 _All features auto-clarified via accept-and-continue on 2026-07-17 (star defaults; type-profiled). Each has clarifications/F<NNN>-clarification.md and an enriched spec._
 
 - F001 [CLARIFIED-AUTO] [COMPLETE]
-- F002 [CLARIFIED-AUTO]
+- F002 [CLARIFIED-AUTO] [COMPLETE]
 - F003 [CLARIFIED-AUTO]
 - F004 [CLARIFIED-AUTO]
 - F005 [CLARIFIED-AUTO]

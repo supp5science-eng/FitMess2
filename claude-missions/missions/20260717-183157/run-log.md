@@ -18,3 +18,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-17T20:09Z — User confirmed: keep `sonnet` for all workers (no per-feature Opus escalation). No model-overrides.yaml created.
 
 - 2026-07-17T20:18Z — F001 COMPLETE (commit c824b02). AS-001/AS-002 PASS. Note: worker already established the vitest harness; F003 scope largely pre-satisfied. shadcn/create-next-app CLIs changed since tech-decisions — handled. Spawning F002.
+
+- 2026-07-17T20:31Z — F002 COMPLETE (cc34c94). AS-003 PASS (.env.example complete, 4 tests, secret key confirmed absent from client bundle). ARCH NOTE for later workers: src/lib/supabase/server.ts exports createClient() (RLS, publishable-via-cookies session) AND createAdminClient() (secret key, bypasses RLS) — use createClient() for user-scoped ops, createAdminClient() only for admin/service tasks (account deletion, cron). Spawning F003.

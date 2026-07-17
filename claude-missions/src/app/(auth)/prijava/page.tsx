@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { GoogleSignInButton } from "../google-sign-in-button";
 import { SignInForm } from "./sign-in-form";
 
 export default async function PrijavaPage({
@@ -26,6 +27,7 @@ export default async function PrijavaPage({
         </p>
       ) : null}
       <SignInForm />
+      <GoogleSignInButton />
       <p className="text-sm text-muted-foreground">
         Nemaš nalog?{" "}
         <Link

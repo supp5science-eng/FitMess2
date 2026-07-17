@@ -1,0 +1,28 @@
+F012 live verification log (AS-010) -- 2026-07-17T22:08:04.891Z
+
+=== GET /v1/projects/femrzpfslejzqnvfsfoe/config/auth (external_google_enabled check) ===
+status: 200
+external_google_enabled: true
+uri_allow_list: http://localhost:3000/**
+site_url: http://localhost:3000
+
+=== Simulated Google-OAuth identity via admin.auth.admin.createUser ===
+email_confirm: true, app_metadata: { provider: "google", providers: ["google"] }
+Result: email_confirmed_at set (truthy), app_metadata.provider === "google",
+isEmailVerified(user) === true, matching public.profiles row auto-created by
+the F011 trigger (supabase/migrations/0002_profiles_on_signup.sql), test user
+deleted via admin.auth.admin.deleteUser in afterAll. See
+src/app/(auth)/__tests__/google-oauth.integration.test.ts for the full test.
+
+=== Negative control ===
+An email/password user created with email_confirm: false: isEmailVerified(user) === false.
+
+=== Post-run cleanup check ===
+select id, email from auth.users where email like 'f012-%@example.com' -> [] (empty = no orphaned test users)
+
+=== NOT automatable (requires a human) ===
+The real interactive Google consent screen (clicking "Nastavi sa Google", picking
+a real Google account, granting consent, being redirected back through Google ->
+Supabase -> /auth/callback with a real one-time code) cannot be exercised headlessly
+in this session (no test Google account, no interactive browser automation of a
+real Google login). See F012 handoff "Blockers"/manual-QA note.

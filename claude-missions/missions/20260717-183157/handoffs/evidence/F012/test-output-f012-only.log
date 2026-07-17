@@ -1,0 +1,20 @@
+
+ RUN  v4.1.10 C:/FitMess2/exexutor/claude-missions
+
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: the Google OAuth provider is enabled on the live Supabase project > test_AS_010_external_google_enabled_is_true_on_the_live_project 526ms
+ ↓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: live Management API check currently blocked (documented, not silently skipped) > diagnostic_management_api_credentials_unreachable_AS_010_blocked
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: a Google-authenticated identity passes the confirmation gate and gets a profiles row > test_AS_010_google_identity_has_email_confirmed_at_set_by_supabase_itself 101ms
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: a Google-authenticated identity passes the confirmation gate and gets a profiles row > test_AS_010_google_identity_passes_the_shared_confirmation_gate_which_keys_on_email_confirmed_at_not_provider 102ms
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: a Google-authenticated identity passes the confirmation gate and gets a profiles row > test_AS_010_google_identity_gets_an_auto_created_profiles_row_from_the_provider_agnostic_trigger 102ms
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: a Google-authenticated identity passes the confirmation gate and gets a profiles row > test_AS_010_unconfirmed_email_password_identity_does_not_pass_the_same_gate 206ms
+ ↓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: live admin-API confirmation-gate check currently blocked (documented, not silently skipped) > diagnostic_admin_credentials_unreachable_AS_010_blocked
+ ✓ src/app/(auth)/__tests__/google-oauth.test.tsx > AS-010: a user can sign in with Google OAuth > test_AS_010_google_button_renders_on_the_prijava_page 306ms
+ ✓ src/app/(auth)/__tests__/google-oauth.test.tsx > AS-010: a user can sign in with Google OAuth > test_AS_010_google_button_renders_on_the_registracija_page 32ms
+ ✓ src/app/(auth)/__tests__/google-oauth.test.tsx > AS-010: a user can sign in with Google OAuth > test_AS_010_clicking_the_google_button_invokes_signInWithOAuth_with_the_google_provider_and_the_auth_callback_redirect 28ms
+ ✓ src/app/(auth)/__tests__/google-oauth.test.tsx > AS-010: a user can sign in with Google OAuth > test_AS_010_google_button_shows_a_serbian_error_and_stays_usable_if_the_oauth_request_cannot_be_started 40ms
+
+ Test Files  2 passed (2)
+      Tests  9 passed | 2 skipped (11)
+   Start at  00:07:12
+   Duration  4.27s (transform 309ms, setup 522ms, import 1.44s, tests 1.85s, environment 2.03s)
+

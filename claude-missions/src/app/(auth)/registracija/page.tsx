@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { GoogleSignInButton } from "../google-sign-in-button";
 import { SignUpForm } from "./sign-up-form";
 
 export default function RegistracijaPage() {
@@ -14,6 +15,7 @@ export default function RegistracijaPage() {
         </p>
       </div>
       <SignUpForm />
+      <GoogleSignInButton />
       <p className="text-sm text-muted-foreground">
         Već imaš nalog?{" "}
         <Link

@@ -1,4 +1,4 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 
 import { SR_AUTH_MESSAGES, mapAuthErrorToSerbian } from "@/lib/auth/errors";
 
@@ -36,6 +36,29 @@ export type SignInResult =
        * way) -- only to decide *where* to send the user next. */
       reason: "unconfirmed" | "other";
     };
+
+/**
+ * F012 / AS-010: the single source of truth for "has this identity's email
+ * been verified" -- keys on Supabase's own `email_confirmed_at` timestamp,
+ * never on `app_metadata.provider`.
+ *
+ * This matters because a Google-authenticated identity is already verified
+ * by Google's own consent flow, and GoTrue reflects that by setting
+ * `email_confirmed_at` on the `auth.users` row at account-creation time for
+ * an OAuth identity -- it is never left null the way it is for a
+ * freshly-`signUp()`'d email/password account awaiting a clicked
+ * confirmation link. Any confirmation gate (this file's defensive check
+ * below today; a future route-protection middleware, F013) must check this
+ * field and never branch on which provider produced the identity, or it
+ * would incorrectly block a pre-verified Google user. Verified empirically
+ * against the live project for both cases -- see
+ * evidence/F012/live-verification.log.
+ */
+export function isEmailVerified(
+  user: Pick<User, "email_confirmed_at"> | null | undefined
+): boolean {
+  return Boolean(user?.email_confirmed_at);
+}
 
 /**
  * Signs a new user up with email + password (AS-008).
@@ -111,8 +134,10 @@ export async function signInEmailPassword(
   // Defensive belt-and-suspenders: even though Supabase did not error, never
   // trust a session for an account whose email isn't confirmed yet. If a
   // session somehow came back for an unconfirmed user, drop it immediately
-  // rather than letting it reach the app.
-  if (data.user && !data.user.email_confirmed_at) {
+  // rather than letting it reach the app. Uses the shared `isEmailVerified`
+  // gate (AS-010) so this check is provably the same one a Google-OAuth
+  // identity would pass.
+  if (data.user && !isEmailVerified(data.user)) {
     await supabase.auth.signOut();
     return {
       ok: false,

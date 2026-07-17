@@ -1,0 +1,54 @@
+F010 worker session -- Supabase MCP tool availability probe
+==============================================================
+
+Per connections/mcp-registry.md, this feature was instructed to use
+mcp__supabase__* tools to apply supabase/migrations/0001_profiles.sql to
+the live project (femrzpfslejzqnvfsfoe) and verify RLS afterward.
+
+1. This worker's tool list (as provided to the agent) contained only:
+   Read, Write, Edit, Bash, Grep, Glob -- no mcp__supabase__* tools.
+
+2. Direct invocation attempt:
+   invoke mcp__supabase__list_tables(schemas=["public"])
+   -> Error: "No such tool available: mcp__supabase__list_tables"
+
+3. Checked ~/.claude.json for MCP server registration (values redacted,
+   only structure inspected):
+   - Top-level mcpServers: [] (none)
+   - Per-project mcpServers found:
+       C:/new_higgsfield/exexutor -> [fal-ai, playwright]
+       C:/FitMess/exexutor         -> [vercel]
+       C:/FitMess/exexutor         -> [playwright, vercel]
+       C:/FitMess2/exexutor        -> [supabase]   <-- the registration
+   This worker's cwd is C:/FitMess2/exexutor/claude-missions, one level
+   below the project path the Supabase MCP server is actually scoped to
+   (C:/FitMess2/exexutor). This mismatch is the most likely reason the
+   tool wasn't bound into this session -- matches the same note left in
+   handoffs/F002-handoff.md ("I did not have mcp__supabase__* tools
+   directly available in this worker session's tool list").
+
+4. Checked for alternative live-DB access paths in this session:
+   - `supabase` CLI: not on PATH; `npx supabase --version` works (2.109.1)
+     but `supabase link`/`db push` need a Supabase access token
+     (SUPABASE_ACCESS_TOKEN or `supabase login`) -- not present in .env
+     or the shell environment.
+   - Direct Postgres connection: no DB connection string / DB password in
+     .env (only the Data-API `SUPABASE_SECRET_KEY`, which authenticates
+     PostgREST/GoTrue, not a raw Postgres wire-protocol connection).
+   - Supabase Management API: needs a personal access token (sbp_...),
+     not present.
+   - Local Supabase dev stack (`supabase start`): needs Docker; `docker`
+     is not installed in this environment.
+   - `pg` npm package: not installed (did not add it to avoid touching
+     package.json for a dead-end probe once the above were ruled out).
+
+Conclusion: this worker session has no technical path to apply DDL to the
+live Supabase project. supabase/migrations/0001_profiles.sql is written,
+committed, and believed correct (see schema-migration.test.ts static
+checks), and src/lib/supabase/__tests__/profiles-rls.integration.test.ts
+is written and ready to run for real the moment either (a) mcp__supabase__*
+tools are bound into a worker session for this project path, or (b) a
+Supabase access token / DB connection string is added to .env so the CLI
+or a direct connection can apply the migration.
+
+No credential VALUES are recorded anywhere in this file or the handoff.

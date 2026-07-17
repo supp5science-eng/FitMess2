@@ -1,0 +1,54 @@
+# F040: Weekly budget computation — Monday weeks + proration
+
+**Milestone:** M5 — Weekly Dashboard, Weight & Streak
+**Estimated worker time:** 30 minutes
+**Depends on:** F014
+
+## Assertion IDs covered
+- AS-027 (first-week proration: daily × remaining days), AS-068 (weekly consumed vs total, calc side)
+
+## Draft scope
+- Pure functions: weekBounds(date) Monday-start Europe/Belgrade, weeklyBudgetFor(user, week) with signup-week proration
+- Weekly consumption aggregation over logs
+- Unit tests incl. edge cases (Sunday signup, DST transitions)
+
+## Files (approximate)
+src/lib/budget/weekly.ts (+ tests)
+
+## Notes for clarification
+- MCP at run: none
+
+
+---
+
+## Clarified implementation (from clarifications/F040-clarification.md)
+
+_Auto-accepted star defaults (accept-and-continue); type profile: logic._
+
+- Pattern: Pure TypeScript functions in src/lib/ (no side effects, deterministic)
+- Data shape: Typed inputs/outputs; no I/O inside the functions
+- State location: None — pure; callers persist results
+- API contract: Exported function signatures with explicit types
+- Failure handling: Return typed results / clamp to safe bounds; never throw on expected edges
+- Empty state: Defined zero/empty-input behavior (documented in tests)
+- Validation: Input-range guards (ages, weights, kcal floors/caps) enforced
+- Performance budget: Negligible (in-memory arithmetic)
+- Access control: n/a — invoked server-side by callers that enforce auth
+- Touches: Only the new lib module + its test file
+
+### Follow-up decisions
+- All arithmetic here is deterministic; LLM never computes these numbers (AS-086 principle)
+- Safe-bound clamps: >=1400 kcal men / 1200 women, deficit <=25%, redistribution <=200 kcal/day
+- Rounding rule consistent (kcal integer, kg one decimal)
+- Edge cases: DST week boundaries, gaps in weigh-ins, already-adjusted days
+- Exhaustive unit coverage of branches
+
+## Definition of done
+
+- **Primary success test:** Vitest unit tests against published/reference values
+- **Failure test:** Unit test on each error/edge branch (bounds, empty, extremes)
+- **Manual verification:** None — automated coverage suffices
+- **Side-effect verification:** Functions are pure; tests assert no external mutation
+- **Evidence artifact:** Test output + coverage on the module
+
+Assertion IDs listed above are the validator checklist; the worker is not done until each definition-of-done item is satisfied with concrete output linked from the handoff.

@@ -16,3 +16,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-17T20:00Z — Repo root already holds the mission framework (`missions/`, `.claude/`, `CLAUDE.md`, `.env`, `README.md`, `DOCS.md`). F001 worker instructed to scaffold the Next.js app at repo root **without clobbering** those framework files (merge into existing `.gitignore`, preserve `.env`). This is factual repo state, not a user question — recorded here per ZERO_QUESTIONS.
 
 - 2026-07-17T20:09Z — User confirmed: keep `sonnet` for all workers (no per-feature Opus escalation). No model-overrides.yaml created.
+
+- 2026-07-17T20:18Z — F001 COMPLETE (commit c824b02). AS-001/AS-002 PASS. Note: worker already established the vitest harness; F003 scope largely pre-satisfied. shadcn/create-next-app CLIs changed since tech-decisions — handled. Spawning F002.

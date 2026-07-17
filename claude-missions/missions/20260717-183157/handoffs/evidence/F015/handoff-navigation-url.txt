@@ -1,0 +1,1 @@
+http://localhost:3100/onboarding/pregled?pol=female&godine=29&visina=168&tezina=80&aktivnost=moderate&ciljnaTezina=74&nedelje=12

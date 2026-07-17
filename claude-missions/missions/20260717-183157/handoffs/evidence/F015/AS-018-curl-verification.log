@@ -1,0 +1,5 @@
+[F015 evidence] created verified not-onboarded user: f015-evidence-1784329396533-837894@example.com e5ded233-d9b2-4522-b14a-7731a64ec1b3
+[AS-018] GET /danas (verified, not-onboarded) -> status=307 location=/onboarding
+[AS-018] GET /onboarding (verified, not-onboarded) -> status=200 location=(none, allowed through)
+[AS-018] GET /danas (verified, now onboarded) -> status=404 location=(none, allowed through)
+[F015 evidence] deleted test user e5ded233-d9b2-4522-b14a-7731a64ec1b3

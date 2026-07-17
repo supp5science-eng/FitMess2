@@ -1,0 +1,254 @@
+
+ RUN  v4.1.10 C:/FitMess2/exexutor/claude-missions
+
+ ✓ src/app/(app)/__tests__/route-protection.integration.test.ts > F013: route-protection middleware on the live Supabase project (AS-011, AS-012) > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_request_with_no_session_cookie_to_a_protected_page_gets_a_307_redirect_to_prijava 20ms
+ ✓ src/app/(app)/__tests__/route-protection.integration.test.ts > F013: route-protection middleware on the live Supabase project (AS-011, AS-012) > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_request_with_no_session_cookie_to_the_login_page_itself_is_allowed_through 2ms
+stderr | src/app/(auth)/__tests__/auth-flow.integration.test.ts > F011: email/password auth flow on the live Supabase project (AS-008, AS-009, AS-017) > AS-008: a visitor can create an account with email and password > test_AS_008_sign_up_email_password_creates_an_unconfirmed_account_with_an_auto_created_profile_row
+[F011] test_AS_008_sign_up_email_password_... hit the live project's email-send rate limit; falling back to an admin-API-equivalent proof of account creation. This does not indicate a bug -- see evidence/F011/live-verification.log.
+
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: the Google OAuth provider is enabled on the live Supabase project > test_AS_010_external_google_enabled_is_true_on_the_live_project 516ms
+ ↓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: live Management API check currently blocked (documented, not silently skipped) > diagnostic_management_api_credentials_unreachable_AS_010_blocked
+ ✓ src/app/(auth)/__tests__/auth-flow.integration.test.ts > F011: email/password auth flow on the live Supabase project (AS-008, AS-009, AS-017) > AS-008: a visitor can create an account with email and password > test_AS_008_sign_up_email_password_creates_an_unconfirmed_account_with_an_auto_created_profile_row 868ms
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: a Google-authenticated identity passes the confirmation gate and gets a profiles row > test_AS_010_google_identity_has_email_confirmed_at_set_by_supabase_itself 81ms
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: a Google-authenticated identity passes the confirmation gate and gets a profiles row > test_AS_010_google_identity_passes_the_shared_confirmation_gate_which_keys_on_email_confirmed_at_not_provider 80ms
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: a Google-authenticated identity passes the confirmation gate and gets a profiles row > test_AS_010_google_identity_gets_an_auto_created_profiles_row_from_the_provider_agnostic_trigger 169ms
+ ✓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: AS-018 -- a verified, not-yet-onboarded user is routed through /onboarding before reaching /danas > a verified, not-onboarded user > test_AS_018_requesting_danas_the_home_screen_redirects_to_onboarding_not_danas 308ms
+ ✓ src/lib/supabase/__tests__/profiles-rls.integration.test.ts > F010: profiles/targets RLS on the live Supabase project (AS-013, AS-031) > test_AS_013_user_can_read_their_own_profile_row 378ms
+ ✓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: a Google-authenticated identity passes the confirmation gate and gets a profiles row > test_AS_010_unconfirmed_email_password_identity_does_not_pass_the_same_gate 290ms
+ ✓ src/app/(app)/__tests__/route-protection.integration.test.ts > F013: route-protection middleware on the live Supabase project (AS-011, AS-012) > AS-012: a signed-in user can sign out; afterwards protected pages redirect to login > test_AS_012_signed_in_verified_onboarded_user_reaches_a_protected_page_then_signing_out_makes_it_redirect_to_login_again 581ms
+ ✓ src/app/(auth)/__tests__/auth-flow.integration.test.ts > F011: email/password auth flow on the live Supabase project (AS-008, AS-009, AS-017) > AS-009: email/password users cannot use the app before verifying their email > test_AS_009_unconfirmed_user_is_blocked_and_sees_the_serbian_verification_prompt 370ms
+ ✓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: AS-018 -- a verified, not-yet-onboarded user is routed through /onboarding before reaching /danas > a verified, not-onboarded user > test_AS_018_onboarding_itself_is_allowed_through_no_redirect_loop_the_wizard_is_reachable 353ms
+ ✓ src/lib/supabase/__tests__/profiles-rls.integration.test.ts > F010: profiles/targets RLS on the live Supabase project (AS-013, AS-031) > test_AS_013_user_b_cannot_read_user_a_profile_row_via_select 343ms
+ ↓ src/app/(auth)/__tests__/google-oauth.integration.test.ts > AS-010: live admin-API confirmation-gate check currently blocked (documented, not silently skipped) > diagnostic_admin_credentials_unreachable_AS_010_blocked
+ ✓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: AS-018 -- a verified, not-yet-onboarded user is routed through /onboarding before reaching /danas > a verified, not-onboarded user > test_AS_018_a_not_onboarded_user_cannot_bypass_the_gate_by_requesting_danas_directly 305ms
+ ✓ src/app/(app)/__tests__/route-protection.integration.test.ts > F013: route-protection middleware on the live Supabase project (AS-011, AS-012) > verified-but-unconfirmed and not-onboarded branches reach the correct redirect target (side-effect verification: unverified/anonymous users cannot reach protected data) > test_unverified_email_password_user_has_no_session_at_all_so_a_protected_page_request_still_redirects_to_prijava_not_the_protected_page 428ms
+ ✓ src/app/(auth)/__tests__/auth-flow.integration.test.ts > F011: email/password auth flow on the live Supabase project (AS-008, AS-009, AS-017) > AS-009: email/password users cannot use the app before verifying their email > test_AS_009_confirmed_user_proceeds_and_can_reach_their_own_profile_row 526ms
+ ✓ src/lib/supabase/__tests__/profiles-rls.integration.test.ts > F010: profiles/targets RLS on the live Supabase project (AS-013, AS-031) > test_AS_013_user_b_cannot_update_user_a_profile_row 618ms
+ ✓ src/app/(app)/__tests__/route-protection.integration.test.ts > F013: route-protection middleware on the live Supabase project (AS-011, AS-012) > verified-but-unconfirmed and not-onboarded branches reach the correct redirect target (side-effect verification: unverified/anonymous users cannot reach protected data) > test_verified_not_onboarded_user_hitting_a_protected_page_is_redirected_to_onboarding_not_the_protected_page 716ms
+ ✓ src/lib/supabase/__tests__/profiles-rls.integration.test.ts > F010: profiles/targets RLS on the live Supabase project (AS-013, AS-031) > test_AS_013_user_b_cannot_insert_a_targets_row_for_user_a 420ms
+ ✓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: AS-018 -- a verified, not-yet-onboarded user is routed through /onboarding before reaching /danas > a verified, already-onboarded user > test_AS_018_an_onboarded_user_requesting_danas_is_allowed_through_not_sent_back_to_onboarding 740ms
+ ✓ src/app/(auth)/__tests__/auth-flow.integration.test.ts > F011: email/password auth flow on the live Supabase project (AS-008, AS-009, AS-017) > AS-017: a failed login shows a Serbian error that does not reveal whether the email exists > test_AS_017_wrong_password_for_an_existing_account_returns_the_generic_serbian_message 201ms
+ ✓ src/app/(auth)/__tests__/auth-flow.integration.test.ts > F011: email/password auth flow on the live Supabase project (AS-008, AS-009, AS-017) > AS-017: a failed login shows a Serbian error that does not reveal whether the email exists > test_AS_017_nonexistent_email_returns_the_identical_generic_serbian_message 109ms
+ ↓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: live onboarding-route integration tests currently blocked (documented, not silently skipped) > diagnostic_live_credentials_unreachable_AS_018_blocked
+ ✓ src/app/(auth)/__tests__/auth-flow.integration.test.ts > F011: email/password auth flow on the live Supabase project (AS-008, AS-009, AS-017) > AS-017: a failed login shows a Serbian error that does not reveal whether the email exists > test_AS_017_wrong_password_and_nonexistent_email_messages_are_byte_for_byte_identical 302ms
+ ↓ src/app/(app)/__tests__/route-protection.integration.test.ts > F013: live route-protection integration tests currently blocked (documented, not silently skipped) > diagnostic_live_credentials_unreachable_AS_011_AS_012_blocked
+ ✓ src/lib/supabase/__tests__/profiles-rls.integration.test.ts > F010: profiles/targets RLS on the live Supabase project (AS-013, AS-031) > test_AS_031_onboarded_at_starts_null_and_a_user_can_persist_their_own_onboarding_completion 497ms
+ ↓ src/app/(auth)/__tests__/auth-flow.integration.test.ts > F011: live auth-flow integration tests currently blocked (documented, not silently skipped) > diagnostic_live_credentials_unreachable_AS_008_AS_009_AS_017_blocked
+ ✓ src/lib/supabase/__tests__/profiles-rls.integration.test.ts > F010: profiles/targets RLS on the live Supabase project (AS-013, AS-031) > test_AS_031_user_b_cannot_read_or_set_user_a_onboarded_at 410ms
+ ↓ src/lib/supabase/__tests__/profiles-rls.integration.test.ts > F010: live RLS proof currently blocked (documented, not silently skipped) > diagnostic_live_schema_unreachable_AS_013_AS_031_blocked
+ ✓ src/app/(app)/__tests__/profil.test.tsx > AS-012: a signed-in user can sign out (UI wiring on /profil) > test_AS_012_profil_page_renders_an_odjavi_se_sign_out_control 466ms
+ ✓ src/app/(app)/__tests__/profil.test.tsx > AS-012: a signed-in user can sign out (UI wiring on /profil) > test_AS_012_the_sign_out_button_is_inside_a_form_wired_to_the_signOutAction_server_action 77ms
+ ✓ src/components/shell/app-shell.test.tsx > AppShell (F005 base shell) > test_AS_125_app_shell_column_is_capped_at_mobile_width_and_hides_horizontal_overflow 167ms
+ ✓ src/components/shell/app-shell.test.tsx > AppShell (F005 base shell) > test_AS_126_app_shell_outer_wrapper_spans_full_width_and_centers_the_inner_column 29ms
+ ✓ src/components/shell/app-shell.test.tsx > AppShell (F005 base shell) > test_AS_127_app_shell_column_uses_the_light_background_token 39ms
+ ✓ src/components/shell/app-shell.test.tsx > AppShell (F005 base shell) > renders the bottom navigation alongside its children 381ms
+ ✓ src/components/shell/bottom-nav.test.tsx > BottomNav (F005 base shell) > test_AS_002_bottom_nav_renders_four_serbian_tab_labels 568ms
+ ✓ src/components/shell/bottom-nav.test.tsx > BottomNav (F005 base shell) > test_AS_002_bottom_nav_links_point_to_the_expected_serbian_routes 95ms
+ ✓ src/components/shell/bottom-nav.test.tsx > BottomNav (F005 base shell) > test_AS_127_bottom_nav_marks_the_active_tab_with_the_single_accent_color_and_aria_current 82ms
+ ✓ src/components/shell/bottom-nav.test.tsx > BottomNav (F005 base shell) > every nav item is a real anchor element, so it is reachable and activatable via keyboard alone 81ms
+ ✓ src/app/(app)/onboarding/__tests__/page.test.tsx > AS-018: /onboarding renders the wizard's first step > test_AS_018_onboarding_page_renders_the_pol_step_heading 509ms
+ ✓ src/app/(app)/onboarding/__tests__/page.test.tsx > AS-018: /onboarding renders the wizard's first step > test_AS_018_onboarding_page_renders_a_progress_indicator 53ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-018: the wizard's first render is step 1 (pol) -- reachable, not blank > test_AS_018_onboarding_wizard_renders_step_1_pol_by_default 517ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-018: the wizard's first render is step 1 (pol) -- reachable, not blank > test_AS_018_step_1_offers_a_clear_next_action_button 49ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 1 (pol) collects sex > test_AS_019_pol_step_blocks_next_with_a_serbian_error_when_nothing_is_selected 75ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 1 (pol) collects sex > test_AS_019_pol_step_accepts_a_selection_and_advances_to_godine 105ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 2 (godine) collects age > test_AS_019_godine_step_shows_a_serbian_error_for_an_out_of_range_age 119ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 2 (godine) collects age > test_AS_019_godine_step_accepts_a_sane_age_and_advances_to_visina 108ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 3 (visina) collects height in cm > test_AS_019_visina_step_shows_a_serbian_error_for_an_out_of_range_height 137ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 3 (visina) collects height in cm > test_AS_019_visina_step_accepts_a_sane_height_and_advances_to_tezina 129ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 4 (težina) collects weight in kg > test_AS_019_tezina_step_shows_a_serbian_error_for_an_out_of_range_weight 151ms
+ ✓ src/app/(auth)/__tests__/google-oauth.test.tsx > AS-010: a user can sign in with Google OAuth > test_AS_010_google_button_renders_on_the_prijava_page 514ms
+ ✓ src/app/(auth)/__tests__/google-oauth.test.tsx > AS-010: a user can sign in with Google OAuth > test_AS_010_google_button_renders_on_the_registracija_page 56ms
+ ✓ src/app/(auth)/__tests__/google-oauth.test.tsx > AS-010: a user can sign in with Google OAuth > test_AS_010_clicking_the_google_button_invokes_signInWithOAuth_with_the_google_provider_and_the_auth_callback_redirect 62ms
+ ✓ src/app/(auth)/__tests__/google-oauth.test.tsx > AS-010: a user can sign in with Google OAuth > test_AS_010_google_button_shows_a_serbian_error_and_stays_usable_if_the_oauth_request_cannot_be_started 79ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 4 (težina) collects weight in kg > test_AS_019_tezina_step_accepts_a_sane_weight_and_advances_to_aktivnost 154ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 5 (nivo aktivnosti) collects one of 5 activity tiers > test_AS_019_aktivnost_step_renders_all_five_tiers 196ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 5 (nivo aktivnosti) collects one of 5 activity tiers > test_AS_019_aktivnost_step_blocks_next_with_a_serbian_error_when_nothing_is_selected 139ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 5 (nivo aktivnosti) collects one of 5 activity tiers > test_AS_019_aktivnost_step_accepts_a_tier_and_advances_to_cilj 186ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 6 (cilj) collects target weight + timeframe > test_AS_019_cilj_step_rejects_a_target_weight_that_is_not_below_the_current_weight 197ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 6 (cilj) collects target weight + timeframe > test_AS_019_cilj_step_rejects_a_timeframe_below_one_week 200ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 6 (cilj) collects target weight + timeframe > test_AS_019_cilj_step_shows_a_big_friendly_preview_once_both_fields_are_sane 193ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 6 (cilj) collects target weight + timeframe > test_AS_019_finishing_the_wizard_hands_all_seven_collected_values_to_the_summary_step 195ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: Back navigation preserves previously entered data (nothing lost between screens) > test_AS_019_going_back_and_forward_keeps_the_previously_selected_sex 79ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: Back navigation preserves previously entered data (nothing lost between screens) > test_AS_019_back_button_is_not_shown_on_the_first_step 15ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > F015 definition-of-done: forced-failure render test (inline Serbian error + retry, never blank) > test_AS_019_an_invalid_step_never_blanks_the_screen_and_offers_a_working_retry_via_the_same_dalje_button 70ms
+ ✓ src/app/page.test.tsx > root page (F001 scaffold smoke test) > test_AS_001_root_page_renders_without_throwing 60ms
+ ✓ src/app/page.test.tsx > root page (F001 scaffold smoke test) > test_AS_002_root_page_serves_serbian_text 344ms
+ ✓ src/lib/budget/engine.test.ts > F014: bmr (AS-021) > test_AS_021_male_reference_value_80kg_180cm_25y 5ms
+ ✓ src/lib/budget/engine.test.ts > F014: bmr (AS-021) > test_AS_021_female_reference_value_65kg_165cm_30y 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: bmr (AS-021) > test_AS_021_male_reference_value_70kg_175cm_40y 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: bmr (AS-021) > test_AS_021_female_reference_value_55kg_160cm_22y 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: bmr (AS-021) > test_AS_021_same_body_stats_male_bmr_exceeds_female_bmr_by_166 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: bmr (AS-021) > test_AS_021_zero_and_negative_inputs_clamp_to_the_minimum_bounds_instead_of_throwing 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: bmr (AS-021) > test_AS_021_extreme_high_inputs_clamp_to_the_maximum_bounds_instead_of_throwing 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: bmr (AS-021) > test_AS_021_inputs_at_the_exact_clamp_boundaries_are_not_altered 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: tdee (AS-022) > test_AS_022_sedentary_multiplier_is_1_2 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: tdee (AS-022) > test_AS_022_light_multiplier_is_1_375 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: tdee (AS-022) > test_AS_022_moderate_multiplier_is_1_55 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: tdee (AS-022) > test_AS_022_active_multiplier_is_1_725 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: tdee (AS-022) > test_AS_022_very_active_multiplier_is_1_9 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: tdee (AS-022) > test_AS_022_tdee_strictly_increases_with_each_higher_activity_tier 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: tdee (AS-022) > test_AS_022_unrecognized_activity_level_falls_back_to_the_sedentary_multiplier_instead_of_throwing 3ms
+ ✓ src/lib/budget/engine.test.ts > F014: tdee (AS-022) > test_AS_022_zero_or_negative_bmr_clamps_to_zero_instead_of_going_negative 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget floors (AS-023) > test_AS_023_never_below_1400_for_men_even_with_a_large_requested_deficit 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget floors (AS-023) > test_AS_023_never_below_1200_for_women_even_with_a_large_requested_deficit 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget floors (AS-023) > test_AS_023_value_exactly_at_the_male_floor_is_not_pushed_higher 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget floors (AS-023) > test_AS_023_value_exactly_at_the_female_floor_is_not_pushed_higher 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget floors (AS-023) > test_AS_023_value_comfortably_above_the_floor_is_left_unclamped 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget floors (AS-023) > test_AS_023_male_and_female_floors_differ_by_200_kcal 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget deficit cap (AS-024) > test_AS_024_a_50_percent_requested_deficit_is_capped_to_25_percent 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget deficit cap (AS-024) > test_AS_024_exactly_25_percent_is_the_boundary_and_is_not_reduced_further 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget deficit cap (AS-024) > test_AS_024_just_over_25_percent_is_clamped_down_to_the_25_percent_result 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget deficit cap (AS-024) > test_AS_024_a_negative_requested_deficit_surplus_clamps_to_zero_deficit 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: dailyTarget deficit cap (AS-024) > test_AS_024_default_deficit_used_when_no_deficit_argument_is_supplied 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: macroTargets (AS-025) > test_AS_025_protein_is_within_1_8_to_2_2_g_per_kg_under_a_comfortable_budget 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: macroTargets (AS-025) > test_AS_025_fat_is_at_least_0_6_g_per_kg_under_a_comfortable_budget 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: macroTargets (AS-025) > test_AS_025_carbs_are_exactly_the_remainder_of_calories_under_a_comfortable_budget 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: macroTargets (AS-025) > test_AS_025_carbs_never_go_negative_when_the_budget_is_tighter_than_protein_plus_fat 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: macroTargets (AS-025) > test_AS_025_tight_deficit_pulls_fat_toward_its_floor_and_flags_clamped 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: macroTargets (AS-025) > test_AS_025_when_protein_plus_floor_fat_still_exceeds_dailyKcal_fat_holds_its_floor_and_carbs_go_to_zero 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: macroTargets (AS-025) > test_AS_025_zero_or_negative_dailyKcal_does_not_throw_and_carbs_clamp_to_zero 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: macroTargets (AS-025) > test_AS_025_weight_inputs_clamp_to_safe_bounds_instead_of_producing_nonsense 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: weeklyBudget (AS-026) > test_AS_026_weekly_equals_daily_times_seven 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: weeklyBudget (AS-026) > test_AS_026_rounds_a_fractional_daily_value_to_the_nearest_kcal_before_multiplying 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: weeklyBudget (AS-026) > test_AS_026_zero_or_negative_daily_clamps_to_zero_instead_of_going_negative 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: planGoalAdjustment (AS-030) > test_AS_030_a_goal_within_safe_bounds_is_not_adjusted 2ms
+ ✓ src/lib/budget/engine.test.ts > F014: planGoalAdjustment (AS-030) > test_AS_030_a_goal_exceeding_the_25_percent_cap_is_adjusted_with_that_reason_code 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: planGoalAdjustment (AS-030) > test_AS_030_a_goal_that_hits_both_the_percent_cap_and_the_kcal_floor_reports_both_reason_codes 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: planGoalAdjustment (AS-030) > test_AS_030_a_maintenance_or_weight_gain_goal_implies_no_deficit_and_is_not_adjusted 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: planGoalAdjustment (AS-030) > test_AS_030_equal_current_and_target_weight_is_treated_as_maintenance 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: planGoalAdjustment (AS-030) > test_AS_030_a_zero_or_negative_timeframe_does_not_throw_and_is_treated_as_the_shortest_plan 3ms
+ ✓ src/lib/budget/engine.test.ts > F014: planGoalAdjustment (AS-030) > test_AS_030_reason_codes_are_returned_as_a_stable_string_enum_not_free_text 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: purity / no side effects > test_AS_021_bmr_is_pure_repeated_calls_with_identical_input_return_identical_output 0ms
+ ✓ src/lib/budget/engine.test.ts > F014: purity / no side effects > test_AS_025_macroTargets_does_not_mutate_its_inputs_or_leak_shared_state_between_calls 1ms
+ ✓ src/lib/budget/engine.test.ts > F014: purity / no side effects > test_AS_030_planGoalAdjustment_does_not_mutate_the_input_object 0ms
+ ✓ src/lib/env.test.ts > AS-003: .env.example completeness and secret safety > test_AS_003_env_example_file_exists_at_repo_root 5ms
+ ✓ src/lib/env.test.ts > AS-003: .env.example completeness and secret safety > test_AS_003_env_example_has_an_entry_for_every_env_var_referenced_in_source_code 25ms
+ ✓ src/lib/env.test.ts > AS-003: .env.example completeness and secret safety > test_AS_003_env_example_has_placeholders_for_every_var_known_so_far_from_env_and_tech_decisions 1ms
+ ✓ src/lib/env.test.ts > AS-003: .env.example completeness and secret safety > test_AS_003_env_example_contains_no_real_secret_values_from_local_env 2ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_/danas_is_redirected_to_prijava 6ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_/nedelja_is_redirected_to_prijava 1ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_/agent_is_redirected_to_prijava 1ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_/profil_is_redirected_to_prijava 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_/dodaj/obrok_is_redirected_to_prijava 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_the_onboarding_route_is_also_redirected_to_prijava 1ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_the_public_path_/_is_allowed_through 1ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_the_public_path_/prijava_is_allowed_through 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_the_public_path_/registracija_is_allowed_through 1ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_the_public_path_/registracija/proveri-email_is_allowed_through 1ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen > test_AS_011_signed_out_visitor_requesting_the_public_path_/auth/callback_is_allowed_through 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-012: a signed-in user can sign out; afterwards protected pages redirect to login > test_AS_012_after_sign_out_a_request_to_/danas_redirects_to_prijava_just_like_a_never_signed_in_visitor 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-012: a signed-in user can sign out; afterwards protected pages redirect to login > test_AS_012_after_sign_out_a_request_to_/nedelja_redirects_to_prijava_just_like_a_never_signed_in_visitor 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-012: a signed-in user can sign out; afterwards protected pages redirect to login > test_AS_012_after_sign_out_a_request_to_/agent_redirects_to_prijava_just_like_a_never_signed_in_visitor 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-012: a signed-in user can sign out; afterwards protected pages redirect to login > test_AS_012_after_sign_out_a_request_to_/profil_redirects_to_prijava_just_like_a_never_signed_in_visitor 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-012: a signed-in user can sign out; afterwards protected pages redirect to login > test_AS_012_after_sign_out_a_request_to_/dodaj/obrok_redirects_to_prijava_just_like_a_never_signed_in_visitor 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > AS-012: a signed-in user can sign out; afterwards protected pages redirect to login > test_AS_012_after_sign_out_the_login_page_itself_is_reachable_again 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > unverified email/password users are routed to the F011 verification notice, never blocked from public pages > test_unverified_user_requesting_/danas_is_redirected_to_the_verification_notice 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > unverified email/password users are routed to the F011 verification notice, never blocked from public pages > test_unverified_user_requesting_/nedelja_is_redirected_to_the_verification_notice 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > unverified email/password users are routed to the F011 verification notice, never blocked from public pages > test_unverified_user_requesting_/agent_is_redirected_to_the_verification_notice 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > unverified email/password users are routed to the F011 verification notice, never blocked from public pages > test_unverified_user_requesting_/profil_is_redirected_to_the_verification_notice 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > unverified email/password users are routed to the F011 verification notice, never blocked from public pages > test_unverified_user_requesting_/dodaj/obrok_is_redirected_to_the_verification_notice 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > unverified email/password users are routed to the F011 verification notice, never blocked from public pages > test_unverified_user_can_still_reach_the_login_and_signup_pages 1ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > unverified email/password users are routed to the F011 verification notice, never blocked from public pages > test_a_google_authenticated_verified_identity_is_never_routed_to_the_verification_notice 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > verified-but-not-onboarded users are routed to /onboarding, with no redirect loop > test_verified_not_onboarded_user_requesting_/danas_is_redirected_to_onboarding 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > verified-but-not-onboarded users are routed to /onboarding, with no redirect loop > test_verified_not_onboarded_user_requesting_/nedelja_is_redirected_to_onboarding 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > verified-but-not-onboarded users are routed to /onboarding, with no redirect loop > test_verified_not_onboarded_user_requesting_/agent_is_redirected_to_onboarding 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > verified-but-not-onboarded users are routed to /onboarding, with no redirect loop > test_verified_not_onboarded_user_requesting_/profil_is_redirected_to_onboarding 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > verified-but-not-onboarded users are routed to /onboarding, with no redirect loop > test_verified_not_onboarded_user_requesting_/dodaj/obrok_is_redirected_to_onboarding 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > verified-but-not-onboarded users are routed to /onboarding, with no redirect loop > test_verified_not_onboarded_user_requesting_the_onboarding_route_itself_is_allowed_no_loop 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > verified-but-not-onboarded users are routed to /onboarding, with no redirect loop > test_verified_not_onboarded_user_requesting_an_onboarding_sub_route_is_allowed_no_loop 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > fully set-up users (verified + onboarded) are bounced away from the login/signup pages > test_fully_set_up_user_hitting_/prijava_is_redirected_to_the_home_screen 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > fully set-up users (verified + onboarded) are bounced away from the login/signup pages > test_fully_set_up_user_hitting_/registracija_is_redirected_to_the_home_screen 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > fully set-up users (verified + onboarded) are bounced away from the login/signup pages > test_fully_set_up_user_hitting_/registracija/proveri-email_is_redirected_to_the_home_screen 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > fully set-up users (verified + onboarded) are bounced away from the login/signup pages > test_fully_set_up_user_hitting_the_auth_callback_route_is_not_bounced_away 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > fully set-up users (verified + onboarded) are bounced away from the login/signup pages > test_fully_set_up_user_requesting_/danas_is_allowed_through 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > fully set-up users (verified + onboarded) are bounced away from the login/signup pages > test_fully_set_up_user_requesting_/nedelja_is_allowed_through 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > fully set-up users (verified + onboarded) are bounced away from the login/signup pages > test_fully_set_up_user_requesting_/agent_is_allowed_through 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > fully set-up users (verified + onboarded) are bounced away from the login/signup pages > test_fully_set_up_user_requesting_/profil_is_allowed_through 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > fully set-up users (verified + onboarded) are bounced away from the login/signup pages > test_fully_set_up_user_requesting_/dodaj/obrok_is_allowed_through 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > path classifier helpers > test_isPublicPath_covers_marketing_home_login_signup_and_auth_callback 1ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > path classifier helpers > test_isLoginOrSignupPath_excludes_the_auth_callback_route 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > path classifier helpers > test_isAuthCallbackPath_matches_only_the_auth_prefix 0ms
+ ✓ src/lib/auth/__tests__/route-protection.test.ts > path classifier helpers > test_isOnboardingPath_matches_the_onboarding_prefix_only 0ms
+ ✓ src/lib/supabase/__tests__/schema-migration.test.ts > F010: supabase/migrations/0001_profiles.sql (static schema checks) > test_AS_013_migration_file_exists_and_is_the_first_migration 5ms
+ ✓ src/lib/supabase/__tests__/schema-migration.test.ts > F010: supabase/migrations/0001_profiles.sql (static schema checks) > test_AS_013_profiles_table_has_row_level_security_enabled 1ms
+ ✓ src/lib/supabase/__tests__/schema-migration.test.ts > F010: supabase/migrations/0001_profiles.sql (static schema checks) > test_AS_013_targets_table_has_row_level_security_enabled 1ms
+ ✓ src/lib/supabase/__tests__/schema-migration.test.ts > F010: supabase/migrations/0001_profiles.sql (static schema checks) > test_AS_013_profiles_has_exactly_four_own_row_policies_select_insert_update_delete 4ms
+ ✓ src/lib/supabase/__tests__/schema-migration.test.ts > F010: supabase/migrations/0001_profiles.sql (static schema checks) > test_AS_013_targets_has_exactly_four_own_row_policies_select_insert_update_delete 2ms
+ ✓ src/lib/supabase/__tests__/schema-migration.test.ts > F010: supabase/migrations/0001_profiles.sql (static schema checks) > test_AS_013_no_policy_grants_unconditional_true_or_public_role_access 4ms
+ ✓ src/lib/supabase/__tests__/schema-migration.test.ts > F010: supabase/migrations/0001_profiles.sql (static schema checks) > test_AS_013_profiles_and_targets_foreign_keys_scope_ownership_to_auth_users_with_cascade_delete 1ms
+ ✓ src/lib/supabase/__tests__/schema-migration.test.ts > F010: supabase/migrations/0001_profiles.sql (static schema checks) > test_AS_031_profiles_has_a_nullable_onboarded_at_timestamp_column 1ms
+ ✓ src/lib/supabase/__tests__/schema-migration.test.ts > F010: supabase/migrations/0001_profiles.sql (static schema checks) > test_AS_031_profiles_and_targets_are_the_only_tables_this_migration_creates 3ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateSex (pol step) > test_AS_019_validateSex_accepts_male 5ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateSex (pol step) > test_AS_019_validateSex_accepts_female 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateSex (pol step) > test_AS_019_validateSex_rejects_null_with_a_serbian_message 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_accepts_a_value_inside_the_sane_range 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_accepts_the_exact_lower_boundary 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_accepts_the_exact_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_below_the_lower_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_above_the_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_null_with_a_serbian_message 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_a_non_integer 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_NaN 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_accepts_a_typical_value 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_accepts_the_exact_boundaries 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_rejects_below_the_lower_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_rejects_above_the_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_rejects_null_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_accepts_a_typical_value 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_accepts_the_exact_boundaries 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_rejects_below_the_lower_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_rejects_above_the_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_rejects_null_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_sedentary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_light 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_moderate 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_active 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_very_active 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_rejects_null_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_accepts_a_sane_loss_goal 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_accepts_the_exact_timeframe_lower_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_accepts_the_exact_timeframe_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_target_weight_equal_to_current_weight 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_target_weight_above_current_weight 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_a_timeframe_below_one_week 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_a_timeframe_above_the_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_a_non_integer_timeframe 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_null_target_weight_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_null_timeframe_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_target_weight_outside_the_weight_bounds 0ms
+ ✓ src/lib/__tests__/deploy-readiness.test.ts > F004: Vercel deploy readiness (code-side preconditions for AS-007) > test_AS_007_readiness_package_json_pins_node_22_via_engines 6ms
+ ✓ src/lib/__tests__/deploy-readiness.test.ts > F004: Vercel deploy readiness (code-side preconditions for AS-007) > test_AS_007_readiness_nvmrc_pins_node_22_matching_vercel_default_runtime 1ms
+ ✓ src/lib/__tests__/deploy-readiness.test.ts > F004: Vercel deploy readiness (code-side preconditions for AS-007) > test_AS_007_readiness_build_script_is_the_standard_next_build_vercel_autodetects 1ms
+ ✓ src/lib/__tests__/deploy-readiness.test.ts > F004: Vercel deploy readiness (code-side preconditions for AS-007) > test_AS_007_readiness_deploy_runbook_exists_documenting_the_one_time_dashboard_link_step 1ms
+ ✓ src/lib/__tests__/deploy-readiness.test.ts > F004: Vercel deploy readiness (code-side preconditions for AS-007) > test_AS_007_readiness_deploy_runbook_lists_every_env_var_name_present_in_env_example 2ms
+ ✓ src/lib/__tests__/deploy-readiness.test.ts > F004: Vercel deploy readiness (code-side preconditions for AS-007) > test_AS_007_readiness_no_speculative_vercel_json_committed_before_it_is_needed 0ms
+ ✓ src/app/theme.test.ts > F005: light theme, single green accent (AS-127) > test_AS_127_root_theme_defines_the_energetic_green_accent_as_primary 4ms
+ ✓ src/app/theme.test.ts > F005: light theme, single green accent (AS-127) > test_AS_127_same_accent_hue_is_reused_for_ring_and_sidebar_primary_not_a_second_color 1ms
+ ✓ src/app/theme.test.ts > F005: light theme, single green accent (AS-127) > test_AS_127_root_background_is_near_white_confirming_light_theme 0ms
+ ✓ src/app/theme.test.ts > F005: light theme, single green accent (AS-127) > test_AS_127_layout_never_applies_the_dark_class_leaving_dark_mode_scaffold_inert 1ms
+ ✓ src/app/theme.test.ts > F005: light theme, single green accent (AS-127) > test_AS_125_base_layer_forces_overflow_x_hidden_on_html_and_body_as_a_global_safety_net 0ms
+ ✓ src/lib/auth/__tests__/errors.test.ts > F011: mapAuthErrorToSerbian (AS-017) > test_AS_017_invalid_credentials_maps_to_the_generic_non_revealing_message 3ms
+ ✓ src/lib/auth/__tests__/errors.test.ts > F011: mapAuthErrorToSerbian (AS-017) > test_AS_017_null_or_missing_error_falls_back_to_the_generic_message 0ms
+ ✓ src/lib/auth/__tests__/errors.test.ts > F011: mapAuthErrorToSerbian (AS-017) > test_AS_017_unknown_or_unmapped_error_codes_fail_closed_to_the_generic_message 0ms
+ ✓ src/lib/auth/__tests__/errors.test.ts > F011: mapAuthErrorToSerbian (AS-017) > test_AS_017_wrong_password_and_unknown_email_produce_the_identical_string 0ms
+ ✓ src/lib/auth/__tests__/errors.test.ts > F011: mapAuthErrorToSerbian (AS-017) > test_AS_017_unconfirmed_email_maps_to_a_distinct_verification_prompt_not_the_generic_message 1ms
+ ✓ src/lib/auth/__tests__/errors.test.ts > F011: mapAuthErrorToSerbian (AS-017) > test_AS_017_rate_limit_codes_map_to_the_rate_limited_message 0ms
+ ✓ src/lib/auth/__tests__/errors.test.ts > F011: mapAuthErrorToSerbian (AS-017) > test_AS_017_every_mapped_message_is_serbian_latin_copy_not_a_raw_supabase_string 2ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_targets_the_onboarding_summary_path 3ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_sex 1ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_age 0ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_height 0ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_weight 1ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_activity_level 0ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_target_weight_and_timeframe 0ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_omits_unset_fields_rather_than_writing_null_or_undefined 1ms
+ ✓ src/lib/__tests__/smoke.test.ts > F003 tooling smoke test > test_AS_004_vitest_runner_executes_and_a_basic_assertion_passes 3ms
+ ✓ src/lib/__tests__/smoke.test.ts > F003 tooling smoke test > test_AS_004_vitest_runner_supports_async_assertions 0ms
+ ✓ src/lib/__tests__/smoke.test.ts > F003 tooling smoke test > test_AS_005_and_AS_006_this_file_is_strict_typescript_with_no_lint_violations 0ms
+
+ Test Files  22 passed (22)
+      Tests  236 passed | 6 skipped (242)
+   Start at  01:04:44
+   Duration  12.79s (transform 2.47s, setup 8.73s, import 13.08s, tests 20.78s, environment 61.96s)
+

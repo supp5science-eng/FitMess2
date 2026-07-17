@@ -1,0 +1,82 @@
+
+ RUN  v4.1.10 C:/FitMess2/exexutor/claude-missions
+
+ ✓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: AS-018 -- a verified, not-yet-onboarded user is routed through /onboarding before reaching /danas > a verified, not-onboarded user > test_AS_018_requesting_danas_the_home_screen_redirects_to_onboarding_not_danas 200ms
+ ✓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: AS-018 -- a verified, not-yet-onboarded user is routed through /onboarding before reaching /danas > a verified, not-onboarded user > test_AS_018_onboarding_itself_is_allowed_through_no_redirect_loop_the_wizard_is_reachable 407ms
+ ✓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: AS-018 -- a verified, not-yet-onboarded user is routed through /onboarding before reaching /danas > a verified, not-onboarded user > test_AS_018_a_not_onboarded_user_cannot_bypass_the_gate_by_requesting_danas_directly 208ms
+ ✓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: AS-018 -- a verified, not-yet-onboarded user is routed through /onboarding before reaching /danas > a verified, already-onboarded user > test_AS_018_an_onboarded_user_requesting_danas_is_allowed_through_not_sent_back_to_onboarding 724ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_targets_the_onboarding_summary_path 4ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_sex 1ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_age 0ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_height 0ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_weight 1ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_activity_level 0ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_encodes_target_weight_and_timeframe 1ms
+ ✓ src/lib/onboarding/__tests__/types.test.ts > AS-019: buildOnboardingSummaryUrl carries all seven collected inputs to F016 > test_AS_019_url_omits_unset_fields_rather_than_writing_null_or_undefined 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateSex (pol step) > test_AS_019_validateSex_accepts_male 5ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateSex (pol step) > test_AS_019_validateSex_accepts_female 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateSex (pol step) > test_AS_019_validateSex_rejects_null_with_a_serbian_message 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_accepts_a_value_inside_the_sane_range 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_accepts_the_exact_lower_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_accepts_the_exact_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_below_the_lower_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_above_the_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_null_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_a_non_integer 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateAge (godine step) > test_AS_019_validateAge_rejects_NaN 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_accepts_a_typical_value 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_accepts_the_exact_boundaries 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_rejects_below_the_lower_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_rejects_above_the_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateHeight (visina step) > test_AS_019_validateHeight_rejects_null_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_accepts_a_typical_value 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_accepts_the_exact_boundaries 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_rejects_below_the_lower_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_rejects_above_the_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateWeight (težina step) > test_AS_019_validateWeight_rejects_null_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_sedentary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_light 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_moderate 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_active 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_accepts_tier_very_active 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateActivityLevel (5 tiers) > test_AS_019_validateActivityLevel_rejects_null_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_accepts_a_sane_loss_goal 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_accepts_the_exact_timeframe_lower_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_accepts_the_exact_timeframe_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_target_weight_equal_to_current_weight 1ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_target_weight_above_current_weight 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_a_timeframe_below_one_week 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_a_timeframe_above_the_upper_boundary 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_a_non_integer_timeframe 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_null_target_weight_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_null_timeframe_with_a_serbian_message 0ms
+ ✓ src/lib/onboarding/__tests__/validation.test.ts > AS-019: validateGoal (cilj step -- target weight + timeframe) > test_AS_019_validateGoal_rejects_target_weight_outside_the_weight_bounds 0ms
+ ↓ src/app/(app)/onboarding/__tests__/onboarding-route.integration.test.ts > F015: live onboarding-route integration tests currently blocked (documented, not silently skipped) > diagnostic_live_credentials_unreachable_AS_018_blocked
+ ✓ src/app/(app)/onboarding/__tests__/page.test.tsx > AS-018: /onboarding renders the wizard's first step > test_AS_018_onboarding_page_renders_the_pol_step_heading 308ms
+ ✓ src/app/(app)/onboarding/__tests__/page.test.tsx > AS-018: /onboarding renders the wizard's first step > test_AS_018_onboarding_page_renders_a_progress_indicator 31ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-018: the wizard's first render is step 1 (pol) -- reachable, not blank > test_AS_018_onboarding_wizard_renders_step_1_pol_by_default 318ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-018: the wizard's first render is step 1 (pol) -- reachable, not blank > test_AS_018_step_1_offers_a_clear_next_action_button 29ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 1 (pol) collects sex > test_AS_019_pol_step_blocks_next_with_a_serbian_error_when_nothing_is_selected 41ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 1 (pol) collects sex > test_AS_019_pol_step_accepts_a_selection_and_advances_to_godine 53ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 2 (godine) collects age > test_AS_019_godine_step_shows_a_serbian_error_for_an_out_of_range_age 65ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 2 (godine) collects age > test_AS_019_godine_step_accepts_a_sane_age_and_advances_to_visina 57ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 3 (visina) collects height in cm > test_AS_019_visina_step_shows_a_serbian_error_for_an_out_of_range_height 72ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 3 (visina) collects height in cm > test_AS_019_visina_step_accepts_a_sane_height_and_advances_to_tezina 55ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 4 (težina) collects weight in kg > test_AS_019_tezina_step_shows_a_serbian_error_for_an_out_of_range_weight 65ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 4 (težina) collects weight in kg > test_AS_019_tezina_step_accepts_a_sane_weight_and_advances_to_aktivnost 69ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 5 (nivo aktivnosti) collects one of 5 activity tiers > test_AS_019_aktivnost_step_renders_all_five_tiers 84ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 5 (nivo aktivnosti) collects one of 5 activity tiers > test_AS_019_aktivnost_step_blocks_next_with_a_serbian_error_when_nothing_is_selected 73ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 5 (nivo aktivnosti) collects one of 5 activity tiers > test_AS_019_aktivnost_step_accepts_a_tier_and_advances_to_cilj 88ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 6 (cilj) collects target weight + timeframe > test_AS_019_cilj_step_rejects_a_target_weight_that_is_not_below_the_current_weight 99ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 6 (cilj) collects target weight + timeframe > test_AS_019_cilj_step_rejects_a_timeframe_below_one_week 91ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 6 (cilj) collects target weight + timeframe > test_AS_019_cilj_step_shows_a_big_friendly_preview_once_both_fields_are_sane 84ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: step 6 (cilj) collects target weight + timeframe > test_AS_019_finishing_the_wizard_hands_all_seven_collected_values_to_the_summary_step 91ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: Back navigation preserves previously entered data (nothing lost between screens) > test_AS_019_going_back_and_forward_keeps_the_previously_selected_sex 34ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > AS-019: Back navigation preserves previously entered data (nothing lost between screens) > test_AS_019_back_button_is_not_shown_on_the_first_step 8ms
+ ✓ src/components/onboarding/__tests__/onboarding-wizard.test.tsx > F015 definition-of-done: forced-failure render test (inline Serbian error + retry, never blank) > test_AS_019_an_invalid_step_never_blanks_the_screen_and_offers_a_working_retry_via_the_same_dalje_button 31ms
+
+ Test Files  5 passed (5)
+      Tests  72 passed | 1 skipped (73)
+   Start at  01:05:00
+   Duration  6.12s (transform 1.07s, setup 1.67s, import 3.04s, tests 4.28s, environment 10.58s)
+

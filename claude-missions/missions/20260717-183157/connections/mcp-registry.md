@@ -10,8 +10,19 @@ _Generated: 2026-07-17T18:45:00Z_ _Source: `claude mcp list` output_
 
 **Worker use:** `yes` = workers should call MCP for live introspection when the feature touches this service. `no` = reserved for validators or orchestrator.
 
+> ⚠️ **IMPORTANT — worker DB operations use the Management API, NOT the MCP.** As of 2026-07-17 (discovered during F010), `mcp__supabase__*` tools are **NOT bound inside worker subagents** — the local-scope MCP registration is visible to the main orchestrator session but does not propagate to spawned workers. **Workers must apply migrations and run live schema/RLS checks via the Supabase Management API SQL endpoint instead:**
+>
+> ```
+> POST https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/query
+> Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}
+> Content-Type: application/json
+> body: {"query":"<SQL>"}   → returns 201 + JSON rows
+> ```
+>
+> `SUPABASE_ACCESS_TOKEN` (PAT) and `SUPABASE_PROJECT_REF` are in `.env`. Use Node's built-in `fetch` (jq is not installed on this machine). Commit the `.sql` migration file to `supabase/migrations/` as source of truth, apply it via this endpoint, then verify tables/RLS/policies via follow-up `SELECT`s against the same endpoint. Application/product code still uses `@supabase/supabase-js` (`createClient`/`createAdminClient`) with the publishable/secret keys — the Management API is only for schema DDL + verification during the build.
+
 Notes:
-- The Supabase MCP is registered at local scope (`~/.claude.json`) with a token header, project-scoped to `femrzpfslejzqnvfsfoe`, **not** read-only — workers run migrations (F010, F020, F042, F046, F050, F057) through it.
+- The Supabase MCP is registered at local scope (`~/.claude.json`) with a token header, project-scoped to `femrzpfslejzqnvfsfoe`, **not** read-only. It works for the **orchestrator** session; workers use the Management API path above instead.
 - Other servers shown by `claude mcp list` (Spotify, Google Drive/Calendar/Gmail) are the user's pre-existing claude.ai connectors, unrelated to this mission — workers must ignore them.
 
 ## Non-MCP services (SDK / env only)

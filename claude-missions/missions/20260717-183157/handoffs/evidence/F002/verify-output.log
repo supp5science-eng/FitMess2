@@ -1,0 +1,54 @@
+=== npm run test ===
+
+> adaptive-cut@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.10 C:/FitMess2/exexutor/claude-missions
+
+
+ Test Files  2 passed (2)
+      Tests  6 passed (6)
+   Start at  22:29:15
+   Duration  4.43s (transform 203ms, setup 770ms, import 647ms, tests 276ms, environment 5.59s)
+
+
+=== npm run typecheck ===
+
+> adaptive-cut@0.1.0 typecheck
+> tsc --noEmit
+
+
+=== npm run lint ===
+
+> adaptive-cut@0.1.0 lint
+> eslint
+
+
+=== npm run build ===
+
+> adaptive-cut@0.1.0 build
+> next build
+
+▲ Next.js 16.2.10 (Turbopack)
+- Environments: .env
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 4.2s
+  Running TypeScript ...
+  Finished TypeScript in 6.0s ...
+  Collecting page data using 5 workers ...
+  Generating static pages using 5 workers (0/4) ...
+  Generating static pages using 5 workers (1/4) 
+  Generating static pages using 5 workers (2/4) 
+  Generating static pages using 5 workers (3/4) 
+✓ Generating static pages using 5 workers (4/4) in 1274ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+

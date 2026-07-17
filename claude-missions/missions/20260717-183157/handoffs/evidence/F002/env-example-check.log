@@ -1,0 +1,52 @@
+=== .env.example keys (names only) ===
+NEXT_PUBLIC_SUPABASE_URL=<placeholder>
+SUPABASE_PUBLISHABLE_KEY=<placeholder>
+SUPABASE_SECRET_KEY=<placeholder>
+GEMINI_API_KEY=<placeholder>
+GEMINI_MODEL=<placeholder>
+GOOGLE_CLIENT_ID=<placeholder>
+GOOGLE_CLIENT_SECRET=<placeholder>
+NEXT_PUBLIC_POSTHOG_KEY=<placeholder>
+NEXT_PUBLIC_POSTHOG_HOST=<placeholder>
+SENTRY_DSN=<placeholder>
+NEXT_PUBLIC_SENTRY_DSN=<placeholder>
+SENTRY_ORG=<placeholder>
+SENTRY_PROJECT=<placeholder>
+VAPID_PUBLIC_KEY=<placeholder>
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<placeholder>
+VAPID_PRIVATE_KEY=<placeholder>
+VAPID_SUBJECT=<placeholder>
+
+=== .env real keys present (names only, no values) ===
+NEXT_PUBLIC_SUPABASE_URL=<redacted>
+SUPABASE_PUBLISHABLE_KEY=<redacted>
+SUPABASE_SECRET_KEY=<redacted>
+GEMINI_API_KEY=<redacted>
+GEMINI_MODEL=<redacted>
+GOOGLE_CLIENT_ID=<redacted>
+GOOGLE_CLIENT_SECRET=<redacted>
+NEXT_PUBLIC_POSTHOG_KEY=<redacted>
+NEXT_PUBLIC_POSTHOG_HOST=<redacted>
+SENTRY_DSN=<redacted>
+NEXT_PUBLIC_SENTRY_DSN=<redacted>
+SENTRY_ORG=<redacted>
+SENTRY_PROJECT=<redacted>
+VAPID_PUBLIC_KEY=<redacted>
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<redacted>
+VAPID_PRIVATE_KEY=<redacted>
+VAPID_SUBJECT=<redacted>
+
+=== Secret-leak grep: does .env.example contain any real .env secret substring? (should be empty) ===
+
+ RUN  v4.1.10 C:/FitMess2/exexutor/claude-missions
+
+ ✓ src/lib/env.test.ts > AS-003: .env.example completeness and secret safety > test_AS_003_env_example_file_exists_at_repo_root 3ms
+ ✓ src/lib/env.test.ts > AS-003: .env.example completeness and secret safety > test_AS_003_env_example_has_an_entry_for_every_env_var_referenced_in_source_code 7ms
+ ✓ src/lib/env.test.ts > AS-003: .env.example completeness and secret safety > test_AS_003_env_example_has_placeholders_for_every_var_known_so_far_from_env_and_tech_decisions 1ms
+ ✓ src/lib/env.test.ts > AS-003: .env.example completeness and secret safety > test_AS_003_env_example_contains_no_real_secret_values_from_local_env 1ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  22:30:04
+   Duration  4.34s (transform 87ms, setup 431ms, import 63ms, tests 16ms, environment 3.22s)
+

@@ -1,0 +1,59 @@
+F011 live Supabase verification (Management API + admin SDK probes)
+Project ref: femrzpfslejzqnvfsfoe
+Date: 2026-07-17
+
+1) Auth config preflight (GET /v1/projects/{ref}/config/auth)
+   MAILER_AUTOCONFIRM: false            -> email confirmation IS required (matches AS-009 / discovery Q4=a)
+   disable_signup: false
+   external_email_enabled: true
+   external_google_enabled: true        -> pre-existing, not touched by F011 (Google OAuth is a separate feature)
+   site_url: http://localhost:3000
+   password_min_length: 6
+   rate_limit_email_sent: 2             -> confirms mission notes: ~2/h built-in email send limit
+   uri_allow_list (before): ""
+
+2) Config change applied (PATCH /v1/projects/{ref}/config/auth)
+   uri_allow_list -> "http://localhost:3000/**"
+   Reason: without an allow-list entry covering /auth/callback, Supabase would
+   reject the emailRedirectTo used by signUp()/resend() at send time. site_url
+   alone is not guaranteed to match subpaths; added explicitly. Verified via
+   follow-up GET: uri_allow_list == "http://localhost:3000/**".
+
+3) Behavioral probe: signInWithPassword against an admin-created UNCONFIRMED
+   user (email_confirm: false) -- proves Supabase itself refuses to establish
+   a session for an unconfirmed user (AS-009's actual enforcement point):
+     signIn error: { message: 'Email not confirmed', status: 400, code: 'email_not_confirmed' }
+     signIn data.session present: false
+     signIn data.user present: false
+
+4) Behavioral probe: signInWithPassword with a WRONG password for an existing
+   user, and with a NONEXISTENT email -- both return the identical error
+   (AS-017, no user-enumeration leak already at the Supabase layer; our
+   mapping preserves this):
+     wrongPw error:     { message: 'Invalid login credentials', status: 400, code: 'invalid_credentials' }
+     nonexistent error: { message: 'Invalid login credentials', status: 400, code: 'invalid_credentials' }
+
+5) Migration supabase/migrations/0002_profiles_on_signup.sql applied live via
+   POST /v1/projects/{ref}/database/query -> HTTP 201.
+   Verified via follow-up SELECTs:
+     trigger_exists:   [{"tgname":"on_auth_user_created","tgenabled":"O"}]
+     function_secdef:  [{"proname":"handle_new_auth_user","prosecdef":true}]
+
+6) Behavioral proof the trigger fires: admin.auth.admin.createUser() for a
+   fresh throwaway email, then immediately SELECT public.profiles for that
+   user_id with the admin client:
+     profile row via trigger: { user_id: '<new-user-id>', onboarded_at: null, is_admin: false }
+     error: null
+   Test user deleted immediately after (auth.users cascade removes the
+   profiles row too, per 0001_profiles.sql's ON DELETE CASCADE).
+
+Note: real auth.signUp() calls against example.com-style throwaway emails hit
+the project's own ~2/h email-send rate limit almost immediately during this
+probing (one attempt returned "Email address ... is invalid", subsequent
+attempts within the same minute returned "email rate limit exceeded"). This
+confirms the mission notes' warning and is why the committed test suite
+(src/app/(auth)/__tests__/auth-flow.integration.test.ts) uses
+admin.auth.admin.createUser() (which never sends email) for AS-008/AS-009/
+AS-017 assertions instead of looping real signUp() calls, exactly as this
+feature's run instructions direct ("do NOT depend on actually receiving an
+email in tests, use the admin API to set/read confirmation state").

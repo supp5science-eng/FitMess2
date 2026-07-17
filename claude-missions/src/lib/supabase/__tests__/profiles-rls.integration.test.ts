@@ -146,7 +146,17 @@ describe.skipIf(!hasCredentials || !schemaReady)(
       // Seed a profile row for user A directly with the admin (RLS-bypassing)
       // client -- this is the "seed data as user A" half of the DoD's
       // "seed rows for user A" instruction.
-      const { error: seedErr } = await admin.from("profiles").insert({
+      //
+      // `upsert` (not `insert`) as of F011: `supabase/migrations/
+      // 0002_profiles_on_signup.sql` added an `auth.users` insert trigger
+      // that auto-creates an empty profiles shell row for every new user
+      // (including ones created via `admin.auth.admin.createUser`, as
+      // above), so a plain `insert` here would now collide with that
+      // already-existing row (`profiles_pkey` unique violation). `upsert`
+      // fills in this test's seeded values on top of the trigger's empty
+      // shell row either way -- no change to what this test proves about
+      // AS-013/AS-031.
+      const { error: seedErr } = await admin.from("profiles").upsert({
         user_id: userAId,
         sex: "female",
         birth_year: 1995,

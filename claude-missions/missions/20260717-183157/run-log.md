@@ -45,3 +45,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-17T22:26Z — F013 COMPLETE. AS-011/012 verified live (route protection: unauth->/prijava, unverified->confirm, not-onboarded->/onboarding; sign-out clears session). Spawning F014 (budget engine — pure logic, no DB).
 
 - 2026-07-17T22:37Z — F014 COMPLETE. AS-021-026, AS-030 PASS (Mifflin-St Jeor + caps + macros + weekly + goal-adjust; unit-tested vs reference values). Worker noted AS-086 (redistribution) correctly belongs to F053, not F014. Spawning F015 (onboarding wizard).
+
+- 2026-07-17T23:08Z — F015 COMPLETE (5d28538). Onboarding wizard AS-018/019. Spawning F016 (summary + persist). [NOTE: Vercel deploy blocked on user — 404 platform NOT_FOUND, root dir needs to be claude-missions; awaiting Vercel token or manual fix. Holding GitHub pushes until Vercel fixed or M2 done.]

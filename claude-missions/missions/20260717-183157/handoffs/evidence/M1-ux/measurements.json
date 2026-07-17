@@ -1,0 +1,19 @@
+{
+  "capturedBy": "M1-ux validator (puppeteer-core + Microsoft Edge, CDP, explicit viewport)",
+  "server": "next dev -p 3100 (.env auto-loaded), HTTP 200 at /",
+  "AS-001": { "httpStatus": 200, "path": "/" },
+  "AS-002": {
+    "htmlLang": "sr",
+    "renderedBodyText": "Adaptive Cut | Aplikacija za praćenje ishrane i adaptivno mršavljenje. Uskoro stižu prijava, unos obroka i nedeljni pregled. | Danas Nedelja Agent Profil",
+    "latinDiacritics": ["praćenje", "stižu", "mršavljenje"]
+  },
+  "AS-125_375px": { "scrollWidth": 375, "clientWidth": 375, "horizontalScroll": false },
+  "AS-126_1280px": { "viewportWidth": 1280, "columnWidth": 430, "columnLeftMargin": 425, "columnRightMargin": 425, "columnBg": "white (lab 100 0 0)", "surroundBg": "light gray (bg-muted)" },
+  "AS-127": {
+    "theme": "light (background lab ~96-100, no dark class applied)",
+    "accent": "rgb(22,163,74) = #16a34a (green-600)",
+    "activeTab_danas": { "ariaCurrent": "page", "color": "rgb(22,163,74)" },
+    "inactiveTabs": { "color": "rgb(115,115,115)-ish muted lab(48.496 0 0)" },
+    "navLabels": ["Danas","Nedelja","Agent","Profil"]
+  }
+}

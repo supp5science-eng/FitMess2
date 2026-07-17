@@ -2,7 +2,7 @@
 
 _Draft features (enriched later by `/mission-tasks`). 62 features, 8 milestones, dependency order. Estimated worker time per feature: 15–45 min. Each feature has a draft spec in `features/F<NNN>-<slug>.md`._
 
-## M1 — Foundation
+## M1 — Foundation  [GREEN — scrutiny + UX PASS 2026-07-17]
 
 | ID | Feature | Est | Depends | Assertions |
 |----|---------|-----|---------|------------|
@@ -119,7 +119,7 @@ _All features auto-clarified via accept-and-continue on 2026-07-17 (star default
 - F002 [CLARIFIED-AUTO] [COMPLETE]
 - F003 [CLARIFIED-AUTO] [COMPLETE]
 - F004 [CLARIFIED-AUTO] [COMPLETE] (AS-007 DEFERRED: user Vercel link at deploy)
-- F005 [CLARIFIED-AUTO]
+- F005 [CLARIFIED-AUTO] [COMPLETE]
 - F010 [CLARIFIED-AUTO]
 - F011 [CLARIFIED-AUTO]
 - F012 [CLARIFIED-AUTO]

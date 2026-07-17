@@ -24,3 +24,12 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-17T20:35Z — F003 COMPLETE. AS-004/005/006 PASS (test/lint/typecheck). Mostly pre-satisfied by F001/F002; added src/lib smoke test. Spawning F004 (Vercel) with reduced scope: AS-007 live-deploy verification requires the one-time Vercel GitHub-link browser step (deferred in connect), so worker does code-side readiness only and marks AS-007 DEFERRED-to-deploy rather than spawning browser-blocked follow-ups.
 
 - 2026-07-17T20:44Z — F004 COMPLETE (code-side). AS-007 DEFERRED to user browser step (Vercel GitHub link); docs/deploy.md runbook written; build proven secret-independent. No follow-up. Spawning F005 (last M1 feature).
+
+- 2026-07-17T20:58Z — F005 COMPLETE (c2cc1cd). M1 Foundation all features COMPLETE (F001-F005; AS-007 deferred). Spawning M1 scrutiny validator.
+
+- 2026-07-17T20:58Z — A11Y NOTE for F076: F005 accent #16a34a is ~3.3:1 on white (OK for large/UI per WCAG 3:1, under AA 4.5:1 for normal body text). Worker suggests #15803d if a strict AA-body assertion (AS-128) requires it. Revisit in F076 audit.
+- 2026-07-17T20:58Z — M1 all COMPLETE. Spawning M1 scrutiny-validator (opus).
+
+- 2026-07-17T21:05Z — M1 scrutiny PASS (all in-scope assertions verified; secret key absent from client bundle; AS-007 correctly deferred). 3 advisory non-FAIL recs: (1) lang sr->sr-Latn [route to F076], (2) AS-125/126/127 unit tests are structural not behavioral [UX validator covers rendering], (3) publishable-key runtime smoke [minor]. No follow-up features created (no FAILs). Spawning M1 UX validator (opus). Playwright MCP not registered -> validator drives via Bash + puppeteer-core/curl.
+
+- 2026-07-17T21:11Z — M1 UX PASS (measured: 375==375 no h-scroll, 430px centered column, accent rgb(22,163,74), active-tab aria-current). **M1 GREEN** (scrutiny+UX). Starting M2. Next: F010 (profiles+targets schema + RLS) via Supabase MCP. Running serially (git-index safety) even though F010/F014 are independent.

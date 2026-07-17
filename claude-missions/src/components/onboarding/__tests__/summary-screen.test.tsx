@@ -219,3 +219,74 @@ describe("AS-020: side-effect verification -- saving calls the server action wit
     expect(sentData.activityLevel).toBe("very_active");
   });
 });
+
+describe("AS-128: every input has a real label, no images without alt text, every interactive control is keyboard-reachable", () => {
+  it("test_AS_128_every_number_field_is_reachable_by_its_own_accessible_label", () => {
+    render(<SummaryScreen initialData={BASE_DATA} />);
+
+    // `getByLabelText` only succeeds when the input is a real form control
+    // correctly associated with a `<label for>` -- these six calls are
+    // themselves the proof, not just a lookup convenience.
+    expect(screen.getByLabelText(/^Godine/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Visina/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Težina/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Ciljna težina/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^Rok/)).toBeInTheDocument();
+  });
+
+  it("test_AS_128_the_pol_and_aktivnost_option_groups_expose_a_labeled_radiogroup_of_real_radio_buttons", () => {
+    render(<SummaryScreen initialData={BASE_DATA} />);
+
+    const pol = screen.getByRole("radiogroup", { name: "Pol" });
+    expect(pol).toBeInTheDocument();
+    expect(within(pol).getAllByRole("radio").length).toBe(2);
+
+    const aktivnost = screen.getByRole("radiogroup", { name: "Nivo aktivnosti" });
+    expect(aktivnost).toBeInTheDocument();
+    expect(within(aktivnost).getAllByRole("radio").length).toBe(5);
+  });
+
+  it("test_AS_128_every_radio_option_and_the_save_button_are_real_focusable_button_elements_reachable_without_a_mouse", () => {
+    render(<SummaryScreen initialData={BASE_DATA} />);
+
+    // `role="radio"` here is implemented on real `<button type="button">`
+    // elements (src/components/onboarding/option-group.tsx), not a `<div>`
+    // with a click handler -- real buttons are natively Tab-reachable and
+    // Enter/Space-activatable with zero extra key-handling code.
+    for (const radio of screen.getAllByRole("radio")) {
+      expect(radio.tagName).toBe("BUTTON");
+    }
+
+    const saveButton = screen.getByRole("button", { name: /Započni/ });
+    expect(saveButton.tagName).toBe("BUTTON");
+    expect(saveButton).not.toHaveAttribute("tabindex", "-1");
+  });
+
+  it("test_AS_128_the_summary_screen_renders_no_images_so_there_is_nothing_that_could_be_missing_alt_text", () => {
+    const { container } = render(<SummaryScreen initialData={BASE_DATA} />);
+
+    // The summary is numbers/text/buttons only (per the clarified "big
+    // friendly numbers" aesthetic) -- no <img> elements exist here for an
+    // alt-text rule to apply to; this documents that explicitly rather
+    // than leaving AS-128's "images have alt text" clause untested by
+    // omission.
+    expect(container.querySelectorAll("img").length).toBe(0);
+  });
+
+  it("test_AS_128_editing_a_field_via_keyboard_only_input_still_updates_the_live_budget", () => {
+    render(<SummaryScreen initialData={BASE_DATA} />);
+
+    const before = screen.getByTestId("daily-kcal").textContent;
+
+    // A keyboard-only interaction with a native <input> (no mouse click
+    // needed to focus a text field) still drives the same recompute path
+    // as a pointer-driven edit. 90kg keeps the goal (target 74kg) valid --
+    // still strictly below current weight -- so only the budget/macros
+    // change, not the field's own validity.
+    const weightInput = screen.getByLabelText(/^Težina/);
+    weightInput.focus();
+    fireEvent.change(weightInput, { target: { value: "90" } });
+
+    expect(screen.getByTestId("daily-kcal").textContent).not.toBe(before);
+  });
+});

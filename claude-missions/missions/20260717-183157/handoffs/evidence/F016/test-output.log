@@ -7,7 +7,7 @@
 
 
  Test Files  27 passed (27)
-      Tests  281 passed | 7 skipped (288)
-   Start at  01:36:59
-   Duration  84.67s (transform 1.11s, setup 5.99s, import 8.14s, tests 22.02s, environment 40.37s)
+      Tests  286 passed | 7 skipped (293)
+   Start at  01:47:51
+   Duration  84.01s (transform 1.12s, setup 5.99s, import 8.10s, tests 21.20s, environment 40.57s)
 

@@ -1,0 +1,12 @@
+user: f016-walkthrough-1784330771265-405721@example.com
+daily_kcal before edit: 1843
+daily_kcal after edit (Veoma aktivan): 2384
+navigations:
+  http://localhost:3101/prijava
+  http://localhost:3101/prijava
+  http://localhost:3101/danas
+  http://localhost:3101/onboarding/pregled?pol=female&godine=29&visina=168&tezina=80&aktivnost=moderate&ciljnaTezina=74&nedelje=12
+  http://localhost:3101/onboarding/pregled?pol=female&godine=29&visina=168&tezina=80&aktivnost=moderate&ciljnaTezina=74&nedelje=12
+
+profiles row after confirm: {"onboarded_at":"2026-07-17T23:26:18.216+00:00","activity_level":"very_active","sex":"female","height_cm":168,"weight_kg":80}
+targets row after confirm: {"daily_kcal":2384,"weekly_kcal":16688,"protein_g":160,"fat_g":64,"carbs_g":292,"goal_weight_kg":74,"timeframe_weeks":12}

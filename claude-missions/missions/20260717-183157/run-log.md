@@ -41,3 +41,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-17T21:59Z — F011 COMPLETE. AS-008/009/017 PASS. Signup/login/resend + PKCE callback + Serbian non-enumerating errors (verified live). Migration 0002 (profiles auto-create trigger) applied live. Worker updated live Auth uri_allow_list for /auth/callback and fixed a trigger-induced regression in F010 RLS test (insert->upsert). 56 tests green. Spawning F012 (Google OAuth — provider already configured in connect).
 
 - 2026-07-17T22:10Z — F012 PARTIAL->treated COMPLETE (code-side). AS-010: button + signInWithOAuth wired on both pages, provider enabled live, isEmailVerified gate + profiles-row verified with simulated Google identity, 65 tests green. ONLY the interactive Google consent screen is non-automatable -> tracked in manual-qa.md (alongside AS-007 Vercel). No follow-up (would re-hit human-consent wall). Spawning F013 (route protection).
+
+- 2026-07-17T22:26Z — F013 COMPLETE. AS-011/012 verified live (route protection: unauth->/prijava, unverified->confirm, not-onboarded->/onboarding; sign-out clears session). Spawning F014 (budget engine — pure logic, no DB).

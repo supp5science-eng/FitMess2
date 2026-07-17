@@ -1,0 +1,53 @@
+# Handoff: F010a — Apply + behaviorally verify profiles/targets schema (follow-up to F010)
+
+## Status
+COMPLETE
+
+## Assertions covered
+AS-013: PASS — Live-verified via Supabase Management API (`profiles`/`targets` both have `relrowsecurity = true` and exactly 4 own-row policies each: select/insert/update/delete) AND behaviorally via `src/lib/supabase/__tests__/profiles-rls.integration.test.ts` (4 tests, all PASS): a real user-B-scoped client (signed in via `auth.signInWithPassword`, publishable-key client, no service role) gets an empty result set on `SELECT` of user A's profile row, a no-op on `UPDATE` of user A's row (verified via admin re-read that `height_cm` never became 999), a hard error on `INSERT` into `targets` under user A's `user_id`, and user A's own `SELECT` of their own row succeeds.
+AS-031: PASS — Live-verified `onboarded_at` is a nullable `timestamptz` column via the Management API, AND behaviorally via 2 tests (all PASS): `onboarded_at` starts `null` for a fresh profile, user A can set it on their own row via a user-scoped client and it round-trips (confirmed via admin re-read), and user B cannot read (`SELECT` returns `[]`) or set (`UPDATE ... .select()` returns `[]`) user A's `onboarded_at`.
+
+## Files changed
+docs/deploy.md (env-var readiness table updated — see Decisions made)
+missions/20260717-183157/handoffs/evidence/F010a/test-output.log (new, evidence)
+missions/20260717-183157/handoffs/evidence/F010a/lint-output.log (new, evidence)
+missions/20260717-183157/handoffs/evidence/F010a/typecheck-output.log (new, evidence)
+missions/20260717-183157/handoffs/evidence/F010a/build-output.log (new, evidence)
+missions/20260717-183157/handoffs/evidence/F010a/live-schema-verification.log (new, evidence)
+
+No changes to `supabase/migrations/0001_profiles.sql`, `src/lib/types/db.ts`, or `src/lib/supabase/__tests__/profiles-rls.integration.test.ts` — the migration was already correctly applied live by the orchestrator before this session started, and the F010 worker's preflight-gated test file already worked exactly as designed the moment the schema became reachable; no code fix was needed to make it execute instead of skip.
+
+Also committed separately (pre-existing dirty state found at session start, authored by the orchestrator while setting up this follow-up — same pattern F002/F010 used): `missions/20260717-183157/plan.md`, `missions/20260717-183157/run-log.md`, `missions/20260717-183157/connections/mcp-registry.md`, `.env.example`, `missions/20260717-183157/features/F010a-apply-verify-schema.md`.
+
+## Commands run
+`node <script>` — Management API `POST /v1/projects/${SUPABASE_PROJECT_REF}/database/query` with `Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}` (3 read-only SQL checks: RLS-enabled flags, policy list, `onboarded_at` column) — all returned HTTP 201 with expected rows; see `evidence/F010a/live-schema-verification.log`
+`npm run test -- src/lib/supabase/__tests__/profiles-rls.integration.test.ts --reporter=verbose` (0) — 6 passed, 1 skipped (the diagnostic-only branch, correctly inert now that schema is live)
+`npm run test` (0) — full suite, 43 passed | 1 skipped (same diagnostic branch), 9/9 test files passed — see evidence/F010a/test-output.log
+`npm run lint` (0) — zero errors/warnings — evidence/F010a/lint-output.log
+`npm run typecheck` (0) — `tsc --noEmit`, zero errors — evidence/F010a/typecheck-output.log
+`npm run build` (0) — `next build`, compiled + typechecked + prerendered `/` and `/_not-found` — evidence/F010a/build-output.log
+`node <script>` — post-test cleanup check: `select id, email from auth.users where email like 'f010-rls-%@example.com'` via Management API → `[]`, confirming `afterAll` deleted both test users, no orphans left
+`git add` + `git commit` (0) x2 — `f631d86` (chore: pre-existing mission-state + env sync, not authored by this worker) and `d597539` (feat(F010a): confirm live RLS behaviorally)
+
+## Decisions made
+- **No MCP tools were used or attempted** — per this feature's explicit instructions, `mcp__supabase__*` is not bound in worker subagents; all live verification used the Supabase Management API SQL endpoint (`POST https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/query`, `Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}`, Node's built-in `fetch`, no `jq`), exactly as `connections/mcp-registry.md` documents for workers. Full query text + raw JSON responses are in `evidence/F010a/live-schema-verification.log`.
+- **How live RLS was verified (for milestone validators to trust):** two layers. (1) Structural: 3 read-only SQL queries via the Management API against `pg_class.relrowsecurity`, `pg_policies`, and `information_schema.columns` confirmed `profiles`/`targets` both have RLS enabled and exactly 4 own-row policies each, and `onboarded_at` exists as nullable `timestamptz` — this is inspection, not proof of denial. (2) Behavioral (the actual proof): re-ran `src/lib/supabase/__tests__/profiles-rls.integration.test.ts`, which creates two real users via `createAdminClient()`-equivalent (`createClient` from `@supabase/supabase-js` with the secret key, `auth.admin.createUser`), seeds a profile row for user A with the admin client, then uses **user-scoped clients** (plain `createClient` with the publishable key, signed in via `auth.signInWithPassword` to get a real JWT so `auth.uid()` resolves) — never the admin client — to attempt cross-user reads/writes. The admin client is used only for setup and after-the-fact verification (e.g., confirming user B's blocked `UPDATE` truly left `height_cm` unchanged), never to substitute for the user-scoped client on the assertion itself. All 6 real tests + the schema-preflight-driven skip logic ran and passed on the first attempt — the F010 worker's test file needed zero modification.
+- **Did not re-apply the migration.** The spec said not to unless a check showed it missing. The 3 Management API checks above confirmed it was already fully and correctly applied (RLS on, exactly 4 policies per table, no extra/missing policy, `onboarded_at` present) — re-applying `0001_profiles.sql` would have been redundant and risked a `CREATE TABLE`/`CREATE POLICY` conflict error against already-existing objects (the migration is not written with `IF NOT EXISTS` guards, which is correct for a first migration — added no such guards now either, to avoid silently making a supposedly-atomic DDL migration idempotent in a way nothing in the spec asked for).
+- **Did not touch `profiles-rls.integration.test.ts`'s preflight-skip logic** — the spec said "if the tests still skip, fix the preflight," but they did not still skip; the preflight (`admin.from("profiles").select("user_id").limit(1)`) succeeded on the first run once pointed at the now-live schema, exactly as the F010 worker designed it to. No code change was needed or made to this file.
+- **Fixed `docs/deploy.md`'s env-var readiness table (out-of-scope for AS-013/AS-031, but justified):** `npm run test` failed on an unrelated F004/AS-007 test (`test_AS_007_readiness_deploy_runbook_lists_every_env_var_name_present_in_env_example`) because `.env.example` gained `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF` (added by the orchestrator during this follow-up's setup, for the Management API path) without the deploy runbook being updated to match. This is a one-line-per-var documentation fix directly caused by infra prep for *this* feature's own toolset, not unrelated scope creep, and leaving it broken would fail "confirm the full suite passes" and the `pre-worker-exit` hook's test re-run for Status=COMPLETE. Marked both vars "Not needed on Vercel" since the app itself never reads them (Management-API-only, worker/orchestrator-side).
+- **Cleaned up test users** — confirmed via a fourth Management API query after the test run that no `auth.users` row matching `f010-rls-%@example.com` remains; `afterAll`'s `admin.auth.admin.deleteUser` worked as designed.
+
+## Out-of-scope work needed
+- None newly discovered by this follow-up. F010's own "Out-of-scope work needed" items (F014's `activity_level`/`sex` value coupling, F033 admin-role pattern via `createAdminClient()`, regenerating `src/lib/types/db.ts` via CLI/MCP once reachable) still stand and are unaffected by this follow-up — no new schema or RLS gaps were found during live verification.
+
+## Blockers
+(none — Status is COMPLETE)
+
+## Autonomous decisions
+AUTONOMOUS_DECISION: Fixed `docs/deploy.md`'s env-var table rather than leaving the pre-existing `npm run test` failure unaddressed or reverting `.env.example`'s new vars — reverting would have undone orchestrator-authored infra setup for this exact feature's Management API path; leaving it broken would fail the "confirm full suite passes" requirement and the `pre-worker-exit` hook's COMPLETE-status test re-run. Chose the minimal one-line-per-var doc addition over any code change, since both new vars are Management-API-only and never read by the running app (confirmed by grepping `src/` for both names — no hits outside test files).
+
+## Notes for the next worker
+- **The live RLS proof is real and repeatable.** Re-running `npm run test -- src/lib/supabase/__tests__/profiles-rls.integration.test.ts` at any time will re-execute the full 6-test suite against the live project (it creates/deletes its own throwaway users each run, `f010-rls-a-<timestamp>-<random>@example.com` / `...-b-...`) — no flags, no setup needed beyond `.env` having `NEXT_PUBLIC_SUPABASE_URL`/`SUPABASE_PUBLISHABLE_KEY`/`SUPABASE_SECRET_KEY`.
+- **Management API pattern for future DB-touching workers** (F020, F042, F046, F050, F057 per `mcp-registry.md`): `POST https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/query` with `Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}`, body `{"query":"<SQL>"}`, via Node's built-in `fetch` (no `jq` on this machine). **Important gotcha discovered this session:** the endpoint only returns the result set of the *last* statement in a multi-statement query body — if you need results from more than one `SELECT`, issue them as separate HTTP requests, not semicolon-joined in one body (confirmed empirically: a 2-statement body returned only the second query's rows).
+- **`information_schema.tables` does not have a `row_security` column** in this Postgres version — use `pg_class.relrowsecurity` joined through `pg_namespace` instead (also confirmed empirically; the `information_schema` attempt errored `42703: column "row_security" does not exist`).
+- If a future worker needs to re-verify schema/RLS state quickly without writing a throwaway script, the 3 queries in `evidence/F010a/live-schema-verification.log` are copy-pasteable as-is.

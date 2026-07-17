@@ -1,0 +1,54 @@
+
+ RUN  v4.1.10 C:/FitMess2/exexutor/claude-missions
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+=== AS-011: signed-out visitor requesting a protected page ===
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+[AS-011 no-cookie GET /profil] status=307 location=http://localhost:3000/prijava
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+[AS-011 no-cookie GET /danas] status=307 location=http://localhost:3000/prijava
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+[AS-011 no-cookie GET /prijava (public, must NOT redirect)] status=200 location=(none -- allowed through)
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+
+=== Setting up a confirmed + onboarded test user ===
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+Created f013-live-verify-1784327014126-437511@example.com (confirmed, onboarded)
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+
+=== Signed-in, verified, onboarded: protected page must be ALLOWED ===
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+[signed-in GET /profil] status=200 location=(none -- allowed through)
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+[signed-in GET /prijava (must bounce to /danas)] status=307 location=http://localhost:3000/danas
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+
+=== AS-012: sign out, then re-request the same protected page ===
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+[AS-012 post-sign-out GET /profil] status=307 location=http://localhost:3000/prijava
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+
+All live checks completed successfully.
+
+stdout | src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test)
+
+Cleanup: deleted 1 test user(s).
+
+ ✓ src/__tmp-f013-live-verify.test.ts > f013 live verification (evidence capture, not an assertion test) 2695ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  00:23:32
+   Duration  3.98s (transform 167ms, setup 370ms, import 438ms, tests 2.70s, environment 0ms)
+

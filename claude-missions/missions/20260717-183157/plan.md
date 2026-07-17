@@ -120,8 +120,8 @@ _All features auto-clarified via accept-and-continue on 2026-07-17 (star default
 - F003 [CLARIFIED-AUTO] [COMPLETE]
 - F004 [CLARIFIED-AUTO] [COMPLETE] (AS-007 DEFERRED: user Vercel link at deploy)
 - F005 [CLARIFIED-AUTO] [COMPLETE]
-- F010 [CLARIFIED-AUTO] [PARTIAL -> follow-up F010a; migration applied live by orchestrator]
-- F010a [CLARIFIED-AUTO] (follow-up: run RLS integration tests)
+- F010 [CLARIFIED-AUTO] [COMPLETE via F010a]
+- F010a [CLARIFIED-AUTO] [COMPLETE]
 - F011 [CLARIFIED-AUTO]
 - F012 [CLARIFIED-AUTO]
 - F013 [CLARIFIED-AUTO]

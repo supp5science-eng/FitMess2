@@ -80,10 +80,16 @@ code or Vercel config is needed for that behavior.
    | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Production + Preview |
    | `VAPID_PRIVATE_KEY` | Production only (server-only secret) |
    | `VAPID_SUBJECT` | Production + Preview |
+   | `SUPABASE_ACCESS_TOKEN` | Not needed on Vercel — Supabase Management API PAT used only by workers/orchestrator during `/mission-run` for schema DDL; never required at app runtime |
+   | `SUPABASE_PROJECT_REF` | Not needed on Vercel — same Management-API-only scope as `SUPABASE_ACCESS_TOKEN` above |
 
    (This list is the full set of variable names in `.env.example` as of
-   F004. Later features may add new server-side integrations — keep this
-   table and `.env.example` in sync when that happens.)
+   F004, plus `SUPABASE_ACCESS_TOKEN`/`SUPABASE_PROJECT_REF` added during
+   F010a for the Management API schema-verification path documented in
+   `connections/mcp-registry.md` — the app itself never reads them, so they
+   do not need to be set in Vercel's Environment Variables UI. Later
+   features may add new server-side integrations — keep this table and
+   `.env.example` in sync when that happens.)
 5. Click **Deploy**. Vercel builds and deploys; the resulting `*.vercel.app`
    URL (and any custom domain added later in Project Settings → Domains) is
    served over HTTPS automatically — Vercel issues and renews TLS

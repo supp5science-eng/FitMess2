@@ -1,0 +1,51 @@
+F010a: Live schema verification via Supabase Management API
+(https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/database/query)
+Run 2026-07-17, using SUPABASE_ACCESS_TOKEN + SUPABASE_PROJECT_REF from .env.
+No credential values logged below, only query text and result rows.
+
+--- Query 1: RLS enabled on profiles/targets ---
+select c.relname as table_name, c.relrowsecurity as rls_enabled
+from pg_class c
+join pg_namespace n on n.oid = c.relnamespace
+where n.nspname = 'public' and c.relname in ('profiles','targets');
+
+status: 201
+[{"table_name":"profiles","rls_enabled":true},{"table_name":"targets","rls_enabled":true}]
+
+--- Query 2: own-row policies present (4 per table) ---
+select tablename, policyname, cmd from pg_policies
+where schemaname='public' and tablename in ('profiles','targets')
+order by tablename, policyname;
+
+status: 201
+[
+  {"tablename":"profiles","policyname":"profiles_delete_own","cmd":"DELETE"},
+  {"tablename":"profiles","policyname":"profiles_insert_own","cmd":"INSERT"},
+  {"tablename":"profiles","policyname":"profiles_select_own","cmd":"SELECT"},
+  {"tablename":"profiles","policyname":"profiles_update_own","cmd":"UPDATE"},
+  {"tablename":"targets","policyname":"targets_delete_own","cmd":"DELETE"},
+  {"tablename":"targets","policyname":"targets_insert_own","cmd":"INSERT"},
+  {"tablename":"targets","policyname":"targets_select_own","cmd":"SELECT"},
+  {"tablename":"targets","policyname":"targets_update_own","cmd":"UPDATE"}
+]
+
+--- Query 3: onboarded_at column present + nullable ---
+select column_name, data_type, is_nullable from information_schema.columns
+where table_schema='public' and table_name='profiles' and column_name='onboarded_at';
+
+status: 201
+[{"column_name":"onboarded_at","data_type":"timestamp with time zone","is_nullable":"YES"}]
+
+Conclusion: schema already live (applied prior to this worker session, per
+F010a spec's "orchestrator has since APPLIED the migration"). No re-apply
+needed. This confirms the profiles-rls.integration.test.ts preflight query
+(admin.from("profiles").select("user_id").limit(1)) would succeed, which is
+exactly what made the 6 real assertions execute instead of the diagnostic
+skip branch (see test-output.log).
+
+--- Post-test cleanup verification ---
+select id, email from auth.users where email like 'f010-rls-%@example.com';
+
+status: 201
+[]
+(No orphaned test users after the RLS integration test's afterAll ran.)

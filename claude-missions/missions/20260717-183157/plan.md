@@ -125,7 +125,7 @@ _All features auto-clarified via accept-and-continue on 2026-07-17 (star default
 - F011 [CLARIFIED-AUTO] [COMPLETE]
 - F012 [CLARIFIED-AUTO] [COMPLETE] (AS-010 interactive Google consent -> manual-qa.md)
 - F013 [CLARIFIED-AUTO] [COMPLETE]
-- F014 [CLARIFIED-AUTO]
+- F014 [CLARIFIED-AUTO] [COMPLETE]
 - F015 [CLARIFIED-AUTO]
 - F016 [CLARIFIED-AUTO]
 - F017 [CLARIFIED-AUTO]

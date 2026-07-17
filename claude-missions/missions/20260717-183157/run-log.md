@@ -43,3 +43,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-17T22:10Z — F012 PARTIAL->treated COMPLETE (code-side). AS-010: button + signInWithOAuth wired on both pages, provider enabled live, isEmailVerified gate + profiles-row verified with simulated Google identity, 65 tests green. ONLY the interactive Google consent screen is non-automatable -> tracked in manual-qa.md (alongside AS-007 Vercel). No follow-up (would re-hit human-consent wall). Spawning F013 (route protection).
 
 - 2026-07-17T22:26Z — F013 COMPLETE. AS-011/012 verified live (route protection: unauth->/prijava, unverified->confirm, not-onboarded->/onboarding; sign-out clears session). Spawning F014 (budget engine — pure logic, no DB).
+
+- 2026-07-17T22:37Z — F014 COMPLETE. AS-021-026, AS-030 PASS (Mifflin-St Jeor + caps + macros + weekly + goal-adjust; unit-tested vs reference values). Worker noted AS-086 (redistribution) correctly belongs to F053, not F014. Spawning F015 (onboarding wizard).

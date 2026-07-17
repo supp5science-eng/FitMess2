@@ -1,0 +1,384 @@
+/**
+ * F014: deterministic budget engine.
+ *
+ * Pure, side-effect-free arithmetic for BMR, TDEE, daily/weekly calorie
+ * targets, macro splits, and safe-bound goal adjustment. No I/O, no
+ * randomness, no wall-clock reads -- every function here is referentially
+ * transparent so callers (F015/F016 onboarding, F045 weekly recalculation,
+ * F053 redistribution) can rely on identical output for identical input,
+ * and so this module can be exhaustively unit-tested against hand-computed
+ * reference values (AS-021..AS-026, AS-030).
+ *
+ * Per tech-decisions.md "Money-math rule": budget/TDEE numbers are computed
+ * here in deterministic code. The AI agent (F057+) never performs this
+ * arithmetic -- it only phrases the results in Serbian (AS-086 principle).
+ *
+ * Source formula: Mifflin MD, St Jeor ST, Hill LA, Scott BJ, Daugherty SA,
+ * Koh YO. "A new predictive equation for resting energy expenditure in
+ * healthy individuals." Am J Clin Nutr. 1990;51(2):241-247.
+ *   men:   BMR = 10*weight(kg) + 6.25*height(cm) - 5*age(y) + 5
+ *   women: BMR = 10*weight(kg) + 6.25*height(cm) - 5*age(y) - 161
+ *
+ * Activity-level tier names match `public.profiles.activity_level`
+ * (supabase/migrations/0001_profiles.sql) via the shared `ActivityLevel`
+ * type in src/lib/types/db.ts -- do not diverge from that enum.
+ */
+
+import type { ActivityLevel, Sex } from "@/lib/types/db";
+
+export type { ActivityLevel, Sex };
+
+// ---------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------
+
+/**
+ * Physiologically plausible input ranges. Callers upstream (onboarding
+ * form validation) are expected to reject nonsense before it reaches this
+ * module, but per the clarified spec ("never throw on expected edges"),
+ * out-of-range or zero/negative inputs are clamped into these bounds
+ * rather than throwing -- see the empty/zero-state tests in
+ * engine.test.ts for the exact clamped output.
+ */
+export const MIN_WEIGHT_KG = 30;
+export const MAX_WEIGHT_KG = 300;
+export const MIN_HEIGHT_CM = 100;
+export const MAX_HEIGHT_CM = 250;
+export const MIN_AGE_YEARS = 13;
+export const MAX_AGE_YEARS = 100;
+
+/** Standard Mifflin-St Jeor activity multipliers (AS-022). */
+export const ACTIVITY_MULTIPLIERS: Record<ActivityLevel, number> = {
+  sedentary: 1.2,
+  light: 1.375,
+  moderate: 1.55,
+  active: 1.725,
+  very_active: 1.9,
+};
+
+/** Safe daily-kcal floors (AS-023). */
+export const KCAL_FLOOR: Record<Sex, number> = {
+  male: 1400,
+  female: 1200,
+};
+
+/** No caller may ever push the deficit below TDEE by more than this (AS-024). */
+export const MAX_DEFICIT_PCT = 0.25;
+
+/**
+ * Default deficit applied by `dailyTarget` when a caller doesn't supply an
+ * explicit desired deficit -- a moderate, commonly-recommended 20% cut,
+ * comfortably inside the 25% safety cap. Callers that derive a deficit
+ * from an explicit goal (target weight + timeframe) should use
+ * `planGoalAdjustment` instead, which computes the *implied* deficit from
+ * the goal and clamps it to the same caps.
+ */
+export const DEFAULT_DEFICIT_PCT = 0.2;
+
+/** Default protein target, within the clarified 1.8-2.2 g/kg range (AS-025). */
+export const PROTEIN_G_PER_KG = 2.0;
+
+/** Default fat target -- comfortably above the 0.6 g/kg safety floor. */
+export const FAT_G_PER_KG_DEFAULT = 0.8;
+
+/** Minimum fat target; never clamped below this even under a tight deficit (AS-025). */
+export const FAT_G_PER_KG_MIN = 0.6;
+
+/**
+ * Approximate energy density of 1kg of body-mass change, used only to turn
+ * a target-weight + timeframe goal into an implied daily deficit for
+ * `planGoalAdjustment`. Widely-used clinical rule of thumb (~3500 kcal per
+ * pound, i.e. ~7700 kcal/kg -- Wishnofsky's rule); not exact physiology,
+ * but standard for this kind of goal-pacing estimate.
+ */
+export const KCAL_PER_KG_BODY_MASS = 7700;
+
+// ---------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------
+
+function clampNumber(value: number, min: number, max: number): number {
+  if (Number.isNaN(value)) return min;
+  return Math.min(Math.max(value, min), max);
+}
+
+/** Rounding rule (clarified #13): kcal values are always whole numbers. */
+function roundKcal(value: number): number {
+  return Math.round(value);
+}
+
+/** Rounding rule (clarified #13): kg/gram values keep one decimal place. */
+function round1(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+// ---------------------------------------------------------------------
+// BMR / TDEE
+// ---------------------------------------------------------------------
+
+/**
+ * Basal metabolic rate via the Mifflin-St Jeor equation (AS-021).
+ * Inputs are clamped into physiologically plausible ranges rather than
+ * throwing (see the MIN_ and MAX_ constants above); result is a whole kcal value.
+ */
+export function bmr(
+  sex: Sex,
+  weightKg: number,
+  heightCm: number,
+  ageYears: number
+): number {
+  const w = clampNumber(weightKg, MIN_WEIGHT_KG, MAX_WEIGHT_KG);
+  const h = clampNumber(heightCm, MIN_HEIGHT_CM, MAX_HEIGHT_CM);
+  const a = clampNumber(ageYears, MIN_AGE_YEARS, MAX_AGE_YEARS);
+
+  const base = 10 * w + 6.25 * h - 5 * a;
+  const value = sex === "male" ? base + 5 : base - 161;
+
+  return roundKcal(value);
+}
+
+/**
+ * Total daily energy expenditure: BMR times the activity-level multiplier
+ * (AS-022). An unrecognized activity level (e.g. bad data from the DB)
+ * falls back to the most conservative (lowest) multiplier, `sedentary`,
+ * rather than throwing.
+ */
+export function tdee(bmrKcal: number, activityLevel: ActivityLevel): number {
+  const multiplier =
+    ACTIVITY_MULTIPLIERS[activityLevel] ?? ACTIVITY_MULTIPLIERS.sedentary;
+  const b = Math.max(0, bmrKcal);
+
+  return roundKcal(b * multiplier);
+}
+
+// ---------------------------------------------------------------------
+// Daily target
+// ---------------------------------------------------------------------
+
+/**
+ * Applies a fat-loss deficit to TDEE, clamped to the two safety rules:
+ *  - the deficit itself never exceeds MAX_DEFICIT_PCT (25%) below TDEE (AS-024)
+ *  - the resulting daily kcal never drops below the sex-specific floor
+ *    (1400 men / 1200 women) (AS-023) -- this floor wins even if it means
+ *    the effective deficit ends up smaller than requested, or (for a very
+ *    low TDEE) the "target" ends up at or above TDEE.
+ *
+ * `desiredDeficitPct` defaults to a moderate 20% cut when the caller
+ * doesn't supply one; a negative value (implying a surplus) clamps to 0
+ * (maintenance) since this function's purpose is fat-loss pacing, not bulk
+ * planning.
+ */
+export function dailyTarget(
+  tdeeKcal: number,
+  sex: Sex,
+  desiredDeficitPct: number = DEFAULT_DEFICIT_PCT
+): number {
+  const safeTdee = Math.max(0, tdeeKcal);
+  const deficitPct = clampNumber(desiredDeficitPct, 0, MAX_DEFICIT_PCT);
+  const floor = KCAL_FLOOR[sex] ?? KCAL_FLOOR.male;
+
+  const raw = roundKcal(safeTdee * (1 - deficitPct));
+
+  return Math.max(raw, floor);
+}
+
+// ---------------------------------------------------------------------
+// Macro targets
+// ---------------------------------------------------------------------
+
+export interface MacroTargets {
+  proteinG: number;
+  fatG: number;
+  carbsG: number;
+  /**
+   * True when the deficit was tight enough that protein+fat at their
+   * default targets would have exceeded dailyKcal, forcing fat down toward
+   * its 0.6 g/kg floor and/or carbs down to 0 (AS-025).
+   */
+  clamped: boolean;
+}
+
+/**
+ * Protein/fat/carb split for a given bodyweight and daily kcal budget
+ * (AS-025):
+ *  - protein: fixed at PROTEIN_G_PER_KG (2.0 g/kg, within the clarified
+ *    1.8-2.2 g/kg range)
+ *  - fat: FAT_G_PER_KG_DEFAULT (0.8 g/kg) normally, pulled down toward the
+ *    FAT_G_PER_KG_MIN (0.6 g/kg) floor -- but never below it -- when the
+ *    kcal budget is too tight to fit protein + default fat
+ *  - carbs: whatever kcal remain (protein & carbs at 4 kcal/g, fat at
+ *    9 kcal/g), clamped to never go negative
+ *
+ * When even protein + fat-at-floor exceed dailyKcal, fat still holds at
+ * its floor (a physiological minimum takes priority over exactly hitting
+ * the kcal number), carbs go to 0, and `clamped` is true so the caller
+ * (F016 UI) can note that the plan is unusually tight.
+ */
+export function macroTargets(weightKg: number, dailyKcal: number): MacroTargets {
+  const w = clampNumber(weightKg, MIN_WEIGHT_KG, MAX_WEIGHT_KG);
+  const kcal = Math.max(0, dailyKcal);
+
+  const defaultProteinG = round1(w * PROTEIN_G_PER_KG);
+  const defaultFatG = round1(w * FAT_G_PER_KG_DEFAULT);
+  const fatFloorG = round1(w * FAT_G_PER_KG_MIN);
+
+  const proteinKcal = defaultProteinG * 4;
+  const defaultFatKcal = defaultFatG * 9;
+
+  let fatG = defaultFatG;
+  let clamped = false;
+
+  if (proteinKcal + defaultFatKcal > kcal) {
+    clamped = true;
+    const fatKcalBudget = Math.max(0, kcal - proteinKcal);
+    const fatGFromBudget = round1(fatKcalBudget / 9);
+    // Never go below the physiological floor, even if that means the
+    // protein+fat total still exceeds dailyKcal (carbs absorb the rest,
+    // clamped at 0 below).
+    fatG = Math.max(fatFloorG, Math.min(defaultFatG, fatGFromBudget));
+  }
+
+  const fatKcal = fatG * 9;
+  const carbsKcal = Math.max(0, kcal - proteinKcal - fatKcal);
+  const carbsG = round1(carbsKcal / 4);
+
+  return {
+    proteinG: defaultProteinG,
+    fatG,
+    carbsG,
+    clamped,
+  };
+}
+
+// ---------------------------------------------------------------------
+// Weekly budget
+// ---------------------------------------------------------------------
+
+/** Weekly budget for a full 7-day week: daily target * 7 (AS-026). */
+export function weeklyBudget(dailyKcal: number): number {
+  const daily = Math.max(0, roundKcal(dailyKcal));
+
+  return daily * 7;
+}
+
+// ---------------------------------------------------------------------
+// Goal-adjustment (AS-030)
+// ---------------------------------------------------------------------
+
+export type GoalAdjustReasonCode =
+  | "deficit_capped_25_percent"
+  | "floor_kcal_applied";
+
+export interface GoalAdjustmentInput {
+  sex: Sex;
+  currentWeightKg: number;
+  targetWeightKg: number;
+  timeframeWeeks: number;
+  tdeeKcal: number;
+}
+
+export interface GoalAdjustmentResult {
+  /** Final clamped daily kcal target. */
+  dailyKcal: number;
+  /** dailyKcal * 7. */
+  weeklyKcal: number;
+  /** The deficit the raw goal (weight delta / timeframe) implied, pre-clamp. */
+  impliedDeficitPct: number;
+  /** The deficit actually applied after clamping to the safe caps. */
+  appliedDeficitPct: number;
+  /** True when the goal had to be adjusted to stay within the safe caps. */
+  adjusted: boolean;
+  /**
+   * Machine-readable reasons for the adjustment, in the order the caps
+   * were applied. The Serbian explanation copy lives in the UI layer
+   * (F016), not here.
+   */
+  reasonCodes: GoalAdjustReasonCode[];
+}
+
+/**
+ * Given a target weight + timeframe, derives the implied daily deficit
+ * (via KCAL_PER_KG_BODY_MASS) and clamps it to the same two safety caps as
+ * `dailyTarget`: the 25% max deficit (AS-024) and the sex-specific kcal
+ * floor (AS-023). When either cap engages, `adjusted` is true and the
+ * matching reason code(s) are returned so the UI can show a Serbian
+ * explanation (AS-030).
+ *
+ * A target weight at or above the current weight (maintenance/gain) or a
+ * non-positive timeframe never throws -- see the edge-case tests in
+ * engine.test.ts for the exact clamped behaviour.
+ */
+export function planGoalAdjustment(
+  input: GoalAdjustmentInput
+): GoalAdjustmentResult {
+  const sex = input.sex;
+  const tdeeKcal = Math.max(0, input.tdeeKcal);
+  const currentWeightKg = clampNumber(
+    input.currentWeightKg,
+    MIN_WEIGHT_KG,
+    MAX_WEIGHT_KG
+  );
+  const targetWeightKg = clampNumber(
+    input.targetWeightKg,
+    MIN_WEIGHT_KG,
+    MAX_WEIGHT_KG
+  );
+  // A zero/negative timeframe is nonsensical but must not throw; treat it
+  // as the shortest possible plan (1 week) rather than dividing by zero.
+  const timeframeWeeks = Math.max(1, Math.round(input.timeframeWeeks) || 1);
+
+  const weightDeltaKg = currentWeightKg - targetWeightKg;
+
+  // Maintenance or a weight-gain goal implies no fat-loss deficit at all;
+  // nothing to cap or adjust.
+  if (weightDeltaKg <= 0) {
+    const dailyKcal = roundKcal(tdeeKcal);
+
+    return {
+      dailyKcal,
+      weeklyKcal: dailyKcal * 7,
+      impliedDeficitPct: 0,
+      appliedDeficitPct: 0,
+      adjusted: false,
+      reasonCodes: [],
+    };
+  }
+
+  const totalDeficitKcal = weightDeltaKg * KCAL_PER_KG_BODY_MASS;
+  const totalDays = timeframeWeeks * 7;
+  const impliedDailyDeficitKcal = totalDeficitKcal / totalDays;
+  const impliedDeficitPct =
+    tdeeKcal > 0 ? impliedDailyDeficitKcal / tdeeKcal : 0;
+
+  const reasonCodes: GoalAdjustReasonCode[] = [];
+  let adjusted = false;
+  let appliedDeficitPct = impliedDeficitPct;
+
+  if (appliedDeficitPct > MAX_DEFICIT_PCT) {
+    appliedDeficitPct = MAX_DEFICIT_PCT;
+    adjusted = true;
+    reasonCodes.push("deficit_capped_25_percent");
+  } else if (appliedDeficitPct < 0) {
+    appliedDeficitPct = 0;
+  }
+
+  const floor = KCAL_FLOOR[sex] ?? KCAL_FLOOR.male;
+  const rawDailyKcal = roundKcal(tdeeKcal * (1 - appliedDeficitPct));
+
+  let dailyKcal = rawDailyKcal;
+  if (rawDailyKcal < floor) {
+    dailyKcal = floor;
+    adjusted = true;
+    reasonCodes.push("floor_kcal_applied");
+    appliedDeficitPct = tdeeKcal > 0 ? 1 - dailyKcal / tdeeKcal : 0;
+  }
+
+  return {
+    dailyKcal,
+    weeklyKcal: dailyKcal * 7,
+    impliedDeficitPct,
+    appliedDeficitPct,
+    adjusted,
+    reasonCodes,
+  };
+}

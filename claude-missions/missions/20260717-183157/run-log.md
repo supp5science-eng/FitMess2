@@ -97,3 +97,7 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T12:04Z — F031a COMPLETE (6378cb1 fixture + 03f2638 timeouts). Fixed BOTH flakiness roots: (1) non-unique barcode fixture, (2) vitest default timeouts (5s/10s) vs live Supabase latency -> raised to 15s/20s. 729 tests green. Suite should be stable for M4-M8. Spawning F032 (unknown barcode -> product entry) — normal M4 order per user.
 
 - 2026-07-18T12:55Z — F032 COMPLETE (5afd392). AS-055/056/057 (+AS-128). Unknown barcode -> product entry, all-user visibility, dup-barcode rejected. 768 tests, suite stable. Spawning F033 (admin role + server guard).
+
+- 2026-07-18T13:29Z — F033 COMPLETE (19cdeca). AS-059/067 admin role + server-side guard. Spawning F034 (admin review queue).
+
+- 2026-07-18T17:20Z — F034 COMPLETE (b94b444). AS-060/062/063: /admin/hrana review queue (verify/remove), soft-delete (is_removed/removed_at) migration applied+verified live, search + barcode lookup exclude removed foods, logs keep their snapshot. 822 tests green, suite stable. Spawning F035 (full food editor).

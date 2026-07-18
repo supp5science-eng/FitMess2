@@ -23,6 +23,20 @@ export default defineConfig({
     // live external service, which matters more for a suite every worker
     // re-runs before every commit.
     fileParallelism: false,
+    // F031a: vitest's defaults (testTimeout 5000ms, hookTimeout 10000ms)
+    // are tight for `*.integration.test.ts` files, which make real network
+    // calls to the live Supabase project. Under normal single-instance
+    // conditions these defaults are fine, but when this project's shared
+    // Supabase instance is under extra load (e.g. another worker/process
+    // running its own live-integration suite concurrently), individual
+    // calls occasionally exceed 5s, failing an otherwise-correct test with
+    // `Test timed out in 5000ms` rather than a real assertion failure.
+    // Raising both ceilings gives real network round trips headroom without
+    // masking a genuine hang (still a hard, bounded cap, not unlimited) and
+    // without slowing down the many fast unit/component tests, which
+    // finish in milliseconds regardless of the ceiling.
+    testTimeout: 15000,
+    hookTimeout: 20000,
   },
   resolve: {
     alias: {

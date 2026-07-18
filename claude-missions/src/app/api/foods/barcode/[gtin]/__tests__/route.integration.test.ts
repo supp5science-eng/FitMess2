@@ -13,6 +13,7 @@ import {
   adminDeleteUserRetry,
   signInWithPasswordRetry,
 } from "@/lib/test-utils/auth-retry";
+import { uniqueTestBarcode } from "@/lib/test-utils/unique-barcode";
 import type { Database, Food, Log } from "@/lib/types/db";
 
 // F031 / AS-053 (scanning/looking up a barcode that EXISTS returns that
@@ -218,19 +219,19 @@ describe.skipIf(!hasCredentials)(
       return data;
     }
 
-    /** A fresh, unique 13-digit GTIN per call -- always prefixed `9` (real
-     * seed/OFF-imported EAN-13s in this catalog do not use this prefix
-     * range for test-generated codes) plus 12 random digits, so each call
-     * -- including different calls within the same test run -- gets its
-     * own barcode and never collides with `foods.barcode`'s unique
+    /** A fresh, unique 13-digit GTIN per call -- delegates to the shared
+     * F031a `uniqueTestBarcode()` helper (monotonic in-process counter +
+     * crypto random, always prefixed `9`; real seed/OFF-imported EAN-13s
+     * in this catalog do not use this prefix range for test-generated
+     * codes) so each call -- including different calls within the same
+     * test run, and calls across different integration test files -- gets
+     * its own barcode and never collides with `foods.barcode`'s unique
      * constraint or a real product. `salt` only makes call sites
-     * self-documenting; the actual uniqueness comes from `Math.random()`. */
+     * self-documenting; the actual uniqueness comes from the shared
+     * helper. */
     function makeTestGtin(salt: number): string {
       void salt;
-      const random12Digits = Math.floor(Math.random() * 1_000_000_000_000)
-        .toString()
-        .padStart(12, "0");
-      return `9${random12Digits}`;
+      return uniqueTestBarcode();
     }
 
     it("test_AS_053_looking_up_a_barcode_that_exists_returns_that_food", async () => {

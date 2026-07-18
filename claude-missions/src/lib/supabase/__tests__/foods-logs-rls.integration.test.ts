@@ -8,6 +8,7 @@ import {
   adminDeleteUserRetry,
   signInWithPasswordRetry,
 } from "@/lib/test-utils/auth-retry";
+import { uniqueTestBarcode } from "@/lib/test-utils/unique-barcode";
 import { collectUserExport } from "@/lib/export/user-data";
 import type { Database, FoodCommonUnit } from "@/lib/types/db";
 
@@ -105,7 +106,11 @@ describe.skipIf(!hasCredentials || !schemaReady)(
 
     it("test_AS_032_a_food_record_round_trips_name_sr_brand_macros_common_units_source_verified_and_barcode", async () => {
       const commonUnits: FoodCommonUnit[] = [{ label: "parce", grams: 50 }];
-      const barcode = `3800${suffix}`.slice(0, 13);
+      // F031a: was `\`3800${suffix}\`.slice(0, 13)` -- Date.now() is already
+      // 13 digits, so the slice kept only a prefix of the timestamp and
+      // silently dropped the random component, causing recurring
+      // foods.barcode unique-constraint collisions across nearby test runs.
+      const barcode = uniqueTestBarcode();
 
       const { data: inserted, error: insertErr } = await admin
         .from("foods")
@@ -171,7 +176,7 @@ describe.skipIf(!hasCredentials || !schemaReady)(
     });
 
     it("test_AS_057_inserting_a_second_food_with_an_already_used_barcode_is_rejected", async () => {
-      const barcode = `4700${suffix}`.slice(0, 13);
+      const barcode = uniqueTestBarcode();
 
       const { data: first, error: firstErr } = await admin
         .from("foods")

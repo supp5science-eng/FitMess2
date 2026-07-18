@@ -238,32 +238,27 @@
   margin: 20px 0 0;
 }
 
-/* Hero headline: clinical, professional. Restrained weight, generous
-   tracking, one calm teal-emphasized phrase with a precise thin rule —
-   no gradients, glow, or hand-drawn strokes. */
+/* Hero headline: clinical, professional. Restrained weight, the key
+   phrase set in a soft rounded teal "chip" — like a medical label /
+   lab result. No gradients, glow, or hand-drawn strokes. */
 .lp .hero h1.hero-title {
   font-size: clamp(40px, 6.6vw, 68px);
-  font-weight: 750;
+  font-weight: 760;
   letter-spacing: -0.022em;
-  line-height: 1.12;
+  line-height: 1.28;
   margin: 18px 0 0;
 }
 .lp .hero-title .ht-hi {
-  position: relative;
   display: inline-block;
-  color: var(--teal);
-  font-weight: 780;
-}
-.lp .hero-title .ht-hi::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -0.1em;
-  height: 2px;
-  border-radius: 2px;
-  background: var(--teal);
-  opacity: 0.55;
+  color: var(--teal-bright);
+  background: var(--teal-wash);
+  border: 1px solid var(--teal-line);
+  border-radius: 15px;
+  padding: 0.04em 0.3em 0.1em;
+  margin-right: 0.06em;
+  line-height: 1;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 .lp .hero h1 .u {
   color: var(--teal);

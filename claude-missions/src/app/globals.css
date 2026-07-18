@@ -136,8 +136,25 @@
   }
   body {
     @apply bg-muted text-foreground;
+    /* iOS: stop the standalone PWA from rubber-band scrolling past its
+       content, so it feels like a native app rather than a web page. */
+    overscroll-behavior-y: none;
   }
   html {
     @apply font-sans;
+    /* iOS: keep our own type scale (no auto text inflation on rotate) and
+       drop the grey tap flash on every tap. */
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* iOS Safari only: bump form controls to 16px so focusing an input never
+   triggers the page-zoom that fires when the field text is < 16px. */
+@supports (-webkit-touch-callout: none) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: 16px;
   }
 }

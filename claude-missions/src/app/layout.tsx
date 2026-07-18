@@ -44,9 +44,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#16a34a",
+  themeColor: "#0a0c0b",
   width: "device-width",
   initialScale: 1,
+  // iOS PWA: let content extend into the notch/home-indicator area; the
+  // `env(safe-area-inset-*)` paddings below keep UI clear of them.
   viewportFit: "cover",
 };
 

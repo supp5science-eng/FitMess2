@@ -25,7 +25,8 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Glavna navigacija"
-      className="sticky bottom-0 z-10 flex w-full items-stretch justify-around border-t border-border bg-background"
+      // iOS standalone PWA: pad past the home indicator so the tabs stay tappable.
+      className="sticky bottom-0 z-10 flex w-full items-stretch justify-around border-t border-border bg-background pb-[env(safe-area-inset-bottom)]"
     >
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive =

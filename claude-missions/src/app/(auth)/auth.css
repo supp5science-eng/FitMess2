@@ -97,7 +97,7 @@
   border-radius: 9px;
 }
 .auth-brand .g {
-  color: var(--teal);
+  color: inherit;
 }
 
 /* ---------- Card ---------- */

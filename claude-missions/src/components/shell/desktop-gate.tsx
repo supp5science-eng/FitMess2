@@ -54,7 +54,7 @@ export async function DesktopGate() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/fitmess-icon.png" alt="" width={34} height={34} />
           <span className={`${display.className} text-2xl text-neutral-900`}>
-            Fit<span className="text-primary">Mess</span>
+            FitMess
           </span>
         </div>
 

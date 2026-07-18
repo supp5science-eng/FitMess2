@@ -32,6 +32,14 @@
  * function next to `loadProfileAndRules` below instead of forcing it into
  * this generic list.
  * -------------------------------------------------------------------------
+ *
+ * F020 wired the first of these in: `logs` (M3 manual food logging) is now
+ * appended below. `foods` is deliberately NOT added here -- it is a SHARED
+ * catalog table (not `user_id`-filtered; see
+ * `supabase/migrations/0004_foods_logs.sql`), so it is never part of any
+ * individual user's export, matching the same "shared, not personal data"
+ * reasoning as `submitted_by` being anonymized (not deleted) on account
+ * deletion (`src/lib/account/delete-account.ts`).
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -44,9 +52,25 @@ import type { Database, EatingRuleJson } from "@/lib/types/db";
  * this read path). */
 export class ExportReadError extends Error {}
 
+/** Every table in the schema whose Row shape includes a `user_id` column --
+ * e.g. NOT `foods` (shared catalog, keyed by `submitted_by` instead). Narrowing
+ * `UserOwnedTableConfig.table` to this (rather than the full `keyof Tables`)
+ * is what keeps `.eq("user_id", ...)` below type-checking as more tables
+ * land in `Database`: TS computes `keyof` over a union of Row types as the
+ * INTERSECTION of their keys, so a single non-`user_id` table anywhere in
+ * `keyof Database["public"]["Tables"]` would silently widen/break every
+ * `.eq(config.userColumn, ...)` call in the loop below. */
+type TableWithUserId = {
+  [K in keyof Database["public"]["Tables"]]: Database["public"]["Tables"][K]["Row"] extends {
+    user_id: string;
+  }
+    ? K
+    : never;
+}[keyof Database["public"]["Tables"]];
+
 type UserOwnedTableConfig = {
   key: string;
-  table: keyof Database["public"]["Tables"];
+  table: TableWithUserId;
   userColumn: "user_id";
   labelSr: string;
 };
@@ -59,8 +83,13 @@ const USER_OWNED_TABLES: readonly UserOwnedTableConfig[] = [
     userColumn: "user_id",
     labelSr: "ciljevi ishrane (istorija)",
   },
+  {
+    key: "logs",
+    table: "logs",
+    userColumn: "user_id",
+    labelSr: "dnevni unosi hrane",
+  }, // M3 (F020)
   // --- Extension point: append future user-owned tables here as they land ---
-  // { key: "logs", table: "logs", userColumn: "user_id", labelSr: "dnevni unosi hrane" }, // M3
   // { key: "weighIns", table: "weigh_ins", userColumn: "user_id", labelSr: "merenja težine" }, // M5
   // { key: "conversations", table: "conversations", userColumn: "user_id", labelSr: "razgovori sa agentom i sažeci" }, // M6
 ];

@@ -44,11 +44,32 @@ const TARGET_ROWS = [
   },
 ];
 
+// F020: `logs` is the first table wired through the `USER_OWNED_TABLES`
+// extension point (see the header comment in `../user-data.ts`).
+const LOG_ROWS = [
+  {
+    id: "log-1",
+    user_id: "user-1",
+    food_id: "food-1",
+    name: "Jabuka",
+    grams: 150,
+    kcal: 78,
+    protein: 0.4,
+    carbs: 20.7,
+    fat: 0.3,
+    logged_at: "2026-07-01T08:00:00.000Z",
+    method: "search",
+    created_at: "2026-07-01T08:00:00.000Z",
+  },
+];
+
 function makeMockSupabase(options?: {
   profile?: Record<string, unknown> | null;
   profileError?: { message: string };
   targets?: Record<string, unknown>[] | null;
   targetsError?: { message: string };
+  logs?: Record<string, unknown>[] | null;
+  logsError?: { message: string };
 }) {
   const profileMaybeSingle = vi
     .fn()
@@ -65,16 +86,24 @@ function makeMockSupabase(options?: {
   });
   const targetsSelect = vi.fn(() => ({ eq: targetsEq }));
 
+  const logsEq = vi.fn().mockResolvedValue({
+    data: options?.logs === undefined ? LOG_ROWS : options.logs,
+    error: options?.logsError ?? null,
+  });
+  const logsSelect = vi.fn(() => ({ eq: logsEq }));
+
   const from = vi.fn((table: string) => {
     if (table === "profiles") return { select: profileSelect };
     if (table === "targets") return { select: targetsSelect };
+    if (table === "logs") return { select: logsSelect };
     throw new Error(`unexpected table in test double: ${table}`);
   });
 
-  return { from, profileEq, targetsEq } as unknown as {
+  return { from, profileEq, targetsEq, logsEq } as unknown as {
     from: typeof from;
     profileEq: typeof profileEq;
     targetsEq: typeof targetsEq;
+    logsEq: typeof logsEq;
   };
 }
 
@@ -92,6 +121,8 @@ describe("collectUserExport: AS-014 -- builds a complete own-data export", () =>
     expect(result.profile).toMatchObject({ user_id: "user-1", sex: "female" });
     expect(result.rules).toEqual(RULES);
     expect(result.targets).toEqual(TARGET_ROWS);
+    // F020: `logs` is now folded into the export via USER_OWNED_TABLES.
+    expect(result.logs).toEqual(LOG_ROWS);
     expect(typeof result.exported_at).toBe("string");
     expect(() => new Date(result.exported_at).toISOString()).not.toThrow();
     expect(typeof result.schema_note).toBe("string");
@@ -110,6 +141,37 @@ describe("collectUserExport: AS-014 -- builds a complete own-data export", () =>
     expect(result.schema_note).toMatch(/profil/i);
     expect(result.schema_note).toMatch(/pravila ishrane/i);
     expect(result.schema_note).toMatch(/ciljevi ishrane/i);
+    // F020: the "dnevni unosi hrane" (logs) category is now included.
+    expect(result.schema_note).toMatch(/dnevni unosi hrane/i);
+  });
+
+  it("test_F020_logs_are_included_in_the_export_scoped_to_the_given_user_id", async () => {
+    const supabase = makeMockSupabase();
+
+    const result = await collectUserExport(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase as any,
+      { id: "user-1", email: null }
+    );
+
+    expect(result.logs).toEqual(LOG_ROWS);
+    expect(supabase.logsEq).toHaveBeenCalledWith("user_id", "user-1");
+  });
+
+  it("test_F020_foods_shared_catalog_table_is_never_part_of_the_per_user_export", async () => {
+    const supabase = makeMockSupabase();
+
+    const result = await collectUserExport(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase as any,
+      { id: "user-1", email: null }
+    );
+
+    expect(result).not.toHaveProperty("foods");
+    // The mock's `from` throws for any table it doesn't recognize -- if
+    // collectUserExport ever queried `foods` here, this whole test would
+    // throw instead of asserting cleanly, which is itself a second signal
+    // that `foods` isn't touched by this per-user export path.
   });
 
   it("test_AS_014_rules_are_not_duplicated_inside_the_profile_object", async () => {
@@ -135,10 +197,11 @@ describe("collectUserExport: AS-014 -- builds a complete own-data export", () =>
 
     expect(supabase.profileEq).toHaveBeenCalledWith("user_id", "user-1");
     expect(supabase.targetsEq).toHaveBeenCalledWith("user_id", "user-1");
+    expect(supabase.logsEq).toHaveBeenCalledWith("user_id", "user-1");
   });
 
   it("test_AS_014_a_user_with_no_profile_row_yet_gets_a_null_profile_and_empty_rules_not_an_error", async () => {
-    const supabase = makeMockSupabase({ profile: null, targets: [] });
+    const supabase = makeMockSupabase({ profile: null, targets: [], logs: [] });
 
     const result = await collectUserExport(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -149,6 +212,19 @@ describe("collectUserExport: AS-014 -- builds a complete own-data export", () =>
     expect(result.profile).toBeNull();
     expect(result.rules).toEqual([]);
     expect(result.targets).toEqual([]);
+    expect(result.logs).toEqual([]);
+  });
+
+  it("test_F020_a_logs_read_failure_throws_instead_of_returning_a_partial_export", async () => {
+    const supabase = makeMockSupabase({ logsError: { message: "db unreachable" } });
+
+    await expect(
+      collectUserExport(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        supabase as any,
+        { id: "user-1", email: null }
+      )
+    ).rejects.toBeInstanceOf(ExportReadError);
   });
 
   it("test_AS_014_a_profile_read_failure_throws_instead_of_returning_a_partial_export", async () => {

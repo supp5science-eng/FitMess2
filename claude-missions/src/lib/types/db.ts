@@ -11,8 +11,8 @@
  * hand-editing types out of sync with a migration -- see the F010 handoff
  * for why this had to be hand-authored instead this time.
  *
- * Only `public.profiles` and `public.targets` exist so far. Later schema
- * features (F020 foods, F025 logs, F042 weigh_ins, F050 ai_usage, F057
+ * `public.profiles`, `public.targets`, `public.foods`, and `public.logs`
+ * exist so far. Later schema features (F042 weigh_ins, F050 ai_usage, F057
  * conversations, ...) each add their own tables here in their own PR --
  * this file is additive, never replaced wholesale.
  *
@@ -22,6 +22,12 @@
  * would use, since this column's shape is fully controlled by this app (see
  * `src/lib/budget/rules.ts`), matching this file's existing practice of
  * typing `sex`/`activity_level` as narrow unions instead of `string`.
+ *
+ * F020 added `public.foods` (shared catalog, not user-owned) and
+ * `public.logs` (user-owned, own-row RLS) -- see
+ * `supabase/migrations/0004_foods_logs.sql`. `foods.common_units` follows
+ * the same "typed jsonb array" practice as `profiles.rules` above
+ * (`FoodCommonUnit[]` here rather than the generic `Json`).
  */
 
 export type Sex = "male" | "female";
@@ -41,6 +47,19 @@ export interface EatingRuleJson {
   id: string;
   textSr: string;
   enabled: boolean;
+}
+
+/** F020: provenance of a `foods` row. See `supabase/migrations/0004_foods_logs.sql`. */
+export type FoodSource = "seed" | "off" | "user";
+
+/** F020: how a `logs` row was created. See `supabase/migrations/0004_foods_logs.sql`. */
+export type LogMethod = "search" | "barcode" | "label" | "meal" | "agent";
+
+/** F020: a single element of `foods.common_units` (jsonb array) -- a
+ * user-facing portion shortcut, e.g. `{ label: "parce", grams: 50 }`. */
+export interface FoodCommonUnit {
+  label: string;
+  grams: number;
 }
 
 export interface Database {
@@ -146,6 +165,128 @@ export interface Database {
           },
         ];
       };
+      foods: {
+        Row: {
+          id: string;
+          name_sr: string;
+          brand: string | null;
+          kcal_100g: number;
+          protein_100g: number;
+          carbs_100g: number;
+          fat_100g: number;
+          common_units: FoodCommonUnit[];
+          source: FoodSource;
+          verified: boolean;
+          barcode: string | null;
+          submitted_by: string | null;
+          label_photo_path: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name_sr: string;
+          brand?: string | null;
+          kcal_100g?: number;
+          protein_100g?: number;
+          carbs_100g?: number;
+          fat_100g?: number;
+          common_units?: FoodCommonUnit[];
+          source?: FoodSource;
+          verified?: boolean;
+          barcode?: string | null;
+          submitted_by?: string | null;
+          label_photo_path?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name_sr?: string;
+          brand?: string | null;
+          kcal_100g?: number;
+          protein_100g?: number;
+          carbs_100g?: number;
+          fat_100g?: number;
+          common_units?: FoodCommonUnit[];
+          source?: FoodSource;
+          verified?: boolean;
+          barcode?: string | null;
+          submitted_by?: string | null;
+          label_photo_path?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "foods_submitted_by_fkey";
+            columns: ["submitted_by"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      logs: {
+        Row: {
+          id: string;
+          user_id: string;
+          food_id: string | null;
+          name: string;
+          grams: number;
+          kcal: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+          logged_at: string;
+          method: LogMethod;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          food_id?: string | null;
+          name: string;
+          grams: number;
+          kcal: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+          logged_at?: string;
+          method: LogMethod;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          food_id?: string | null;
+          name?: string;
+          grams?: number;
+          kcal?: number;
+          protein?: number;
+          carbs?: number;
+          fat?: number;
+          logged_at?: string;
+          method?: LogMethod;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "logs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "logs_food_id_fkey";
+            columns: ["food_id"];
+            isOneToOne: false;
+            referencedRelation: "foods";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -170,3 +311,11 @@ export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 export type Target = Database["public"]["Tables"]["targets"]["Row"];
 export type TargetInsert = Database["public"]["Tables"]["targets"]["Insert"];
 export type TargetUpdate = Database["public"]["Tables"]["targets"]["Update"];
+
+export type Food = Database["public"]["Tables"]["foods"]["Row"];
+export type FoodInsert = Database["public"]["Tables"]["foods"]["Insert"];
+export type FoodUpdate = Database["public"]["Tables"]["foods"]["Update"];
+
+export type Log = Database["public"]["Tables"]["logs"]["Row"];
+export type LogInsert = Database["public"]["Tables"]["logs"]["Insert"];
+export type LogUpdate = Database["public"]["Tables"]["logs"]["Update"];

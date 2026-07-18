@@ -1,0 +1,33 @@
+
+ RUN  v4.1.10 C:/FitMess2/exexutor/claude-missions
+
+ ✓ src/lib/auth/__tests__/admin.integration.test.ts > F033: the admin gate against the live Supabase project (AS-059, AS-067) > AS-059: anonymous session never resolves as admin > test_AS_059_no_signed_in_session_resolves_anonymous_not_ok 8ms
+ ✓ src/lib/auth/__tests__/admin.integration.test.ts > F033: the admin gate against the live Supabase project (AS-059, AS-067) > AS-059 / AS-067: a normal user (is_admin default false) is denied, flipping is_admin=true grants access > test_AS_059_freshly_created_user_has_is_admin_false_by_default_and_is_denied_the_admin_gate 763ms
+ ✓ src/lib/auth/__tests__/admin.integration.test.ts > F033: the admin gate against the live Supabase project (AS-059, AS-067) > AS-059 / AS-067: a normal user (is_admin default false) is denied, flipping is_admin=true grants access > test_AS_067_the_same_non_admin_session_maps_to_a_403_json_shaped_denial_via_the_route_handler_facing_guard 498ms
+ ✓ src/lib/auth/__tests__/admin.integration.test.ts > F033: the admin gate against the live Supabase project (AS-059, AS-067) > AS-059 / AS-067: a normal user (is_admin default false) is denied, flipping is_admin=true grants access > test_AS_059_flipping_is_admin_true_via_the_management_api_lets_the_same_user_pass_the_gate 1797ms
+ ↓ src/lib/auth/__tests__/admin.integration.test.ts > F033: live admin-gate integration tests currently blocked (documented, not silently skipped) > diagnostic_live_credentials_unreachable_AS_059_AS_067_blocked
+ ✓ src/app/admin/__tests__/page.test.tsx > AS-059: /admin landing page renders links to every admin sub-area > test_AS_059_admin_landing_renders_the_admin_landing_container 249ms
+ ✓ src/app/admin/__tests__/page.test.tsx > AS-059: /admin landing page renders links to every admin sub-area > test_AS_059_admin_landing_links_to_hrana_korisnici_and_troskovi 61ms
+ ✓ src/app/nemas-pristup/__tests__/page.test.tsx > AS-059: /nemas-pristup renders a real Serbian denial page with a way back > test_AS_059_nemas_pristup_renders_the_denial_heading_and_body 227ms
+ ✓ src/app/nemas-pristup/__tests__/page.test.tsx > AS-059: /nemas-pristup renders a real Serbian denial page with a way back > test_AS_059_nemas_pristup_offers_a_real_link_back_into_the_app 27ms
+ ✓ src/app/admin/__tests__/layout.test.tsx > AS-059 / AS-067: /admin's layout enforces requireAdmin() server-side before rendering any admin page > test_AS_059_admin_layout_awaits_requireAdmin_and_renders_children_once_it_resolves_for_an_admin 39ms
+ ✓ src/app/admin/__tests__/layout.test.tsx > AS-059 / AS-067: /admin's layout enforces requireAdmin() server-side before rendering any admin page > test_AS_067_admin_layout_propagates_a_denial_from_requireAdmin_without_ever_rendering_children 3ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-059: resolveAdminSessionForClient -- the pure DB-decision core > test_AS_059_no_session_at_all_resolves_anonymous 5ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-059: resolveAdminSessionForClient -- the pure DB-decision core > test_AS_059_signed_in_user_with_is_admin_false_resolves_not_admin 1ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-059: resolveAdminSessionForClient -- the pure DB-decision core > test_AS_059_signed_in_user_with_no_profile_row_resolves_not_admin_not_a_crash 1ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-059: resolveAdminSessionForClient -- the pure DB-decision core > test_AS_059_signed_in_user_with_a_profile_read_error_resolves_not_admin_fail_closed 1ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-059: resolveAdminSessionForClient -- the pure DB-decision core > test_AS_059_signed_in_user_with_is_admin_true_resolves_ok_with_user_and_profile 1ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-059: requireAdmin() -- the page/layout guard > test_AS_059_anonymous_visitor_is_redirected_to_prijava 4ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-059: requireAdmin() -- the page/layout guard > test_AS_059_authenticated_non_admin_is_redirected_to_the_nemas_pristup_denial_page 1ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-059: requireAdmin() -- the page/layout guard > test_AS_059_admin_user_passes_through_without_any_redirect_and_receives_user_and_profile 1ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-067: toAdminApiResult() / requireAdminApi() -- the route-handler/action guard > test_AS_067_anonymous_maps_to_a_401_json_shaped_denial 1ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-067: toAdminApiResult() / requireAdminApi() -- the route-handler/action guard > test_AS_067_not_admin_maps_to_a_403_json_shaped_denial_not_a_silent_allow 0ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-067: toAdminApiResult() / requireAdminApi() -- the route-handler/action guard > test_AS_067_ok_maps_to_ok_true_with_user_and_profile_no_redirect_involved 0ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-067: toAdminApiResult() / requireAdminApi() -- the route-handler/action guard > test_AS_067_requireAdminApi_never_calls_redirect_for_a_non_admin_session_it_returns_403_instead 1ms
+ ✓ src/lib/auth/__tests__/admin.test.ts > AS-067: toAdminApiResult() / requireAdminApi() -- the route-handler/action guard > test_AS_067_requireAdminApi_returns_ok_true_for_an_admin_session 1ms
+
+ Test Files  5 passed (5)
+      Tests  23 passed | 1 skipped (24)
+   Start at  15:11:37
+   Duration  17.07s (transform 287ms, setup 1.16s, import 1.73s, tests 4.87s, environment 7.72s)
+

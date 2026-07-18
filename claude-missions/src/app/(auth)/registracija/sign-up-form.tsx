@@ -4,52 +4,54 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { signUpAction, type AuthFormState } from "../actions";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 const initialState: AuthFormState = null;
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
+    <button type="submit" className="auth-btn auth-btn-primary" disabled={pending}>
       {pending ? "Registracija u toku…" : "Napravi nalog"}
-    </Button>
+    </button>
   );
 }
 
 /** AS-008: email + password signup form. */
 export function SignUpForm() {
   const [state, formAction] = useActionState(signUpAction, initialState);
+  const invalid = state?.ok === false || undefined;
 
   return (
-    <form action={formAction} className="flex flex-col gap-4" noValidate>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="signup-email">Email</Label>
-        <Input
+    <form action={formAction} className="auth-form" noValidate>
+      <div className="auth-field">
+        <label htmlFor="signup-email">Email</label>
+        <input
           id="signup-email"
           name="email"
           type="email"
+          className="auth-input"
+          placeholder="ti@email.com"
           autoComplete="email"
           required
-          aria-invalid={state?.ok === false || undefined}
+          aria-invalid={invalid}
         />
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="signup-password">Lozinka</Label>
-        <Input
+      <div className="auth-field">
+        <label htmlFor="signup-password">Lozinka</label>
+        <input
           id="signup-password"
           name="password"
           type="password"
+          className="auth-input"
+          placeholder="Bar 8 karaktera"
           autoComplete="new-password"
           minLength={8}
           required
-          aria-invalid={state?.ok === false || undefined}
+          aria-invalid={invalid}
         />
       </div>
       {state?.ok === false ? (
-        <p role="alert" className="text-sm text-destructive">
+        <p role="alert" className="auth-error">
           {state.error_sr}
         </p>
       ) : null}

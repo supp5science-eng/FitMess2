@@ -76,11 +76,12 @@ describe("AppShell (F005 base shell)", () => {
     ["/registracija"],
     ["/registracija/proveri-email"],
   ])(
-    "renders auth route %s inside the mobile column but WITHOUT the bottom nav",
+    "renders auth route %s full-bleed: no app column, no bottom nav",
     (pathname) => {
-      // Auth screens must not expose the app navigation (its tabs link into
-      // the authenticated app). They keep the centered mobile column so the
-      // form is presented consistently, but the bottom nav is hidden.
+      // Auth screens own the whole viewport with their own dark chrome
+      // (src/app/(auth)/layout.tsx) and must not expose the app navigation
+      // (its tabs link into the authenticated app), so the shell drops both
+      // the centered white column and the bottom nav.
       usePathnameMock.mockReturnValue(pathname);
       const { container } = render(
         <AppShell>
@@ -91,8 +92,7 @@ describe("AppShell (F005 base shell)", () => {
       expect(
         screen.queryByRole("navigation", { name: "Glavna navigacija" })
       ).toBeNull();
-      // Column is still present.
-      expect(container.querySelector(".max-w-\\[430px\\]")).not.toBeNull();
+      expect(container.querySelector(".max-w-\\[430px\\]")).toBeNull();
     }
   );
 

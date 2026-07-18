@@ -18,16 +18,18 @@ import { BottomNav } from "@/components/shell/bottom-nav";
  * the bottom of the viewport on short pages and simply scrolls with content
  * (via `sticky bottom-0` on BottomNav) on tall pages.
  *
- * Full-bleed exception: the public marketing landing (`/`) is a full-width
- * page with its own chrome, so it opts out of the centered mobile column and
- * the bottom navigation entirely.
+ * Full-bleed exception: the public marketing landing (`/`) and the desktop
+ * "open on your phone" gate (`/samo-za-telefon`) are full-width pages with
+ * their own chrome, so they opt out of the centered mobile column and the
+ * bottom navigation entirely.
  *
  * Auth exception: the sign-in / sign-up screens (`/prijava`, `/registracija`,
- * ...) keep the centered mobile column but hide the bottom navigation — its
- * tabs (Danas / Nedelja / Agent / Profil) link into the authenticated app and
- * must not be visible or reachable before the user is signed in. When someone
- * installs the app or taps "Uđi", the first thing they see is only the auth
- * screen. Every other route keeps the full app shell (column + nav).
+ * ...) also render full-bleed — they own the whole viewport with their own
+ * dark chrome (`src/app/(auth)/layout.tsx`) and must never expose the bottom
+ * navigation, whose tabs (Danas / Nedelja / Agent / Profil) link into the
+ * authenticated app. When someone installs the app or taps "Uđi", the first
+ * thing they see is only the auth screen. Every other route keeps the full app
+ * shell (centered column + nav).
  */
 
 /** Routes that render their own full-width layout, without the app column or
@@ -35,31 +37,31 @@ import { BottomNav } from "@/components/shell/bottom-nav";
  * phone" gate (`/samo-za-telefon`). */
 const FULL_BLEED_ROUTES = new Set(["/", "/samo-za-telefon"]);
 
-/** Auth route prefixes that render inside the centered column but WITHOUT the
- * bottom navigation. Matched by prefix so nested steps (e.g.
- * `/registracija/proveri-email`) are covered too. */
+/** Auth route prefixes — also full-bleed, so nested steps (e.g.
+ * `/registracija/proveri-email`) are covered by prefix match too. */
 const AUTH_ROUTE_PREFIXES = ["/prijava", "/registracija"] as const;
 
-function isAuthRoute(pathname: string): boolean {
-  return AUTH_ROUTE_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+function isFullBleed(pathname: string): boolean {
+  return (
+    FULL_BLEED_ROUTES.has(pathname) ||
+    AUTH_ROUTE_PREFIXES.some(
+      (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+    )
   );
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
-  if (pathname !== null && FULL_BLEED_ROUTES.has(pathname)) {
+  if (pathname !== null && isFullBleed(pathname)) {
     return <>{children}</>;
   }
-
-  const showBottomNav = pathname === null || !isAuthRoute(pathname);
 
   return (
     <div className="min-h-dvh w-full bg-muted">
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">
         <div className="flex flex-1 flex-col">{children}</div>
-        {showBottomNav ? <BottomNav /> : null}
+        <BottomNav />
       </div>
     </div>
   );

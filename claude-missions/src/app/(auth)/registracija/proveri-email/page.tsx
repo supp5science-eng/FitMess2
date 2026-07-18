@@ -19,32 +19,26 @@ export default async function ProveriEmailPage({
   const { email } = await searchParams;
 
   return (
-    <main className="flex flex-1 flex-col gap-6 px-6 py-10 text-center">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Proveri email
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {email ? (
-            <>
-              Poslali smo link za potvrdu naloga na <strong>{email}</strong>.
-            </>
-          ) : (
-            "Poslali smo ti link za potvrdu naloga na email adresu koju si uneo/la."
-          )}{" "}
-          Klikni na link u poruci da bi mogao/la da koristiš aplikaciju.
-        </p>
+    <>
+      <div className="auth-card" style={{ textAlign: "center" }}>
+        <div className="auth-head" style={{ alignItems: "center" }}>
+          <h1>Proveri email</h1>
+          <p>
+            {email ? (
+              <>
+                Poslali smo link za potvrdu naloga na <strong>{email}</strong>.
+              </>
+            ) : (
+              "Poslali smo ti link za potvrdu naloga na email adresu koju si uneo/la."
+            )}{" "}
+            Klikni na link u poruci da bi mogao/la da koristiš aplikaciju.
+          </p>
+        </div>
+        {email ? <ResendForm email={email} /> : null}
       </div>
-      {email ? <ResendForm email={email} /> : null}
-      <p className="text-sm text-muted-foreground">
-        Već potvrdio/la nalog?{" "}
-        <Link
-          href="/prijava"
-          className="font-medium text-primary underline-offset-4 hover:underline"
-        >
-          Prijavi se
-        </Link>
+      <p className="auth-alt">
+        Već potvrdio/la nalog? <Link href="/prijava">Prijavi se</Link>
       </p>
-    </main>
+    </>
   );
 }

@@ -1,11 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { isEmailVerified } from "@/lib/auth/core";
+import { isMobileUserAgent } from "@/lib/device/is-mobile";
 import {
   decideRouteAccess,
   VERIFY_EMAIL_NOTICE_PATH,
 } from "@/lib/auth/route-protection";
 import { updateSession } from "@/lib/supabase/middleware";
+
+/** The phone-only gate route (see `src/app/samo-za-telefon/page.tsx`). */
+const PHONE_ONLY_PATH = "/samo-za-telefon";
 
 /**
  * F013: the app-wide route-protection boundary (AS-011, AS-012).
@@ -23,6 +27,31 @@ import { updateSession } from "@/lib/supabase/middleware";
  * `auth.getUser()`, which re-validates against Supabase Auth's servers.
  */
 export async function middleware(request: NextRequest) {
+  // Phone-only gate (runs before any auth/session work). FitMess is designed
+  // and shipped for phones only: non-mobile visitors are redirected to the
+  // "open it on your phone" gate for EVERY route, before the requested page
+  // executes, so desktop never triggers the app's data fetching. Mobile
+  // visitors who land on the gate URL are bounced back into the app.
+  const isMobile = isMobileUserAgent(request.headers.get("user-agent"));
+  const onGate = request.nextUrl.pathname === PHONE_ONLY_PATH;
+
+  if (!isMobile && !onGate) {
+    const url = request.nextUrl.clone();
+    url.pathname = PHONE_ONLY_PATH;
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+  if (isMobile && onGate) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+  if (!isMobile && onGate) {
+    // Desktop viewing the gate itself: serve it directly, no session refresh.
+    return NextResponse.next();
+  }
+
   const { response, user, supabase } = await updateSession(request);
   const { pathname } = request.nextUrl;
 

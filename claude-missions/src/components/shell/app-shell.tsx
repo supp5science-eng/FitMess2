@@ -24,8 +24,9 @@ import { BottomNav } from "@/components/shell/bottom-nav";
  */
 
 /** Routes that render their own full-width layout, without the app column or
- * bottom navigation. Currently just the marketing landing page. */
-const FULL_BLEED_ROUTES = new Set(["/"]);
+ * bottom navigation: the marketing landing page and the desktop "open on your
+ * phone" gate (`/samo-za-telefon`). */
+const FULL_BLEED_ROUTES = new Set(["/", "/samo-za-telefon"]);
 
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();

@@ -20,8 +20,8 @@ import type { ActivityLevel, Sex } from "@/lib/types/db";
 
 export const MIN_AGE_YEARS = 14;
 export const MAX_AGE_YEARS = 100;
-export const MIN_HEIGHT_CM = 120;
-export const MAX_HEIGHT_CM = 230;
+export const MIN_HEIGHT_CM = 100;
+export const MAX_HEIGHT_CM = 250;
 export const MIN_WEIGHT_KG = 35;
 export const MAX_WEIGHT_KG = 300;
 export const MIN_TIMEFRAME_WEEKS = 1;
@@ -68,7 +68,7 @@ export function validateAge(age: number | null): ValidationResult {
   return VALID;
 }
 
-/** AS-019 step 3 (visina): centimeters, 120-230. */
+/** AS-019 step 3 (visina): centimeters, 100-250. */
 export function validateHeight(heightCm: number | null): ValidationResult {
   if (heightCm === null || Number.isNaN(heightCm)) {
     return invalid("Unesi svoju visinu.");

@@ -259,3 +259,87 @@ describe("F032: NewProductForm save flow", () => {
     );
   });
 });
+
+describe("F032 / AS-128: NewProductForm accessibility -- labeled inputs, keyboard-reachable, no unlabeled images", () => {
+  it("test_AS_128_every_form_field_has_a_real_accessible_label", () => {
+    render(<NewProductForm initialBarcode="5901234123457" />);
+
+    // `getByLabelText` only succeeds when an <input> is programmatically
+    // associated with a <label> (htmlFor/id, exactly what `FormField`
+    // wires up) -- a failing query here would mean a field is NOT
+    // actually labeled for a screen reader, not just visually adjacent to
+    // text that looks like a label.
+    expect(screen.getByLabelText("Naziv namirnice")).toBe(
+      screen.getByTestId("novi-proizvod-name-input")
+    );
+    expect(screen.getByLabelText("Brend (opciono)")).toBe(
+      screen.getByTestId("novi-proizvod-brand-input")
+    );
+    expect(screen.getByLabelText("Barkod (opciono)")).toBe(
+      screen.getByTestId("novi-proizvod-barcode-input")
+    );
+    expect(screen.getByLabelText("Kalorije (kcal)")).toBe(
+      screen.getByTestId("novi-proizvod-kcal-input")
+    );
+    expect(screen.getByLabelText("Proteini (g)")).toBe(
+      screen.getByTestId("novi-proizvod-protein-input")
+    );
+    expect(screen.getByLabelText("Ugljeni hidrati (g)")).toBe(
+      screen.getByTestId("novi-proizvod-carbs-input")
+    );
+    expect(screen.getByLabelText("Masti (g)")).toBe(
+      screen.getByTestId("novi-proizvod-fat-input")
+    );
+  });
+
+  it("test_AS_128_a_field_error_is_programmatically_associated_via_aria_describedby_and_announced_as_an_alert", () => {
+    render(<NewProductForm />);
+    fireEvent.click(screen.getByTestId("novi-proizvod-submit-button"));
+
+    const nameInput = screen.getByTestId("novi-proizvod-name-input");
+    const errorEl = screen.getByTestId("novi-proizvod-name-input-error");
+
+    expect(nameInput).toHaveAttribute("aria-invalid", "true");
+    expect(nameInput.getAttribute("aria-describedby")).toBe(errorEl.id);
+    expect(errorEl).toHaveAttribute("role", "alert");
+  });
+
+  it("test_AS_128_every_interactive_control_is_a_real_focusable_element_not_a_div_click_handler", () => {
+    render(<NewProductForm initialBarcode="5901234123457" />);
+
+    // Real <input>/<button> elements are keyboard-reachable (Tab/Shift+Tab,
+    // Enter/Space to activate) by native browser behaviour -- no `tabIndex`
+    // hacks or non-interactive elements with click handlers are used here.
+    for (const testId of [
+      "novi-proizvod-name-input",
+      "novi-proizvod-brand-input",
+      "novi-proizvod-barcode-input",
+      "novi-proizvod-kcal-input",
+      "novi-proizvod-protein-input",
+      "novi-proizvod-carbs-input",
+      "novi-proizvod-fat-input",
+    ]) {
+      expect(screen.getByTestId(testId).tagName).toBe("INPUT");
+    }
+    expect(screen.getByTestId("novi-proizvod-submit-button").tagName).toBe(
+      "BUTTON"
+    );
+    expect(screen.getByTestId("novi-proizvod-submit-button")).toHaveAttribute(
+      "type",
+      "submit"
+    );
+  });
+
+  it("test_AS_128_the_form_renders_no_unlabeled_images", () => {
+    const { container } = render(
+      <NewProductForm initialBarcode="5901234123457" />
+    );
+
+    // This form is text/input-only (no photos/icons rendered as <img>) --
+    // confirming that explicitly rather than assuming it, so a future
+    // change that DOES add an <img> is forced to also add real alt text
+    // (this test would then need an accompanying alt-text assertion).
+    const images = container.querySelectorAll("img");
+    expect(images.length).toBe(0);
+  });
+});

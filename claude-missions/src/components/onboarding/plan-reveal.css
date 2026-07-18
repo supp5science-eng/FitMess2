@@ -71,8 +71,13 @@
   position: relative;
   width: 132px;
   height: 132px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .pr-orb svg {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   animation: pr-spin 1.1s linear infinite;
@@ -89,22 +94,20 @@
   }
 }
 .pr-orb-core {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 34px;
+  position: relative;
+  width: 62px;
+  height: 62px;
+  border-radius: 16px;
   animation: pr-pulse 1.6s ease-in-out infinite;
 }
 @keyframes pr-pulse {
   0%,
   100% {
-    transform: scale(0.9);
-    opacity: 0.8;
+    transform: scale(0.94);
+    opacity: 0.85;
   }
   50% {
-    transform: scale(1.08);
+    transform: scale(1.06);
     opacity: 1;
   }
 }

@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
-import { useRouter } from "next/navigation";
 
 import { finishOnboardingAction } from "@/app/(app)/onboarding/pregled/actions";
 import { computeBudgetSummary } from "@/lib/onboarding/summary";
@@ -22,7 +21,7 @@ import "./plan-reveal.css";
  * of navigating.
  */
 
-const CALC_MS = 2000;
+const CALC_MS = 2500;
 const COUNT_MS = 1300;
 const HOLD_MS = 1400;
 
@@ -41,7 +40,6 @@ type Phase = "calc" | "reveal";
 type SaveState = "saving" | "done" | "error";
 
 export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
-  const router = useRouter();
   const summary = useMemo(() => computeBudgetSummary(data), [data]);
   const target = summary.dailyKcal;
 
@@ -127,17 +125,17 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
     };
   }, [phase, countMs, holdMs, target]);
 
-  // Prefetch the destination so the hand-off feels instant.
-  useEffect(() => {
-    router.prefetch("/danas");
-  }, [router]);
-
-  // Leave only once the animation has finished AND the write has landed.
+  // Leave only once the animation has finished AND the write has landed. A
+  // hard navigation (not the client router) is deliberate: the App Router
+  // cache could otherwise serve a `/danas` response captured BEFORE
+  // `onboarded_at` was set -- i.e. the middleware's bounce back to
+  // `/onboarding`. A full request re-runs the middleware against the now
+  // fully-onboarded profile, so the user actually lands on the dashboard.
   useEffect(() => {
     if (animationDone && saveState === "done") {
-      router.replace("/danas");
+      window.location.assign("/danas");
     }
-  }, [animationDone, saveState, router]);
+  }, [animationDone, saveState]);
 
   function retry() {
     setSaveError(undefined);
@@ -183,7 +181,14 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
                 strokeDasharray="70 194"
               />
             </svg>
-            <div className="pr-orb-core">🐻</div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              className="pr-orb-core"
+              src="/brand/fitmess-black.png"
+              alt="FitMess"
+              width={62}
+              height={62}
+            />
           </div>
           <div>
             <div className="pr-calc-title">Računamo tvoj plan</div>

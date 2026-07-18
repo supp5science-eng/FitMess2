@@ -1,0 +1,46 @@
+F026 / AS-044, AS-045: real headless-Edge walkthrough (puppeteer-core, 375x812 viewport)
+against `npm run build && npm run start -p 3105`, following the F025 precedent.
+
+Steps:
+1. Created a confirmed + onboarded test user via the Supabase admin client
+   (email_confirm: true, profiles.onboarded_at set directly so the route-
+   protection middleware lets the session reach /dodaj/*).
+2. Signed in through the real /prijava form (#signin-email, #signin-password,
+   submit) -- a real client-side navigation, waited on via
+   `page.waitForFunction(() => window.location.pathname !== "/prijava")`.
+3. Navigated to a TEMPORARY, uncommitted demo route
+   (`src/app/(app)/dodaj/f026-demo/page.tsx`, deleted before the final
+   commit/build/test run -- see the handoff's "Decisions made" for why: F026's
+   edit sheet / delete confirm are reusable components with no dedicated
+   route of their own yet, F027 wires them onto its meal cards) rendering
+   <LogEditSheet log={{id:"demo-log", grams:240}} food={...} /> and
+   <LogDeleteConfirm logId="demo-log" logName="Piletina na žaru" />, food
+   common_units=[{label:"parče", grams:120}].
+4. Clicked "Izmeni" -> captured 00-log-edit-sheet-375px.png: confirms the
+   sheet opened pre-loaded with the entry's CURRENT portion (240g correctly
+   detected as "2 parčeta" of the 120g unit -- findMatchingCommonUnit,
+   AS-044) and a live preview (396 kcal = 165 kcal/100g * 2.4).
+5. Changed the grams input to 300 -> captured
+   01-log-edit-sheet-grams-changed-375px.png: confirms the live preview
+   recalculates client-side before any save (server recomputes the same way
+   on PATCH, proven separately by the live integration test).
+6. Canceled, then clicked "Obriši" -> captured
+   02-log-delete-confirm-375px.png: confirms the Serbian confirm names the
+   entry ("Obrisati unos "Piletina na žaru"?") and offers Otkaži/Obriši.
+7. Cleaned up: closed the browser, deleted the test user via the admin
+   client. No log rows were ever created for this walkthrough (the demo page
+   never calls PATCH/DELETE -- clicking through it only exercises open/close
+   + the client-side live-preview math, per the clarified "no unintended
+   navigation or global state mutation" definition-of-done answer). The live
+   DB round-trip itself (an actual PATCH/DELETE persisting/removing a row) is
+   proven by
+   `src/app/api/logs/[id]/__tests__/route.integration.test.ts`, not this
+   walkthrough.
+
+Result: "Screenshots captured OK." (script exit code 0). Script
+(`f026-shots.mjs`) and its `puppeteer-core`/`@supabase/supabase-js` deps live
+only in this session's scratchpad, not the repo, matching the
+F024/F025 precedent (not committed). The demo page itself was also deleted
+before the final `npm run build`/`npm run test` run in this handoff's
+"Commands run" section -- it never appears in the committed tree or the
+production route table.

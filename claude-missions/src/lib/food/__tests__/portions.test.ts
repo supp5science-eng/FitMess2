@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   computeMacrosForGrams,
+  findMatchingCommonUnit,
   gramsSchema,
   MAX_PORTION_GRAMS,
   MIN_PORTION_GRAMS,
@@ -115,6 +116,43 @@ describe("F025: roundToOneDecimal", () => {
     expect(roundToOneDecimal(1.23)).toBe(1.2);
     expect(roundToOneDecimal(1.25)).toBe(1.3);
     expect(roundToOneDecimal(100)).toBe(100);
+  });
+});
+
+describe("F026 / AS-044: findMatchingCommonUnit -- pre-loading an edit sheet's unit/quantity from a saved grams amount", () => {
+  const units: FoodCommonUnit[] = [
+    { label: "parče", grams: 50 },
+    { label: "komad", grams: 120 },
+  ];
+
+  it("test_AS_044_a_grams_amount_matching_a_single_unit_returns_quantity_1", () => {
+    expect(findMatchingCommonUnit(units, 50)).toEqual({
+      unitIndex: 0,
+      quantity: 1,
+    });
+  });
+
+  it("test_AS_044_a_grams_amount_matching_two_of_a_unit_returns_quantity_2", () => {
+    expect(findMatchingCommonUnit(units, 100)).toEqual({
+      unitIndex: 0,
+      quantity: 2,
+    });
+  });
+
+  it("test_AS_044_a_grams_amount_matching_a_fractional_quantity_of_a_later_unit_is_found", () => {
+    // 120 * 1.5 = 180
+    expect(findMatchingCommonUnit(units, 180)).toEqual({
+      unitIndex: 1,
+      quantity: 1.5,
+    });
+  });
+
+  it("test_AS_044_a_grams_amount_matching_no_unit_returns_null", () => {
+    expect(findMatchingCommonUnit(units, 137)).toBeNull();
+  });
+
+  it("test_AS_044_an_empty_units_list_always_returns_null", () => {
+    expect(findMatchingCommonUnit([], 50)).toBeNull();
   });
 });
 

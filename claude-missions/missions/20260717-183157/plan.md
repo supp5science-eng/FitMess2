@@ -142,7 +142,8 @@ _All features auto-clarified via accept-and-continue on 2026-07-17 (star default
 - F027 [CLARIFIED-AUTO] [COMPLETE]
 - F028 [CLARIFIED-AUTO] [COMPLETE]
 - F030 [CLARIFIED-AUTO] [COMPLETE]
-- F031 [CLARIFIED-AUTO]
+- F031 [CLARIFIED-AUTO] [COMPLETE]
+- F031a [CLARIFIED-AUTO] (follow-up: fix flaky test barcode fixtures)
 - F032 [CLARIFIED-AUTO]
 - F033 [CLARIFIED-AUTO]
 - F034 [CLARIFIED-AUTO]
@@ -179,3 +180,4 @@ _All features auto-clarified via accept-and-continue on 2026-07-17 (star default
 - F075 [CLARIFIED-AUTO]
 - F076 [CLARIFIED-AUTO]
 - F077 [CLARIFIED-AUTO]
+- F078 [CLARIFIED-AUTO] (branding: FitMess name + logo + icons)

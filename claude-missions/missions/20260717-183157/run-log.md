@@ -87,3 +87,9 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T08:48Z — M3 UX 15/15 PASS. **M3 GREEN** (scrutiny+UX). 3/8 milestones. Cosmetic note -> M8 backlog: raw-grams == whole multiple of a unit displays unit label (values correct). Stray port-3000 dev server noted (harmless, left as-is). Pushing M3 checkpoint (auto-deploys to Vercel). Starting M4 (F030 barcode scanner).
 
 - 2026-07-18T09:42Z — F030 COMPLETE (6aab8f5). AS-052/058 (+AS-128) client-side EAN-13 scanner + permission fallback. 706 tests. Spawning F031 (scan->lookup->log).
+
+- 2026-07-18T10:58Z — F031 COMPLETE (900e8a1). AS-053/054 proven via REAL WASM barcode decode of live EAN-13 video. Task marked failed only due to tail-end stream stall AFTER work done (Status COMPLETE, tree clean, 724 tests). RECURRING BUG (3rd time, cost a 600s stall): F020 foods-logs-rls test barcode fixture uses Date.now() which fills all 13 EAN digits, truncating away the random suffix -> collisions under concurrent/rapid runs. Spawning F031a to fix fixture uniqueness NOW (prevents future stalls across M4-M8) before F032.
+
+- 2026-07-18T11:04Z — BRAND DECISION from user: app name = **FitMess** (replaces placeholder "Adaptive Cut"). Logo provided (minimal grayscale Ж-mark PNG): white-bg version (for light theme) + dark-bg version, staged at missions/20260717-183157/assets/brand/. Created F078 branding feature (rename app-wide + logo in header + favicon + apple-touch-icon + PWA manifest name/icons). Will run after F031a, before deep M4, so the live site reflects the real brand soon.
+
+- 2026-07-18T11:09Z — USER: do NOT jump F078 branding ahead; keep sequential order. F078 stays queued for its place near the END (M8 polish). Logos staged, spec ready. After F031a -> F032 (normal M4 order). Continue in order through M4-M8; F078 runs in M8.

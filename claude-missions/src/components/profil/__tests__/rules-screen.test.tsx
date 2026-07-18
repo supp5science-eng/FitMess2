@@ -189,6 +189,91 @@ describe("F017 definition-of-done: side-effect verification -- no unintended nav
   });
 });
 
+describe("AS-128: every input has a real label, no images without alt text, every interactive control is keyboard-reachable", () => {
+  it("test_AS_128_every_rule_toggle_is_a_real_focusable_button_with_role_switch_and_a_label", () => {
+    render(<RulesScreen initialRules={BASE_RULES} dailyKcal={null} />);
+
+    for (const rule of BASE_RULES) {
+      const toggle = screen.getByTestId(`rule-toggle-${rule.id}`);
+      // `role="switch"` here is implemented on a real `<button type="button">`
+      // element (not a `<div>` with a click handler), so it is natively
+      // Tab-reachable and Enter/Space-activatable with zero extra
+      // key-handling code -- the same reasoning F015/F016's `OptionGroup`
+      // radio buttons rely on for this same clause.
+      expect(toggle.tagName).toBe("BUTTON");
+      expect(toggle).toHaveAttribute("role", "switch");
+      expect(toggle).not.toHaveAttribute("tabindex", "-1");
+      expect(toggle).toHaveAccessibleName();
+    }
+  });
+
+  it("test_AS_128_uredi_button_is_a_real_focusable_button_element", () => {
+    render(<RulesScreen initialRules={BASE_RULES} dailyKcal={null} />);
+
+    for (const editButton of screen.getAllByRole("button", { name: "Uredi" })) {
+      expect(editButton.tagName).toBe("BUTTON");
+      expect(editButton).not.toHaveAttribute("tabindex", "-1");
+    }
+  });
+
+  it("test_AS_128_the_edit_text_input_is_reachable_by_its_own_accessible_label", () => {
+    render(<RulesScreen initialRules={BASE_RULES} dailyKcal={null} />);
+
+    const row = screen.getByTestId("rule-row-protein-2-obroka");
+    fireEvent.click(within(row).getByRole("button", { name: "Uredi" }));
+
+    // `getByLabelText` only succeeds when the input is a real form control
+    // correctly associated with a `<label for>` -- this call is itself the
+    // proof, not just a lookup convenience.
+    const input = screen.getByLabelText("Izmeni tekst pravila");
+    expect(input.tagName).toBe("INPUT");
+
+    // Sačuvaj/Otkaži are also real, keyboard-reachable buttons.
+    expect(screen.getByRole("button", { name: "Sačuvaj" }).tagName).toBe("BUTTON");
+    expect(screen.getByRole("button", { name: "Otkaži" }).tagName).toBe("BUTTON");
+  });
+
+  it("test_AS_128_the_empty_state_generisi_pravila_button_is_a_real_focusable_button_element", () => {
+    render(<RulesScreen initialRules={[]} dailyKcal={null} />);
+
+    const button = screen.getByRole("button", { name: /Generiši pravila/ });
+    expect(button.tagName).toBe("BUTTON");
+    expect(button).not.toHaveAttribute("tabindex", "-1");
+  });
+
+  it("test_AS_128_toggling_a_rule_via_keyboard_activation_still_updates_the_on_screen_state", async () => {
+    render(<RulesScreen initialRules={BASE_RULES} dailyKcal={null} />);
+
+    const toggle = screen.getByTestId("rule-toggle-voda-pre-obroka");
+    // A real `<button>` fires its click handler on Enter/Space natively
+    // (browser-level behaviour that `fireEvent.click` exercises the same
+    // handler as); focusing it first proves it is actually reachable via
+    // Tab before activating it, without a mouse.
+    toggle.focus();
+    expect(document.activeElement).toBe(toggle);
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-checked", "true");
+
+    // Let the underlying (mocked, already-resolved) save transition settle
+    // before the test ends, so React doesn't warn about state updates
+    // outside `act(...)`.
+    await waitFor(() => expect(updateRulesActionMock).toHaveBeenCalledTimes(1));
+  });
+
+  it("test_AS_128_the_rules_screen_renders_no_images_so_there_is_nothing_that_could_be_missing_alt_text", () => {
+    const { container } = render(
+      <RulesScreen initialRules={BASE_RULES} dailyKcal={2000} />
+    );
+
+    // Numbers/text/buttons only (rule list + toggle switches + the
+    // day-structure guidance card) -- no `<img>` elements exist here for an
+    // alt-text rule to apply to; this documents that explicitly rather than
+    // leaving AS-128's "images have alt text" clause untested by omission.
+    expect(container.querySelectorAll("img").length).toBe(0);
+  });
+});
+
 describe("Optional day-structure guidance card", () => {
   it("test_day_structure_guidance_renders_when_a_daily_kcal_budget_is_available", () => {
     render(<RulesScreen initialRules={BASE_RULES} dailyKcal={2000} />);

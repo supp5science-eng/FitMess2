@@ -19,12 +19,6 @@ import "./landing.css";
  * `<InstallButton>` (client). The hero chat animation is pure CSS.
  */
 
-const CheckIcon = () => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M20 6 9 17l-5-5" />
-  </svg>
-);
-
 const AgentIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M12 8V4H8" />
@@ -72,19 +66,14 @@ export default function LandingPage() {
         <section className="hero">
           <div className="wrap hero-grid">
             <div className="hero-copy">
-              <span className="eyebrow"><span className="dot" />Na srpskom</span>
-              <h1>Dijeta koja ne <span className="u">puca</span> kad ti pukne.</h1>
+              <h1>Najlaganije moguće ispratiti sve što pojedeš.</h1>
               <p className="lede">
-                Pojeo si previše? Agent ti preračuna nedelju. <b>Nedelja je jedinica uspeha — ne dan.</b>
+                Najveća baza svih srpskih namirnica.
               </p>
+              <p className="lede-sub"><b>90% tačnost skeniranja hrane</b> — samo uslikaj tanjir.</p>
               <div className="hero-actions" id="instaliraj">
                 <InstallButton className="btn-primary btn-lg" />
-                <Link className="btn btn-ghost btn-lg" href="/prijava">Uđi preko weba</Link>
-              </div>
-              <div className="trust">
-                <span><CheckIcon />Besplatno</span>
-                <span><CheckIcon />Na srpskom</span>
-                <span><CheckIcon />Bez reklama</span>
+                <Link className="btn btn-ghost btn-lg" href="/prijava">Kreni</Link>
               </div>
             </div>
 
@@ -179,7 +168,7 @@ export default function LandingPage() {
               <p>Bez gladovanja u znak kazne. Bez odustajanja posle jednog obroka.</p>
               <div className="hero-actions">
                 <InstallButton className="btn-primary btn-lg" />
-                <Link className="btn btn-ghost btn-lg" href="/prijava">Uđi preko weba</Link>
+                <Link className="btn btn-ghost btn-lg" href="/prijava">Kreni</Link>
               </div>
             </div>
           </div>

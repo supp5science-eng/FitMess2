@@ -70,6 +70,7 @@ function makeTarget(overrides: Partial<Target> = {}): Target {
     fat_g: 60,
     carbs_g: 200,
     weekly_kcal: 14000,
+    goal: "lose",
     goal_weight_kg: 70,
     timeframe_weeks: 12,
     effective_from: "2026-01-01T00:00:00.000Z",

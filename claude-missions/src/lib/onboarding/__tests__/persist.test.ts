@@ -16,6 +16,7 @@ const VALID_DATA: OnboardingData = {
   heightCm: 168,
   weightKg: 80,
   activityLevel: "moderate",
+  goal: "lose",
   targetWeightKg: 74,
   timeframeWeeks: 12,
 };

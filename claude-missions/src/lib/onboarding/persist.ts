@@ -21,7 +21,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { bmr, macroTargets, planGoalAdjustment, tdee } from "@/lib/budget/engine";
+import { bmr, macroTargets, planForGoal, tdee } from "@/lib/budget/engine";
 import { generateRules, toPersistedRules } from "@/lib/budget/rules";
 import type { Database } from "@/lib/types/db";
 import type { OnboardingData } from "@/lib/onboarding/types";
@@ -29,6 +29,7 @@ import {
   validateActivityLevel,
   validateAge,
   validateGoal,
+  validateGoalType,
   validateHeight,
   validateSex,
   validateWeight,
@@ -89,25 +90,39 @@ export async function persistOnboarding(
   if (!activityResult.valid)
     return { ok: false, error_sr: activityResult.error };
 
-  const goalResult = validateGoal(
-    data.targetWeightKg,
-    data.timeframeWeeks,
-    data.weightKg
-  );
-  if (!goalResult.valid) return { ok: false, error_sr: goalResult.error };
+  const goalTypeResult = validateGoalType(data.goal);
+  if (!goalTypeResult.valid)
+    return { ok: false, error_sr: goalTypeResult.error };
 
-  // All six validators passed -> every field is guaranteed non-null here.
+  // Non-null after their validators passed.
   const sex = data.sex!;
   const ageYears = data.ageYears!;
   const heightCm = data.heightCm!;
   const weightKg = data.weightKg!;
   const activityLevel = data.activityLevel!;
-  const targetWeightKg = data.targetWeightKg!;
-  const timeframeWeeks = data.timeframeWeeks!;
+  const goalType = data.goal!;
+
+  // Weight-change goals (lose/gain) require a target weight + timeframe;
+  // maintain/tone have none (they eat at maintenance).
+  const isWeightChange = goalType === "lose" || goalType === "gain";
+  let targetWeightKg: number | null = null;
+  let timeframeWeeks: number | null = null;
+  if (isWeightChange) {
+    const goalResult = validateGoal(
+      data.targetWeightKg,
+      data.timeframeWeeks,
+      data.weightKg,
+      goalType
+    );
+    if (!goalResult.valid) return { ok: false, error_sr: goalResult.error };
+    targetWeightKg = data.targetWeightKg!;
+    timeframeWeeks = data.timeframeWeeks!;
+  }
 
   const bmrKcal = bmr(sex, weightKg, heightCm, ageYears);
   const tdeeKcal = tdee(bmrKcal, activityLevel);
-  const goal = planGoalAdjustment({
+  const goal = planForGoal({
+    goal: goalType,
     sex,
     currentWeightKg: weightKg,
     targetWeightKg,
@@ -125,8 +140,8 @@ export async function persistOnboarding(
   const ruleTemplates = generateRules({
     sex,
     activityLevel,
-    weightDeltaKg: weightKg - targetWeightKg,
-    timeframeWeeks,
+    weightDeltaKg: targetWeightKg !== null ? weightKg - targetWeightKg : 0,
+    timeframeWeeks: timeframeWeeks ?? 1,
     dailyKcal: goal.dailyKcal,
     macrosClamped: macros.clamped,
     goalAdjusted: goal.adjusted,
@@ -157,6 +172,7 @@ export async function persistOnboarding(
     fat_g: macros.fatG,
     carbs_g: macros.carbsG,
     weekly_kcal: goal.weeklyKcal,
+    goal: goalType,
     goal_weight_kg: targetWeightKg,
     timeframe_weeks: timeframeWeeks,
   });

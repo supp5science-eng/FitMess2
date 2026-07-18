@@ -24,9 +24,10 @@ import {
   ACTIVITY_MULTIPLIERS,
   KCAL_FLOOR,
   MAX_DEFICIT_PCT,
+  MAX_SURPLUS_PCT,
   bmr,
   macroTargets,
-  planGoalAdjustment,
+  planForGoal,
   tdee,
 } from "@/lib/budget/engine";
 import type {
@@ -35,7 +36,12 @@ import type {
   MacroTargets,
 } from "@/lib/budget/engine";
 import { ONBOARDING_QUERY_KEYS } from "@/lib/onboarding/types";
-import type { ActivityLevel, OnboardingData, Sex } from "@/lib/onboarding/types";
+import type {
+  ActivityLevel,
+  GoalType,
+  OnboardingData,
+  Sex,
+} from "@/lib/onboarding/types";
 
 // ---------------------------------------------------------------------
 // Query-string parsing (the F015 -> F016 hand-off, read side)
@@ -52,6 +58,8 @@ const VALID_ACTIVITY_LEVELS: ActivityLevel[] = [
   "active",
   "very_active",
 ];
+const VALID_GOAL_TYPES: GoalType[] = ["maintain", "lose", "gain", "tone"];
+const WEIGHT_CHANGE_GOALS: GoalType[] = ["lose", "gain"];
 
 function readParam(params: RawSearchParams, key: string): string | null {
   const value = params[key];
@@ -69,6 +77,12 @@ function parseActivityLevel(value: string | null): ActivityLevel | null {
   return value !== null &&
     VALID_ACTIVITY_LEVELS.includes(value as ActivityLevel)
     ? (value as ActivityLevel)
+    : null;
+}
+
+function parseGoalType(value: string | null): GoalType | null {
+  return value !== null && VALID_GOAL_TYPES.includes(value as GoalType)
+    ? (value as GoalType)
     : null;
 }
 
@@ -95,6 +109,7 @@ export function parseOnboardingSearchParams(
     activityLevel: parseActivityLevel(
       readParam(params, ONBOARDING_QUERY_KEYS.activityLevel)
     ),
+    goal: parseGoalType(readParam(params, ONBOARDING_QUERY_KEYS.goal)),
     targetWeightKg: parseNumber(
       readParam(params, ONBOARDING_QUERY_KEYS.targetWeightKg)
     ),
@@ -104,33 +119,42 @@ export function parseOnboardingSearchParams(
   };
 }
 
-/** `OnboardingData` with every field guaranteed non-null -- what the F014
- * engine functions actually need. */
+/** `OnboardingData` with every *required* field present -- what the F014
+ * engine functions need. `targetWeightKg`/`timeframeWeeks` stay nullable
+ * because maintain/tone goals legitimately have none. */
 export interface CompleteOnboardingData {
   sex: Sex;
   ageYears: number;
   heightCm: number;
   weightKg: number;
   activityLevel: ActivityLevel;
-  targetWeightKg: number;
-  timeframeWeeks: number;
+  goal: GoalType;
+  targetWeightKg: number | null;
+  timeframeWeeks: number | null;
 }
 
-/** Type guard: true when every field is present (not necessarily *valid* --
- * range validation is `@/lib/onboarding/validation`'s job; this only guards
- * against `computeBudgetSummary` being called with a `null` and crashing). */
+/** Type guard: true when every field needed to compute a plan is present.
+ * For maintain/tone that's everything except target/timeframe; for lose/gain
+ * the target weight + timeframe are required too. (Range *validity* is
+ * `@/lib/onboarding/validation`'s job; this only guards against
+ * `computeBudgetSummary` crashing on a missing input.) */
 export function isOnboardingDataComplete(
   data: OnboardingData
 ): data is CompleteOnboardingData {
-  return (
+  const baseComplete =
     data.sex !== null &&
     data.ageYears !== null &&
     data.heightCm !== null &&
     data.weightKg !== null &&
     data.activityLevel !== null &&
-    data.targetWeightKg !== null &&
-    data.timeframeWeeks !== null
-  );
+    data.goal !== null;
+
+  if (!baseComplete || data.goal === null) return false;
+
+  if (WEIGHT_CHANGE_GOALS.includes(data.goal)) {
+    return data.targetWeightKg !== null && data.timeframeWeeks !== null;
+  }
+  return true;
 }
 
 // ---------------------------------------------------------------------
@@ -161,7 +185,8 @@ export function computeBudgetSummary(
 ): BudgetSummary {
   const bmrKcal = bmr(data.sex, data.weightKg, data.heightCm, data.ageYears);
   const tdeeKcal = tdee(bmrKcal, data.activityLevel);
-  const goal = planGoalAdjustment({
+  const goal = planForGoal({
+    goal: data.goal,
     sex: data.sex,
     currentWeightKg: data.weightKg,
     targetWeightKg: data.targetWeightKg,
@@ -196,6 +221,7 @@ export function explainGoalAdjustment(
   sex: Sex
 ): string[] {
   const maxDeficitPercent = Math.round(MAX_DEFICIT_PCT * 100);
+  const maxSurplusPercent = Math.round(MAX_SURPLUS_PCT * 100);
   const floorKcal = KCAL_FLOOR[sex] ?? KCAL_FLOOR.male;
 
   return reasonCodes
@@ -205,6 +231,8 @@ export function explainGoalAdjustment(
           return `Tvoj cilj bi zahtevao veći dnevni deficit nego što je bezbedno, zato smo ga ograničili na najviše ${maxDeficitPercent}% ispod tvog dnevnog utroška energije (TDEE).`;
         case "floor_kcal_applied":
           return `Dnevni kalorijski cilj je prilagođen na najniži bezbedan nivo od ${floorKcal} kcal, da ne bi unosio/la premalo.`;
+        case "surplus_capped_20_percent":
+          return `Tvoj cilj bi zahtevao veći dnevni višak nego što je zdravo za čisto dobijanje mase, zato smo ga ograničili na najviše ${maxSurplusPercent}% iznad tvog dnevnog utroška energije (TDEE).`;
         default:
           return "";
       }

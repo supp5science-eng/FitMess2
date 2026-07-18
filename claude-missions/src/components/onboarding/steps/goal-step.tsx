@@ -1,5 +1,6 @@
 "use client";
 
+import type { GoalType } from "@/lib/types/db";
 import { FieldError } from "@/components/onboarding/field-error";
 import {
   SelectField,
@@ -27,6 +28,7 @@ function weekWord(weeks: number): string {
  * fields plus the current weight (step 4) are known -- Cal AI-style
  * aesthetic per the clarified spec. */
 export function GoalStep({
+  goal,
   currentWeightKg,
   targetWeightKg,
   timeframeWeeks,
@@ -34,6 +36,7 @@ export function GoalStep({
   onChangeTimeframe,
   error,
 }: {
+  goal: GoalType;
   currentWeightKg: number | null;
   targetWeightKg: number | null;
   timeframeWeeks: number | null;
@@ -41,28 +44,39 @@ export function GoalStep({
   onChangeTimeframe: (value: number | null) => void;
   error?: string;
 }) {
-  const canPreview =
+  const isGain = goal === "gain";
+
+  const numbersReady =
     currentWeightKg !== null &&
     targetWeightKg !== null &&
     timeframeWeeks !== null &&
     !Number.isNaN(currentWeightKg) &&
     !Number.isNaN(targetWeightKg) &&
     !Number.isNaN(timeframeWeeks) &&
-    targetWeightKg < currentWeightKg &&
     timeframeWeeks > 0;
 
+  // Preview only when the target sits on the correct side of current weight
+  // for the chosen goal (below for lose, above for gain).
+  const canPreview =
+    numbersReady &&
+    (isGain
+      ? targetWeightKg! > currentWeightKg!
+      : targetWeightKg! < currentWeightKg!);
+
   const deltaKg = canPreview
-    ? Math.round((currentWeightKg! - targetWeightKg!) * 10) / 10
+    ? Math.round(Math.abs(currentWeightKg! - targetWeightKg!) * 10) / 10
     : null;
 
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-xl font-semibold text-foreground">
-          Koji je tvoj cilj?
+          {isGain ? "Do koje težine?" : "Koja ti je ciljna težina?"}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Unesi ciljnu težinu i rok u kojem želiš da je dostigneš.
+          {isGain
+            ? "Izaberi željenu težinu i rok u kojem želiš da je dostigneš."
+            : "Izaberi ciljnu težinu i rok u kojem želiš da je dostigneš."}
         </p>
       </div>
       <SelectField
@@ -90,7 +104,8 @@ export function GoalStep({
           data-testid="goal-preview"
           className="text-2xl font-bold text-primary"
         >
-          -{deltaKg} kg za {timeframeWeeks} {weekWord(timeframeWeeks!)}
+          {isGain ? "+" : "-"}
+          {deltaKg} kg za {timeframeWeeks} {weekWord(timeframeWeeks!)}
         </p>
       ) : null}
     </div>

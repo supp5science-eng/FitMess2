@@ -152,6 +152,7 @@ describe.skipIf(!hasCredentials)(
       heightCm: 170,
       weightKg: 82,
       activityLevel: "moderate",
+      goal: "lose",
       targetWeightKg: 72,
       timeframeWeeks: 20,
     };
@@ -162,6 +163,7 @@ describe.skipIf(!hasCredentials)(
       heightCm: 182,
       weightKg: 95,
       activityLevel: "active",
+      goal: "lose",
       targetWeightKg: 85,
       timeframeWeeks: 24,
     };

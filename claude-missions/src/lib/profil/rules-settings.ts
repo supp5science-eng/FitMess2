@@ -12,7 +12,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { bmr, macroTargets, planGoalAdjustment, tdee } from "@/lib/budget/engine";
+import { bmr, macroTargets, planForGoal, tdee } from "@/lib/budget/engine";
 import {
   generateRules,
   persistedRulesArraySchema,
@@ -111,7 +111,7 @@ export async function regenerateRules(
 
   const { data: target, error: targetError } = await supabase
     .from("targets")
-    .select("goal_weight_kg, timeframe_weeks")
+    .select("goal, goal_weight_kg, timeframe_weeks")
     .eq("user_id", userId)
     .order("effective_from", { ascending: false })
     .limit(1)
@@ -124,7 +124,8 @@ export async function regenerateRules(
   const ageYears = birthYearToAgeYears(profile.birth_year);
   const bmrKcal = bmr(profile.sex, profile.weight_kg, profile.height_cm, ageYears);
   const tdeeKcal = tdee(bmrKcal, profile.activity_level);
-  const goal = planGoalAdjustment({
+  const goal = planForGoal({
+    goal: target.goal ?? "lose",
     sex: profile.sex,
     currentWeightKg: profile.weight_kg,
     targetWeightKg: target.goal_weight_kg,
@@ -136,8 +137,11 @@ export async function regenerateRules(
   const templates = generateRules({
     sex: profile.sex,
     activityLevel: profile.activity_level,
-    weightDeltaKg: profile.weight_kg - target.goal_weight_kg,
-    timeframeWeeks: target.timeframe_weeks,
+    weightDeltaKg:
+      target.goal_weight_kg !== null
+        ? profile.weight_kg - target.goal_weight_kg
+        : 0,
+    timeframeWeeks: target.timeframe_weeks ?? 1,
     dailyKcal: goal.dailyKcal,
     macrosClamped: macros.clamped,
     goalAdjusted: goal.adjusted,

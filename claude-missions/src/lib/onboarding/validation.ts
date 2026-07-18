@@ -16,7 +16,7 @@
  * front door a real user's typed input passes through first.
  */
 
-import type { ActivityLevel, Sex } from "@/lib/types/db";
+import type { ActivityLevel, GoalType, Sex } from "@/lib/types/db";
 
 export const MIN_AGE_YEARS = 14;
 export const MAX_AGE_YEARS = 100;
@@ -37,6 +37,7 @@ const VALID_ACTIVITY_LEVELS: ActivityLevel[] = [
   "active",
   "very_active",
 ];
+const VALID_GOAL_TYPES: GoalType[] = ["maintain", "lose", "gain", "tone"];
 
 export type ValidationResult =
   | { valid: true }
@@ -102,17 +103,26 @@ export function validateActivityLevel(
   return invalid("Izaberi nivo aktivnosti da bi nastavio/nastavila.");
 }
 
+/** The goal-type step: must pick one of the four objectives. */
+export function validateGoalType(goal: GoalType | null): ValidationResult {
+  if (goal !== null && VALID_GOAL_TYPES.includes(goal)) return VALID;
+  return invalid("Izaberi svoj cilj da bi nastavio/nastavila.");
+}
+
 /**
  * AS-019 step 6 (cilj): target weight + timeframe together, validated as
  * one step (per the clarified spec's "cilj (target kg + weeks)" step).
  * `currentWeightKg` is the value collected in step 4, used for the
- * "target weight sane vs current" rule -- a fat-loss goal's target must be
- * a real, meaningfully lower weight than today's.
+ * "target weight sane vs current" rule. `goal` sets the direction of that
+ * rule: a `lose` target must be meaningfully below the current weight, a
+ * `gain` target meaningfully above it. Only called for the weight-change
+ * goals (`lose`/`gain`); `maintain`/`tone` skip this step entirely.
  */
 export function validateGoal(
   targetWeightKg: number | null,
   timeframeWeeks: number | null,
-  currentWeightKg: number | null
+  currentWeightKg: number | null,
+  goal: GoalType = "lose"
 ): ValidationResult {
   if (targetWeightKg === null || Number.isNaN(targetWeightKg)) {
     return invalid("Unesi svoju ciljnu težinu.");
@@ -123,7 +133,11 @@ export function validateGoal(
     );
   }
   if (currentWeightKg !== null && !Number.isNaN(currentWeightKg)) {
-    if (targetWeightKg >= currentWeightKg) {
+    if (goal === "gain") {
+      if (targetWeightKg <= currentWeightKg) {
+        return invalid("Ciljna težina treba da bude veća od trenutne.");
+      }
+    } else if (targetWeightKg >= currentWeightKg) {
       return invalid("Ciljna težina treba da bude manja od trenutne.");
     }
   }

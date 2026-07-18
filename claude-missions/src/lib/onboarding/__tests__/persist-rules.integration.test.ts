@@ -97,6 +97,7 @@ const ONBOARDING_DATA: OnboardingData = {
   heightCm: 182,
   weightKg: 95,
   activityLevel: "very_active",
+  goal: "lose",
   targetWeightKg: 83,
   timeframeWeeks: 20,
 };

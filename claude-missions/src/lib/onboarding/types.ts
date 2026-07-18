@@ -12,9 +12,9 @@
  * the F015 clarified spec: "do not implement the final save here").
  */
 
-import type { ActivityLevel, Sex } from "@/lib/types/db";
+import type { ActivityLevel, GoalType, Sex } from "@/lib/types/db";
 
-export type { ActivityLevel, Sex };
+export type { ActivityLevel, GoalType, Sex };
 
 export interface OnboardingData {
   sex: Sex | null;
@@ -22,6 +22,7 @@ export interface OnboardingData {
   heightCm: number | null;
   weightKg: number | null;
   activityLevel: ActivityLevel | null;
+  goal: GoalType | null;
   targetWeightKg: number | null;
   timeframeWeeks: number | null;
 }
@@ -32,21 +33,42 @@ export const EMPTY_ONBOARDING_DATA: OnboardingData = {
   heightCm: null,
   weightKg: null,
   activityLevel: null,
+  goal: null,
   targetWeightKg: null,
   timeframeWeeks: null,
 };
 
-/** One question per screen, in the order the clarified spec lists them. */
+/** Every possible step, in order. The `cilj` (target weight + timeframe) step
+ * is conditional -- see `visibleStepIds` -- since maintain/tone goals have no
+ * target weight to collect. */
 export const ONBOARDING_STEP_IDS = [
   "pol",
   "godine",
   "visina",
   "tezina",
   "aktivnost",
+  "cilj-tip",
   "cilj",
 ] as const;
 
 export type OnboardingStepId = (typeof ONBOARDING_STEP_IDS)[number];
+
+/** Goals that need a concrete target weight + timeframe (and therefore the
+ * `cilj` step); maintain/tone skip it. */
+const WEIGHT_CHANGE_GOALS: GoalType[] = ["lose", "gain"];
+
+/**
+ * The steps actually shown for the current goal selection. `cilj` (target
+ * weight + timeframe) only appears for the weight-change goals; for
+ * maintain/tone the wizard finishes right after the goal-type step. Before a
+ * goal is picked (`null`), `cilj` is omitted so the progress count matches the
+ * shortest path until the user commits to a weight-change goal.
+ */
+export function visibleStepIds(goal: GoalType | null): OnboardingStepId[] {
+  return ONBOARDING_STEP_IDS.filter(
+    (id) => id !== "cilj" || (goal !== null && WEIGHT_CHANGE_GOALS.includes(goal))
+  );
+}
 
 /** The five activity tiers, with short Serbian (ti-form) descriptions. */
 export const ACTIVITY_LEVEL_OPTIONS: {
@@ -91,11 +113,14 @@ export const ONBOARDING_QUERY_KEYS = {
   heightCm: "visina",
   weightKg: "tezina",
   activityLevel: "aktivnost",
+  goal: "cilj",
   targetWeightKg: "ciljnaTezina",
   timeframeWeeks: "nedelje",
 } as const;
 
-/** Builds the `?pol=...&godine=...` query string F016's summary page reads. */
+/** Builds the `?pol=...&godine=...` query string the plan-reveal page reads.
+ * Target weight + timeframe are only carried for weight-change goals; for
+ * maintain/tone they're irrelevant and omitted. */
 export function buildOnboardingSummaryUrl(data: OnboardingData): string {
   const params = new URLSearchParams();
   if (data.sex) params.set(ONBOARDING_QUERY_KEYS.sex, data.sex);
@@ -107,12 +132,16 @@ export function buildOnboardingSummaryUrl(data: OnboardingData): string {
     params.set(ONBOARDING_QUERY_KEYS.weightKg, String(data.weightKg));
   if (data.activityLevel)
     params.set(ONBOARDING_QUERY_KEYS.activityLevel, data.activityLevel);
-  if (data.targetWeightKg !== null)
+  if (data.goal) params.set(ONBOARDING_QUERY_KEYS.goal, data.goal);
+
+  const needsTarget =
+    data.goal !== null && WEIGHT_CHANGE_GOALS.includes(data.goal);
+  if (needsTarget && data.targetWeightKg !== null)
     params.set(
       ONBOARDING_QUERY_KEYS.targetWeightKg,
       String(data.targetWeightKg)
     );
-  if (data.timeframeWeeks !== null)
+  if (needsTarget && data.timeframeWeeks !== null)
     params.set(
       ONBOARDING_QUERY_KEYS.timeframeWeeks,
       String(data.timeframeWeeks)

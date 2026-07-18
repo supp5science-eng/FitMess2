@@ -20,6 +20,7 @@ const FULL_DATA: OnboardingData = {
   heightCm: 168,
   weightKg: 80,
   activityLevel: "moderate",
+  goal: "lose",
   targetWeightKg: 70.5,
   timeframeWeeks: 16,
 };

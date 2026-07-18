@@ -68,7 +68,9 @@ describe("AS-019: step 1 (pol) collects sex", () => {
   });
 });
 
-function advanceToStep(step: "godine" | "visina" | "tezina" | "aktivnost" | "cilj") {
+function advanceToStep(
+  step: "godine" | "visina" | "tezina" | "aktivnost" | "cilj-tip" | "cilj"
+) {
   render(<OnboardingWizard />);
   fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
@@ -87,6 +89,11 @@ function advanceToStep(step: "godine" | "visina" | "tezina" | "aktivnost" | "cil
   if (step === "aktivnost") return;
 
   fireEvent.click(screen.getByRole("radio", { name: /Umerena aktivnost/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+  if (step === "cilj-tip") return;
+
+  // Pick a weight-change goal so the target-weight ("cilj") step appears.
+  fireEvent.click(screen.getByRole("radio", { name: /Mršavljenje/ }));
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 }
 
@@ -187,14 +194,50 @@ describe("AS-019: step 5 (nivo aktivnosti) collects one of 5 activity tiers", ()
     expect(screen.getByRole("alert")).toHaveTextContent(/aktivnost/i);
   });
 
-  it("test_AS_019_aktivnost_step_accepts_a_tier_and_advances_to_cilj", () => {
+  it("test_AS_019_aktivnost_step_accepts_a_tier_and_advances_to_goal_type", () => {
     advanceToStep("aktivnost");
     fireEvent.click(screen.getByRole("radio", { name: /Umerena aktivnost/ }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(
-      screen.getByRole("heading", { name: /Koji je tvoj cilj\?/ })
+      screen.getByRole("heading", { name: /Koji ti je cilj\?/ })
     ).toBeInTheDocument();
+  });
+});
+
+describe("goal type (cilj-tip) step drives the flow", () => {
+  it("renders all four goals and blocks Dalje until one is picked", () => {
+    advanceToStep("cilj-tip");
+    expect(screen.getByRole("radio", { name: /Mršavljenje/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Održavanje/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Gojenje/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Zategnutost/ })).toBeInTheDocument();
+
+    // With no goal picked yet this is the last visible step, so the button
+    // reads "Završi"; pressing it must still block on the missing goal.
+    fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/cilj/i);
+  });
+
+  it("a weight-change goal (Mršavljenje) reveals the target-weight step", () => {
+    advanceToStep("cilj-tip");
+    fireEvent.click(screen.getByRole("radio", { name: /Mršavljenje/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+
+    expect(screen.getByLabelText(/Ciljna težina/)).toBeInTheDocument();
+  });
+
+  it("Održavanje skips the target-weight step and finishes onto the plan reveal", () => {
+    advanceToStep("cilj-tip");
+    fireEvent.click(screen.getByRole("radio", { name: /Održavanje/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
+
+    expect(pushMock).toHaveBeenCalledTimes(1);
+    const url = pushMock.mock.calls[0][0] as string;
+    const params = new URLSearchParams(url.split("?")[1]);
+    expect(params.get("cilj")).toBe("maintain");
+    expect(params.get("ciljnaTezina")).toBeNull();
+    expect(params.get("nedelje")).toBeNull();
   });
 });
 

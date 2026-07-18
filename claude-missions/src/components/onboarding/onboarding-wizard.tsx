@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -10,11 +10,12 @@ import { AgeStep } from "@/components/onboarding/steps/age-step";
 import { HeightStep } from "@/components/onboarding/steps/height-step";
 import { WeightStep } from "@/components/onboarding/steps/weight-step";
 import { ActivityStep } from "@/components/onboarding/steps/activity-step";
+import { GoalTypeStep } from "@/components/onboarding/steps/goal-type-step";
 import { GoalStep } from "@/components/onboarding/steps/goal-step";
 import {
   buildOnboardingSummaryUrl,
   EMPTY_ONBOARDING_DATA,
-  ONBOARDING_STEP_IDS,
+  visibleStepIds,
 } from "@/lib/onboarding/types";
 import type {
   OnboardingData,
@@ -24,13 +25,12 @@ import {
   validateActivityLevel,
   validateAge,
   validateGoal,
+  validateGoalType,
   validateHeight,
   validateSex,
   validateWeight,
 } from "@/lib/onboarding/validation";
 import type { ValidationResult } from "@/lib/onboarding/validation";
-
-const TOTAL_STEPS = ONBOARDING_STEP_IDS.length;
 
 /**
  * The single source of truth for "is the current step's data good enough
@@ -52,11 +52,14 @@ function validateStep(
       return validateWeight(data.weightKg);
     case "aktivnost":
       return validateActivityLevel(data.activityLevel);
+    case "cilj-tip":
+      return validateGoalType(data.goal);
     case "cilj":
       return validateGoal(
         data.targetWeightKg,
         data.timeframeWeeks,
-        data.weightKg
+        data.weightKg,
+        data.goal ?? "lose"
       );
     default:
       return { valid: true };
@@ -66,17 +69,15 @@ function validateStep(
 /**
  * F015: the onboarding wizard (AS-018, AS-019). One question per screen,
  * Serbian (ti-form) copy, a progress indicator, and inline Serbian
- * validation. All collected state lives here in client state (React
- * `useState`) -- per the clarified spec's "URL step param or client state"
- * option, client state was chosen since this component never unmounts
- * between steps (only which step's JSX renders changes), so nothing is
- * lost moving Back/Dalje (see the F015 handoff's "Decisions made").
+ * validation.
  *
- * On the final step, hands the fully-collected data off to F016's summary
- * screen via the query string (`buildOnboardingSummaryUrl`) -- this
- * feature never writes to the database and never sets `onboarded_at`
- * itself, per the clarified scope ("do not implement the final save
- * here").
+ * The set of steps is dynamic: after the goal-type step, the target-weight
+ * ("cilj") step is only shown for weight-change goals (lose/gain), so
+ * maintain/tone finish one step earlier (`visibleStepIds`). All collected
+ * state lives here in client state; nothing is lost moving Back/Dalje.
+ *
+ * On the final step, hands the fully-collected data off to the plan-reveal
+ * screen via the query string (`buildOnboardingSummaryUrl`).
  */
 export function OnboardingWizard() {
   const router = useRouter();
@@ -84,23 +85,25 @@ export function OnboardingWizard() {
   const [data, setData] = useState<OnboardingData>(EMPTY_ONBOARDING_DATA);
   const [error, setError] = useState<string | undefined>(undefined);
 
-  const stepId = ONBOARDING_STEP_IDS[stepIndex];
-  const isLastStep = stepIndex === TOTAL_STEPS - 1;
+  const stepIds = useMemo(() => visibleStepIds(data.goal), [data.goal]);
+  const totalSteps = stepIds.length;
+  // Guard against the visible-step count shrinking under the current index
+  // (e.g. switching from a weight-change goal back to maintain).
+  const currentIndex = Math.min(stepIndex, totalSteps - 1);
+  const stepId = stepIds[currentIndex];
+  const isLastStep = currentIndex === totalSteps - 1;
 
   function update<K extends keyof OnboardingData>(
     key: K,
     value: OnboardingData[K]
   ) {
     setData((prev) => ({ ...prev, [key]: value }));
-    // Clear a stale error the moment the user edits the field again, rather
-    // than leaving last step's rejected message on screen while they type
-    // a new value.
     setError(undefined);
   }
 
   function handleBack() {
     setError(undefined);
-    setStepIndex((current) => Math.max(0, current - 1));
+    setStepIndex(Math.max(0, currentIndex - 1));
   }
 
   function handleNext() {
@@ -115,14 +118,14 @@ export function OnboardingWizard() {
       router.push(buildOnboardingSummaryUrl(data));
       return;
     }
-    setStepIndex((current) => Math.min(TOTAL_STEPS - 1, current + 1));
+    setStepIndex(currentIndex + 1);
   }
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-6 py-8">
       <ProgressIndicator
-        currentStep={stepIndex + 1}
-        totalSteps={TOTAL_STEPS}
+        currentStep={currentIndex + 1}
+        totalSteps={totalSteps}
       />
 
       {stepId === "pol" && (
@@ -160,8 +163,16 @@ export function OnboardingWizard() {
           error={error}
         />
       )}
+      {stepId === "cilj-tip" && (
+        <GoalTypeStep
+          value={data.goal}
+          onChange={(value) => update("goal", value)}
+          error={error}
+        />
+      )}
       {stepId === "cilj" && (
         <GoalStep
+          goal={data.goal ?? "lose"}
           currentWeightKg={data.weightKg}
           targetWeightKg={data.targetWeightKg}
           timeframeWeeks={data.timeframeWeeks}
@@ -172,7 +183,7 @@ export function OnboardingWizard() {
       )}
 
       <div className="mt-auto flex items-center gap-3 pt-4">
-        {stepIndex > 0 ? (
+        {currentIndex > 0 ? (
           <Button
             type="button"
             variant="outline"

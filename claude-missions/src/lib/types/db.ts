@@ -46,6 +46,15 @@ export type ActivityLevel =
   | "active"
   | "very_active";
 
+/**
+ * The user's overall objective, collected in onboarding and used to drive the
+ * budget math (`src/lib/budget/engine.ts`'s `planForGoal`):
+ *  - `maintain` / `tone` -> eat at maintenance (TDEE)
+ *  - `lose`              -> calorie deficit (target weight below current)
+ *  - `gain`             -> calorie surplus (target weight above current)
+ */
+export type GoalType = "maintain" | "lose" | "gain" | "tone";
+
 /** F017: a single element of `profiles.rules` (jsonb array). See
  * `src/lib/budget/rules.ts`'s `PersistedRule` -- kept as a separate,
  * structurally-identical type here so this file's DB-shape types don't
@@ -131,8 +140,9 @@ export interface Database {
           fat_g: number;
           carbs_g: number;
           weekly_kcal: number;
-          goal_weight_kg: number;
-          timeframe_weeks: number;
+          goal: GoalType | null;
+          goal_weight_kg: number | null;
+          timeframe_weeks: number | null;
           effective_from: string;
           created_at: string;
         };
@@ -144,8 +154,9 @@ export interface Database {
           fat_g: number;
           carbs_g: number;
           weekly_kcal: number;
-          goal_weight_kg: number;
-          timeframe_weeks: number;
+          goal?: GoalType | null;
+          goal_weight_kg?: number | null;
+          timeframe_weeks?: number | null;
           effective_from?: string;
           created_at?: string;
         };
@@ -157,8 +168,9 @@ export interface Database {
           fat_g?: number;
           carbs_g?: number;
           weekly_kcal?: number;
-          goal_weight_kg?: number;
-          timeframe_weeks?: number;
+          goal?: GoalType | null;
+          goal_weight_kg?: number | null;
+          timeframe_weeks?: number | null;
           effective_from?: string;
           created_at?: string;
         };

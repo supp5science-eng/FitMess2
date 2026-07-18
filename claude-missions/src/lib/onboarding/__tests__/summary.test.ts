@@ -31,6 +31,7 @@ describe("parseOnboardingSearchParams: reads the F015 -> F016 hand-off query str
       heightCm: 168,
       weightKg: 80,
       activityLevel: "moderate",
+      goal: null,
       targetWeightKg: 74,
       timeframeWeeks: 12,
     });
@@ -67,6 +68,7 @@ describe("isOnboardingDataComplete: the empty-state gate", () => {
       heightCm: 168,
       weightKg: 80,
       activityLevel: "moderate",
+      goal: "lose",
       targetWeightKg: 74,
       timeframeWeeks: 12,
     };
@@ -80,6 +82,7 @@ describe("isOnboardingDataComplete: the empty-state gate", () => {
       heightCm: 168,
       weightKg: 80,
       activityLevel: "moderate",
+      goal: "lose",
       targetWeightKg: 74,
       timeframeWeeks: null,
     };
@@ -98,6 +101,7 @@ describe("computeBudgetSummary: recompute-on-edit is a pure function of the curr
     heightCm: 168,
     weightKg: 80,
     activityLevel: "moderate" as const,
+    goal: "lose" as const,
     targetWeightKg: 74,
     timeframeWeeks: 12,
   };
@@ -184,6 +188,7 @@ describe("explainGoalAdjustment: AS-030 Serbian explanation copy", () => {
       heightCm: 168,
       weightKg: 80,
       activityLevel: "moderate",
+      goal: "lose",
       targetWeightKg: 78,
       timeframeWeeks: 26,
     });
@@ -202,6 +207,7 @@ describe("explainGoalAdjustment: AS-030 Serbian explanation copy", () => {
       heightCm: 160,
       weightKg: 65,
       activityLevel: "sedentary",
+      goal: "lose",
       targetWeightKg: 35,
       timeframeWeeks: 4,
     });

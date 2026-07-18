@@ -24,9 +24,9 @@
  * type in src/lib/types/db.ts -- do not diverge from that enum.
  */
 
-import type { ActivityLevel, Sex } from "@/lib/types/db";
+import type { ActivityLevel, GoalType, Sex } from "@/lib/types/db";
 
-export type { ActivityLevel, Sex };
+export type { ActivityLevel, GoalType, Sex };
 
 // ---------------------------------------------------------------------
 // Constants
@@ -64,6 +64,10 @@ export const KCAL_FLOOR: Record<Sex, number> = {
 
 /** No caller may ever push the deficit below TDEE by more than this (AS-024). */
 export const MAX_DEFICIT_PCT = 0.25;
+
+/** Symmetric cap for a weight-gain goal: never eat more than 20% over TDEE
+ * (a lean-bulk pace; anything faster is mostly fat gain). */
+export const MAX_SURPLUS_PCT = 0.2;
 
 /**
  * Default deficit applied by `dailyTarget` when a caller doesn't supply an
@@ -267,7 +271,8 @@ export function weeklyBudget(dailyKcal: number): number {
 
 export type GoalAdjustReasonCode =
   | "deficit_capped_25_percent"
-  | "floor_kcal_applied";
+  | "floor_kcal_applied"
+  | "surplus_capped_20_percent";
 
 export interface GoalAdjustmentInput {
   sex: Sex;
@@ -381,4 +386,121 @@ export function planGoalAdjustment(
     adjusted,
     reasonCodes,
   };
+}
+
+/**
+ * Mirror of `planGoalAdjustment` for a weight-GAIN goal: derives the implied
+ * daily surplus from a target weight ABOVE the current one over the timeframe,
+ * clamps it to `MAX_SURPLUS_PCT`, and returns `TDEE * (1 + surplus)`. A target
+ * at or below current implies no surplus (just maintenance). The surplus is
+ * recorded as a negative deficit on the shared result shape so callers/UI can
+ * treat "deficit" as a single signed lever (negative = eating above TDEE).
+ */
+export function planWeightGain(
+  input: GoalAdjustmentInput
+): GoalAdjustmentResult {
+  const tdeeKcal = Math.max(0, input.tdeeKcal);
+  const currentWeightKg = clampNumber(
+    input.currentWeightKg,
+    MIN_WEIGHT_KG,
+    MAX_WEIGHT_KG
+  );
+  const targetWeightKg = clampNumber(
+    input.targetWeightKg,
+    MIN_WEIGHT_KG,
+    MAX_WEIGHT_KG
+  );
+  const timeframeWeeks = Math.max(1, Math.round(input.timeframeWeeks) || 1);
+
+  const gainKg = targetWeightKg - currentWeightKg;
+  if (gainKg <= 0) {
+    const dailyKcal = roundKcal(tdeeKcal);
+    return {
+      dailyKcal,
+      weeklyKcal: dailyKcal * 7,
+      impliedDeficitPct: 0,
+      appliedDeficitPct: 0,
+      adjusted: false,
+      reasonCodes: [],
+    };
+  }
+
+  const totalSurplusKcal = gainKg * KCAL_PER_KG_BODY_MASS;
+  const impliedDailySurplusKcal = totalSurplusKcal / (timeframeWeeks * 7);
+  const impliedSurplusPct =
+    tdeeKcal > 0 ? impliedDailySurplusKcal / tdeeKcal : 0;
+
+  const reasonCodes: GoalAdjustReasonCode[] = [];
+  let adjusted = false;
+  let appliedSurplusPct = impliedSurplusPct;
+
+  if (appliedSurplusPct > MAX_SURPLUS_PCT) {
+    appliedSurplusPct = MAX_SURPLUS_PCT;
+    adjusted = true;
+    reasonCodes.push("surplus_capped_20_percent");
+  }
+
+  const dailyKcal = roundKcal(tdeeKcal * (1 + appliedSurplusPct));
+
+  return {
+    dailyKcal,
+    weeklyKcal: dailyKcal * 7,
+    // Negative deficit == surplus (eating above TDEE).
+    impliedDeficitPct: -impliedSurplusPct,
+    appliedDeficitPct: -appliedSurplusPct,
+    adjusted,
+    reasonCodes,
+  };
+}
+
+export interface GoalPlanInput {
+  goal: GoalType;
+  sex: Sex;
+  currentWeightKg: number;
+  /** Present only for weight-change goals (lose/gain); null for maintain/tone. */
+  targetWeightKg: number | null;
+  timeframeWeeks: number | null;
+  tdeeKcal: number;
+}
+
+/**
+ * The single entry point the onboarding summary + persist use: turns the
+ * chosen goal type into a daily/weekly kcal plan.
+ *  - `maintain` / `tone` -> eat at maintenance (TDEE), no adjustment
+ *  - `lose`              -> `planGoalAdjustment` (deficit from target weight)
+ *  - `gain`             -> `planWeightGain` (surplus toward target weight)
+ *
+ * Missing target/timeframe (maintain/tone, or a partially-filled edge) never
+ * throws -- it degrades to maintenance.
+ */
+export function planForGoal(input: GoalPlanInput): GoalAdjustmentResult {
+  const tdeeKcal = Math.max(0, roundKcal(input.tdeeKcal));
+
+  if (
+    input.goal === "maintain" ||
+    input.goal === "tone" ||
+    input.targetWeightKg === null ||
+    input.timeframeWeeks === null
+  ) {
+    return {
+      dailyKcal: tdeeKcal,
+      weeklyKcal: tdeeKcal * 7,
+      impliedDeficitPct: 0,
+      appliedDeficitPct: 0,
+      adjusted: false,
+      reasonCodes: [],
+    };
+  }
+
+  const shared = {
+    sex: input.sex,
+    currentWeightKg: input.currentWeightKg,
+    targetWeightKg: input.targetWeightKg,
+    timeframeWeeks: input.timeframeWeeks,
+    tdeeKcal: input.tdeeKcal,
+  };
+
+  return input.goal === "gain"
+    ? planWeightGain(shared)
+    : planGoalAdjustment(shared);
 }

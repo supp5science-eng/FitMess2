@@ -1,0 +1,56 @@
+# Handoff: F024 — Search UI + recents/quick-add
+
+## Status
+COMPLETE
+
+## Assertions covered
+AS-039: PASS — an unverified food (`foods.verified === false`) is visibly marked "neprovereno" (a small outlined badge) in the result list; a verified food shows no such marker. Proven at two levels: (1) 6 component tests on the presentational `FoodListItem` (`src/components/food/__tests__/food-list-item.test.tsx`) rendering both a verified and an unverified food and asserting the badge's presence/absence by testid and text content, plus (2) 2 more component tests inside the full `SearchScreen` flow (`src/components/food/__tests__/search-screen.test.tsx`) proving the marker survives a real (mocked) `GET /api/foods/search` round trip. Real-browser evidence: `evidence/F024/01-search-results-neprovereno-and-recent-375px.png`, taken against the live 1678-row catalog searching "plazma" — shows one verified "Plazma keks" (no badge) alongside multiple unverified "Plazma"/"Plazma cheesecake"/etc. rows (each badged "neprovereno").
+AS-040: PASS — the signed-in user's own previously-logged foods are (a) ranked at the TOP of search results, above generic matches, and (b) surfaced as a "Nedavno korišćeno" quick-add list when the search box is empty; another user's recents are always empty for foods they never logged. Proven at three levels: (1) 8 pure-logic unit tests for `dedupeFoodIdsByRecency`/`reorderFoodsByIds`/`rankResultsWithRecentsFirst` (`src/lib/food/__tests__/recents.test.ts`) covering recency ordering, dedup, and the "recent food moved to the top of a scrambled results list" re-rank with no DB involved; (2) 2 `SearchScreen` component tests proving the quick-add list renders from `initialRecents` and that a recent food returned by a (mocked) search response is re-ranked to the top of the DOM list; (3) a live-project integration test (`src/app/api/foods/recents/__tests__/route.integration.test.ts`, 5 tests + 1 inert diagnostic) that seeds `logs` rows directly via the admin client for user A, asserts `GET /api/foods/recents` returns them newest-logged-first with no duplicates, asserts a user with zero logs gets an empty (not erroring) list, and asserts user B's recents never include anything user A logged. Real-browser evidence: `evidence/F024/00-recents-quick-add-375px.png` (quick-add list showing the seeded "Plazma keks") and `01-search-results-neprovereno-and-recent-375px.png` (same food, tagged "nedavno", ranked first in the "plazma" search results ahead of every unverified/generic match).
+
+## Files changed
+src/lib/food/recents.ts
+src/lib/food/__tests__/recents.test.ts
+src/app/api/foods/recents/route.ts
+src/app/api/foods/recents/__tests__/route.integration.test.ts
+src/components/food/food-list-item.tsx
+src/components/food/search-screen.tsx
+src/components/food/__tests__/food-list-item.test.tsx
+src/components/food/__tests__/search-screen.test.tsx
+src/app/(app)/dodaj/pretraga/page.tsx
+src/components/ui/badge.tsx (added via `npx shadcn@latest add badge` — no manual edits)
+src/components/ui/skeleton.tsx (added via `npx shadcn@latest add skeleton` — no manual edits)
+
+## Commands run
+`npx shadcn@latest add badge skeleton --yes` (0) — added `src/components/ui/badge.tsx` + `src/components/ui/skeleton.tsx`, no `package.json`/`package-lock.json` changes needed (deps already present via `@base-ui/react`)
+`npm run typecheck` (0)
+`npm run lint` (0)
+`npm run test` (0) — full suite: 52 test files, 539 passed, 14 skipped (all pre-existing diagnostic-only branches, correctly inert) — see `evidence/F024/test-output.log`. One earlier run hit a transient Supabase Auth 429 in an unrelated pre-existing F011 test file (`src/app/(auth)/__tests__/auth-flow.integration.test.ts`, not touched by this feature); re-ran that file alone (0, 6 passed/1 skipped) and the full suite again (0, clean) — see the documented "shared live external service, not a logic defect" note in prior handoffs (F016/F017) for the same known flakiness class.
+`npm run build` (0) — `/dodaj/pretraga` and `/api/foods/recents` both compile as dynamic routes alongside the rest of the app — see `evidence/F024/build-output.log`
+
+## Decisions made
+- **Recents derived with two RLS-governed round trips (logs, then foods `IN (...)`), not one joined query** — `@supabase/supabase-js`'s query builder has no clean "distinct on + join" primitive; splitting keeps both queries simple, independently RLS-governed (`logs_select_own`, `foods_select_all_authenticated`), and lets the "distinct food, most-recent first" reduction live in a pure, unit-tested function (`dedupeFoodIdsByRecency`) rather than SQL.
+- **Ranking (AS-040 "above generic matches") happens client-side, not server-side** — `GET /api/foods/search` (F023) is a generic, recents-unaware endpoint by design (its own scope is purely verified-first/best-match ranking over the shared catalog). `SearchScreen` merges the search response with the already-known `recentFoodIds` (from server-fetched `initialRecents` props) via the pure `rankResultsWithRecentsFirst` function, moving any overlap to the front while preserving each side's own internal order. This avoids adding a second, redundant recents lookup to the hot search-as-you-type path.
+- **`FoodListItem` renders as a static `<li>`, not a clickable `<button>`** — tapping a result/recent to actually create a log row (grams/portion picker) is explicitly F025's scope per this feature's own spec ("do not build the portion picker here"). A real but currently-inert button would be a worse, more confusing affordance than an honestly-informational row; F025 is expected to wrap this same component with its own tap-to-open-picker interactivity.
+- **Debounce implemented as a plain `setTimeout` + cleanup `useEffect`** (300ms), matching the clarified performance budget ("<200ms interaction") by making the *typing* interaction itself instant (controlled input, no debounce on keystrokes) while only the network request is delayed — no new dependency added for this.
+- **Recents-load failure on the server page degrades to an empty quick-add list, not a page-level error** — search-as-you-type (this page's primary function) does not depend on recents having loaded; only a fully-missing session (no `user`) shows the blocking retry state, matching the `/profil/pravila` (F017) precedent.
+- **`npx shadcn@latest add badge skeleton`** used to add the two new shadcn primitives this feature needed (verified/neprovereno badge, loading skeleton) rather than hand-rolling them, consistent with every other `src/components/ui/*` file already in the repo and `components.json`'s existing config; no manual edits made to the generated files.
+
+## Out-of-scope work needed
+- **F025 (log entry creation / portion picker)** needs to wire real tap-to-add interactivity onto `FoodListItem` (or a wrapper around it) inside both the "Nedavno korišćeno" quick-add list and the search results list built here — this feature deliberately left every row non-interactive (see "Decisions made" above).
+- **Barcode/photo entry points** (F026 barcode, F030/F031 label/vision) are referenced only as forward-looking Serbian copy in this feature's empty states ("uskoro ćeš moći i da skeniraš bar-kod ili fotografišeš nalepnicu") — no scan/photo affordance exists yet; those features should decide whether/how to surface an actual button on this same screen once they land.
+- No other gaps noticed against this feature's scope.
+
+## Blockers
+(none — Status is COMPLETE)
+
+## Autonomous decisions
+AUTONOMOUS_DECISION: Rendered `FoodListItem` as a non-interactive list row rather than a real (but currently no-op) button — see "Decisions made" above for the full rationale; this is the one place this feature's own spec left an open question ("one-tap re-add") that a later feature (F025) resolves.
+AUTONOMOUS_DECISION: Chose `/dodaj/pretraga` as the sole route for this feature (no separate `/api/foods/recents`-only page) and exposed the recents read both as a reusable `src/lib/food/recents.ts` function (used directly by the server page, avoiding a self-fetch round trip) and as `GET /api/foods/recents` (used for the live integration test and available to any future client-side refresh need) — the clarified spec allowed either "a small endpoint or server query," so both were built since they're each a thin wrapper around the same `getRecentFoods` function.
+AUTONOMOUS_DECISION: Picked a bounded recents list size of 10 (`RECENTS_RESULT_LIMIT`) and a 100-row log-scan window (`RECENTS_LOG_SCAN_LIMIT`) — generous enough to surface 10 distinct foods for all but extremely repetitive loggers, bounded enough to keep the read cheap; no assertion mandates an exact number.
+
+## Notes for the next worker
+- `src/lib/food/recents.ts` exports three pure, DB-free functions (`dedupeFoodIdsByRecency`, `reorderFoodsByIds`, `rankResultsWithRecentsFirst`) plus the I/O wrapper `getRecentFoods` — reuse `rankResultsWithRecentsFirst` if any other screen ever needs the same "recents float to the top" behaviour (e.g. a future barcode/photo results screen).
+- `GET /api/foods/recents` and `GET /api/foods/search` (F023) follow the identical cookie-from-`NextRequest` pattern specifically so both are directly callable from Vitest with a hand-built `NextRequest` — no running Next server needed for integration tests. Keep following this pattern for any new food/log routes.
+- Real-browser 375px evidence (`evidence/F024/*.png`) was captured with `puppeteer-core` driving locally-installed headless Edge (`C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe`) against `npm run build && npm run start -- -p 3103`, signing in a real confirmed+onboarded test user, seeding one `logs` row directly via the admin client (log creation UI is F025's scope), and walking through: (1) empty search box → recents/quick-add list, (2) searching "plazma" → verified+unverified mix with the recent food ranked first, (3) a nonsense query → the Serbian no-results empty state. The script (`shots.mjs`) and its `puppeteer-core`/`@supabase/supabase-js` deps live only in this session's scratchpad, not the repo, matching the F001/F011/F015/F016/F017 precedent (not committed). All seeded test data (user + log row) was deleted at the end of the run and independently re-verified afterward (`listUsers` search for any leftover `f024-*` emails came back empty).
+- MCP tools were not used for this feature (no live schema/policy change — this feature only reads existing `logs`/`foods` tables via the already-established session-scoped client pattern); all live-DB verification (finding a verified/unverified food pair for the screenshot script, confirming no orphaned test data) went through the admin Supabase client (`@supabase/supabase-js` + `sb_secret_` key from `.env`), matching every prior feature's established pattern in this repo — no MCP tools are bound in this worker session per the run-mode instructions.
+- `plan.md`/`run-log.md` were left untouched by this worker (visible as pre-existing uncommitted orchestrator edits marking F023 COMPLETE in `git status` at the start of this session) — per the established F018–F023 precedent, mission-control files are the orchestrator's responsibility, not committed by the worker.

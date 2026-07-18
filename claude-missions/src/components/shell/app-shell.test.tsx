@@ -71,6 +71,31 @@ describe("AppShell (F005 base shell)", () => {
     ).toBeInTheDocument();
   });
 
+  it.each([
+    ["/prijava"],
+    ["/registracija"],
+    ["/registracija/proveri-email"],
+  ])(
+    "renders auth route %s inside the mobile column but WITHOUT the bottom nav",
+    (pathname) => {
+      // Auth screens must not expose the app navigation (its tabs link into
+      // the authenticated app). They keep the centered mobile column so the
+      // form is presented consistently, but the bottom nav is hidden.
+      usePathnameMock.mockReturnValue(pathname);
+      const { container } = render(
+        <AppShell>
+          <p>auth sadrzaj</p>
+        </AppShell>
+      );
+      expect(screen.getByText("auth sadrzaj")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Glavna navigacija" })
+      ).toBeNull();
+      // Column is still present.
+      expect(container.querySelector(".max-w-\\[430px\\]")).not.toBeNull();
+    }
+  );
+
   it("renders the marketing landing (/) full-bleed: no app column, no bottom nav", () => {
     // The public landing page supplies its own full-width chrome, so the
     // shell must not wrap it in the centered mobile column or the bottom

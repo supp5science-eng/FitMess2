@@ -178,6 +178,41 @@
   box-shadow: 0 0 0 3px var(--danger-wash);
 }
 
+/* ---------- Password field w/ reveal toggle ---------- */
+.auth-input-wrap {
+  position: relative;
+  display: flex;
+}
+.auth-input--password {
+  /* room for the 44px reveal button so text never runs under the eye */
+  padding-right: 50px;
+}
+.auth-reveal {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  border-radius: 0 13px 13px 0;
+  transition: color 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.auth-reveal:hover,
+.auth-reveal[aria-pressed="true"] {
+  color: var(--ink-soft);
+}
+.auth-reveal svg {
+  width: 20px;
+  height: 20px;
+}
+
 /* ---------- Buttons ---------- */
 .auth-btn {
   display: inline-flex;

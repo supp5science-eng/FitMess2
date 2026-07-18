@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
 import { signInAction, type AuthFormState } from "../actions";
+import { PasswordInput } from "../password-input";
 
 const initialState: AuthFormState = null;
 
@@ -29,26 +30,24 @@ export function SignInForm() {
           id="signin-email"
           name="email"
           type="email"
+          inputMode="email"
           className="auth-input"
           placeholder="ti@email.com"
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           required
           aria-invalid={invalid}
         />
       </div>
-      <div className="auth-field">
-        <label htmlFor="signin-password">Lozinka</label>
-        <input
-          id="signin-password"
-          name="password"
-          type="password"
-          className="auth-input"
-          placeholder="••••••••"
-          autoComplete="current-password"
-          required
-          aria-invalid={invalid}
-        />
-      </div>
+      <PasswordInput
+        name="password"
+        label="Lozinka"
+        placeholder="••••••••"
+        autoComplete="current-password"
+        invalid={invalid}
+      />
       {state?.ok === false ? (
         <p role="alert" className="auth-error">
           {state.error_sr}

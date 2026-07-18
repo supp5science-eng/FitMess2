@@ -1,15 +1,26 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-// F031: proves `/dodaj/novi-proizvod` -- the destination `ScanScreen`
-// routes to on a barcode-lookup MISS -- always renders a real, non-blank
-// Serbian screen AND carries the scanned GTIN through the query string
-// (F032's own contract requirement), never silently dropping it.
+// F032 / AS-055: `/dodaj/novi-proizvod` -- the destination `ScanScreen`
+// (F031) routes to on a barcode-lookup MISS -- renders the real first-time
+// product entry form (`NewProductForm`), pre-filled with the scanned GTIN
+// carried through the query string, and never a blank/broken screen when no
+// GTIN is present (a direct/bookmarked visit).
+//
+// `NewProductForm` itself (validation, save, duplicate-barcode handling) is
+// covered directly by
+// `src/components/food/__tests__/new-product-form.test.tsx` -- this file
+// only proves the SERVER page reads/passes the query param correctly and
+// always renders real content.
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 import NoviProizvodPage from "../page";
 
-describe("F031: /dodaj/novi-proizvod carries the scanned GTIN and never renders blank", () => {
-  it("test_the_scanned_gtin_from_the_query_string_is_shown_on_the_page", async () => {
+describe("F032 / AS-055: /dodaj/novi-proizvod offers a prefilled first-time entry form", () => {
+  it("test_AS_055_the_scanned_gtin_from_the_query_string_prefills_the_barcode_field", async () => {
     const ui = await NoviProizvodPage({
       searchParams: Promise.resolve({ barkod: "5901234123457" }),
     });
@@ -19,24 +30,32 @@ describe("F031: /dodaj/novi-proizvod carries the scanned GTIN and never renders 
     expect(screen.getByTestId("novi-proizvod-gtin")).toHaveTextContent(
       "5901234123457"
     );
+    expect(screen.getByTestId("novi-proizvod-form")).toBeInTheDocument();
+    expect(screen.getByTestId("novi-proizvod-barcode-input")).toHaveValue(
+      "5901234123457"
+    );
   });
 
-  it("test_a_missing_gtin_still_renders_a_friendly_screen_not_a_crash", async () => {
+  it("test_a_missing_gtin_still_renders_a_real_usable_form_not_a_crash", async () => {
     const ui = await NoviProizvodPage({ searchParams: Promise.resolve({}) });
     render(ui);
 
     expect(screen.getByTestId("novi-proizvod-page")).toBeInTheDocument();
     expect(screen.queryByTestId("novi-proizvod-gtin")).not.toBeInTheDocument();
+    expect(screen.getByTestId("novi-proizvod-form")).toBeInTheDocument();
+    expect(screen.getByTestId("novi-proizvod-barcode-input")).toHaveValue("");
   });
 
-  it("test_offers_a_real_link_back_to_the_active_search_flow", async () => {
+  it("test_a_search_param_array_barkod_still_prefills_from_the_first_value", async () => {
     const ui = await NoviProizvodPage({
-      searchParams: Promise.resolve({ barkod: "5901234123457" }),
+      searchParams: Promise.resolve({
+        barkod: ["5901234123457", "extra"],
+      }),
     });
     render(ui);
 
-    expect(
-      screen.getByRole("link", { name: "Pretraži hranu" })
-    ).toHaveAttribute("href", "/dodaj/pretraga");
+    expect(screen.getByTestId("novi-proizvod-barcode-input")).toHaveValue(
+      "5901234123457"
+    );
   });
 });

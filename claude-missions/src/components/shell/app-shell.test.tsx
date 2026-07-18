@@ -96,6 +96,26 @@ describe("AppShell (F005 base shell)", () => {
     }
   );
 
+  it.each([["/onboarding"], ["/onboarding/pregled"]])(
+    "renders onboarding route %s full-bleed: no app column, no bottom nav",
+    (pathname) => {
+      // The post-login welcome + questionnaire own the whole viewport and must
+      // not expose the app navigation: the Danas/Nedelja/Agent/Profil tabs only
+      // become available once onboarding is finished.
+      usePathnameMock.mockReturnValue(pathname);
+      const { container } = render(
+        <AppShell>
+          <p>onboarding sadrzaj</p>
+        </AppShell>
+      );
+      expect(screen.getByText("onboarding sadrzaj")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Glavna navigacija" })
+      ).toBeNull();
+      expect(container.querySelector(".max-w-\\[430px\\]")).toBeNull();
+    }
+  );
+
   it("renders the marketing landing (/) full-bleed: no app column, no bottom nav", () => {
     // The public landing page supplies its own full-width chrome, so the
     // shell must not wrap it in the centered mobile column or the bottom

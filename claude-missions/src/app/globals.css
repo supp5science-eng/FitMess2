@@ -90,38 +90,45 @@
   --sidebar-ring: #16a34a;
 }
 
+/*
+ * FitMess dark theme — the app's default and only theme (the whole
+ * authenticated app runs dark). Palette matches the marketing landing and
+ * auth screens (`landing.css` / `auth.css`): a near-black ground with a
+ * single teal/mint accent (MacroFactor-inspired), so the product feels like
+ * one continuous world from landing → sign-in → app.
+ */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0a0c0b;
+  --foreground: #f3f7f5;
+  --card: #14181a;
+  --card-foreground: #f3f7f5;
+  --popover: #14181a;
+  --popover-foreground: #f3f7f5;
+  --primary: #17d1a8;
+  --primary-foreground: #04231c;
+  --secondary: #191e20;
+  --secondary-foreground: #f3f7f5;
+  --muted: #191e20;
+  --muted-foreground: #a6b0ab;
+  --accent: #12241f;
+  --accent-foreground: #9ff0dd;
+  --destructive: #f2726b;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.14);
+  --ring: #17d1a8;
+  --chart-1: #17d1a8;
+  --chart-2: #6fd9c4;
+  --chart-3: #a6b0ab;
+  --chart-4: #6e7873;
+  --chart-5: #c9a24b;
+  --sidebar: #0f1413;
+  --sidebar-foreground: #f3f7f5;
+  --sidebar-primary: #17d1a8;
+  --sidebar-primary-foreground: #04231c;
+  --sidebar-accent: #191e20;
+  --sidebar-accent-foreground: #f3f7f5;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #17d1a8;
 }
 
 @layer base {

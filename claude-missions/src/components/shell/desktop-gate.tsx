@@ -13,7 +13,7 @@ import QRCode from "qrcode";
  * headings, DM Sans for body copy. Both are scoped to the gate for now.
  */
 
-const PRODUCTION_URL = "https://adaptive-cut-companion.vercel.app/";
+const PRODUCTION_URL = "https://fitmess.app/";
 
 // Display / headings — heavy, punchy.
 const display = Archivo_Black({
@@ -83,7 +83,7 @@ export async function DesktopGate() {
           Ili u pregledaču na telefonu otvori:
         </p>
         <p className="mt-1 break-all text-sm font-semibold text-primary">
-          adaptive-cut-companion.vercel.app
+          fitmess.app
         </p>
       </div>
     </main>

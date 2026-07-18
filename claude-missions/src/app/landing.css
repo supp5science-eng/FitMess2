@@ -238,39 +238,32 @@
   margin: 20px 0 0;
 }
 
-/* Eye-catching hero headline: big uppercase, teal-gradient lead phrase
-   with a hand-drawn underline stroke. */
+/* Hero headline: clinical, professional. Restrained weight, generous
+   tracking, one calm teal-emphasized phrase with a precise thin rule —
+   no gradients, glow, or hand-drawn strokes. */
 .lp .hero h1.hero-title {
-  font-size: clamp(44px, 7.6vw, 78px);
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: -0.03em;
-  line-height: 1.08;
+  font-size: clamp(40px, 6.6vw, 68px);
+  font-weight: 750;
+  letter-spacing: -0.022em;
+  line-height: 1.12;
   margin: 18px 0 0;
 }
 .lp .hero-title .ht-hi {
   position: relative;
   display: inline-block;
-  color: transparent;
-  background: linear-gradient(102deg, var(--teal-bright) 8%, var(--teal) 55%, var(--teal-deep) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  padding-bottom: 0.06em;
-  filter: drop-shadow(0 4px 22px rgba(23, 209, 168, 0.28));
+  color: var(--teal);
+  font-weight: 780;
 }
 .lp .hero-title .ht-hi::after {
   content: "";
   position: absolute;
-  left: -0.01em;
-  right: -0.01em;
-  bottom: -0.02em;
-  height: 0.14em;
-  border-radius: 100px;
-  background: linear-gradient(90deg, var(--teal-bright), var(--teal-deep));
-  transform: rotate(-0.6deg);
-  transform-origin: left center;
-  opacity: 0.9;
+  left: 0;
+  right: 0;
+  bottom: -0.1em;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--teal);
+  opacity: 0.55;
 }
 .lp .hero h1 .u {
   color: var(--teal);

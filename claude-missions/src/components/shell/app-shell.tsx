@@ -37,14 +37,18 @@ import { BottomNav } from "@/components/shell/bottom-nav";
  * phone" gate (`/samo-za-telefon`). */
 const FULL_BLEED_ROUTES = new Set(["/", "/samo-za-telefon"]);
 
-/** Auth route prefixes — also full-bleed, so nested steps (e.g.
- * `/registracija/proveri-email`) are covered by prefix match too. */
-const AUTH_ROUTE_PREFIXES = ["/prijava", "/registracija"] as const;
+/** Full-bleed route prefixes, covering nested steps by prefix match:
+ * - auth (`/prijava`, `/registracija/proveri-email`, ...)
+ * - onboarding (`/onboarding`, `/onboarding/pregled`): the post-login welcome
+ *   + questionnaire own the whole viewport and must NOT expose the bottom
+ *   navigation — its tabs (Danas / Nedelja / Agent / Profil) only become
+ *   available once onboarding is finished (`profiles.onboarded_at` set). */
+const FULL_BLEED_PREFIXES = ["/prijava", "/registracija", "/onboarding"] as const;
 
 function isFullBleed(pathname: string): boolean {
   return (
     FULL_BLEED_ROUTES.has(pathname) ||
-    AUTH_ROUTE_PREFIXES.some(
+    FULL_BLEED_PREFIXES.some(
       (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
     )
   );

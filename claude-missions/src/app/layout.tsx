@@ -19,6 +19,7 @@ const APP_DESCRIPTION =
   "Adaptivno praćenje ishrane na srpskom. Nedelja je jedinica uspeha — jedan loš obrok te ne ruši.";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://fitmess.app"),
   applicationName: APP_NAME,
   title: {
     default: "FitMess — dijeta koja ti oprašta",
@@ -58,7 +59,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sr" className={`${inter.variable} h-full antialiased`}>
+    <html lang="sr" className={`dark ${inter.variable} h-full antialiased`}>
       <body className="min-h-full">
         <AppShell>{children}</AppShell>
         <ServiceWorkerRegister />

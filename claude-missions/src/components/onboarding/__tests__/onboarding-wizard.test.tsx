@@ -9,6 +9,16 @@ vi.mock("next/navigation", () => ({
 
 import { OnboardingWizard } from "../onboarding-wizard";
 
+const CURRENT_YEAR = new Date().getFullYear();
+
+/** The godine step is now an iOS-style birth-year wheel (not a text field);
+ * tap the year that yields the given age (age = CURRENT_YEAR - year). */
+function pickBirthYearForAge(age: number) {
+  fireEvent.click(
+    screen.getByRole("button", { name: String(CURRENT_YEAR - age) })
+  );
+}
+
 // F015: component-level coverage for the onboarding wizard (AS-018, AS-019).
 //
 // AS-018 ("a newly verified user is routed through onboarding before
@@ -74,11 +84,11 @@ function advanceToStep(step: "godine" | "visina" | "tezina" | "aktivnost" | "cil
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
   if (step === "godine") return;
 
-  fireEvent.change(screen.getByLabelText(/Godine/), { target: { value: "30" } });
+  pickBirthYearForAge(30);
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
   if (step === "visina") return;
 
-  fireEvent.change(screen.getByLabelText(/Visina/), { target: { value: "170" } });
+  // Visina uses a wheel picker that defaults to 175 cm -- just advance.
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
   if (step === "tezina") return;
 
@@ -93,9 +103,7 @@ function advanceToStep(step: "godine" | "visina" | "tezina" | "aktivnost" | "cil
 describe("AS-019: step 2 (godine) collects age", () => {
   it("test_AS_019_godine_step_shows_a_serbian_error_for_an_out_of_range_age", () => {
     advanceToStep("godine");
-    fireEvent.change(screen.getByLabelText(/Godine/), {
-      target: { value: "5" },
-    });
+    pickBirthYearForAge(5);
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -106,9 +114,7 @@ describe("AS-019: step 2 (godine) collects age", () => {
 
   it("test_AS_019_godine_step_accepts_a_sane_age_and_advances_to_visina", () => {
     advanceToStep("godine");
-    fireEvent.change(screen.getByLabelText(/Godine/), {
-      target: { value: "30" },
-    });
+    pickBirthYearForAge(30);
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(
@@ -118,24 +124,16 @@ describe("AS-019: step 2 (godine) collects age", () => {
 });
 
 describe("AS-019: step 3 (visina) collects height in cm", () => {
-  it("test_AS_019_visina_step_shows_a_serbian_error_for_an_out_of_range_height", () => {
+  it("test_AS_019_visina_step_defaults_to_175_on_a_100_to_250_wheel_picker", () => {
     advanceToStep("visina");
-    fireEvent.change(screen.getByLabelText(/Visina/), {
-      target: { value: "50" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
-
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: /Kolika je tvoja visina\?/ })
-    ).toBeInTheDocument();
+    const wheel = screen.getByRole("slider", { name: /Visina/i });
+    expect(wheel).toHaveAttribute("aria-valuenow", "175");
+    expect(wheel).toHaveAttribute("aria-valuemin", "100");
+    expect(wheel).toHaveAttribute("aria-valuemax", "250");
   });
 
-  it("test_AS_019_visina_step_accepts_a_sane_height_and_advances_to_tezina", () => {
+  it("test_AS_019_visina_step_accepts_the_default_height_and_advances_to_tezina", () => {
     advanceToStep("visina");
-    fireEvent.change(screen.getByLabelText(/Visina/), {
-      target: { value: "170" },
-    });
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(
@@ -265,7 +263,7 @@ describe("AS-019: step 6 (cilj) collects target weight + timeframe", () => {
     const params = new URLSearchParams(url.split("?")[1]);
     expect(params.get("pol")).toBe("female");
     expect(params.get("godine")).toBe("30");
-    expect(params.get("visina")).toBe("170");
+    expect(params.get("visina")).toBe("175");
     expect(params.get("tezina")).toBe("80");
     expect(params.get("aktivnost")).toBe("moderate");
     expect(params.get("ciljnaTezina")).toBe("74");

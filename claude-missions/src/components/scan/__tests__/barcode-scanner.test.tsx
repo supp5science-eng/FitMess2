@@ -209,3 +209,71 @@ describe("AS-052/AS-058 wiring: BarcodeScanner's other rendered states", () => {
     expect(screen.queryByTestId("scanner-error-state")).not.toBeInTheDocument();
   });
 });
+
+describe("AS-128: no bare images without alt text, interactive elements are labeled and keyboard-reachable", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    deleteMediaDevices();
+  });
+
+  it("test_AS_128_the_permission_denied_screen_has_no_bare_images_and_a_labeled_keyboard_reachable_link", async () => {
+    deleteMediaDevices();
+
+    render(<BarcodeScanner onDetected={vi.fn()} />);
+
+    const fallback = await screen.findByTestId("scanner-permission-denied");
+    // No `<img>` without alt text -- the only icon (`CameraOff`) is an
+    // inline SVG marked `aria-hidden`, not an `<img>`.
+    expect(fallback.querySelectorAll("img")).toHaveLength(0);
+
+    // A real `<a>` (natively keyboard-reachable via Tab, no custom
+    // `tabIndex`/`onClick` div fakery) with a visible text accessible name.
+    const link = screen.getByRole("link", { name: "Pretraži ručno" });
+    expect(link.tagName).toBe("A");
+    expect(link).toHaveAttribute("href", "/dodaj/pretraga");
+  });
+
+  it("test_AS_128_the_error_state_retry_button_and_manual_search_link_are_labeled_and_keyboard_reachable", async () => {
+    mockDecodeBarcode.mockRejectedValue(new Error("decode exploded"));
+    const getUserMedia = vi.fn().mockResolvedValue(fakeMediaStream());
+    defineMediaDevices({ getUserMedia });
+
+    render(<BarcodeScanner onDetected={vi.fn()} />);
+
+    const errorState = await screen.findByTestId("scanner-error-state");
+    expect(errorState.querySelectorAll("img")).toHaveLength(0);
+
+    // A real `<button>` (keyboard-activatable with Enter/Space by default)
+    // whose visible text ("Pokušaj ponovo") is its accessible name -- the
+    // decorative `RefreshCw` icon inside it is `aria-hidden`.
+    const retryButton = screen.getByRole("button", { name: "Pokušaj ponovo" });
+    expect(retryButton.tagName).toBe("BUTTON");
+
+    const manualSearchLink = screen.getByRole("link", {
+      name: "Ili pretraži ručno",
+    });
+    expect(manualSearchLink).toHaveAttribute("href", "/dodaj/pretraga");
+  });
+
+  it("test_AS_128_the_live_scanning_screen_labels_the_video_element_and_has_no_bare_images", async () => {
+    mockDecodeBarcode.mockResolvedValue(null);
+    const getUserMedia = vi.fn().mockResolvedValue(fakeMediaStream());
+    defineMediaDevices({ getUserMedia });
+
+    render(<BarcodeScanner onDetected={vi.fn()} />);
+
+    const screenEl = await screen.findByTestId("scanner-screen");
+    expect(screenEl.querySelectorAll("img")).toHaveLength(0);
+
+    // The `<video>` element is not a plain decorative image -- it carries
+    // its own accessible name via `aria-label` (the closest video
+    // equivalent of an image's `alt` text).
+    const video = screen.getByLabelText("Prikaz kamere za skeniranje barkoda");
+    expect(video).toBe(screen.getByTestId("scanner-video"));
+
+    const manualSearchLink = screen.getByRole("link", {
+      name: "Ne vidiš barkod? Pretraži ručno.",
+    });
+    expect(manualSearchLink).toHaveAttribute("href", "/dodaj/pretraga");
+  });
+});

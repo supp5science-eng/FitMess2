@@ -102,4 +102,33 @@ describe("F030: ScanScreen composes BarcodeScanner with a real post-scan confirm
       expect(screen.queryByTestId("scanner-detected")).not.toBeInTheDocument();
     });
   });
+
+  it("test_AS_128_the_detected_confirmation_screen_has_no_bare_images_and_labeled_keyboard_reachable_controls", async () => {
+    mockDecodeBarcode.mockResolvedValue({
+      value: "5901234123457",
+      format: "ean_13",
+    });
+    defineMediaDevices({
+      getUserMedia: vi.fn().mockResolvedValue({
+        getTracks: () => [{ stop: vi.fn() }],
+      }),
+    });
+
+    render(<ScanScreen />);
+    const detected = await screen.findByTestId("scanner-detected");
+
+    expect(detected.querySelectorAll("img")).toHaveLength(0);
+
+    // Real, natively keyboard-reachable controls with visible-text
+    // accessible names -- a real `<a>` and a real `<button>`, not
+    // `<div onClick>` fakes.
+    const continueLink = screen.getByRole("link", { name: "Pretraži hranu" });
+    expect(continueLink.tagName).toBe("A");
+    expect(continueLink).toHaveAttribute("href", "/dodaj/pretraga");
+
+    const scanAgainButton = screen.getByRole("button", {
+      name: "Skeniraj ponovo",
+    });
+    expect(scanAgainButton.tagName).toBe("BUTTON");
+  });
 });

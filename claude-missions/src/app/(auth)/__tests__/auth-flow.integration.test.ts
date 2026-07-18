@@ -97,7 +97,11 @@ describe.skipIf(!hasCredentials)(
 
     describe("AS-008: a visitor can create an account with email and password", () => {
       it("test_AS_008_sign_up_email_password_creates_an_unconfirmed_account_with_an_auto_created_profile_row", async () => {
-        const email = `f011-signup-${suffix}@example.com`;
+        // Must be a deliverable-looking address: since ~2026-07 the live
+        // project's signUp rejects reserved domains like example.com with
+        // `email_address_invalid`. Plus-addressing the project owner's real
+        // mailbox passes validation without generating bounces.
+        const email = `supp5science+f011-${suffix}@gmail.com`;
         const anon = makeAnonScopedClient();
 
         const result = await signUpEmailPassword(

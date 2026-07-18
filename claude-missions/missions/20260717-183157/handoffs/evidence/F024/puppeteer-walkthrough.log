@@ -1,0 +1,13 @@
+2026-07-18T04:41:52.456Z Creating confirmed test user f024-ux-1784349712456@example.com
+2026-07-18T04:41:52.855Z Marking user onboarded
+2026-07-18T04:41:53.059Z Looking up 'Plazma keks' (verified) to seed a recent log
+2026-07-18T04:41:53.261Z Found food: Plazma keks
+2026-07-18T04:41:53.261Z Seeding a log row for the test user (recents source, F025 scope not exercised)
+2026-07-18T04:41:54.201Z Navigating to http://localhost:3103/prijava
+2026-07-18T04:41:56.081Z Signed in, landed on http://localhost:3103/danas
+2026-07-18T04:41:56.081Z Navigating to /dodaj/pretraga
+2026-07-18T04:41:56.939Z Step 1 screenshot: recents/quick-add list captured
+2026-07-18T04:41:58.363Z Step 2 screenshot: search results captured; first result testid = food-item-d735e81a-6c80-475e-9a5d-7b153a85f180
+2026-07-18T04:41:59.677Z Step 3 screenshot: no-results empty state captured
+2026-07-18T04:42:00.079Z Cleaning up: deleting seeded log + test user
+2026-07-18T04:42:00.458Z Done

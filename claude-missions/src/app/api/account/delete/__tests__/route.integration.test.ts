@@ -10,6 +10,11 @@ import { POST } from "@/app/api/account/delete/route";
 import { deleteAccount } from "@/lib/account/delete-account";
 import { DELETE_CONFIRMATION_PHRASE } from "@/lib/account/constants";
 import { persistOnboarding } from "@/lib/onboarding/persist";
+import {
+  adminCreateUserRetry,
+  adminDeleteUserRetry,
+  signInWithPasswordRetry,
+} from "@/lib/test-utils/auth-retry";
 import type { Database } from "@/lib/types/db";
 import type { OnboardingData } from "@/lib/onboarding/types";
 
@@ -127,13 +132,13 @@ describe.skipIf(!hasCredentials)(
       // Best-effort cleanup for any test user this run did NOT already
       // delete via the code path under test (e.g. a failure-path test).
       for (const id of createdUserIds) {
-        await admin.auth.admin.deleteUser(id).catch(() => {});
+        await adminDeleteUserRetry(admin, id).catch(() => {});
       }
     });
 
     async function createOnboardedUser(emailPrefix: string) {
       const email = `${emailPrefix}-${suffix}@example.com`;
-      const { data, error } = await admin.auth.admin.createUser({
+      const { data, error } = await adminCreateUserRetry(admin, {
         email,
         password,
         email_confirm: true,
@@ -145,7 +150,7 @@ describe.skipIf(!hasCredentials)(
       createdUserIds.push(userId);
 
       const jar = makeCookieJarClient();
-      const { error: signInErr } = await jar.supabase.auth.signInWithPassword({
+      const { error: signInErr } = await signInWithPasswordRetry(jar.supabase, {
         email,
         password,
       });
@@ -204,9 +209,13 @@ describe.skipIf(!hasCredentials)(
       expect(usersPage?.users.find((u) => u.id === user.userId)).toBeUndefined();
 
       // AS-016: the deleted credentials no longer authenticate at all.
+      // NOTE: this sign-in is EXPECTED to fail (invalid_credentials, the
+      // account no longer exists) -- `signInWithPasswordRetry` still
+      // correctly passes it through unretried, since that's a real error,
+      // not a rate-limit-shaped one.
       const freshClient = makeCookieJarClient();
       const { data: signInAfterDelete, error: signInAfterDeleteErr } =
-        await freshClient.supabase.auth.signInWithPassword({
+        await signInWithPasswordRetry(freshClient.supabase, {
           email: user.email,
           password,
         });
@@ -252,7 +261,7 @@ describe.skipIf(!hasCredentials)(
 
       // The account can still sign in normally -- nothing was revoked.
       const stillWorks = makeCookieJarClient();
-      const { error: signInErr } = await stillWorks.supabase.auth.signInWithPassword({
+      const { error: signInErr } = await signInWithPasswordRetry(stillWorks.supabase, {
         email: user.email,
         password,
       });

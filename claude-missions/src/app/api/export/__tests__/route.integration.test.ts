@@ -8,6 +8,11 @@ import path from "node:path";
 
 import { GET } from "@/app/api/export/route";
 import { persistOnboarding } from "@/lib/onboarding/persist";
+import {
+  adminCreateUserRetry,
+  adminDeleteUserRetry,
+  signInWithPasswordRetry,
+} from "@/lib/test-utils/auth-retry";
 import type { Database } from "@/lib/types/db";
 import type { OnboardingData } from "@/lib/onboarding/types";
 
@@ -106,7 +111,7 @@ describe.skipIf(!hasCredentials)(
 
     afterAll(async () => {
       for (const id of createdUserIds) {
-        await admin.auth.admin.deleteUser(id).catch(() => {});
+        await adminDeleteUserRetry(admin, id).catch(() => {});
       }
     });
 
@@ -115,7 +120,7 @@ describe.skipIf(!hasCredentials)(
       onboardingData: OnboardingData
     ) {
       const email = `${emailPrefix}-${suffix}@example.com`;
-      const { data, error } = await admin.auth.admin.createUser({
+      const { data, error } = await adminCreateUserRetry(admin, {
         email,
         password,
         email_confirm: true,
@@ -127,7 +132,7 @@ describe.skipIf(!hasCredentials)(
       createdUserIds.push(userId);
 
       const jar = makeCookieJarClient();
-      const { error: signInErr } = await jar.supabase.auth.signInWithPassword({
+      const { error: signInErr } = await signInWithPasswordRetry(jar.supabase, {
         email,
         password,
       });

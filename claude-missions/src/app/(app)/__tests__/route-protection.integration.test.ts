@@ -7,6 +7,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { middleware } from "@/middleware";
+import {
+  adminCreateUserRetry,
+  adminDeleteUserRetry,
+  signInWithPasswordRetry,
+} from "@/lib/test-utils/auth-retry";
 import type { Database } from "@/lib/types/db";
 
 // F013: live-project, request-level integration coverage for AS-011 (signed
@@ -131,7 +136,7 @@ describe.skipIf(!hasCredentials)(
 
     afterAll(async () => {
       for (const id of createdUserIds) {
-        await admin.auth.admin.deleteUser(id).catch(() => {});
+        await adminDeleteUserRetry(admin, id).catch(() => {});
       }
     });
 
@@ -156,7 +161,7 @@ describe.skipIf(!hasCredentials)(
 
       beforeAll(async () => {
         email = `f013-signout-${suffix}@example.com`;
-        const { data, error } = await admin.auth.admin.createUser({
+        const { data, error } = await adminCreateUserRetry(admin, {
           email,
           password,
           email_confirm: true,
@@ -179,7 +184,7 @@ describe.skipIf(!hasCredentials)(
       it("test_AS_012_signed_in_verified_onboarded_user_reaches_a_protected_page_then_signing_out_makes_it_redirect_to_login_again", async () => {
         const { supabase, cookieHeader } = makeCookieJarClient();
 
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
+        const { error: signInErr } = await signInWithPasswordRetry(supabase, {
           email,
           password,
         });
@@ -211,7 +216,7 @@ describe.skipIf(!hasCredentials)(
     describe("verified-but-unconfirmed and not-onboarded branches reach the correct redirect target (side-effect verification: unverified/anonymous users cannot reach protected data)", () => {
       it("test_unverified_email_password_user_has_no_session_at_all_so_a_protected_page_request_still_redirects_to_prijava_not_the_protected_page", async () => {
         const email = `f013-unverified-${suffix}@example.com`;
-        const { data, error } = await admin.auth.admin.createUser({
+        const { data, error } = await adminCreateUserRetry(admin, {
           email,
           password,
           email_confirm: false,
@@ -231,6 +236,11 @@ describe.skipIf(!hasCredentials)(
         // protected data is therefore "no session ever exists", which is the
         // exact same middleware branch AS-011 already covers live above.
         const { supabase, cookieHeader } = makeCookieJarClient();
+        // NOTE: intentionally NOT retried -- this sign-in is expected to
+        // fail with `email_not_confirmed`, a real (non-rate-limit) error
+        // that `signInWithPasswordRetry` would correctly pass through
+        // unretried anyway, but calling the raw client here keeps this
+        // negative-path test's intent obvious at a glance.
         const { data: signInData, error: signInErr } =
           await supabase.auth.signInWithPassword({ email, password });
         expect(signInErr).not.toBeNull();
@@ -244,7 +254,7 @@ describe.skipIf(!hasCredentials)(
 
       it("test_verified_not_onboarded_user_hitting_a_protected_page_is_redirected_to_onboarding_not_the_protected_page", async () => {
         const email = `f013-not-onboarded-${suffix}@example.com`;
-        const { data, error } = await admin.auth.admin.createUser({
+        const { data, error } = await adminCreateUserRetry(admin, {
           email,
           password,
           email_confirm: true,
@@ -256,7 +266,7 @@ describe.skipIf(!hasCredentials)(
         // Freshly created profile row has onboarded_at still null (F010's
         // trigger creates an empty shell) -- do not mark it onboarded.
         const { supabase, cookieHeader } = makeCookieJarClient();
-        const { error: signInErr } = await supabase.auth.signInWithPassword({
+        const { error: signInErr } = await signInWithPasswordRetry(supabase, {
           email,
           password,
         });

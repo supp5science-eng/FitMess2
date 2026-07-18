@@ -7,6 +7,11 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { middleware } from "@/middleware";
+import {
+  adminCreateUserRetry,
+  adminDeleteUserRetry,
+  signInWithPasswordRetry,
+} from "@/lib/test-utils/auth-retry";
 import type { Database } from "@/lib/types/db";
 
 // F015 / AS-018: "A newly verified user is routed through onboarding before
@@ -114,7 +119,7 @@ describe.skipIf(!hasCredentials)(
 
     afterAll(async () => {
       for (const id of createdUserIds) {
-        await admin.auth.admin.deleteUser(id).catch(() => {});
+        await adminDeleteUserRetry(admin, id).catch(() => {});
       }
     });
 
@@ -124,7 +129,7 @@ describe.skipIf(!hasCredentials)(
 
       beforeAll(async () => {
         email = `f015-onboarding-gate-${suffix}@example.com`;
-        const { data, error } = await admin.auth.admin.createUser({
+        const { data, error } = await adminCreateUserRetry(admin, {
           email,
           password,
           email_confirm: true,
@@ -137,7 +142,7 @@ describe.skipIf(!hasCredentials)(
         // trigger creates an empty shell) -- do not mark it onboarded.
 
         const jar = makeCookieJarClient();
-        const { error: signInErr } = await jar.supabase.auth.signInWithPassword({
+        const { error: signInErr } = await signInWithPasswordRetry(jar.supabase, {
           email,
           password,
         });
@@ -174,7 +179,7 @@ describe.skipIf(!hasCredentials)(
     describe("a verified, already-onboarded user", () => {
       it("test_AS_018_an_onboarded_user_requesting_danas_is_allowed_through_not_sent_back_to_onboarding", async () => {
         const email = `f015-already-onboarded-${suffix}@example.com`;
-        const { data, error } = await admin.auth.admin.createUser({
+        const { data, error } = await adminCreateUserRetry(admin, {
           email,
           password,
           email_confirm: true,
@@ -190,7 +195,7 @@ describe.skipIf(!hasCredentials)(
         expect(onboardErr).toBeNull();
 
         const jar = makeCookieJarClient();
-        const { error: signInErr } = await jar.supabase.auth.signInWithPassword({
+        const { error: signInErr } = await signInWithPasswordRetry(jar.supabase, {
           email,
           password,
         });

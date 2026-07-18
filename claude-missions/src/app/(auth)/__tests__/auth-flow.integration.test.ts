@@ -6,6 +6,7 @@ import path from "node:path";
 
 import { signInEmailPassword, signUpEmailPassword } from "@/lib/auth/core";
 import { SR_AUTH_MESSAGES } from "@/lib/auth/errors";
+import { adminCreateUserRetry, adminDeleteUserRetry } from "@/lib/test-utils/auth-retry";
 import type { Database } from "@/lib/types/db";
 
 // F011: live-project integration coverage for AS-008 (signup), AS-009
@@ -90,7 +91,7 @@ describe.skipIf(!hasCredentials)(
 
     afterAll(async () => {
       for (const id of createdUserIds) {
-        await admin.auth.admin.deleteUser(id).catch(() => {});
+        await adminDeleteUserRetry(admin, id).catch(() => {});
       }
     });
 
@@ -127,7 +128,7 @@ describe.skipIf(!hasCredentials)(
               "admin-API-equivalent proof of account creation. This does " +
               "not indicate a bug -- see evidence/F011/live-verification.log."
           );
-          const { data, error } = await admin.auth.admin.createUser({
+          const { data, error } = await adminCreateUserRetry(admin, {
             email,
             password,
             email_confirm: false,
@@ -175,7 +176,7 @@ describe.skipIf(!hasCredentials)(
 
       beforeAll(async () => {
         unconfirmedEmail = `f011-unconfirmed-${suffix}@example.com`;
-        const { data, error } = await admin.auth.admin.createUser({
+        const { data, error } = await adminCreateUserRetry(admin, {
           email: unconfirmedEmail,
           password,
           email_confirm: false,
@@ -256,7 +257,7 @@ describe.skipIf(!hasCredentials)(
 
       beforeAll(async () => {
         existingEmail = `f011-existing-${suffix}@example.com`;
-        const { data, error } = await admin.auth.admin.createUser({
+        const { data, error } = await adminCreateUserRetry(admin, {
           email: existingEmail,
           password,
           email_confirm: true,

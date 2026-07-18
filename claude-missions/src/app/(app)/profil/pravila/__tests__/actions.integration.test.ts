@@ -7,6 +7,11 @@ import path from "node:path";
 
 import { persistOnboarding } from "@/lib/onboarding/persist";
 import { regenerateRules, updateRules } from "@/lib/profil/rules-settings";
+import {
+  adminCreateUserRetry,
+  adminDeleteUserRetry,
+  signInWithPasswordRetry,
+} from "@/lib/test-utils/auth-retry";
 import type { Database } from "@/lib/types/db";
 import type { OnboardingData } from "@/lib/onboarding/types";
 import type { PersistedRule } from "@/lib/budget/rules";
@@ -101,13 +106,13 @@ describe.skipIf(!hasCredentials)(
 
     afterAll(async () => {
       for (const id of createdUserIds) {
-        await admin.auth.admin.deleteUser(id).catch(() => {});
+        await adminDeleteUserRetry(admin, id).catch(() => {});
       }
     });
 
     async function createOnboardedUser(emailPrefix: string) {
       const email = `${emailPrefix}-${suffix}@example.com`;
-      const { data, error } = await admin.auth.admin.createUser({
+      const { data, error } = await adminCreateUserRetry(admin, {
         email,
         password,
         email_confirm: true,
@@ -119,7 +124,7 @@ describe.skipIf(!hasCredentials)(
       createdUserIds.push(userId);
 
       const jar = makeCookieJarClient();
-      const { error: signInErr } = await jar.supabase.auth.signInWithPassword({
+      const { error: signInErr } = await signInWithPasswordRetry(jar.supabase, {
         email,
         password,
       });

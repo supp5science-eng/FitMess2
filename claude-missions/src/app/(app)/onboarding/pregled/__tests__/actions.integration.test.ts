@@ -8,6 +8,11 @@ import path from "node:path";
 
 import { middleware } from "@/middleware";
 import { persistOnboarding } from "@/lib/onboarding/persist";
+import {
+  adminCreateUserRetry,
+  adminDeleteUserRetry,
+  signInWithPasswordRetry,
+} from "@/lib/test-utils/auth-retry";
 import type { Database } from "@/lib/types/db";
 import type { OnboardingData } from "@/lib/onboarding/types";
 
@@ -134,7 +139,7 @@ describe.skipIf(!hasCredentials)(
 
     afterAll(async () => {
       for (const id of createdUserIds) {
-        await admin.auth.admin.deleteUser(id).catch(() => {});
+        await adminDeleteUserRetry(admin, id).catch(() => {});
       }
     });
 
@@ -145,7 +150,7 @@ describe.skipIf(!hasCredentials)(
 
       beforeAll(async () => {
         email = `f016-onboarding-save-${suffix}@example.com`;
-        const { data, error } = await admin.auth.admin.createUser({
+        const { data, error } = await adminCreateUserRetry(admin, {
           email,
           password,
           email_confirm: true,
@@ -157,7 +162,7 @@ describe.skipIf(!hasCredentials)(
         createdUserIds.push(userId);
 
         const jar = makeCookieJarClient();
-        const { error: signInErr } = await jar.supabase.auth.signInWithPassword({
+        const { error: signInErr } = await signInWithPasswordRetry(jar.supabase, {
           email,
           password,
         });
@@ -208,7 +213,7 @@ describe.skipIf(!hasCredentials)(
         // returning user" (AS-031's own wording) looks like at the
         // middleware level, not a reuse of the same session.
         const returningJar = makeCookieJarClient();
-        const { error: signInErr } = await returningJar.supabase.auth.signInWithPassword({
+        const { error: signInErr } = await signInWithPasswordRetry(returningJar.supabase, {
           email,
           password,
         });
@@ -225,7 +230,7 @@ describe.skipIf(!hasCredentials)(
     describe("AS-020: editing a value before confirming changes the saved values", () => {
       it("test_AS_020_persisting_edited_inputs_saves_the_recomputed_edited_budget_not_the_original", async () => {
         const email = `f016-onboarding-edit-${suffix}@example.com`;
-        const { data, error } = await admin.auth.admin.createUser({
+        const { data, error } = await adminCreateUserRetry(admin, {
           email,
           password,
           email_confirm: true,
@@ -236,7 +241,7 @@ describe.skipIf(!hasCredentials)(
         createdUserIds.push(editUserId);
 
         const jar = makeCookieJarClient();
-        await jar.supabase.auth.signInWithPassword({ email, password });
+        await signInWithPasswordRetry(jar.supabase, { email, password });
 
         // First save: the "original" hand-off values.
         const firstResult = await persistOnboarding(

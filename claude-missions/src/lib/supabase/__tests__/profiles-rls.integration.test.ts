@@ -3,6 +3,11 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import fs from "node:fs";
 import path from "node:path";
+import {
+  adminCreateUserRetry,
+  adminDeleteUserRetry,
+  signInWithPasswordRetry,
+} from "@/lib/test-utils/auth-retry";
 import type { Database } from "@/lib/types/db";
 
 // F010: live-database proof that RLS actually denies cross-user access
@@ -118,7 +123,7 @@ describe.skipIf(!hasCredentials || !schemaReady)(
 
     beforeAll(async () => {
       const { data: userAData, error: userAErr } =
-        await admin.auth.admin.createUser({
+        await adminCreateUserRetry(admin, {
           email: userAEmail,
           password,
           email_confirm: true,
@@ -131,7 +136,7 @@ describe.skipIf(!hasCredentials || !schemaReady)(
       userAId = userAData.user.id;
 
       const { data: userBData, error: userBErr } =
-        await admin.auth.admin.createUser({
+        await adminCreateUserRetry(admin, {
           email: userBEmail,
           password,
           email_confirm: true,
@@ -172,13 +177,13 @@ describe.skipIf(!hasCredentials || !schemaReady)(
     afterAll(async () => {
       // Best-effort cleanup; deleting the auth.users rows cascades to
       // profiles/targets per the migration's `on delete cascade`.
-      if (userAId) await admin.auth.admin.deleteUser(userAId).catch(() => {});
-      if (userBId) await admin.auth.admin.deleteUser(userBId).catch(() => {});
+      if (userAId) await adminDeleteUserRetry(admin, userAId).catch(() => {});
+      if (userBId) await adminDeleteUserRetry(admin, userBId).catch(() => {});
     });
 
     it("test_AS_013_user_can_read_their_own_profile_row", async () => {
       const clientA = makeAnonScopedClient();
-      const { error: signInErr } = await clientA.auth.signInWithPassword({
+      const { error: signInErr } = await signInWithPasswordRetry(clientA, {
         email: userAEmail,
         password,
       });
@@ -196,7 +201,7 @@ describe.skipIf(!hasCredentials || !schemaReady)(
 
     it("test_AS_013_user_b_cannot_read_user_a_profile_row_via_select", async () => {
       const clientB = makeAnonScopedClient();
-      const { error: signInErr } = await clientB.auth.signInWithPassword({
+      const { error: signInErr } = await signInWithPasswordRetry(clientB, {
         email: userBEmail,
         password,
       });
@@ -217,7 +222,7 @@ describe.skipIf(!hasCredentials || !schemaReady)(
 
     it("test_AS_013_user_b_cannot_update_user_a_profile_row", async () => {
       const clientB = makeAnonScopedClient();
-      await clientB.auth.signInWithPassword({ email: userBEmail, password });
+      await signInWithPasswordRetry(clientB, { email: userBEmail, password });
 
       const { data, error } = await clientB
         .from("profiles")
@@ -244,7 +249,7 @@ describe.skipIf(!hasCredentials || !schemaReady)(
 
     it("test_AS_013_user_b_cannot_insert_a_targets_row_for_user_a", async () => {
       const clientB = makeAnonScopedClient();
-      await clientB.auth.signInWithPassword({ email: userBEmail, password });
+      await signInWithPasswordRetry(clientB, { email: userBEmail, password });
 
       const { error } = await clientB.from("targets").insert({
         user_id: userAId, // attempting to write into A's namespace as B
@@ -269,7 +274,7 @@ describe.skipIf(!hasCredentials || !schemaReady)(
 
     it("test_AS_031_onboarded_at_starts_null_and_a_user_can_persist_their_own_onboarding_completion", async () => {
       const clientA = makeAnonScopedClient();
-      await clientA.auth.signInWithPassword({ email: userAEmail, password });
+      await signInWithPasswordRetry(clientA, { email: userAEmail, password });
 
       const { data: before } = await clientA
         .from("profiles")
@@ -296,7 +301,7 @@ describe.skipIf(!hasCredentials || !schemaReady)(
 
     it("test_AS_031_user_b_cannot_read_or_set_user_a_onboarded_at", async () => {
       const clientB = makeAnonScopedClient();
-      await clientB.auth.signInWithPassword({ email: userBEmail, password });
+      await signInWithPasswordRetry(clientB, { email: userBEmail, password });
 
       const { data } = await clientB
         .from("profiles")

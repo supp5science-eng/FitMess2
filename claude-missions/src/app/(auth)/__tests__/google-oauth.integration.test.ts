@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { isEmailVerified } from "@/lib/auth/core";
+import { adminCreateUserRetry, adminDeleteUserRetry } from "@/lib/test-utils/auth-retry";
 import type { Database } from "@/lib/types/db";
 
 // F012: live-project integration coverage for AS-010 (Google OAuth
@@ -117,7 +118,7 @@ describe.skipIf(!hasAdminCredentials)(
 
     afterAll(async () => {
       for (const id of createdUserIds) {
-        await admin.auth.admin.deleteUser(id).catch(() => {});
+        await adminDeleteUserRetry(admin, id).catch(() => {});
       }
     });
 
@@ -132,7 +133,7 @@ describe.skipIf(!hasAdminCredentials)(
       // Supabase stores for an OAuth-created identity). No email is sent by
       // this call.
       googleEmail = `f012-google-${suffix}@example.com`;
-      const { data, error } = await admin.auth.admin.createUser({
+      const { data, error } = await adminCreateUserRetry(admin, {
         email: googleEmail,
         email_confirm: true,
         app_metadata: { provider: "google", providers: ["google"] },
@@ -182,7 +183,7 @@ describe.skipIf(!hasAdminCredentials)(
       // Negative control: proves the gate is actually discriminating on
       // `email_confirmed_at`, not just always returning true.
       const unconfirmedEmail = `f012-unconfirmed-${suffix}@example.com`;
-      const { data, error } = await admin.auth.admin.createUser({
+      const { data, error } = await adminCreateUserRetry(admin, {
         email: unconfirmedEmail,
         password: `F012-Test-${suffix}!aA`,
         email_confirm: false,

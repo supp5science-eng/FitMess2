@@ -252,3 +252,56 @@ describe("F024: SearchScreen side effects", () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("AS-128: form inputs are labeled and interactive elements are keyboard-reachable", () => {
+  it("test_AS_128_the_search_input_has_an_accessible_label_findable_by_its_text", () => {
+    render(<SearchScreen initialRecents={[]} />);
+
+    // `getByLabelText` only succeeds when a real, associated <label> (here
+    // `<Label htmlFor="food-search-input">Pretraga hrane</Label>`) points at
+    // the input -- a placeholder alone would not satisfy this.
+    const input = screen.getByLabelText("Pretraga hrane");
+    expect(input).toBe(screen.getByTestId("search-input"));
+    expect(input.tagName).toBe("INPUT");
+  });
+
+  it("test_AS_128_the_search_input_is_a_native_input_reachable_by_the_tab_key", () => {
+    render(<SearchScreen initialRecents={[]} />);
+
+    const input = screen.getByTestId("search-input");
+    // A native <input> with no explicit negative tabindex is keyboard
+    // (Tab) reachable by default -- no `tabIndex="-1"` or non-interactive
+    // element standing in for it.
+    expect(input.tagName).toBe("INPUT");
+    expect(input).not.toHaveAttribute("tabindex", "-1");
+  });
+
+  it("test_AS_128_the_retry_button_is_a_real_keyboard_reachable_button_element", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      jsonResponse({ ok: false, error_sr: "Pretraga trenutno ne radi. Pokušaj ponovo." }, false)
+    );
+
+    render(<SearchScreen initialRecents={[]} />);
+    fireEvent.change(screen.getByTestId("search-input"), {
+      target: { value: "jabuka" },
+    });
+    await vi.advanceTimersByTimeAsync(400);
+    await waitFor(() =>
+      expect(screen.getByTestId("search-retry-button")).toBeInTheDocument()
+    );
+
+    const retryButton = screen.getByRole("button", { name: "Pokušaj ponovo" });
+    expect(retryButton).toBe(screen.getByTestId("search-retry-button"));
+  });
+
+  it("test_AS_128_food_items_render_no_bare_images_without_alt_text", () => {
+    const recentFood = makeFood({ id: "recent-1", name_sr: "Jabuka" });
+    render(<SearchScreen initialRecents={[recentFood]} />);
+
+    // This screen renders no <img> elements at all (macro preview is text,
+    // badges are text) -- so there is nothing that could be missing alt
+    // text. Asserted explicitly rather than assumed.
+    const images = screen.getByTestId("recents-list").querySelectorAll("img");
+    expect(images.length).toBe(0);
+  });
+});

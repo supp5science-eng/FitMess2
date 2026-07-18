@@ -94,3 +94,52 @@ describe("F026 / AS-045: LogDeleteConfirm is a Serbian confirm gate", () => {
     expect(screen.getByTestId("log-delete-confirm")).toBeInTheDocument();
   });
 });
+
+describe("AS-128: LogDeleteConfirm's interactive elements are labeled/keyboard-reachable", () => {
+  it("test_AS_128_the_open_cancel_and_confirm_controls_are_real_keyboard_reachable_button_elements_findable_by_role_and_name", () => {
+    render(<LogDeleteConfirm logId="log-1" logName="Jabuka" />);
+
+    // `getByRole("button", {name})` only succeeds for a real, accessibly
+    // named <button> -- confirms both "is a native button" (keyboard Tab +
+    // Enter/Space reachable by default) and "has an accessible name" at
+    // once.
+    const openButton = screen.getByRole("button", { name: "Obriši" });
+    expect(openButton).toBe(screen.getByTestId("log-delete-open-button"));
+    expect(openButton.tagName).toBe("BUTTON");
+    expect(openButton).not.toHaveAttribute("tabindex", "-1");
+
+    fireEvent.click(openButton);
+
+    const cancelButton = screen.getByRole("button", { name: "Otkaži" });
+    expect(cancelButton).toBe(screen.getByTestId("log-delete-cancel-button"));
+    expect(cancelButton.tagName).toBe("BUTTON");
+
+    const confirmButton = screen.getByTestId("log-delete-confirm-button");
+    expect(confirmButton.tagName).toBe("BUTTON");
+    expect(confirmButton).not.toHaveAttribute("tabindex", "-1");
+  });
+
+  it("test_AS_128_the_confirm_dialog_is_labeled_by_its_own_heading_for_assistive_tech", () => {
+    render(<LogDeleteConfirm logId="log-1" logName="Jabuka" />);
+    fireEvent.click(screen.getByTestId("log-delete-open-button"));
+
+    const dialog = screen.getByRole("alertdialog");
+    const heading = screen.getByRole("heading", {
+      name: "Obrisati unos “Jabuka”?",
+    });
+    expect(dialog).toHaveAttribute("aria-labelledby", heading.id);
+  });
+
+  it("test_AS_128_the_confirm_renders_no_bare_images_without_alt_text", () => {
+    render(<LogDeleteConfirm logId="log-1" logName="Jabuka" />);
+    fireEvent.click(screen.getByTestId("log-delete-open-button"));
+
+    // This confirm renders no <img> elements at all (everything is text) --
+    // so there is nothing that could be missing alt text. Asserted
+    // explicitly rather than assumed.
+    const images = screen
+      .getByTestId("log-delete-confirm")
+      .querySelectorAll("img");
+    expect(images.length).toBe(0);
+  });
+});

@@ -218,3 +218,56 @@ describe("F026 / AS-044: LogEditSheet live preview + save", () => {
     expect(screen.getByTestId("log-edit-grams-input")).toHaveValue(100);
   });
 });
+
+describe("AS-128: LogEditSheet inputs are labeled and interactive elements are keyboard-reachable", () => {
+  it("test_AS_128_the_grams_input_has_an_accessible_label_findable_by_its_text", () => {
+    render(<LogEditSheet log={{ id: "log-1", grams: 100 }} food={makeFood()} />);
+    fireEvent.click(screen.getByTestId("log-edit-open-button"));
+
+    // `getByLabelText` only succeeds when a real, associated <label> (here
+    // `<Label htmlFor="log-edit-grams-input">Količina u gramima</Label>`)
+    // points at the input -- a placeholder alone would not satisfy this.
+    const input = screen.getByLabelText("Količina u gramima");
+    expect(input).toBe(screen.getByTestId("log-edit-grams-input"));
+    expect(input.tagName).toBe("INPUT");
+  });
+
+  it("test_AS_128_the_quantity_input_has_an_accessible_label_when_a_unit_is_selected", () => {
+    const food = makeFood({ common_units: [{ label: "parče", grams: 50 }] });
+    render(<LogEditSheet log={{ id: "log-1", grams: 50 }} food={food} />);
+    fireEvent.click(screen.getByTestId("log-edit-open-button"));
+
+    const input = screen.getByLabelText("Količina");
+    expect(input).toBe(screen.getByTestId("log-edit-quantity-input"));
+  });
+
+  it("test_AS_128_the_save_cancel_and_unit_chip_controls_are_real_keyboard_reachable_button_elements", () => {
+    const food = makeFood({ common_units: [{ label: "parče", grams: 50 }] });
+    render(<LogEditSheet log={{ id: "log-1", grams: 100 }} food={food} />);
+    fireEvent.click(screen.getByTestId("log-edit-open-button"));
+
+    for (const testId of [
+      "log-edit-save-button",
+      "log-edit-cancel-button",
+      "log-edit-unit-chip-0",
+    ]) {
+      const el = screen.getByTestId(testId);
+      // A native <button> with no explicit negative tabindex is keyboard
+      // (Tab) reachable by default, activatable via Enter/Space.
+      expect(el.tagName).toBe("BUTTON");
+      expect(el).not.toHaveAttribute("tabindex", "-1");
+    }
+  });
+
+  it("test_AS_128_the_edit_sheet_renders_no_bare_images_without_alt_text", () => {
+    const food = makeFood({ common_units: [{ label: "parče", grams: 50 }] });
+    render(<LogEditSheet log={{ id: "log-1", grams: 100 }} food={food} />);
+    fireEvent.click(screen.getByTestId("log-edit-open-button"));
+
+    // This sheet renders no <img> elements at all (everything is text) --
+    // so there is nothing that could be missing alt text. Asserted
+    // explicitly rather than assumed.
+    const images = screen.getByTestId("log-edit-sheet").querySelectorAll("img");
+    expect(images.length).toBe(0);
+  });
+});

@@ -130,7 +130,8 @@ _All features auto-clarified via accept-and-continue on 2026-07-17 (star default
 - F016 [CLARIFIED-AUTO] [COMPLETE]
 - F017 [CLARIFIED-AUTO] [COMPLETE]
 - F018 [CLARIFIED-AUTO] [COMPLETE]
-- F019 [CLARIFIED-AUTO]
+- F019 [CLARIFIED-AUTO] [PARTIAL -> follow-up F019a; code complete, full-suite 429]
+- F019a [CLARIFIED-AUTO] (follow-up: test auth hardening)
 - F020 [CLARIFIED-AUTO]
 - F021 [CLARIFIED-AUTO]
 - F022 [CLARIFIED-AUTO]

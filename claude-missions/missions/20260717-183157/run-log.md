@@ -53,3 +53,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T00:38Z — F017 COMPLETE (3b958e9). AS-028/029. 429 flakiness reconfirmed transient (3x green, 339 tests). Spawning F018 (data export). TRACK: F018 exports current user tables (profile/targets/rules); logs (M3)/weigh-ins (M5)/conversations (M6) must be ADDED to the export as they land — reminder for those features + a final AS-014 completeness check before M8.
 
 - 2026-07-18T01:00Z — F018 COMPLETE. AS-014 (extensible JSON export core + own-user route + /profil button). Spawning F019 (account deletion) — last M2 feature before validators.
+
+- 2026-07-18T01:44Z — F019 PARTIAL: code+tests correct in isolation, but full-suite npm run test exhausted Supabase Auth rate limit (escalating 429s across ~15 integration files). NOT F019-specific. FIX: (1) orchestrator raised Supabase Auth rate limits 30/150 -> 2000 per 5min via Management API (rate_limit_verify/token_refresh/anonymous/otp); (2) created F019a follow-up to add shared retry-with-backoff auth test helper + confirm full suite green 2x. F019a must go green before M2 validators. Dispatching F019a.

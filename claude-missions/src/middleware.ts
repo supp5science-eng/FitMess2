@@ -74,6 +74,6 @@ export const config = {
   // follows Supabase's own Next.js SSR guide
   // (https://supabase.com/docs/guides/auth/server-side/nextjs).
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

@@ -1,4 +1,7 @@
+"use client";
+
 import type { ReactNode } from "react";
+import { usePathname } from "next/navigation";
 
 import { BottomNav } from "@/components/shell/bottom-nav";
 
@@ -14,8 +17,23 @@ import { BottomNav } from "@/components/shell/bottom-nav";
  * `min-h-dvh` + `flex-col` on the inner column means the bottom nav sits at
  * the bottom of the viewport on short pages and simply scrolls with content
  * (via `sticky bottom-0` on BottomNav) on tall pages.
+ *
+ * Full-bleed exception: the public marketing landing (`/`) is a full-width
+ * page with its own chrome, so it opts out of the centered mobile column and
+ * the bottom navigation entirely. Every other route keeps the app shell.
  */
+
+/** Routes that render their own full-width layout, without the app column or
+ * bottom navigation. Currently just the marketing landing page. */
+const FULL_BLEED_ROUTES = new Set(["/"]);
+
 export function AppShell({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+
+  if (pathname !== null && FULL_BLEED_ROUTES.has(pathname)) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="min-h-dvh w-full bg-muted">
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">

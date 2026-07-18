@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
+const usePathnameMock = vi.fn(() => "/danas");
 vi.mock("next/navigation", () => ({
-  usePathname: vi.fn(() => "/"),
+  usePathname: () => usePathnameMock(),
 }));
 
 import { AppShell } from "./app-shell";
@@ -58,6 +59,7 @@ describe("AppShell (F005 base shell)", () => {
   });
 
   it("renders the bottom navigation alongside its children", () => {
+    usePathnameMock.mockReturnValue("/danas");
     render(
       <AppShell>
         <p>naslovna sadrzaj</p>
@@ -67,5 +69,22 @@ describe("AppShell (F005 base shell)", () => {
     expect(
       screen.getByRole("navigation", { name: "Glavna navigacija" })
     ).toBeInTheDocument();
+  });
+
+  it("renders the marketing landing (/) full-bleed: no app column, no bottom nav", () => {
+    // The public landing page supplies its own full-width chrome, so the
+    // shell must not wrap it in the centered mobile column or the bottom
+    // navigation (which links to authenticated app sections).
+    usePathnameMock.mockReturnValue("/");
+    const { container } = render(
+      <AppShell>
+        <p>landing sadrzaj</p>
+      </AppShell>
+    );
+    expect(screen.getByText("landing sadrzaj")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Glavna navigacija" })
+    ).toBeNull();
+    expect(container.querySelector(".max-w-\\[430px\\]")).toBeNull();
   });
 });

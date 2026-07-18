@@ -1,0 +1,38 @@
+2026-07-18T05:23:38.636Z Creating confirmed test user f025-ux-1784352218636@example.com
+2026-07-18T05:23:39.003Z Marking user onboarded (profiles + targets)
+2026-07-18T05:23:39.407Z Creating a deterministic test food with a known common unit
+2026-07-18T05:23:39.517Z Created food F025 Test kifla 1784352218636 (d83ad7a4-5838-46a2-8b6f-2d70f19d5da4)
+2026-07-18T05:23:40.330Z Navigating to http://localhost:3105/prijava
+2026-07-18T05:23:41.907Z Signed in, landed on http://localhost:3105/danas
+2026-07-18T05:23:41.908Z Navigating directly to the portion picker for food d83ad7a4-5838-46a2-8b6f-2d70f19d5da4
+2026-07-18T05:23:42.560Z Step 1 screenshot: default 100g grams entry + live preview captured
+2026-07-18T05:23:42.560Z Selecting the "parče" common-unit chip
+2026-07-18T05:23:42.741Z Step 2 screenshot: "2 parčeta" common-unit selection + updated preview captured
+2026-07-18T05:23:42.741Z Confirming the log entry
+2026-07-18T05:23:43.614Z After confirm, landed on http://localhost:3105/danas
+2026-07-18T05:23:43.680Z Step 3 screenshot: post-confirm redirect target captured
+2026-07-18T05:23:44.246Z Confirmed log row(s) created via the real UI flow: 1f04fddb-9e7b-419d-a252-9e69f1ac516a
+2026-07-18T05:23:44.246Z Cleaning up: deleting created log(s) + test food + test user
+2026-07-18T05:23:44.643Z Done
+
+Post-run independent verification (verify-clean.mjs, admin client):
+leftover f025 users: 0
+leftover f025 foods: 0
+leftover f025 logs: 0
+
+Screenshot notes:
+- 00-portion-picker-grams-default-375px.png: default 100g grams entry, live
+  kcal/macro preview (280 kcal / 8g protein / 45g carbs / 7g fat matches the
+  test food's per-100g values exactly, AS-041).
+- 01-portion-picker-unit-2-parceta-375px.png: "parče (60g)" common-unit chip
+  selected with quantity=2 -> resolved to 120g (60*2), preview recomputed to
+  336 kcal / 9.6g protein / 54g carbs / 8.4g fat = 280/8/20/7 (wait: food's
+  per-100g values 280/8/45/7) * 1.2 (AS-042).
+- 02-after-confirm-redirect-375px.png: blank/placeholder -- confirms the
+  post-save redirect actually navigated to /danas (URL-verified via
+  `waitForFunction`), which has no page.tsx yet (F027 not built), per the
+  clarified "redirect to /danas which may be placeholder -- that's fine"
+  scope answer. The real `logs` row this click created was independently
+  confirmed to exist (id 1f04fddb-9e7b-419d-a252-9e69f1ac516a) before
+  cleanup, proving the save itself succeeded even though the destination
+  page currently renders blank.

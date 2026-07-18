@@ -71,3 +71,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T04:22Z — F023 COMPLETE. AS-036/037/038 live-verified (Latin+Cyrillic+fuzzy on 1678 rows). Spawning F024 (search UI + recents).
 
 - 2026-07-18T05:03Z — F024 COMPLETE. AS-039/040 (+bonus AS-128 a11y). 543 tests pass. Spawning F025 (portion picker + log creation).
+
+- 2026-07-18T05:34Z — F025 COMPLETE. AS-041/042 (portion picker grams+units, live-verified). Shared core: src/lib/food/portions.ts + POST /api/logs (F031/F062/F064 reuse). Spawning F026 (edit/delete logs).

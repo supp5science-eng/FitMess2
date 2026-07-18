@@ -33,7 +33,7 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
 
     const expectedHrefs: Record<string, string> = {
       pretrazi: "/dodaj/pretraga",
-      barkod: "/dodaj/uskoro/barkod",
+      barkod: "/dodaj/skener",
       deklaracija: "/dodaj/uskoro/deklaracija",
       obrok: "/dodaj/uskoro/obrok",
     };
@@ -48,20 +48,24 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     }
   });
 
-  it("test_AS_051_pretrazi_the_only_built_method_has_no_uskoro_badge", () => {
+  it("test_AS_051_pretrazi_and_barkod_the_built_methods_have_no_uskoro_badge", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    expect(
-      screen.queryByTestId("add-sheet-soon-badge-pretrazi")
-    ).not.toBeInTheDocument();
+    // Barcode scanning (F030) is now built, alongside search (F024) --
+    // only the two still-unbuilt photo methods keep the "Uskoro" badge.
+    for (const key of ["pretrazi", "barkod"]) {
+      expect(
+        screen.queryByTestId(`add-sheet-soon-badge-${key}`)
+      ).not.toBeInTheDocument();
+    }
   });
 
-  it("test_AS_051_barcode_and_photo_methods_are_shown_with_an_uskoro_badge_not_hidden_or_missing", () => {
+  it("test_AS_051_photo_methods_are_shown_with_an_uskoro_badge_not_hidden_or_missing", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    for (const key of ["barkod", "deklaracija", "obrok"]) {
+    for (const key of ["deklaracija", "obrok"]) {
       expect(
         screen.getByTestId(`add-sheet-soon-badge-${key}`)
       ).toHaveTextContent("Uskoro");
@@ -78,11 +82,21 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     );
   });
 
-  it("test_AS_051_stubbed_methods_link_to_a_real_uskoro_placeholder_route_not_a_dead_click", () => {
+  it("test_AS_051_the_barkod_link_points_to_the_real_scanner_screen", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    for (const key of ["barkod", "deklaracija", "obrok"]) {
+    expect(screen.getByTestId("add-sheet-option-barkod")).toHaveAttribute(
+      "href",
+      "/dodaj/skener"
+    );
+  });
+
+  it("test_AS_051_stubbed_photo_methods_link_to_a_real_uskoro_placeholder_route_not_a_dead_click", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    for (const key of ["deklaracija", "obrok"]) {
       const link = screen.getByTestId(`add-sheet-option-${key}`);
       expect(link).toHaveAttribute("href", `/dodaj/uskoro/${key}`);
       // Real anchors, never `aria-disabled`/non-navigable dead ends.

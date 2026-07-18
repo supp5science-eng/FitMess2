@@ -20,13 +20,14 @@ import { cn } from "@/lib/utils";
 // (`HomeScreen`) can drop `<AddSheet />` in without managing any state
 // itself.
 //
-// Barcode scanning (F030/M4) and both photo flows (F062/F064/M7) are not
-// built yet -- per the clarified scope, those three options are shown (not
-// hidden) but ROUTE to a clear Serbian "uskoro" (coming soon) placeholder
-// page (`/dodaj/uskoro/[metoda]`) rather than a broken 404 or a dead click.
-// This keeps the "at most 2 taps to START any method" promise literally
-// true for all four methods today, and F030/F062/F064 later only need to
-// replace each `available: false` row's `href` with the real flow -- this
+// Barcode scanning (F030/M4) is now real -- routes to `/dodaj/skener`. Both
+// photo flows (F062/F064/M7) are not built yet -- per the clarified scope,
+// those two options are still shown (not hidden) but ROUTE to a clear
+// Serbian "uskoro" (coming soon) placeholder page
+// (`/dodaj/uskoro/[metoda]`) rather than a broken 404 or a dead click. This
+// keeps the "at most 2 taps to START any method" promise literally true for
+// all four methods, and F062/F064 later only need to replace each
+// remaining `available: false` row's `href` with the real flow -- this
 // sheet's own structure does not change.
 
 interface AddSheetOption {
@@ -49,8 +50,8 @@ const OPTIONS: AddSheetOption[] = [
     key: "barkod",
     label: "Skeniraj barkod",
     icon: Barcode,
-    href: "/dodaj/uskoro/barkod",
-    available: false,
+    href: "/dodaj/skener",
+    available: true,
   },
   {
     key: "deklaracija",

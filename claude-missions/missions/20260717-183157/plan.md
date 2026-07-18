@@ -143,7 +143,7 @@ _All features auto-clarified via accept-and-continue on 2026-07-17 (star default
 - F028 [CLARIFIED-AUTO] [COMPLETE]
 - F030 [CLARIFIED-AUTO] [COMPLETE]
 - F031 [CLARIFIED-AUTO] [COMPLETE]
-- F031a [CLARIFIED-AUTO] (follow-up: fix flaky test barcode fixtures)
+- F031a [CLARIFIED-AUTO] [COMPLETE]
 - F032 [CLARIFIED-AUTO]
 - F033 [CLARIFIED-AUTO]
 - F034 [CLARIFIED-AUTO]

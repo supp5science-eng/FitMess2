@@ -93,3 +93,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T11:04Z — BRAND DECISION from user: app name = **FitMess** (replaces placeholder "Adaptive Cut"). Logo provided (minimal grayscale Ж-mark PNG): white-bg version (for light theme) + dark-bg version, staged at missions/20260717-183157/assets/brand/. Created F078 branding feature (rename app-wide + logo in header + favicon + apple-touch-icon + PWA manifest name/icons). Will run after F031a, before deep M4, so the live site reflects the real brand soon.
 
 - 2026-07-18T11:09Z — USER: do NOT jump F078 branding ahead; keep sequential order. F078 stays queued for its place near the END (M8 polish). Logos staged, spec ready. After F031a -> F032 (normal M4 order). Continue in order through M4-M8; F078 runs in M8.
+
+- 2026-07-18T12:04Z — F031a COMPLETE (6378cb1 fixture + 03f2638 timeouts). Fixed BOTH flakiness roots: (1) non-unique barcode fixture, (2) vitest default timeouts (5s/10s) vs live Supabase latency -> raised to 15s/20s. 729 tests green. Suite should be stable for M4-M8. Spawning F032 (unknown barcode -> product entry) — normal M4 order per user.

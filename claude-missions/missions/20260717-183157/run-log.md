@@ -63,3 +63,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T02:45Z — M2 UX: 10 PASS + AS-008 INCONCLUSIVE (Supabase built-in email 2/h cap exhausted, NOT an app defect; form+signUp correct, F011 tests exercise creation path). Treated as accepted known-constraint (discovery 17a chose no custom SMTP). Documented in manual-qa.md + flagged custom-SMTP as launch item (2 signups/hr limit for real beta). No follow-up (custom SMTP out of approved scope). **M2 GREEN** (scrutiny+UX). Pushing M2 checkpoint to GitHub, then starting M3 (F020 foods schema).
 
 - 2026-07-18T03:02Z — F020 COMPLETE (04e3f28). AS-032/057, foods+logs schema live+verified, logs wired into export+cascade. Spawning F021 (seed foods). USER-REVIEW FLAG: AI-generated seed nutrition values — accurate enough for beta, user should spot-check via admin editor (F035); this is one of the "taste matters" features surfaced at /mission-tasks.
+
+- 2026-07-18T03:27Z — F021 COMPLETE. AS-033/034: 350 foods seeded live, idempotent, traditional dishes findable. Spawning F022 (OFF import).

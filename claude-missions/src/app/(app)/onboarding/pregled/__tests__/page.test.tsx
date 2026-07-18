@@ -1,16 +1,21 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-// F016: the actual route (`/onboarding/pregled`) F015's wizard hands off
-// to. Proves the route renders the real summary (not a 404, matching the
+// F016: the actual route (`/onboarding/pregled`) F015's wizard hands off to.
+// Proves the route renders the animated plan-reveal (not a 404, matching the
 // F013 -> F015 -> F016 precedent each feature documents), and that an
-// incomplete/missing hand-off renders the clarified "friendly Serbian
-// empty state with a clear next action" instead of crashing.
+// incomplete/missing hand-off renders the clarified "friendly Serbian empty
+// state with a clear next action" instead of crashing the budget engine.
 
-const saveOnboardingActionMock = vi.fn();
+const finishOnboardingActionMock = vi.fn();
+finishOnboardingActionMock.mockResolvedValue({ ok: true });
 vi.mock("@/app/(app)/onboarding/pregled/actions", () => ({
-  saveOnboardingAction: (...args: unknown[]) =>
-    saveOnboardingActionMock(...args),
+  finishOnboardingAction: (...args: unknown[]) =>
+    finishOnboardingActionMock(...args),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ prefetch: vi.fn(), replace: vi.fn(), push: vi.fn() }),
 }));
 
 import OnboardingPregledPage from "../page";
@@ -25,17 +30,19 @@ const COMPLETE_PARAMS = {
   nedelje: "12",
 };
 
-describe("AS-020: /onboarding/pregled renders the editable summary when the hand-off is complete", () => {
-  it("test_AS_020_renders_the_summary_screen_with_a_computed_budget_for_a_full_query_string", async () => {
+describe("AS-020: /onboarding/pregled plays the plan-reveal when the hand-off is complete", () => {
+  it("test_AS_020_renders_the_calculating_reveal_for_a_full_query_string", async () => {
     const ui = await OnboardingPregledPage({
       searchParams: Promise.resolve(COMPLETE_PARAMS),
     });
     render(ui);
 
-    expect(screen.getByTestId("daily-kcal")).toBeInTheDocument();
+    // The reveal opens on its calculating phase.
     expect(
-      screen.getByRole("heading", { name: /Tvoj plan/ })
+      await screen.findByText(/Računamo tvoj plan/)
     ).toBeInTheDocument();
+    // And persists the onboarding data in the background.
+    expect(finishOnboardingActionMock).toHaveBeenCalledTimes(1);
   });
 });
 

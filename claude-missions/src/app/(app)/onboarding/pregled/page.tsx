@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { SummaryScreen } from "@/components/onboarding/summary-screen";
+import { PlanReveal } from "@/components/onboarding/plan-reveal";
 import {
   isOnboardingDataComplete,
   parseOnboardingSearchParams,
@@ -51,5 +51,5 @@ export default async function OnboardingPregledPage({
     );
   }
 
-  return <SummaryScreen initialData={data} />;
+  return <PlanReveal data={data} />;
 }

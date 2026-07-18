@@ -1,0 +1,16 @@
+{
+  "verdict": "PASS",
+  "a": {
+    "recents": [
+      "Kačkavalj"
+    ],
+    "top": {
+      "name": "Kačkavalj",
+      "recent": true
+    }
+  },
+  "b": {
+    "recents": null,
+    "top": null
+  }
+}

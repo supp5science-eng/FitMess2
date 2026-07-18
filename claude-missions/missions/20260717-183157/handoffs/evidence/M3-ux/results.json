@@ -1,0 +1,90 @@
+{
+  "AS-036": {
+    "verdict": "PASS",
+    "detail": "latin sarma -> 16 results; hit=Kupus, punjen mlevenim mesom (sarma van sezone)"
+  },
+  "AS-037": {
+    "verdict": "PASS",
+    "detail": "cyrillic sarma -> 16 results; latin hit=Kupus, punjen mlevenim mesom (sarma van sezone)"
+  },
+  "AS-038": {
+    "verdict": "PASS",
+    "detail": "typo srma -> 1 results; sarma hit=Sarma, sa mlevenim mesom i pirinčem"
+  },
+  "AS-039": {
+    "verdict": "PASS",
+    "detail": "verified Plazma keks badge=false; unverified-with-neprovereno present=true (e.g. Bambi - Plazma Keks)"
+  },
+  "AS-041": {
+    "verdict": "PASS",
+    "detail": "Kackavalj 353kcal/100g x150g -> kcal=530 (expect 530), Proteini: 39 g, UH: 2.3 g, Masti: 40.5 g; saved+redirect /danas"
+  },
+  "AS-047": {
+    "verdict": "PASS",
+    "detail": "ring label=Preostalo value=1471 (was 2000)"
+  },
+  "AS-048": {
+    "verdict": "PASS",
+    "detail": "macro bars=[\"39 / 150 g\",\"2 / 200 g\",\"41 / 60 g\"]"
+  },
+  "AS-049": {
+    "verdict": "PASS",
+    "detail": "today meals=[\"Kačkavalj\"]"
+  },
+  "AS-043-create": {
+    "verdict": "PASS",
+    "detail": "Preostalo 2000 -> 1471 after save via router.push"
+  },
+  "AS-042": {
+    "verdict": "PASS",
+    "detail": "parce(30g) x2 -> grams=60 (expect 60), kcal=212 (expect 212), Proteini: 15.6 g"
+  },
+  "AS-044": {
+    "verdict": "PASS",
+    "detail": "edit to 200g: Preostalo 1259 -> 765 (recalculated)"
+  },
+  "AS-043": {
+    "verdict": "PASS",
+    "detail": "after edit ring 1259->765, marker survived=true (no full reload), url=http://localhost:3000/danas"
+  },
+  "AS-045": {
+    "verdict": "PASS",
+    "detail": "delete: cards 2->1, Preostalo 765->1471"
+  },
+  "AS-051": {
+    "verdict": "PASS",
+    "detail": "tap1 + opened sheet with 4 methods; tap2 Pretrazi -> http://localhost:3000/dodaj/pretraga"
+  },
+  "AS-050": {
+    "verdict": "PASS",
+    "detail": "overshoot label=Prekoračeno value=1001 note=Jedan dan više ne menja ništa. Nastavi sutra kao i obično. arcStroke=rgb(22, 163, 74) usable(addSheet)=true"
+  },
+  "AS-125": {
+    "verdict": "PASS",
+    "detail": "375px /danas scrollW=375/inner=375; /dodaj/pretraga scrollW=375/inner=375"
+  },
+  "AS-040": {
+    "verdict": "INCONCLUSIVE",
+    "detail": "err Waiting for selector `#signin-email` failed"
+  },
+  "__logs": [
+    {
+      "name": "Kačkavalj",
+      "grams": 150,
+      "kcal": 529.5,
+      "protein": 39,
+      "carbs": 2.3,
+      "fat": 40.5,
+      "method": "search"
+    },
+    {
+      "name": "Kačkavalj",
+      "grams": 700,
+      "kcal": 2471,
+      "protein": 182,
+      "carbs": 10.5,
+      "fat": 189,
+      "method": "search"
+    }
+  ]
+}

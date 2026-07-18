@@ -27,7 +27,7 @@ _Draft features (enriched later by `/mission-tasks`). 62 features, 8 milestones,
 | F018 | GDPR data export (JSON download) | 30 | F010 | AS-014 |
 | F019 | Account deletion (self-serve) | 30 | F010 | AS-015, AS-016 |
 
-## M3 — Food Database & Manual Logging
+## M3 — Food Database & Manual Logging  [GREEN — scrutiny + UX PASS 2026-07-18]
 
 | ID | Feature | Est | Depends | Assertions |
 |----|---------|-----|---------|------------|

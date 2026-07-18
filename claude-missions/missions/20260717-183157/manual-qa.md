@@ -7,7 +7,7 @@ are a short checklist for the human before/at public launch.
 
 | Assertion | Feature | What's done (automated) | The one human step |
 |-----------|---------|-------------------------|--------------------|
-| AS-007 | F004 | Build proven Vercel-deployable & secret-independent; `docs/deploy.md` runbook written | Import the GitHub repo into Vercel, set env vars from `.env.example`, confirm push-to-main auto-deploys over HTTPS |
+| ~~AS-007~~ | F004 | ✅ **DONE 2026-07-18** — LIVE at https://adaptive-cut-companion.vercel.app | Resolved: fixed `framework=null`→nextjs + set 17 env vars via Vercel API + wired Supabase Auth prod URL. Push-to-main now auto-deploys. |
 | AS-010 | F012 | Google button on /prijava + /registracija; correct `signInWithOAuth`; provider enabled live; `isEmailVerified` gate + profiles-row creation verified with a simulated Google identity | Click through the real Google consent screen once with a Google account and confirm you land signed-in |
 | AS-008 | F011 | Signup form works, invokes real `signUp`, correct Serbian throttle handling; F011 automated tests exercise the creation path | Sign up once with a real email (works at low volume) to see the end-to-end confirmation flow |
 

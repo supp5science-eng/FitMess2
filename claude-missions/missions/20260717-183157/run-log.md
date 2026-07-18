@@ -69,3 +69,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T03:57Z — F022 COMPLETE. AS-035 (OFF import, complete-macro filter, source=off verified=false, idempotent). 470 tests pass. Spawning F023 (search API).
 
 - 2026-07-18T04:22Z — F023 COMPLETE. AS-036/037/038 live-verified (Latin+Cyrillic+fuzzy on 1678 rows). Spawning F024 (search UI + recents).
+
+- 2026-07-18T05:03Z — F024 COMPLETE. AS-039/040 (+bonus AS-128 a11y). 543 tests pass. Spawning F025 (portion picker + log creation).

@@ -13,6 +13,15 @@ vi.mock("../actions", () => ({
   signOutAction: (...args: unknown[]) => signOutActionMock(...args),
 }));
 
+// F019: `/profil` now also renders `DeleteAccountDialog`, which calls
+// `useRouter()` -- mock it the same way
+// `delete-account-dialog.test.tsx` does, since this file renders `ProfilPage`
+// directly (no real Next App Router context mounted in a plain Vitest/jsdom
+// render).
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+
 import ProfilPage from "../profil/page";
 
 describe("AS-012: a signed-in user can sign out (UI wiring on /profil)", () => {

@@ -1,0 +1,15 @@
+Creating verified test user f019-shots-1784337480535-76466@example.com
+Reached /profil, real 'Obriši nalog' button present.
+Captured 00-profil-delete-account-dialog-375px.png
+Dialog text snippet: Obriši nalog zauvek?Ova radnja je trajna i ne može se poništiti. Brišemo tvoj profil, ciljeve i pravila ishrane, a nalogom se više nećeš moći da prijaviš.Da pot...
+Confirm button disabled before typing: true
+Captured 01-profil-delete-account-dialog-confirmed-375px.png (phrase typed, button enabled).
+Confirm button disabled after typing exact phrase: false
+Page URL after clicking delete: http://localhost:3104/prijava
+profiles row after delete: null (expect null)
+targets rows after delete: [] (expect [])
+auth user still listed after delete: false (expect false)
+sign-in after delete succeeded: false (expect false)
+sign-in after delete error code: invalid_credentials
+PASS: real button -> real dialog -> real type-to-confirm gate -> real fetch to /api/account/delete -> real redirect to /prijava, and the live DB/auth state confirms the profiles/targets rows and the auth user are gone, and the deleted credentials no longer authenticate (AS-015, AS-016).
+No cleanup needed -- test user f019-shots-1784337480535-76466@example.com was already deleted by the real delete flow under test.

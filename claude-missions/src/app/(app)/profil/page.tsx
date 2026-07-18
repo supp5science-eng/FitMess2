@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { signOutAction } from "../actions";
 import { Button } from "@/components/ui/button";
+import { DeleteAccountDialog } from "@/components/profil/delete-account-dialog";
 
 /**
  * F013: minimal `/profil` page -- the bottom nav (F005) has pointed at this
@@ -22,6 +23,12 @@ import { Button } from "@/components/ui/button";
  * anchor to `/api/export`, no client-side JS needed: the browser's normal
  * navigation plus that route's `Content-Disposition: attachment` header is
  * what triggers the download.
+ *
+ * F019 added the "Obriši nalog" control below (AS-015, AS-016) -- the only
+ * client-interactive piece on this otherwise server-rendered page, so it's
+ * isolated into its own `"use client"` component
+ * (`DeleteAccountDialog`) rather than converting this whole page to a
+ * client component.
  */
 export default function ProfilPage() {
   return (
@@ -46,6 +53,7 @@ export default function ProfilPage() {
           Odjavi se
         </Button>
       </form>
+      <DeleteAccountDialog />
     </main>
   );
 }

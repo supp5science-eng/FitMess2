@@ -1,0 +1,33 @@
+AS-043 (create -> redirect): ring is 1500 after logging 500kcal, confirmed.
+AS-043 (in-place edit): ring updated 1500 -> 1750 with zero navigation, window marker intact.
+AS-050: ring shows "Prekoračeno 1250 kcal" -- overshoot state, app still interactive.
+Screenshots captured OK.
+
+Walkthrough (against `npm run build && npm run start -p 3105`, real headless Edge
+via puppeteer-core, 375x812 viewport):
+  1. Admin-created + confirmed + onboarded test user; admin-inserted a
+     targets row (daily_kcal=2000, protein_g=150, carbs_g=200, fat_g=60);
+     two deterministic test foods (kcal_100g 250 and 1000).
+  2. Signed in through the real /prijava form.
+  3. GET /danas -- empty state: ring shows "Preostalo 2000 kcal" (00-danas-empty-375px.png).
+  4. Navigated to /dodaj/porcija/[normalFoodId] (F025's real portion picker),
+     set grams=200, clicked confirm -> POST /api/logs -> client-side
+     router.push("/danas") -> ring became "Preostalo 1500 kcal", meal card
+     listed (01-danas-after-logging-375px.png). This is AS-043 exercised via
+     the actual create-and-redirect production flow.
+  5. On /danas itself, opened the meal card's LogEditSheet (F026), changed
+     grams 200 -> 100, saved (PATCH /api/logs/[id]) -- ring updated
+     1500 -> 1750 with ZERO navigation (asserted via a window-scoped JS
+     marker that survives only if no full reload occurred, and via
+     page.url() staying on /danas) (02-danas-after-inplace-edit-375px.png).
+     This is AS-043 exercised via the in-place edit path, the strongest
+     "no full page reload" proof.
+  6. Navigated to /dodaj/porcija/[bigFoodId], logged grams=300 (3000kcal) --
+     total consumed (250+3000=3250) now exceeds the 2000kcal target. Ring
+     switched to "Prekoračeno 1250 kcal" plus the calm Serbian note "Jedan
+     dan više ne menja ništa. Nastavi sutra kao i obično." The bottom nav
+     and both meal cards' edit/delete controls remained present and
+     interactive (03-danas-overshoot-375px.png) -- AS-050.
+  7. Cleanup: deleted both test foods and the test user via the admin
+     client; a separate cleanup pass independently re-verified no
+     `f027-shots-*` user or `f027-*-food-*` food rows remained.

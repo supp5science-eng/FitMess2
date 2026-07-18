@@ -1,0 +1,47 @@
+
+> adaptive-cut@0.1.0 build
+> next build
+
+▲ Next.js 16.2.10 (Turbopack)
+- Environments: .env
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 5.9s
+  Running TypeScript ...
+  Finished TypeScript in 9.8s ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/19) ...
+  Generating static pages using 11 workers (4/19) 
+  Generating static pages using 11 workers (9/19) 
+  Generating static pages using 11 workers (14/19) 
+✓ Generating static pages using 11 workers (19/19) in 800ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/account/delete
+├ ƒ /api/export
+├ ƒ /api/foods/recents
+├ ƒ /api/foods/search
+├ ƒ /api/logs
+├ ƒ /api/logs/[id]
+├ ƒ /auth/callback
+├ ƒ /danas
+├ ƒ /dodaj/porcija/[foodId]
+├ ƒ /dodaj/pretraga
+├ ○ /onboarding
+├ ƒ /onboarding/pregled
+├ ƒ /prijava
+├ ○ /profil
+├ ƒ /profil/pravila
+├ ○ /registracija
+└ ƒ /registracija/proveri-email
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

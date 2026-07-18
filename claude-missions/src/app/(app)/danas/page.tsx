@@ -1,0 +1,82 @@
+import { HomeScreen } from "@/components/home/home-screen";
+import { getTodayData } from "@/lib/home/today";
+import { createClient } from "@/lib/supabase/server";
+
+// F027 / AS-043, AS-047, AS-048, AS-049, AS-050: `/danas` -- the home
+// screen, this app's primary/centerpiece view (`src/components/shell/
+// bottom-nav.tsx` has pointed here since F005; F025's portion picker has
+// redirected here on a successful save since it shipped, previously landing
+// on a 404-shaped placeholder per that feature's own handoff).
+//
+// Server Component: reads the signed-in user's newest target row + today's
+// logs (joined with their referenced foods) via `getTodayData`
+// (session-scoped RLS client, same defensive "no session" / "read failed"
+// handling `/dodaj/pretraga` (F024) and `/dodaj/porcija/[foodId]` (F025)
+// already established -- clarified failure-handling answer: "never a
+// blank/broken screen"), then hands the result to the client `HomeScreen`
+// as server-fetched initial props, which owns the small bit of client state
+// needed for AS-043 (immediate update after an edit/delete without a full
+// page reload).
+export default async function DanasPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return (
+      <RetryErrorState
+        message="Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo."
+        href="/prijava"
+        linkLabel="Prijavi se"
+      />
+    );
+  }
+
+  const result = await getTodayData(supabase, user.id);
+
+  if (result.error) {
+    console.error("[F027 /danas] getTodayData failed:", result.error.message);
+  }
+
+  if (result.error || !result.data) {
+    return (
+      <RetryErrorState
+        message="Nismo uspeli da učitamo tvoj dan. Pokušaj ponovo."
+        href="/danas"
+        linkLabel="Pokušaj ponovo"
+      />
+    );
+  }
+
+  return (
+    <HomeScreen
+      initialLogs={result.data.logs}
+      target={result.data.target}
+    />
+  );
+}
+
+function RetryErrorState({
+  message,
+  href,
+  linkLabel,
+}: {
+  message: string;
+  href: string;
+  linkLabel: string;
+}) {
+  return (
+    <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
+      <p role="alert" data-testid="danas-load-error" className="text-sm text-destructive">
+        {message}
+      </p>
+      <a
+        href={href}
+        className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
+      >
+        {linkLabel}
+      </a>
+    </main>
+  );
+}

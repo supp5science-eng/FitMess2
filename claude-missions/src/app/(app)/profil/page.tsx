@@ -17,6 +17,11 @@ import { Button } from "@/components/ui/button";
  * F017 added the single "Pravila ishrane" link below, pointing at
  * `/profil/pravila` (AS-028/AS-029) -- the only integration point this
  * feature needed on the pre-existing profile screen.
+ *
+ * F018 added the "Preuzmi moje podatke" link below (AS-014) -- a plain
+ * anchor to `/api/export`, no client-side JS needed: the browser's normal
+ * navigation plus that route's `Content-Disposition: attachment` header is
+ * what triggers the download.
  */
 export default function ProfilPage() {
   return (
@@ -30,6 +35,12 @@ export default function ProfilPage() {
       >
         Pravila ishrane
       </Link>
+      <a
+        href="/api/export"
+        className="inline-flex items-center justify-center rounded-md border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-muted"
+      >
+        Preuzmi moje podatke
+      </a>
       <form action={signOutAction}>
         <Button type="submit" variant="outline">
           Odjavi se

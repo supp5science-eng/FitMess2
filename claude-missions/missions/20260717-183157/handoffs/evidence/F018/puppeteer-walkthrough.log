@@ -1,0 +1,15 @@
+Creating verified test user f018-shots-1784335982301-567968@example.com
+Captured 00-profil-preuzmi-podatke-button-375px.png
+Button text: "Preuzmi moje podatke"
+Page URL after click (unchanged = consistent with a download, not a navigation): http://localhost:3103/profil
+In-page fetch(/api/export) status: 200
+In-page fetch content-type: application/json; charset=utf-8
+In-page fetch content-disposition: attachment; filename="fitmess-podaci-2026-07-18.json"
+Saved response body to C:\Users\Markobera3\AppData\Local\Temp\claude\C--FitMess2-exexutor-claude-missions\973e39b6-9a12-477a-a284-e13b3079e201\scratchpad\f018-puppeteer\downloads\fitmess-podaci.json
+Downloaded JSON keys: ["exported_at","schema_note","account","profile","rules","targets"]
+downloaded.account.id === userId: true
+downloaded.profile.sex === "female": true
+downloaded.rules.length: 3 (expect 3)
+downloaded.targets.length: 1 (expect 1)
+PASS: the real downloaded file, via the real button and real /api/export route, contains exactly this user's live profile/targets/rules.
+Deleted test user f018-shots-1784335982301-567968@example.com

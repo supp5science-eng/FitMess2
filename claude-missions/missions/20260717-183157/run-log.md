@@ -85,3 +85,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T08:45Z — **VERCEL LIVE** at https://adaptive-cut-companion.vercel.app (HTTP 200, serving real Serbian app). ROOT CAUSES found via Vercel API (user token): (1) framework=null -> set nextjs (fixed 404); (2) 0 env vars in Vercel -> set all 17 runtime vars via API (fixed 500); (3) nodeVersion 24->22, rootDirectory confirmed claude-missions. Supabase Auth wired for prod: site_url=vercel URL, uri_allow_list += vercel domain+callback (localhost kept). Google OAuth callback (supabase domain) unchanged. Every future push to main now auto-deploys correctly. AS-007 now LIVE (was deferred).
 
 - 2026-07-18T08:48Z — M3 UX 15/15 PASS. **M3 GREEN** (scrutiny+UX). 3/8 milestones. Cosmetic note -> M8 backlog: raw-grams == whole multiple of a unit displays unit label (values correct). Stray port-3000 dev server noted (harmless, left as-is). Pushing M3 checkpoint (auto-deploys to Vercel). Starting M4 (F030 barcode scanner).
+
+- 2026-07-18T09:42Z — F030 COMPLETE (6aab8f5). AS-052/058 (+AS-128) client-side EAN-13 scanner + permission fallback. 706 tests. Spawning F031 (scan->lookup->log).

@@ -28,6 +28,13 @@
  * `supabase/migrations/0004_foods_logs.sql`. `foods.common_units` follows
  * the same "typed jsonb array" practice as `profiles.rules` above
  * (`FoodCommonUnit[]` here rather than the generic `Json`).
+ *
+ * F023 added `public.search_foods(search_query, result_limit)`, a
+ * SQL/SECURITY INVOKER RPC function (see
+ * `supabase/migrations/0005_food_search.sql`) -- typed under `Functions`
+ * below so `supabase.rpc("search_foods", {...})` (see
+ * `src/lib/food/search.ts`) gets full argument/return typing instead of
+ * `never`.
  */
 
 export type Sex = "male" | "female";
@@ -292,7 +299,13 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      search_foods: {
+        Args: {
+          search_query: string;
+          result_limit?: number;
+        };
+        Returns: Database["public"]["Tables"]["foods"]["Row"][];
+      };
     };
     Enums: {
       [_ in never]: never;

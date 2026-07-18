@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { signOutAction } from "../actions";
 import { Button } from "@/components/ui/button";
 
@@ -11,6 +13,10 @@ import { Button } from "@/components/ui/button";
  * The sign-out button is a plain `<form action={signOutAction}>` -- React
  * 19's built-in server-action form handling needs no client-side JS or
  * `"use client"` boundary for this to work.
+ *
+ * F017 added the single "Pravila ishrane" link below, pointing at
+ * `/profil/pravila` (AS-028/AS-029) -- the only integration point this
+ * feature needed on the pre-existing profile screen.
  */
 export default function ProfilPage() {
   return (
@@ -18,6 +24,12 @@ export default function ProfilPage() {
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
         Profil
       </h1>
+      <Link
+        href="/profil/pravila"
+        className="inline-flex items-center justify-center rounded-md border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-muted"
+      >
+        Pravila ishrane
+      </Link>
       <form action={signOutAction}>
         <Button type="submit" variant="outline">
           Odjavi se

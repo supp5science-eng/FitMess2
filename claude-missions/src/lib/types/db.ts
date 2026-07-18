@@ -15,6 +15,13 @@
  * features (F020 foods, F025 logs, F042 weigh_ins, F050 ai_usage, F057
  * conversations, ...) each add their own tables here in their own PR --
  * this file is additive, never replaced wholesale.
+ *
+ * F017 added `profiles.rules` (a jsonb array, see
+ * `supabase/migrations/0003_eating_rules.sql`) -- typed here as
+ * `EatingRuleJson[]` rather than the generic `Json` a CLI-generated file
+ * would use, since this column's shape is fully controlled by this app (see
+ * `src/lib/budget/rules.ts`), matching this file's existing practice of
+ * typing `sex`/`activity_level` as narrow unions instead of `string`.
  */
 
 export type Sex = "male" | "female";
@@ -25,6 +32,16 @@ export type ActivityLevel =
   | "moderate"
   | "active"
   | "very_active";
+
+/** F017: a single element of `profiles.rules` (jsonb array). See
+ * `src/lib/budget/rules.ts`'s `PersistedRule` -- kept as a separate,
+ * structurally-identical type here so this file's DB-shape types don't
+ * import from `src/lib/budget`. */
+export interface EatingRuleJson {
+  id: string;
+  textSr: string;
+  enabled: boolean;
+}
 
 export interface Database {
   public: {
@@ -39,6 +56,7 @@ export interface Database {
           activity_level: ActivityLevel | null;
           is_admin: boolean;
           onboarded_at: string | null;
+          rules: EatingRuleJson[];
           created_at: string;
           updated_at: string;
         };
@@ -51,6 +69,7 @@ export interface Database {
           activity_level?: ActivityLevel | null;
           is_admin?: boolean;
           onboarded_at?: string | null;
+          rules?: EatingRuleJson[];
           created_at?: string;
           updated_at?: string;
         };
@@ -63,6 +82,7 @@ export interface Database {
           activity_level?: ActivityLevel | null;
           is_admin?: boolean;
           onboarded_at?: string | null;
+          rules?: EatingRuleJson[];
           created_at?: string;
           updated_at?: string;
         };

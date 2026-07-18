@@ -22,6 +22,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { bmr, macroTargets, planGoalAdjustment, tdee } from "@/lib/budget/engine";
+import { generateRules, toPersistedRules } from "@/lib/budget/rules";
 import type { Database } from "@/lib/types/db";
 import type { OnboardingData } from "@/lib/onboarding/types";
 import {
@@ -57,7 +58,8 @@ export function ageYearsToBirthYear(ageYears: number, now: Date = new Date()): n
  * Re-validates every field (never trusts client-sent data), recomputes the
  * budget via the F014 engine, then writes:
  *  - `profiles`: sex, birth_year, height_cm, weight_kg, activity_level,
- *    onboarded_at = now() (AS-031)
+ *    onboarded_at = now() (AS-031), rules = 3-5 generated eating rules
+ *    (AS-028, F017's `generateRules` -- see `src/lib/budget/rules.ts`)
  *  - `targets`: a brand-new row (daily/weekly kcal + macros + goal, per the
  *    clarified spec's "history table" design -- F045/F046 insert new rows
  *    later, this is simply the first one)
@@ -114,6 +116,23 @@ export async function persistOnboarding(
   });
   const macros = macroTargets(weightKg, goal.dailyKcal);
 
+  // F017 / AS-028: generate the user's starting eating rules from the same
+  // freshly-computed profile inputs, at the exact moment onboarding
+  // completes -- deterministic, no separate "generate" step for the user to
+  // trigger. `generateRules` is pure (no DB access), `toPersistedRules`
+  // just adds the default `enabled: true` toggle state F017's settings
+  // screen (`/profil/pravila`, AS-029) then reads/writes.
+  const ruleTemplates = generateRules({
+    sex,
+    activityLevel,
+    weightDeltaKg: weightKg - targetWeightKg,
+    timeframeWeeks,
+    dailyKcal: goal.dailyKcal,
+    macrosClamped: macros.clamped,
+    goalAdjusted: goal.adjusted,
+  });
+  const rules = toPersistedRules(ruleTemplates);
+
   const { error: profileError } = await supabase
     .from("profiles")
     .update({
@@ -123,6 +142,7 @@ export async function persistOnboarding(
       weight_kg: weightKg,
       activity_level: activityLevel,
       onboarded_at: new Date().toISOString(),
+      rules,
     })
     .eq("user_id", userId);
 

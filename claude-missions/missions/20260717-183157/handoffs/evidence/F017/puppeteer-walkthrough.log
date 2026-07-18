@@ -1,0 +1,34 @@
+Creating verified test user f017-shots-1784333716318-444648@example.com
+Captured 00-pravila-populated-375px.png
+Clicked voda-pre-obroka toggle: true
+Captured 01-after-toggle-375px.png
+Clicked Uredi on protein-2-obroka: true
+Captured 02-editing-rule-375px.png
+Clicked Sačuvaj: true
+Captured 03-after-edit-saved-375px.png
+Final persisted rules: [
+  {
+    "id": "protein-2-obroka",
+    "textSr": "Unesi protein u SVA 3 obroka (izmenjeno).",
+    "enabled": true
+  },
+  {
+    "id": "povrce-svaki-dan",
+    "textSr": "Jedi povrće svaki dan.",
+    "enabled": true
+  },
+  {
+    "id": "voda-pre-obroka",
+    "textSr": "Popij čašu vode pre svakog obroka.",
+    "enabled": true
+  },
+  {
+    "id": "vlakna-fokus",
+    "textSr": "Uključi izvor vlakana bar jednom dnevno.",
+    "enabled": true
+  }
+]
+voda-pre-obroka.enabled (expect true, was false): true
+protein-2-obroka.textSr (expect edited text): Unesi protein u SVA 3 obroka (izmenjeno).
+PASS: live DB confirms both the toggle and the edit persisted.
+Deleted test user f017-shots-1784333716318-444648@example.com

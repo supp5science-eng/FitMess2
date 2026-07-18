@@ -151,6 +151,34 @@ describe("persistOnboarding: the write shape (AS-031: profiles update + targets 
     expect(targetsPayload.fat_g).toBeGreaterThan(0);
   });
 
+  // F017 / AS-028: onboarding completion also generates 3-5 Serbian eating
+  // rules and includes them in the same `profiles` update -- the live proof
+  // this actually lands in the real DB is in
+  // `src/lib/onboarding/__tests__/persist-rules.integration.test.ts`.
+  it("test_AS_028_valid_data_includes_3_to_5_generated_rules_in_the_profiles_update", async () => {
+    const supabase = makeMockSupabase();
+    const result = await persistOnboarding(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase as any,
+      "user-1",
+      VALID_DATA
+    );
+
+    expect(result.ok).toBe(true);
+
+    const profilePayload = supabase.update.mock.calls[0][0] as {
+      rules: { id: string; textSr: string; enabled: boolean }[];
+    };
+    expect(Array.isArray(profilePayload.rules)).toBe(true);
+    expect(profilePayload.rules.length).toBeGreaterThanOrEqual(3);
+    expect(profilePayload.rules.length).toBeLessThanOrEqual(5);
+    for (const rule of profilePayload.rules) {
+      expect(rule.id.length).toBeGreaterThan(0);
+      expect(rule.textSr.length).toBeGreaterThan(0);
+      expect(rule.enabled).toBe(true);
+    }
+  });
+
   it("test_AS_031_a_profiles_update_error_is_surfaced_as_a_serbian_message_and_skips_the_targets_insert", async () => {
     const supabase = makeMockSupabase({
       profileError: { message: "db unreachable" },

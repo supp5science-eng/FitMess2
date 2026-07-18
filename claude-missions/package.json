@@ -12,7 +12,8 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "seed:foods": "tsx scripts/seed-foods.ts"
+    "seed:foods": "tsx scripts/seed-foods.ts",
+    "import:off": "tsx scripts/import-off.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

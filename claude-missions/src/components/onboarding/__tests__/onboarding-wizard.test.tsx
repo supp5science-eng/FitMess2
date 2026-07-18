@@ -92,7 +92,8 @@ function advanceToStep(step: "godine" | "visina" | "tezina" | "aktivnost" | "cil
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
   if (step === "tezina") return;
 
-  fireEvent.change(screen.getByLabelText(/Težina/), { target: { value: "80" } });
+  // Težina is now a wheel picker too -- tap the 80 kg row to select it.
+  fireEvent.click(screen.getByRole("button", { name: "80" }));
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
   if (step === "aktivnost") return;
 
@@ -143,24 +144,17 @@ describe("AS-019: step 3 (visina) collects height in cm", () => {
 });
 
 describe("AS-019: step 4 (težina) collects weight in kg", () => {
-  it("test_AS_019_tezina_step_shows_a_serbian_error_for_an_out_of_range_weight", () => {
+  it("test_AS_019_tezina_step_defaults_to_75_on_a_35_to_300_wheel_picker", () => {
     advanceToStep("tezina");
-    fireEvent.change(screen.getByLabelText(/Težina/), {
-      target: { value: "10" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
-
-    expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: /Kolika je tvoja trenutna težina\?/ })
-    ).toBeInTheDocument();
+    const wheel = screen.getByRole("slider", { name: /Težina/i });
+    expect(wheel).toHaveAttribute("aria-valuenow", "75");
+    expect(wheel).toHaveAttribute("aria-valuemin", "35");
+    expect(wheel).toHaveAttribute("aria-valuemax", "300");
   });
 
-  it("test_AS_019_tezina_step_accepts_a_sane_weight_and_advances_to_aktivnost", () => {
+  it("test_AS_019_tezina_step_accepts_a_scrolled_weight_and_advances_to_aktivnost", () => {
     advanceToStep("tezina");
-    fireEvent.change(screen.getByLabelText(/Težina/), {
-      target: { value: "80" },
-    });
+    fireEvent.click(screen.getByRole("button", { name: "80" }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(

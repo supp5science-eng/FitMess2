@@ -49,3 +49,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-17T23:08Z — F015 COMPLETE (5d28538). Onboarding wizard AS-018/019. Spawning F016 (summary + persist). [NOTE: Vercel deploy blocked on user — 404 platform NOT_FOUND, root dir needs to be claude-missions; awaiting Vercel token or manual fix. Holding GitHub pushes until Vercel fixed or M2 done.]
 
 - 2026-07-17T23:53Z — F016 COMPLETE (9cb71f6). AS-020/031 + bonus AS-128 a11y tests. 286 tests pass. FLAKINESS NOTE: full-suite runs occasionally hit Supabase Auth 429 (many integration tests create/delete test users) — transient, self-resolves on retry. M2 VALIDATORS: retry on 429, do NOT treat a transient rate-limit as a real FAIL. Consider a future test-isolation/backoff follow-up if it worsens. Spawning F017 (eating rules).
+
+- 2026-07-18T00:38Z — F017 COMPLETE (3b958e9). AS-028/029. 429 flakiness reconfirmed transient (3x green, 339 tests). Spawning F018 (data export). TRACK: F018 exports current user tables (profile/targets/rules); logs (M3)/weigh-ins (M5)/conversations (M6) must be ADDED to the export as they land — reminder for those features + a final AS-014 completeness check before M8.

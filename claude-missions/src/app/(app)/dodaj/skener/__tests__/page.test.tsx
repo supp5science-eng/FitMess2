@@ -1,5 +1,16 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
+
+// F031: `ScanScreen` (rendered by this route) now calls `useRouter()` for
+// its barcode-lookup-MISS redirect -- outside a real Next.js app-router
+// tree (as in this Vitest render), that hook throws unless mocked, exactly
+// like `src/components/scan/__tests__/scan-screen.test.tsx` already mocks
+// it. This route never actually reaches the MISS branch in this test (no
+// camera in jsdom -> the AS-058 fallback renders first), but the hook is
+// still called during render, so the mock is required either way.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
 
 import SkenerPage from "@/app/(app)/dodaj/skener/page";
 

@@ -11,7 +11,7 @@ import {
   resolveUnitGrams,
   type PortionFoodInput,
 } from "@/lib/food/portions";
-import type { Food } from "@/lib/types/db";
+import type { Food, LogMethod } from "@/lib/types/db";
 
 // F025 / AS-041 (grams -> macros), AS-042 (common unit -> macros): the
 // portion picker shown after a food is selected from `/dodaj/pretraga`
@@ -29,6 +29,13 @@ import type { Food } from "@/lib/types/db";
 // F031 (barcode) and F062/F064 (photo) can render this same component once
 // they have resolved a `Food` row, exactly like this screen does after a
 // search-result tap.
+//
+// F031 / AS-054: added the optional `method` prop below so a caller other
+// than the search flow (e.g. `src/components/scan/scan-screen.tsx` after a
+// barcode lookup HIT) can tag the resulting `logs` row with its own
+// `LogMethod` ('barcode') instead of always defaulting to 'search' --
+// `POST /api/logs` (F025) already accepts an arbitrary `method` in its
+// request body, this was the only missing wiring.
 
 const SAVE_FAILED_ERROR_SR = "Nismo uspeli da sačuvamo unos. Pokušaj ponovo.";
 const DEFAULT_GRAMS = "100";
@@ -46,12 +53,17 @@ interface CreateLogResponseBody {
 export function PortionPicker({
   food,
   afterSaveHref = "/danas",
+  method = "search",
 }: {
   food: Food;
   /** Where to send the user after a successful save -- defaults to the
    * home/today view (F027; may still be a placeholder route, per the
    * clarified "return the user toward home/today" scope answer). */
   afterSaveHref?: string;
+  /** How this log entry was created -- defaults to 'search' (the
+   * `/dodaj/pretraga` flow this component was originally built for).
+   * F031 passes 'barcode' when rendering this after a scan lookup hit. */
+  method?: LogMethod;
 }) {
   const router = useRouter();
   const [mode, setMode] = useState<PortionMode>("grams");
@@ -122,7 +134,7 @@ export function PortionPicker({
         body: JSON.stringify({
           foodId: food.id,
           grams: resolvedGrams,
-          method: "search",
+          method,
         }),
       });
       const body = (await response.json()) as CreateLogResponseBody;

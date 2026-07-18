@@ -2,62 +2,127 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { BarcodeScanner } from "@/components/scan/barcode-scanner";
+import { PortionPicker } from "@/components/food/portion-picker";
+import type { Food } from "@/lib/types/db";
 
-// F030: owns the "what happens after a successful scan" state so
-// `BarcodeScanner` itself stays a pure, reusable camera/decoder component
-// (per its own doc comment). Product lookup + logging from the decoded GTIN
-// is F031's scope, not this feature's -- until F031 exists, a successful
-// decode surfaces a real, non-blank confirmation screen showing the exact
-// code that was read (proving the scan worked) with a link to manual
-// search, rather than silently doing nothing or navigating away
-// unexpectedly (clarified DoD: "no unintended navigation or global state
-// mutation").
+// F031 / AS-053 (a found barcode shows the food + portion picker), AS-054
+// (confirming a portion after a scan creates a log with method='barcode') --
+// `ScanScreen` now owns the full scan -> lookup -> portion -> log flow.
+// `BarcodeScanner` (F030) only ever emits the decoded GTIN via its
+// `onDetected` callback -- this file is the ONLY thing that changed to wire
+// that emission to a real product lookup + the reused F025 portion picker
+// (see F030's handoff "Notes for the next worker" section for the exact
+// contract this fulfils; `BarcodeScanner` itself is untouched).
 //
-// F031 should replace the `onDetected={setDetectedCode}` wiring below with
-// a handler that calls its lookup-by-barcode API/action (passing `code`),
-// then either logs the found product directly or routes to a confirmation
-// screen -- `BarcodeScanner`'s `onDetected` contract (a plain
-// `(code: string) => void` callback) does not need to change for that.
+// On a HIT (`GET /api/foods/barcode/[gtin]` returns a food): renders the
+// F025 `PortionPicker` UNMODIFIED in its data flow (still `POST /api/logs`)
+// pre-loaded with the found food, passing `method="barcode"` so the
+// persisted row is distinguishable from a search-originated entry
+// (AS-054).
+//
+// On a MISS (no `foods` row has this barcode -- a normal 200 with
+// `data: null`, per the clarified "sensible empty response with 200"
+// answer, NOT an error): routes to `/dodaj/novi-proizvod?barkod=<gtin>`,
+// the first-time-entry flow F032 builds the real form for. The GTIN is
+// passed along in the query string (not a bare redirect) specifically so
+// F032 can pre-fill it -- see that route's own placeholder page for how it
+// reads this.
+//
+// On a genuine lookup FAILURE (network error / 401 / 500): a real Serbian
+// error with a retry affordance that goes back to a live scan -- never a
+// blank/broken screen, never silently treated as "not found."
+
+const LOOKUP_FAILED_ERROR_SR =
+  "Nismo uspeli da proverimo barkod. Pokušaj ponovo.";
+
+interface BarcodeLookupResponseBody {
+  ok: boolean;
+  data?: Food | null;
+  error_sr?: string;
+}
+
+type LookupState =
+  | { status: "scanning" }
+  | { status: "loading" }
+  | { status: "found"; food: Food }
+  | { status: "error" };
 
 export function ScanScreen() {
-  const [detectedCode, setDetectedCode] = useState<string | null>(null);
+  const router = useRouter();
+  const [state, setState] = useState<LookupState>({ status: "scanning" });
 
-  if (detectedCode) {
+  async function onDetected(gtin: string) {
+    setState({ status: "loading" });
+    try {
+      const response = await fetch(
+        `/api/foods/barcode/${encodeURIComponent(gtin)}`
+      );
+      const body = (await response.json()) as BarcodeLookupResponseBody;
+
+      if (!response.ok || !body.ok) {
+        setState({ status: "error" });
+        return;
+      }
+
+      if (body.data) {
+        setState({ status: "found", food: body.data });
+        return;
+      }
+
+      // MISS: hand the scanned GTIN off to F032's first-time-entry flow --
+      // never a silent no-op, never a broken 404.
+      router.push(`/dodaj/novi-proizvod?barkod=${encodeURIComponent(gtin)}`);
+    } catch {
+      setState({ status: "error" });
+    }
+  }
+
+  if (state.status === "found") {
+    return <PortionPicker food={state.food} method="barcode" />;
+  }
+
+  if (state.status === "loading") {
     return (
       <main
         className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center"
-        data-testid="scanner-detected"
+        data-testid="scanner-lookup-loading"
       >
-        <p className="text-sm text-muted-foreground">Prepoznat barkod:</p>
-        <p
-          data-testid="scanner-detected-code"
-          className="text-2xl font-semibold tracking-tight text-foreground"
-        >
-          {detectedCode}
-        </p>
         <p className="text-sm text-muted-foreground">
-          Automatsko pronalaženje proizvoda po barkodu uskoro stiže. Za sada,
-          pretraži ručno da dodaš unos.
+          Proveravamo barkod...
         </p>
-        <Link
-          href="/dodaj/pretraga"
-          className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
-        >
-          Pretraži hranu
-        </Link>
-        <button
-          type="button"
-          onClick={() => setDetectedCode(null)}
-          data-testid="scanner-scan-again-button"
-          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
-        >
-          Skeniraj ponovo
-        </button>
       </main>
     );
   }
 
-  return <BarcodeScanner onDetected={setDetectedCode} />;
+  if (state.status === "error") {
+    return (
+      <main
+        className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center"
+        data-testid="scanner-lookup-error"
+      >
+        <p role="alert" className="text-sm font-medium text-destructive">
+          {LOOKUP_FAILED_ERROR_SR}
+        </p>
+        <button
+          type="button"
+          data-testid="scanner-lookup-retry-button"
+          onClick={() => setState({ status: "scanning" })}
+          className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
+        >
+          Pokušaj ponovo
+        </button>
+        <Link
+          href="/dodaj/pretraga"
+          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
+        >
+          Pretraži hranu
+        </Link>
+      </main>
+    );
+  }
+
+  return <BarcodeScanner onDetected={onDetected} />;
 }

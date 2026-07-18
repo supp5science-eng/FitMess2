@@ -115,23 +115,24 @@ export function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
       }
 
       streamRef.current = stream;
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        try {
-          await video.play();
-        } catch {
-          // Autoplay can reject in some browsers until a user gesture; the
-          // stream is already attached and will render once playback
-          // resumes -- not a failure state worth surfacing.
-        }
-      }
 
       if (cancelled) {
         stopStream();
         return;
       }
 
+      // F031 fix: the real `<video>` element (and `videoRef`) only exists
+      // in the JSX branch rendered once `status === "scanning"` -- at THIS
+      // point in the effect, status is still "requesting", so
+      // `videoRef.current` is unavoidably `null` here (nothing has
+      // rendered a `<video>` yet). Attaching `stream` to the video element
+      // is handled by the separate effect below, which runs AFTER this
+      // `setStatus("scanning")` re-render actually mounts the `<video>`
+      // node -- attempting `videoRef.current.srcObject = stream` at this
+      // line (as a previous version of this file did) silently no-ops
+      // forever, since the guard `if (video)` is always false here: the
+      // camera permission prompt succeeds, but no frame is ever decoded
+      // because no frame is ever attached.
       setStatus("scanning");
 
       intervalRef.current = setInterval(() => {
@@ -175,6 +176,33 @@ export function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
       stopStream();
     };
   }, [attempt, onDetected, stopStream]);
+
+  // F031 fix (see the long comment above `setStatus("scanning")`): attaches
+  // the already-granted camera `stream` to the `<video>` element ONCE that
+  // element actually exists in the DOM -- i.e. once `status === "scanning"`
+  // triggers the real-scanner JSX below to render and `videoRef` to attach.
+  // Without this, the video (and therefore every `decodeBarcode(video)`
+  // call in the polling loop above) never receives a single real frame:
+  // `getUserMedia` succeeds, the UI shows the live-looking viewfinder, but
+  // no barcode is EVER decoded -- confirmed by a real headless-browser
+  // walkthrough (`video.videoWidth`/`readyState` stuck at 0 indefinitely)
+  // while building F031's own scan -> lookup -> log evidence.
+  useEffect(() => {
+    if (status !== "scanning") return;
+    const video = videoRef.current;
+    const stream = streamRef.current;
+    if (!video || !stream) return;
+    video.srcObject = stream;
+    // `video.play()` returns `undefined` rather than a real `Promise` in
+    // some test/DOM environments (e.g. jsdom, which has no native media
+    // pipeline) -- guard before `.catch`-ing it, same defensive shape as
+    // every other optional-chaining call in this file.
+    video.play()?.catch(() => {
+      // Autoplay can reject in some browsers until a user gesture; the
+      // stream is already attached and will render once playback resumes
+      // -- not a failure state worth surfacing.
+    });
+  }, [status]);
 
   function retry() {
     setAttempt((current) => current + 1);

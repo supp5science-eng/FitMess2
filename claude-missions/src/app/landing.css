@@ -237,6 +237,41 @@
   font-weight: 800;
   margin: 20px 0 0;
 }
+
+/* Eye-catching hero headline: big uppercase, teal-gradient lead phrase
+   with a hand-drawn underline stroke. */
+.lp .hero h1.hero-title {
+  font-size: clamp(44px, 7.6vw, 78px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+  line-height: 0.96;
+  margin: 18px 0 0;
+}
+.lp .hero-title .ht-hi {
+  position: relative;
+  display: inline-block;
+  color: transparent;
+  background: linear-gradient(102deg, var(--teal-bright) 8%, var(--teal) 55%, var(--teal-deep) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  padding-bottom: 0.06em;
+  filter: drop-shadow(0 4px 22px rgba(23, 209, 168, 0.28));
+}
+.lp .hero-title .ht-hi::after {
+  content: "";
+  position: absolute;
+  left: -0.01em;
+  right: -0.01em;
+  bottom: -0.02em;
+  height: 0.14em;
+  border-radius: 100px;
+  background: linear-gradient(90deg, var(--teal-bright), var(--teal-deep));
+  transform: rotate(-0.6deg);
+  transform-origin: left center;
+  opacity: 0.9;
+}
 .lp .hero h1 .u {
   color: var(--teal);
   position: relative;

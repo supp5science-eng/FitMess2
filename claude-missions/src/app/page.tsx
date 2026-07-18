@@ -55,7 +55,7 @@ export default function LandingPage() {
             <b>Fit<span className="g">Mess</span></b>
           </div>
           <div className="top-cta">
-            <Link className="link-quiet" href="/prijava">Uđi</Link>
+            <Link className="link-quiet" href="/prijava">Kreni</Link>
             <a className="btn btn-primary btn-sm" href="#instaliraj">Instaliraj</a>
           </div>
         </div>
@@ -66,7 +66,9 @@ export default function LandingPage() {
         <section className="hero">
           <div className="wrap hero-grid">
             <div className="hero-copy">
-              <h1>Najlaganije moguće ispratiti sve što pojedeš.</h1>
+              <h1 className="hero-title">
+                <span className="ht-hi">Bez stresa</span> isprati sve što pojedeš
+              </h1>
               <p className="lede">
                 Najveća baza svih srpskih namirnica.
               </p>

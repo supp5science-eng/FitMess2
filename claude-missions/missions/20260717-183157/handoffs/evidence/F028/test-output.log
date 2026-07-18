@@ -1,0 +1,13 @@
+
+> adaptive-cut@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.10 C:/FitMess2/exexutor/claude-missions
+
+
+ Test Files  70 passed (70)
+      Tests  686 passed | 17 skipped (703)
+   Start at  09:49:32
+   Duration  254.41s (transform 2.37s, setup 15.43s, import 24.67s, tests 92.98s, environment 99.38s)
+

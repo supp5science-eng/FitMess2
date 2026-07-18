@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { AddSheet } from "@/components/home/add-sheet";
 import { MacroBars } from "@/components/home/macro-bars";
 import { MealList } from "@/components/home/meal-list";
 import { Ring } from "@/components/home/ring";
@@ -88,6 +89,10 @@ export function HomeScreen({
         </h2>
         <MealList logs={logs} onSaved={handleSaved} onDeleted={handleDeleted} />
       </section>
+
+      {/* F028 / AS-051: floating "+" -> bottom sheet with every logging
+          method, at most 2 taps away from here. */}
+      <AddSheet />
     </main>
   );
 }

@@ -1,0 +1,5 @@
+AS-051 (tap 1): '+' opened the sheet with all 4 logging methods.
+AS-051 (tap 2, Pretraži): landed on http://localhost:3105/dodaj/pretraga in exactly 2 taps.
+AS-051 (tap 2, Skeniraj barkod): landed on http://localhost:3105/dodaj/uskoro/barkod (heading: "Skeniranje barkoda") in exactly 2 taps -- NOT a 404.
+Screenshots captured OK.
+cleanup: test user deleted.

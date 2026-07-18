@@ -1,0 +1,4442 @@
+[
+  {
+    "name_sr": "Pileća prsa, kuvana",
+    "brand": null,
+    "kcal_100g": 156,
+    "protein_100g": 31,
+    "carbs_100g": 0,
+    "fat_100g": 3.6,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pileća prsa, pečena",
+    "brand": null,
+    "kcal_100g": 160,
+    "protein_100g": 31,
+    "carbs_100g": 0,
+    "fat_100g": 4,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pileći batak sa karabatakom, pečen",
+    "brand": null,
+    "kcal_100g": 203,
+    "protein_100g": 26,
+    "carbs_100g": 0,
+    "fat_100g": 11,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pileća krilca, pečena",
+    "brand": null,
+    "kcal_100g": 261,
+    "protein_100g": 27,
+    "carbs_100g": 0,
+    "fat_100g": 17,
+    "common_units": []
+  },
+  {
+    "name_sr": "Celo pile, pečeno sa kožom",
+    "brand": null,
+    "kcal_100g": 226,
+    "protein_100g": 25,
+    "carbs_100g": 0,
+    "fat_100g": 14,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pileći file, sirov",
+    "brand": null,
+    "kcal_100g": 106,
+    "protein_100g": 23,
+    "carbs_100g": 0,
+    "fat_100g": 1.5,
+    "common_units": []
+  },
+  {
+    "name_sr": "Ćureći file, kuvan",
+    "brand": null,
+    "kcal_100g": 134,
+    "protein_100g": 29,
+    "carbs_100g": 0,
+    "fat_100g": 2,
+    "common_units": []
+  },
+  {
+    "name_sr": "Ćuretina, pečena",
+    "brand": null,
+    "kcal_100g": 162,
+    "protein_100g": 27,
+    "carbs_100g": 0,
+    "fat_100g": 6,
+    "common_units": []
+  },
+  {
+    "name_sr": "Juneći biftek, pečen",
+    "brand": null,
+    "kcal_100g": 243,
+    "protein_100g": 27,
+    "carbs_100g": 0,
+    "fat_100g": 15,
+    "common_units": []
+  },
+  {
+    "name_sr": "Juneći gulaš, kuvan",
+    "brand": null,
+    "kcal_100g": 165,
+    "protein_100g": 18,
+    "carbs_100g": 3,
+    "fat_100g": 9,
+    "common_units": []
+  },
+  {
+    "name_sr": "Mleveno juneće meso, pečeno",
+    "brand": null,
+    "kcal_100g": 257,
+    "protein_100g": 26,
+    "carbs_100g": 0,
+    "fat_100g": 17,
+    "common_units": []
+  },
+  {
+    "name_sr": "Juneći ražnjić, na žaru",
+    "brand": null,
+    "kcal_100g": 208,
+    "protein_100g": 25,
+    "carbs_100g": 0,
+    "fat_100g": 12,
+    "common_units": []
+  },
+  {
+    "name_sr": "Teleći but, pečen",
+    "brand": null,
+    "kcal_100g": 170,
+    "protein_100g": 29,
+    "carbs_100g": 0,
+    "fat_100g": 6,
+    "common_units": []
+  },
+  {
+    "name_sr": "Teleća šnicla, pohovana",
+    "brand": null,
+    "kcal_100g": 264,
+    "protein_100g": 18,
+    "carbs_100g": 12,
+    "fat_100g": 16,
+    "common_units": []
+  },
+  {
+    "name_sr": "Svinjski kotlet, pečen",
+    "brand": null,
+    "kcal_100g": 234,
+    "protein_100g": 27,
+    "carbs_100g": 0,
+    "fat_100g": 14,
+    "common_units": []
+  },
+  {
+    "name_sr": "Svinjska plećka, pečena",
+    "brand": null,
+    "kcal_100g": 266,
+    "protein_100g": 26,
+    "carbs_100g": 0,
+    "fat_100g": 18,
+    "common_units": []
+  },
+  {
+    "name_sr": "Svinjska vešalica, na žaru",
+    "brand": null,
+    "kcal_100g": 256,
+    "protein_100g": 28,
+    "carbs_100g": 0,
+    "fat_100g": 16,
+    "common_units": []
+  },
+  {
+    "name_sr": "Svinjski but, pečen",
+    "brand": null,
+    "kcal_100g": 216,
+    "protein_100g": 27,
+    "carbs_100g": 0,
+    "fat_100g": 12,
+    "common_units": []
+  },
+  {
+    "name_sr": "Slanina, pečena",
+    "brand": null,
+    "kcal_100g": 553,
+    "protein_100g": 37,
+    "carbs_100g": 0,
+    "fat_100g": 45,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pršuta, dimljena",
+    "brand": null,
+    "kcal_100g": 278,
+    "protein_100g": 28,
+    "carbs_100g": 1,
+    "fat_100g": 18,
+    "common_units": []
+  },
+  {
+    "name_sr": "Kulen",
+    "brand": null,
+    "kcal_100g": 407,
+    "protein_100g": 22,
+    "carbs_100g": 1,
+    "fat_100g": 35,
+    "common_units": []
+  },
+  {
+    "name_sr": "Čajna kobasica",
+    "brand": null,
+    "kcal_100g": 266,
+    "protein_100g": 14,
+    "carbs_100g": 3,
+    "fat_100g": 22,
+    "common_units": []
+  },
+  {
+    "name_sr": "Kranjska kobasica",
+    "brand": null,
+    "kcal_100g": 312,
+    "protein_100g": 13,
+    "carbs_100g": 2,
+    "fat_100g": 28,
+    "common_units": []
+  },
+  {
+    "name_sr": "Sudžuk",
+    "brand": null,
+    "kcal_100g": 374,
+    "protein_100g": 24,
+    "carbs_100g": 2,
+    "fat_100g": 30,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pileća kobasica",
+    "brand": null,
+    "kcal_100g": 212,
+    "protein_100g": 13,
+    "carbs_100g": 4,
+    "fat_100g": 16,
+    "common_units": []
+  },
+  {
+    "name_sr": "Ćevapi, na žaru",
+    "brand": null,
+    "kcal_100g": 246,
+    "protein_100g": 20,
+    "carbs_100g": 1,
+    "fat_100g": 18,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pljeskavica, na žaru",
+    "brand": null,
+    "kcal_100g": 260,
+    "protein_100g": 19,
+    "carbs_100g": 1,
+    "fat_100g": 20,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pljeskavica sa kajmakom",
+    "brand": null,
+    "kcal_100g": 304,
+    "protein_100g": 20,
+    "carbs_100g": 2,
+    "fat_100g": 24,
+    "common_units": []
+  },
+  {
+    "name_sr": "Karađorđeva šnicla",
+    "brand": null,
+    "kcal_100g": 298,
+    "protein_100g": 16,
+    "carbs_100g": 9,
+    "fat_100g": 22,
+    "common_units": []
+  },
+  {
+    "name_sr": "Riblji file oslić, pečen",
+    "brand": null,
+    "kcal_100g": 98,
+    "protein_100g": 20,
+    "carbs_100g": 0,
+    "fat_100g": 2,
+    "common_units": []
+  },
+  {
+    "name_sr": "Šaran, pečen",
+    "brand": null,
+    "kcal_100g": 144,
+    "protein_100g": 18,
+    "carbs_100g": 0,
+    "fat_100g": 8,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pastrmka, pečena",
+    "brand": null,
+    "kcal_100g": 125,
+    "protein_100g": 20,
+    "carbs_100g": 0,
+    "fat_100g": 5,
+    "common_units": []
+  },
+  {
+    "name_sr": "Skuša, pečena",
+    "brand": null,
+    "kcal_100g": 184,
+    "protein_100g": 19,
+    "carbs_100g": 0,
+    "fat_100g": 12,
+    "common_units": []
+  },
+  {
+    "name_sr": "Losos, pečen",
+    "brand": null,
+    "kcal_100g": 197,
+    "protein_100g": 20,
+    "carbs_100g": 0,
+    "fat_100g": 13,
+    "common_units": []
+  },
+  {
+    "name_sr": "Štuka, kuvana",
+    "brand": null,
+    "kcal_100g": 85,
+    "protein_100g": 19,
+    "carbs_100g": 0,
+    "fat_100g": 1,
+    "common_units": []
+  },
+  {
+    "name_sr": "Smuđ, pečen",
+    "brand": null,
+    "kcal_100g": 90,
+    "protein_100g": 19,
+    "carbs_100g": 0,
+    "fat_100g": 1.5,
+    "common_units": []
+  },
+  {
+    "name_sr": "Som, pečen",
+    "brand": null,
+    "kcal_100g": 113,
+    "protein_100g": 17,
+    "carbs_100g": 0,
+    "fat_100g": 5,
+    "common_units": []
+  },
+  {
+    "name_sr": "Tuna u sopstvenom soku, konzerva",
+    "brand": null,
+    "kcal_100g": 109,
+    "protein_100g": 25,
+    "carbs_100g": 0,
+    "fat_100g": 1,
+    "common_units": []
+  },
+  {
+    "name_sr": "Sardine u ulju, konzerva",
+    "brand": null,
+    "kcal_100g": 183,
+    "protein_100g": 21,
+    "carbs_100g": 0,
+    "fat_100g": 11,
+    "common_units": []
+  },
+  {
+    "name_sr": "Jaje kokošije, kuvano",
+    "brand": null,
+    "kcal_100g": 155,
+    "protein_100g": 13,
+    "carbs_100g": 1.1,
+    "fat_100g": 11,
+    "common_units": []
+  },
+  {
+    "name_sr": "Jaje, belance",
+    "brand": null,
+    "kcal_100g": 49,
+    "protein_100g": 11,
+    "carbs_100g": 0.7,
+    "fat_100g": 0.2,
+    "common_units": []
+  },
+  {
+    "name_sr": "Jaje, žumance",
+    "brand": null,
+    "kcal_100g": 321,
+    "protein_100g": 16,
+    "carbs_100g": 3.6,
+    "fat_100g": 27,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pačetina, pečena",
+    "brand": null,
+    "kcal_100g": 328,
+    "protein_100g": 19,
+    "carbs_100g": 0,
+    "fat_100g": 28,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pačji batak, pečen",
+    "brand": null,
+    "kcal_100g": 278,
+    "protein_100g": 20,
+    "carbs_100g": 0,
+    "fat_100g": 22,
+    "common_units": []
+  },
+  {
+    "name_sr": "Guska, pečena",
+    "brand": null,
+    "kcal_100g": 352,
+    "protein_100g": 16,
+    "carbs_100g": 0,
+    "fat_100g": 32,
+    "common_units": []
+  },
+  {
+    "name_sr": "Jagnjeći but, pečen",
+    "brand": null,
+    "kcal_100g": 244,
+    "protein_100g": 25,
+    "carbs_100g": 0,
+    "fat_100g": 16,
+    "common_units": []
+  },
+  {
+    "name_sr": "Jagnjeća plećka, pečena",
+    "brand": null,
+    "kcal_100g": 272,
+    "protein_100g": 23,
+    "carbs_100g": 0,
+    "fat_100g": 20,
+    "common_units": []
+  },
+  {
+    "name_sr": "Zečije meso, kuvano",
+    "brand": null,
+    "kcal_100g": 161,
+    "protein_100g": 29,
+    "carbs_100g": 0,
+    "fat_100g": 5,
+    "common_units": []
+  },
+  {
+    "name_sr": "Divljač, srneći but pečen",
+    "brand": null,
+    "kcal_100g": 148,
+    "protein_100g": 28,
+    "carbs_100g": 0,
+    "fat_100g": 4,
+    "common_units": []
+  },
+  {
+    "name_sr": "Ćufte, na žaru",
+    "brand": null,
+    "kcal_100g": 210,
+    "protein_100g": 18,
+    "carbs_100g": 3,
+    "fat_100g": 14,
+    "common_units": []
+  },
+  {
+    "name_sr": "Ćufte u sosu od paradajza",
+    "brand": null,
+    "kcal_100g": 167,
+    "protein_100g": 11,
+    "carbs_100g": 6,
+    "fat_100g": 11,
+    "common_units": []
+  },
+  {
+    "name_sr": "Roštilj, mešano meso",
+    "brand": null,
+    "kcal_100g": 254,
+    "protein_100g": 22,
+    "carbs_100g": 1,
+    "fat_100g": 18,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pihtije, domaće",
+    "brand": null,
+    "kcal_100g": 128,
+    "protein_100g": 13,
+    "carbs_100g": 1,
+    "fat_100g": 8,
+    "common_units": []
+  },
+  {
+    "name_sr": "Čvarci",
+    "brand": null,
+    "kcal_100g": 583,
+    "protein_100g": 22,
+    "carbs_100g": 0,
+    "fat_100g": 55,
+    "common_units": []
+  },
+  {
+    "name_sr": "Kobasica za roštilj, domaća",
+    "brand": null,
+    "kcal_100g": 297,
+    "protein_100g": 16,
+    "carbs_100g": 2,
+    "fat_100g": 25,
+    "common_units": []
+  },
+  {
+    "name_sr": "Dimljena vešalica",
+    "brand": null,
+    "kcal_100g": 234,
+    "protein_100g": 26,
+    "carbs_100g": 1,
+    "fat_100g": 14,
+    "common_units": []
+  },
+  {
+    "name_sr": "Mleko 3.2% m.m.",
+    "brand": "Imlek",
+    "kcal_100g": 61,
+    "protein_100g": 3.3,
+    "carbs_100g": 4.8,
+    "fat_100g": 3.2,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Mleko 2.8% m.m.",
+    "brand": "Imlek",
+    "kcal_100g": 58,
+    "protein_100g": 3.3,
+    "carbs_100g": 4.8,
+    "fat_100g": 2.8,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Light mleko 0.9% m.m.",
+    "brand": "Imlek",
+    "kcal_100g": 41,
+    "protein_100g": 3.4,
+    "carbs_100g": 4.9,
+    "fat_100g": 0.9,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Jogurt 2.8% m.m.",
+    "brand": "Imlek",
+    "kcal_100g": 56,
+    "protein_100g": 3.5,
+    "carbs_100g": 4.3,
+    "fat_100g": 2.8,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Kiselo mleko",
+    "brand": "Imlek",
+    "kcal_100g": 58,
+    "protein_100g": 3.2,
+    "carbs_100g": 4,
+    "fat_100g": 3.2,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Pavlaka 20% m.m.",
+    "brand": "Imlek",
+    "kcal_100g": 202,
+    "protein_100g": 2.5,
+    "carbs_100g": 3,
+    "fat_100g": 20,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Pavlaka za kuvanje 12% m.m.",
+    "brand": "Imlek",
+    "kcal_100g": 133,
+    "protein_100g": 2.8,
+    "carbs_100g": 3.5,
+    "fat_100g": 12,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Grčki jogurt",
+    "brand": "Imlek",
+    "kcal_100g": 103,
+    "protein_100g": 6,
+    "carbs_100g": 4,
+    "fat_100g": 7,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Jogurt sa voćem, jagoda",
+    "brand": "Imlek",
+    "kcal_100g": 91,
+    "protein_100g": 3,
+    "carbs_100g": 14,
+    "fat_100g": 2.5,
+    "common_units": [
+      {
+        "label": "čašica",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Jogurt",
+    "brand": "Moja Kravica",
+    "kcal_100g": 60,
+    "protein_100g": 3.3,
+    "carbs_100g": 4.5,
+    "fat_100g": 3.2,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Mladi sir, kravlji, meki",
+    "brand": null,
+    "kcal_100g": 165,
+    "protein_100g": 14,
+    "carbs_100g": 2.5,
+    "fat_100g": 11,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Kačkavalj",
+    "brand": "Sirela",
+    "kcal_100g": 353,
+    "protein_100g": 26,
+    "carbs_100g": 1.5,
+    "fat_100g": 27,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Trapist sir",
+    "brand": null,
+    "kcal_100g": 336,
+    "protein_100g": 24,
+    "carbs_100g": 1.5,
+    "fat_100g": 26,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Feta sir",
+    "brand": "Šarski",
+    "kcal_100g": 265,
+    "protein_100g": 17,
+    "carbs_100g": 2,
+    "fat_100g": 21,
+    "common_units": [
+      {
+        "label": "kocka",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Sir za mazanje, kremasti",
+    "brand": null,
+    "kcal_100g": 264,
+    "protein_100g": 9,
+    "carbs_100g": 3,
+    "fat_100g": 24,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Puter",
+    "brand": "Imlek",
+    "kcal_100g": 744,
+    "protein_100g": 0.7,
+    "carbs_100g": 0.7,
+    "fat_100g": 82,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Kajmak, domaći",
+    "brand": null,
+    "kcal_100g": 453,
+    "protein_100g": 10,
+    "carbs_100g": 2,
+    "fat_100g": 45,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Skuta",
+    "brand": null,
+    "kcal_100g": 100,
+    "protein_100g": 13,
+    "carbs_100g": 3,
+    "fat_100g": 4,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Švapski sir",
+    "brand": null,
+    "kcal_100g": 264,
+    "protein_100g": 20,
+    "carbs_100g": 1,
+    "fat_100g": 20,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Sjenički sir",
+    "brand": null,
+    "kcal_100g": 313,
+    "protein_100g": 21,
+    "carbs_100g": 1,
+    "fat_100g": 25,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Zlatarski sir",
+    "brand": null,
+    "kcal_100g": 326,
+    "protein_100g": 22,
+    "carbs_100g": 1,
+    "fat_100g": 26,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Homoljski sir",
+    "brand": null,
+    "kcal_100g": 282,
+    "protein_100g": 20,
+    "carbs_100g": 1,
+    "fat_100g": 22,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Ajran",
+    "brand": null,
+    "kcal_100g": 41,
+    "protein_100g": 2.8,
+    "carbs_100g": 4,
+    "fat_100g": 1.5,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Sladoled, vanila",
+    "brand": "Frikom",
+    "kcal_100g": 201,
+    "protein_100g": 3.5,
+    "carbs_100g": 22,
+    "fat_100g": 11,
+    "common_units": [
+      {
+        "label": "kuglica",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Sladoled, čokolada",
+    "brand": "Frikom",
+    "kcal_100g": 220,
+    "protein_100g": 4,
+    "carbs_100g": 24,
+    "fat_100g": 12,
+    "common_units": [
+      {
+        "label": "kuglica",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Sladoled kornet",
+    "brand": "Frikom",
+    "kcal_100g": 235,
+    "protein_100g": 3.5,
+    "carbs_100g": 26,
+    "fat_100g": 13,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 90
+      }
+    ]
+  },
+  {
+    "name_sr": "Topljeni sir, namaz",
+    "brand": "Lino",
+    "kcal_100g": 262,
+    "protein_100g": 10,
+    "carbs_100g": 6,
+    "fat_100g": 22,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Mlečni namaz, čokoladni",
+    "brand": "Lino Extra",
+    "kcal_100g": 514,
+    "protein_100g": 6,
+    "carbs_100g": 55,
+    "fat_100g": 30,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Kondenzovano mleko",
+    "brand": null,
+    "kcal_100g": 320,
+    "protein_100g": 7,
+    "carbs_100g": 55,
+    "fat_100g": 8,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Mlaćenica",
+    "brand": null,
+    "kcal_100g": 41,
+    "protein_100g": 3.3,
+    "carbs_100g": 4.8,
+    "fat_100g": 0.9,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Kiselo mleko u kesici",
+    "brand": "Imlek",
+    "kcal_100g": 54,
+    "protein_100g": 3.2,
+    "carbs_100g": 4,
+    "fat_100g": 2.8,
+    "common_units": [
+      {
+        "label": "kesica",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Beli hleb",
+    "brand": null,
+    "kcal_100g": 243,
+    "protein_100g": 8,
+    "carbs_100g": 50,
+    "fat_100g": 1.2,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Crni (raženi) hleb",
+    "brand": null,
+    "kcal_100g": 222,
+    "protein_100g": 7,
+    "carbs_100g": 45,
+    "fat_100g": 1.5,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Integralni hleb",
+    "brand": null,
+    "kcal_100g": 227,
+    "protein_100g": 9,
+    "carbs_100g": 41,
+    "fat_100g": 3,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Kukuruzni hleb",
+    "brand": null,
+    "kcal_100g": 258,
+    "protein_100g": 6,
+    "carbs_100g": 45,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 40
+      }
+    ]
+  },
+  {
+    "name_sr": "Kifla",
+    "brand": null,
+    "kcal_100g": 325,
+    "protein_100g": 9,
+    "carbs_100g": 52,
+    "fat_100g": 9,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Lepinja",
+    "brand": null,
+    "kcal_100g": 250,
+    "protein_100g": 8,
+    "carbs_100g": 50,
+    "fat_100g": 2,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Somun",
+    "brand": null,
+    "kcal_100g": 242,
+    "protein_100g": 8,
+    "carbs_100g": 49,
+    "fat_100g": 1.5,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Burek sa mesom",
+    "brand": null,
+    "kcal_100g": 290,
+    "protein_100g": 10,
+    "carbs_100g": 22,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Burek sa sirom",
+    "brand": null,
+    "kcal_100g": 308,
+    "protein_100g": 9,
+    "carbs_100g": 23,
+    "fat_100g": 20,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Burek sa pečurkama",
+    "brand": null,
+    "kcal_100g": 246,
+    "protein_100g": 6,
+    "carbs_100g": 24,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Pogačice",
+    "brand": null,
+    "kcal_100g": 350,
+    "protein_100g": 8,
+    "carbs_100g": 48,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Pita zeljanica",
+    "brand": null,
+    "kcal_100g": 212,
+    "protein_100g": 6,
+    "carbs_100g": 20,
+    "fat_100g": 12,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 120
+      }
+    ]
+  },
+  {
+    "name_sr": "Đevrek",
+    "brand": null,
+    "kcal_100g": 310,
+    "protein_100g": 9,
+    "carbs_100g": 55,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 80
+      }
+    ]
+  },
+  {
+    "name_sr": "Langoš",
+    "brand": null,
+    "kcal_100g": 314,
+    "protein_100g": 7,
+    "carbs_100g": 40,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 180
+      }
+    ]
+  },
+  {
+    "name_sr": "Krofne",
+    "brand": null,
+    "kcal_100g": 366,
+    "protein_100g": 6,
+    "carbs_100g": 45,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Vanilice",
+    "brand": null,
+    "kcal_100g": 462,
+    "protein_100g": 6,
+    "carbs_100g": 60,
+    "fat_100g": 22,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 25
+      }
+    ]
+  },
+  {
+    "name_sr": "Kroasan",
+    "brand": null,
+    "kcal_100g": 418,
+    "protein_100g": 7,
+    "carbs_100g": 48,
+    "fat_100g": 22,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Sitni kolači, mešani",
+    "brand": null,
+    "kcal_100g": 432,
+    "protein_100g": 5,
+    "carbs_100g": 58,
+    "fat_100g": 20,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Perece, slane",
+    "brand": null,
+    "kcal_100g": 384,
+    "protein_100g": 10,
+    "carbs_100g": 68,
+    "fat_100g": 8,
+    "common_units": [
+      {
+        "label": "kesica",
+        "grams": 50
+      }
+    ]
+  },
+  {
+    "name_sr": "Pica testo, osnova",
+    "brand": null,
+    "kcal_100g": 281,
+    "protein_100g": 9,
+    "carbs_100g": 50,
+    "fat_100g": 5,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pica margarita",
+    "brand": null,
+    "kcal_100g": 237,
+    "protein_100g": 11,
+    "carbs_100g": 28,
+    "fat_100g": 9,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 120
+      }
+    ]
+  },
+  {
+    "name_sr": "Simit",
+    "brand": null,
+    "kcal_100g": 306,
+    "protein_100g": 9,
+    "carbs_100g": 54,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 90
+      }
+    ]
+  },
+  {
+    "name_sr": "Kifla sa kobasicom",
+    "brand": null,
+    "kcal_100g": 352,
+    "protein_100g": 12,
+    "carbs_100g": 40,
+    "fat_100g": 16,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 120
+      }
+    ]
+  },
+  {
+    "name_sr": "Sendvič sa šunkom i sirom",
+    "brand": null,
+    "kcal_100g": 298,
+    "protein_100g": 13,
+    "carbs_100g": 30,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Jabuka",
+    "brand": null,
+    "kcal_100g": 59,
+    "protein_100g": 0.3,
+    "carbs_100g": 14,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Kruška",
+    "brand": null,
+    "kcal_100g": 63,
+    "protein_100g": 0.4,
+    "carbs_100g": 15,
+    "fat_100g": 0.1,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Banana",
+    "brand": null,
+    "kcal_100g": 99,
+    "protein_100g": 1.1,
+    "carbs_100g": 23,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 120
+      }
+    ]
+  },
+  {
+    "name_sr": "Pomorandža",
+    "brand": null,
+    "kcal_100g": 53,
+    "protein_100g": 0.9,
+    "carbs_100g": 12,
+    "fat_100g": 0.1,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Mandarina",
+    "brand": null,
+    "kcal_100g": 58,
+    "protein_100g": 0.8,
+    "carbs_100g": 13,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 80
+      }
+    ]
+  },
+  {
+    "name_sr": "Grožđe",
+    "brand": null,
+    "kcal_100g": 77,
+    "protein_100g": 0.7,
+    "carbs_100g": 18,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Breskva",
+    "brand": null,
+    "kcal_100g": 46,
+    "protein_100g": 0.9,
+    "carbs_100g": 10,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Kajsija",
+    "brand": null,
+    "kcal_100g": 53,
+    "protein_100g": 1.4,
+    "carbs_100g": 11,
+    "fat_100g": 0.4,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 40
+      }
+    ]
+  },
+  {
+    "name_sr": "Šljiva",
+    "brand": null,
+    "kcal_100g": 50,
+    "protein_100g": 0.7,
+    "carbs_100g": 11,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Trešnja",
+    "brand": null,
+    "kcal_100g": 71,
+    "protein_100g": 1,
+    "carbs_100g": 16,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 140
+      }
+    ]
+  },
+  {
+    "name_sr": "Višnja",
+    "brand": null,
+    "kcal_100g": 55,
+    "protein_100g": 1,
+    "carbs_100g": 12,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 140
+      }
+    ]
+  },
+  {
+    "name_sr": "Dinja",
+    "brand": null,
+    "kcal_100g": 37,
+    "protein_100g": 0.8,
+    "carbs_100g": 8,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Lubenica",
+    "brand": null,
+    "kcal_100g": 36,
+    "protein_100g": 0.6,
+    "carbs_100g": 8,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Jagoda",
+    "brand": null,
+    "kcal_100g": 38,
+    "protein_100g": 0.7,
+    "carbs_100g": 8,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Malina",
+    "brand": null,
+    "kcal_100g": 58,
+    "protein_100g": 1.2,
+    "carbs_100g": 12,
+    "fat_100g": 0.6,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 125
+      }
+    ]
+  },
+  {
+    "name_sr": "Borovnica",
+    "brand": null,
+    "kcal_100g": 62,
+    "protein_100g": 0.7,
+    "carbs_100g": 14,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 145
+      }
+    ]
+  },
+  {
+    "name_sr": "Kupina",
+    "brand": null,
+    "kcal_100g": 50,
+    "protein_100g": 1.4,
+    "carbs_100g": 10,
+    "fat_100g": 0.5,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 145
+      }
+    ]
+  },
+  {
+    "name_sr": "Limun",
+    "brand": null,
+    "kcal_100g": 43,
+    "protein_100g": 1.1,
+    "carbs_100g": 9,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 80
+      }
+    ]
+  },
+  {
+    "name_sr": "Kivi",
+    "brand": null,
+    "kcal_100g": 69,
+    "protein_100g": 1.1,
+    "carbs_100g": 15,
+    "fat_100g": 0.5,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 70
+      }
+    ]
+  },
+  {
+    "name_sr": "Ananas",
+    "brand": null,
+    "kcal_100g": 55,
+    "protein_100g": 0.5,
+    "carbs_100g": 13,
+    "fat_100g": 0.1,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 80
+      }
+    ]
+  },
+  {
+    "name_sr": "Nar",
+    "brand": null,
+    "kcal_100g": 94,
+    "protein_100g": 1.7,
+    "carbs_100g": 19,
+    "fat_100g": 1.2,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Dunja",
+    "brand": null,
+    "kcal_100g": 63,
+    "protein_100g": 0.4,
+    "carbs_100g": 15,
+    "fat_100g": 0.1,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Avokado",
+    "brand": null,
+    "kcal_100g": 179,
+    "protein_100g": 2,
+    "carbs_100g": 9,
+    "fat_100g": 15,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Grejpfrut",
+    "brand": null,
+    "kcal_100g": 48,
+    "protein_100g": 0.8,
+    "carbs_100g": 11,
+    "fat_100g": 0.1,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Ribizla, crvena",
+    "brand": null,
+    "kcal_100g": 63,
+    "protein_100g": 1.4,
+    "carbs_100g": 14,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 110
+      }
+    ]
+  },
+  {
+    "name_sr": "Ogrozd",
+    "brand": null,
+    "kcal_100g": 49,
+    "protein_100g": 0.9,
+    "carbs_100g": 10,
+    "fat_100g": 0.6,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Aronija",
+    "brand": null,
+    "kcal_100g": 66,
+    "protein_100g": 1.4,
+    "carbs_100g": 14,
+    "fat_100g": 0.5,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 140
+      }
+    ]
+  },
+  {
+    "name_sr": "Orah",
+    "brand": null,
+    "kcal_100g": 701,
+    "protein_100g": 15,
+    "carbs_100g": 14,
+    "fat_100g": 65,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Lešnik",
+    "brand": null,
+    "kcal_100g": 677,
+    "protein_100g": 15,
+    "carbs_100g": 17,
+    "fat_100g": 61,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Badem",
+    "brand": null,
+    "kcal_100g": 622,
+    "protein_100g": 21,
+    "carbs_100g": 22,
+    "fat_100g": 50,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Suvo grožđe",
+    "brand": null,
+    "kcal_100g": 333,
+    "protein_100g": 3,
+    "carbs_100g": 79,
+    "fat_100g": 0.5,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Suve šljive",
+    "brand": null,
+    "kcal_100g": 268,
+    "protein_100g": 2.2,
+    "carbs_100g": 64,
+    "fat_100g": 0.4,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Suve kajsije",
+    "brand": null,
+    "kcal_100g": 270,
+    "protein_100g": 3.4,
+    "carbs_100g": 63,
+    "fat_100g": 0.5,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 8
+      }
+    ]
+  },
+  {
+    "name_sr": "Urme, suve",
+    "brand": null,
+    "kcal_100g": 314,
+    "protein_100g": 2.5,
+    "carbs_100g": 75,
+    "fat_100g": 0.4,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 8
+      }
+    ]
+  },
+  {
+    "name_sr": "Smokve, suve",
+    "brand": null,
+    "kcal_100g": 278,
+    "protein_100g": 3.3,
+    "carbs_100g": 64,
+    "fat_100g": 1,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Krompir, kuvan",
+    "brand": null,
+    "kcal_100g": 77,
+    "protein_100g": 2,
+    "carbs_100g": 17,
+    "fat_100g": 0.1,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Krompir, pečen",
+    "brand": null,
+    "kcal_100g": 130,
+    "protein_100g": 2.3,
+    "carbs_100g": 20,
+    "fat_100g": 4.5,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Pomfrit, pržen",
+    "brand": null,
+    "kcal_100g": 313,
+    "protein_100g": 3.4,
+    "carbs_100g": 41,
+    "fat_100g": 15,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Paradajz",
+    "brand": null,
+    "kcal_100g": 21,
+    "protein_100g": 0.9,
+    "carbs_100g": 3.9,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 120
+      }
+    ]
+  },
+  {
+    "name_sr": "Krastavac",
+    "brand": null,
+    "kcal_100g": 18,
+    "protein_100g": 0.7,
+    "carbs_100g": 3.6,
+    "fat_100g": 0.1,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Crvena paprika",
+    "brand": null,
+    "kcal_100g": 31,
+    "protein_100g": 1,
+    "carbs_100g": 6,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 120
+      }
+    ]
+  },
+  {
+    "name_sr": "Zelena paprika",
+    "brand": null,
+    "kcal_100g": 24,
+    "protein_100g": 0.9,
+    "carbs_100g": 4.6,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Crni luk",
+    "brand": null,
+    "kcal_100g": 41,
+    "protein_100g": 1.1,
+    "carbs_100g": 9,
+    "fat_100g": 0.1,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Beli luk",
+    "brand": null,
+    "kcal_100g": 162,
+    "protein_100g": 6.4,
+    "carbs_100g": 33,
+    "fat_100g": 0.5,
+    "common_units": [
+      {
+        "label": "čen",
+        "grams": 5
+      }
+    ]
+  },
+  {
+    "name_sr": "Praziluk",
+    "brand": null,
+    "kcal_100g": 65,
+    "protein_100g": 1.5,
+    "carbs_100g": 14,
+    "fat_100g": 0.3,
+    "common_units": []
+  },
+  {
+    "name_sr": "Šargarepa",
+    "brand": null,
+    "kcal_100g": 45,
+    "protein_100g": 0.9,
+    "carbs_100g": 10,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 70
+      }
+    ]
+  },
+  {
+    "name_sr": "Kupus, beli",
+    "brand": null,
+    "kcal_100g": 30,
+    "protein_100g": 1.3,
+    "carbs_100g": 6,
+    "fat_100g": 0.1,
+    "common_units": []
+  },
+  {
+    "name_sr": "Kiseli kupus",
+    "brand": null,
+    "kcal_100g": 21,
+    "protein_100g": 1,
+    "carbs_100g": 4,
+    "fat_100g": 0.1,
+    "common_units": []
+  },
+  {
+    "name_sr": "Karfiol",
+    "brand": null,
+    "kcal_100g": 30,
+    "protein_100g": 1.9,
+    "carbs_100g": 5,
+    "fat_100g": 0.3,
+    "common_units": []
+  },
+  {
+    "name_sr": "Brokoli",
+    "brand": null,
+    "kcal_100g": 43,
+    "protein_100g": 2.8,
+    "carbs_100g": 7,
+    "fat_100g": 0.4,
+    "common_units": []
+  },
+  {
+    "name_sr": "Tikvice",
+    "brand": null,
+    "kcal_100g": 20,
+    "protein_100g": 1.2,
+    "carbs_100g": 3.1,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Patlidžan",
+    "brand": null,
+    "kcal_100g": 30,
+    "protein_100g": 1,
+    "carbs_100g": 6,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Spanać",
+    "brand": null,
+    "kcal_100g": 30,
+    "protein_100g": 2.9,
+    "carbs_100g": 3.6,
+    "fat_100g": 0.4,
+    "common_units": []
+  },
+  {
+    "name_sr": "Blitva",
+    "brand": null,
+    "kcal_100g": 24,
+    "protein_100g": 1.8,
+    "carbs_100g": 3.7,
+    "fat_100g": 0.2,
+    "common_units": []
+  },
+  {
+    "name_sr": "Zelena salata",
+    "brand": null,
+    "kcal_100g": 19,
+    "protein_100g": 1.4,
+    "carbs_100g": 2.9,
+    "fat_100g": 0.2,
+    "common_units": []
+  },
+  {
+    "name_sr": "Šampinjoni",
+    "brand": null,
+    "kcal_100g": 28,
+    "protein_100g": 3.1,
+    "carbs_100g": 3.3,
+    "fat_100g": 0.3,
+    "common_units": []
+  },
+  {
+    "name_sr": "Vrganji",
+    "brand": null,
+    "kcal_100g": 34,
+    "protein_100g": 3.4,
+    "carbs_100g": 4,
+    "fat_100g": 0.5,
+    "common_units": []
+  },
+  {
+    "name_sr": "Pasulj, suvi, sirov",
+    "brand": null,
+    "kcal_100g": 346,
+    "protein_100g": 23,
+    "carbs_100g": 60,
+    "fat_100g": 1.5,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Sočivo, suvo, sirovo",
+    "brand": null,
+    "kcal_100g": 345,
+    "protein_100g": 24,
+    "carbs_100g": 60,
+    "fat_100g": 1,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Leblebija (slanutak), suva",
+    "brand": null,
+    "kcal_100g": 374,
+    "protein_100g": 19,
+    "carbs_100g": 61,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Grašak, svež",
+    "brand": null,
+    "kcal_100g": 81,
+    "protein_100g": 5.4,
+    "carbs_100g": 14,
+    "fat_100g": 0.4,
+    "common_units": []
+  },
+  {
+    "name_sr": "Boranija (mahune)",
+    "brand": null,
+    "kcal_100g": 37,
+    "protein_100g": 1.8,
+    "carbs_100g": 7,
+    "fat_100g": 0.2,
+    "common_units": []
+  },
+  {
+    "name_sr": "Kukuruz šećerac",
+    "brand": null,
+    "kcal_100g": 102,
+    "protein_100g": 3.3,
+    "carbs_100g": 19,
+    "fat_100g": 1.4,
+    "common_units": []
+  },
+  {
+    "name_sr": "Kelj",
+    "brand": null,
+    "kcal_100g": 45,
+    "protein_100g": 3.3,
+    "carbs_100g": 6,
+    "fat_100g": 0.9,
+    "common_units": []
+  },
+  {
+    "name_sr": "Prokelj (kelj pupčar)",
+    "brand": null,
+    "kcal_100g": 52,
+    "protein_100g": 3.4,
+    "carbs_100g": 9,
+    "fat_100g": 0.3,
+    "common_units": []
+  },
+  {
+    "name_sr": "Rotkvice",
+    "brand": null,
+    "kcal_100g": 17,
+    "protein_100g": 0.7,
+    "carbs_100g": 3.4,
+    "fat_100g": 0.1,
+    "common_units": []
+  },
+  {
+    "name_sr": "Cvekla",
+    "brand": null,
+    "kcal_100g": 48,
+    "protein_100g": 1.6,
+    "carbs_100g": 10,
+    "fat_100g": 0.2,
+    "common_units": []
+  },
+  {
+    "name_sr": "Celer koren",
+    "brand": null,
+    "kcal_100g": 33,
+    "protein_100g": 1.5,
+    "carbs_100g": 6,
+    "fat_100g": 0.3,
+    "common_units": []
+  },
+  {
+    "name_sr": "Peršun, list",
+    "brand": null,
+    "kcal_100g": 43,
+    "protein_100g": 3,
+    "carbs_100g": 6,
+    "fat_100g": 0.8,
+    "common_units": []
+  },
+  {
+    "name_sr": "Tikva (bundeva)",
+    "brand": null,
+    "kcal_100g": 33,
+    "protein_100g": 1,
+    "carbs_100g": 7,
+    "fat_100g": 0.1,
+    "common_units": []
+  },
+  {
+    "name_sr": "Paškanat (pastrnjak)",
+    "brand": null,
+    "kcal_100g": 80,
+    "protein_100g": 1.2,
+    "carbs_100g": 18,
+    "fat_100g": 0.3,
+    "common_units": []
+  },
+  {
+    "name_sr": "Artičoka",
+    "brand": null,
+    "kcal_100g": 59,
+    "protein_100g": 3.3,
+    "carbs_100g": 11,
+    "fat_100g": 0.2,
+    "common_units": []
+  },
+  {
+    "name_sr": "Plazma keks",
+    "brand": "Bambi",
+    "kcal_100g": 430,
+    "protein_100g": 8,
+    "carbs_100g": 68,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Predsednik keks",
+    "brand": "Bambi",
+    "kcal_100g": 482,
+    "protein_100g": 6,
+    "carbs_100g": 65,
+    "fat_100g": 22,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Bananica",
+    "brand": "Bambi",
+    "kcal_100g": 422,
+    "protein_100g": 5,
+    "carbs_100g": 60,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Smoki",
+    "brand": "Bambi",
+    "kcal_100g": 495,
+    "protein_100g": 10,
+    "carbs_100g": 53,
+    "fat_100g": 27,
+    "common_units": [
+      {
+        "label": "kesica",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Eurokrem",
+    "brand": "Bambi",
+    "kcal_100g": 522,
+    "protein_100g": 8,
+    "carbs_100g": 55,
+    "fat_100g": 30,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Baron mlečna čokolada",
+    "brand": "Bambi",
+    "kcal_100g": 536,
+    "protein_100g": 6,
+    "carbs_100g": 56,
+    "fat_100g": 32,
+    "common_units": [
+      {
+        "label": "kockica",
+        "grams": 6
+      }
+    ]
+  },
+  {
+    "name_sr": "Lino Laino namaz",
+    "brand": "Bambi",
+    "kcal_100g": 284,
+    "protein_100g": 9,
+    "carbs_100g": 8,
+    "fat_100g": 24,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Najlepše želje keks",
+    "brand": "Štark",
+    "kcal_100g": 488,
+    "protein_100g": 6,
+    "carbs_100g": 62,
+    "fat_100g": 24,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 12
+      }
+    ]
+  },
+  {
+    "name_sr": "Menaž keks",
+    "brand": "Štark",
+    "kcal_100g": 416,
+    "protein_100g": 9,
+    "carbs_100g": 68,
+    "fat_100g": 12,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Sicilia keks",
+    "brand": "Štark",
+    "kcal_100g": 480,
+    "protein_100g": 6,
+    "carbs_100g": 60,
+    "fat_100g": 24,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 12
+      }
+    ]
+  },
+  {
+    "name_sr": "Kokosovi flips",
+    "brand": "Štark",
+    "kcal_100g": 489,
+    "protein_100g": 6,
+    "carbs_100g": 60,
+    "fat_100g": 25,
+    "common_units": [
+      {
+        "label": "kesica",
+        "grams": 50
+      }
+    ]
+  },
+  {
+    "name_sr": "Jaffa Cakes",
+    "brand": "Štark",
+    "kcal_100g": 396,
+    "protein_100g": 4,
+    "carbs_100g": 68,
+    "fat_100g": 12,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 22
+      }
+    ]
+  },
+  {
+    "name_sr": "Wašington keks",
+    "brand": "Štark",
+    "kcal_100g": 450,
+    "protein_100g": 7,
+    "carbs_100g": 65,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 12
+      }
+    ]
+  },
+  {
+    "name_sr": "Sunčeve pahuljice",
+    "brand": "Štark",
+    "kcal_100g": 402,
+    "protein_100g": 8,
+    "carbs_100g": 70,
+    "fat_100g": 10,
+    "common_units": []
+  },
+  {
+    "name_sr": "Čokolino",
+    "brand": "Štark",
+    "kcal_100g": 389,
+    "protein_100g": 9,
+    "carbs_100g": 68,
+    "fat_100g": 9,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 40
+      }
+    ]
+  },
+  {
+    "name_sr": "Mlečna čokolada",
+    "brand": "Polimark",
+    "kcal_100g": 532,
+    "protein_100g": 7,
+    "carbs_100g": 54,
+    "fat_100g": 32,
+    "common_units": [
+      {
+        "label": "kockica",
+        "grams": 6
+      }
+    ]
+  },
+  {
+    "name_sr": "Voćne bombone",
+    "brand": "Polimark",
+    "kcal_100g": 371,
+    "protein_100g": 0.3,
+    "carbs_100g": 92,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 5
+      }
+    ]
+  },
+  {
+    "name_sr": "Sok od pomorandže",
+    "brand": "Nectar",
+    "kcal_100g": 46,
+    "protein_100g": 0.5,
+    "carbs_100g": 11,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Sok od jabuke",
+    "brand": "Nectar",
+    "kcal_100g": 49,
+    "protein_100g": 0.3,
+    "carbs_100g": 12,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Multivitamin sok",
+    "brand": "Nectar",
+    "kcal_100g": 46,
+    "protein_100g": 0.4,
+    "carbs_100g": 11,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Prirodna izvorska voda",
+    "brand": "Knjaz Miloš",
+    "kcal_100g": 0,
+    "protein_100g": 0,
+    "carbs_100g": 0,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Gazirana mineralna voda",
+    "brand": "Knjaz Miloš",
+    "kcal_100g": 0,
+    "protein_100g": 0,
+    "carbs_100g": 0,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Voda Aqua Viva",
+    "brand": "Knjaz Miloš",
+    "kcal_100g": 0,
+    "protein_100g": 0,
+    "carbs_100g": 0,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Cockta",
+    "brand": "Podravka",
+    "kcal_100g": 40,
+    "protein_100g": 0,
+    "carbs_100g": 10,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Nektar od breskve",
+    "brand": "Fructal",
+    "kcal_100g": 53,
+    "protein_100g": 0.3,
+    "carbs_100g": 13,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Mlevena kafa",
+    "brand": "Grand kafa",
+    "kcal_100g": 56,
+    "protein_100g": 14,
+    "carbs_100g": 0,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "kašičica",
+        "grams": 7
+      }
+    ]
+  },
+  {
+    "name_sr": "Začin za jela, univerzalni",
+    "brand": "Vegeta",
+    "kcal_100g": 318,
+    "protein_100g": 10,
+    "carbs_100g": 65,
+    "fat_100g": 2,
+    "common_units": [
+      {
+        "label": "kašičica",
+        "grams": 5
+      }
+    ]
+  },
+  {
+    "name_sr": "Suncokretovo ulje",
+    "brand": "Dijamant",
+    "kcal_100g": 900,
+    "protein_100g": 0,
+    "carbs_100g": 0,
+    "fat_100g": 100,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 14
+      }
+    ]
+  },
+  {
+    "name_sr": "Suncokretovo ulje",
+    "brand": "Vital",
+    "kcal_100g": 900,
+    "protein_100g": 0,
+    "carbs_100g": 0,
+    "fat_100g": 100,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 14
+      }
+    ]
+  },
+  {
+    "name_sr": "Majonez",
+    "brand": "Zvijezda",
+    "kcal_100g": 687,
+    "protein_100g": 1,
+    "carbs_100g": 2,
+    "fat_100g": 75,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Multivitamin sok, C vitamin",
+    "brand": "Nectar",
+    "kcal_100g": 46,
+    "protein_100g": 0.4,
+    "carbs_100g": 11,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Mlečna čokolada",
+    "brand": "Swisslion",
+    "kcal_100g": 540,
+    "protein_100g": 7,
+    "carbs_100g": 56,
+    "fat_100g": 32,
+    "common_units": [
+      {
+        "label": "kockica",
+        "grams": 6
+      }
+    ]
+  },
+  {
+    "name_sr": "Korneti, keks sa kremom",
+    "brand": "Swisslion",
+    "kcal_100g": 499,
+    "protein_100g": 6,
+    "carbs_100g": 58,
+    "fat_100g": 27,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Wanabee lešnik krem",
+    "brand": "Swisslion",
+    "kcal_100g": 550,
+    "protein_100g": 7,
+    "carbs_100g": 54,
+    "fat_100g": 34,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Takovo štapići, čokoladni",
+    "brand": "Takovo",
+    "kcal_100g": 498,
+    "protein_100g": 6,
+    "carbs_100g": 60,
+    "fat_100g": 26,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 25
+      }
+    ]
+  },
+  {
+    "name_sr": "Wellness žitni štapić",
+    "brand": "Wellness",
+    "kcal_100g": 408,
+    "protein_100g": 8,
+    "carbs_100g": 58,
+    "fat_100g": 16,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Sarma, sa mlevenim mesom i pirinčem",
+    "brand": null,
+    "kcal_100g": 145,
+    "protein_100g": 8,
+    "carbs_100g": 8,
+    "fat_100g": 9,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 120
+      }
+    ]
+  },
+  {
+    "name_sr": "Sarma, posna, od vinovog lišća",
+    "brand": null,
+    "kcal_100g": 105,
+    "protein_100g": 3,
+    "carbs_100g": 12,
+    "fat_100g": 5,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Gibanica, sa sirom i jajima",
+    "brand": null,
+    "kcal_100g": 290,
+    "protein_100g": 10,
+    "carbs_100g": 22,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Pasulj, čorba/prebranac",
+    "brand": null,
+    "kcal_100g": 142,
+    "protein_100g": 7,
+    "carbs_100g": 15,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Pasulj, posni",
+    "brand": null,
+    "kcal_100g": 115,
+    "protein_100g": 6,
+    "carbs_100g": 16,
+    "fat_100g": 3,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Musaka, krompir i mleveno meso",
+    "brand": null,
+    "kcal_100g": 170,
+    "protein_100g": 8,
+    "carbs_100g": 12,
+    "fat_100g": 10,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Punjene paprike, sa mesom i pirinčem",
+    "brand": null,
+    "kcal_100g": 122,
+    "protein_100g": 7,
+    "carbs_100g": 10,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Đuveč, povrće i pirinač sa mesom",
+    "brand": null,
+    "kcal_100g": 117,
+    "protein_100g": 6,
+    "carbs_100g": 12,
+    "fat_100g": 5,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Riblja čorba",
+    "brand": null,
+    "kcal_100g": 88,
+    "protein_100g": 8,
+    "carbs_100g": 5,
+    "fat_100g": 4,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Kupus salata, sirova sa uljem",
+    "brand": null,
+    "kcal_100g": 82,
+    "protein_100g": 1,
+    "carbs_100g": 6,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Srpska salata",
+    "brand": null,
+    "kcal_100g": 60,
+    "protein_100g": 1,
+    "carbs_100g": 5,
+    "fat_100g": 4,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Šopska salata",
+    "brand": null,
+    "kcal_100g": 86,
+    "protein_100g": 2,
+    "carbs_100g": 6,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Ajvar",
+    "brand": null,
+    "kcal_100g": 123,
+    "protein_100g": 1.5,
+    "carbs_100g": 9,
+    "fat_100g": 9,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Proja, kukuruzni hleb sa sirom",
+    "brand": null,
+    "kcal_100g": 290,
+    "protein_100g": 8,
+    "carbs_100g": 33,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Kačamak (pura)",
+    "brand": null,
+    "kcal_100g": 146,
+    "protein_100g": 3,
+    "carbs_100g": 20,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Čorba od povrća",
+    "brand": null,
+    "kcal_100g": 50,
+    "protein_100g": 2,
+    "carbs_100g": 6,
+    "fat_100g": 2,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Pileća supa",
+    "brand": null,
+    "kcal_100g": 59,
+    "protein_100g": 4,
+    "carbs_100g": 4,
+    "fat_100g": 3,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Gulaš, juneći",
+    "brand": null,
+    "kcal_100g": 152,
+    "protein_100g": 12,
+    "carbs_100g": 8,
+    "fat_100g": 8,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Punjena tikvica, sa mesom i pirinčem",
+    "brand": null,
+    "kcal_100g": 114,
+    "protein_100g": 6,
+    "carbs_100g": 9,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Podvarak, kupus sa mesom",
+    "brand": null,
+    "kcal_100g": 190,
+    "protein_100g": 8,
+    "carbs_100g": 8,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Kremšnita",
+    "brand": null,
+    "kcal_100g": 302,
+    "protein_100g": 5,
+    "carbs_100g": 30,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Tulumba",
+    "brand": null,
+    "kcal_100g": 318,
+    "protein_100g": 3,
+    "carbs_100g": 45,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 40
+      }
+    ]
+  },
+  {
+    "name_sr": "Baklava",
+    "brand": null,
+    "kcal_100g": 464,
+    "protein_100g": 5,
+    "carbs_100g": 48,
+    "fat_100g": 28,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Tufahije",
+    "brand": null,
+    "kcal_100g": 220,
+    "protein_100g": 2,
+    "carbs_100g": 35,
+    "fat_100g": 8,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Mantije",
+    "brand": null,
+    "kcal_100g": 282,
+    "protein_100g": 9,
+    "carbs_100g": 30,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Punjeni krompir",
+    "brand": null,
+    "kcal_100g": 134,
+    "protein_100g": 5,
+    "carbs_100g": 15,
+    "fat_100g": 6,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Palačinke, sa marmeladom",
+    "brand": null,
+    "kcal_100g": 256,
+    "protein_100g": 6,
+    "carbs_100g": 40,
+    "fat_100g": 8,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Palačinke, sa Eurokremom",
+    "brand": null,
+    "kcal_100g": 340,
+    "protein_100g": 7,
+    "carbs_100g": 42,
+    "fat_100g": 16,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Uštipci",
+    "brand": null,
+    "kcal_100g": 348,
+    "protein_100g": 7,
+    "carbs_100g": 44,
+    "fat_100g": 16,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Kiflice sa sirom",
+    "brand": null,
+    "kcal_100g": 394,
+    "protein_100g": 9,
+    "carbs_100g": 40,
+    "fat_100g": 22,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 50
+      }
+    ]
+  },
+  {
+    "name_sr": "Štrudla sa jabukama",
+    "brand": null,
+    "kcal_100g": 284,
+    "protein_100g": 4,
+    "carbs_100g": 40,
+    "fat_100g": 12,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Štrudla sa makom",
+    "brand": null,
+    "kcal_100g": 336,
+    "protein_100g": 6,
+    "carbs_100g": 42,
+    "fat_100g": 16,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Krempita",
+    "brand": null,
+    "kcal_100g": 292,
+    "protein_100g": 5,
+    "carbs_100g": 32,
+    "fat_100g": 16,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Šampita",
+    "brand": null,
+    "kcal_100g": 322,
+    "protein_100g": 4,
+    "carbs_100g": 45,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Mađarica",
+    "brand": null,
+    "kcal_100g": 406,
+    "protein_100g": 6,
+    "carbs_100g": 46,
+    "fat_100g": 22,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 80
+      }
+    ]
+  },
+  {
+    "name_sr": "Rolat, čokoladni",
+    "brand": null,
+    "kcal_100g": 378,
+    "protein_100g": 6,
+    "carbs_100g": 48,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 80
+      }
+    ]
+  },
+  {
+    "name_sr": "Torta od oraha",
+    "brand": null,
+    "kcal_100g": 430,
+    "protein_100g": 7,
+    "carbs_100g": 42,
+    "fat_100g": 26,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Reform torta",
+    "brand": null,
+    "kcal_100g": 412,
+    "protein_100g": 5,
+    "carbs_100g": 44,
+    "fat_100g": 24,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Pirinač, beli, kuvan",
+    "brand": null,
+    "kcal_100g": 126,
+    "protein_100g": 2.7,
+    "carbs_100g": 28,
+    "fat_100g": 0.3,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Pirinač, integralni, kuvan",
+    "brand": null,
+    "kcal_100g": 111,
+    "protein_100g": 2.6,
+    "carbs_100g": 23,
+    "fat_100g": 0.9,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Špagete, kuvane",
+    "brand": null,
+    "kcal_100g": 131,
+    "protein_100g": 5.8,
+    "carbs_100g": 25,
+    "fat_100g": 0.9,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Makarone, kuvane",
+    "brand": null,
+    "kcal_100g": 130,
+    "protein_100g": 5.5,
+    "carbs_100g": 25,
+    "fat_100g": 0.9,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Ovsene pahuljice, suve",
+    "brand": null,
+    "kcal_100g": 355,
+    "protein_100g": 13,
+    "carbs_100g": 60,
+    "fat_100g": 7,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 40
+      }
+    ]
+  },
+  {
+    "name_sr": "Griz, suvi",
+    "brand": null,
+    "kcal_100g": 349,
+    "protein_100g": 12,
+    "carbs_100g": 73,
+    "fat_100g": 1,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 40
+      }
+    ]
+  },
+  {
+    "name_sr": "Belo brašno, tip 500",
+    "brand": null,
+    "kcal_100g": 345,
+    "protein_100g": 10,
+    "carbs_100g": 74,
+    "fat_100g": 1,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 60
+      }
+    ]
+  },
+  {
+    "name_sr": "Integralno brašno",
+    "brand": null,
+    "kcal_100g": 347,
+    "protein_100g": 13,
+    "carbs_100g": 68,
+    "fat_100g": 2.5,
+    "common_units": []
+  },
+  {
+    "name_sr": "Kukuruzno brašno",
+    "brand": null,
+    "kcal_100g": 372,
+    "protein_100g": 8,
+    "carbs_100g": 76,
+    "fat_100g": 4,
+    "common_units": []
+  },
+  {
+    "name_sr": "Kus-kus, kuvan",
+    "brand": null,
+    "kcal_100g": 109,
+    "protein_100g": 3.8,
+    "carbs_100g": 23,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Bulgur, kuvan",
+    "brand": null,
+    "kcal_100g": 90,
+    "protein_100g": 3.1,
+    "carbs_100g": 19,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Heljda, kuvana",
+    "brand": null,
+    "kcal_100g": 99,
+    "protein_100g": 3.4,
+    "carbs_100g": 20,
+    "fat_100g": 0.6,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Slanutak, kuvan",
+    "brand": null,
+    "kcal_100g": 167,
+    "protein_100g": 8.9,
+    "carbs_100g": 27,
+    "fat_100g": 2.6,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Maslinovo ulje",
+    "brand": null,
+    "kcal_100g": 900,
+    "protein_100g": 0,
+    "carbs_100g": 0,
+    "fat_100g": 100,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 14
+      }
+    ]
+  },
+  {
+    "name_sr": "Margarin",
+    "brand": null,
+    "kcal_100g": 723,
+    "protein_100g": 0.2,
+    "carbs_100g": 0.5,
+    "fat_100g": 80,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Med",
+    "brand": null,
+    "kcal_100g": 329,
+    "protein_100g": 0.3,
+    "carbs_100g": 82,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Šećer, beli",
+    "brand": null,
+    "kcal_100g": 400,
+    "protein_100g": 0,
+    "carbs_100g": 100,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 12
+      }
+    ]
+  },
+  {
+    "name_sr": "Senf",
+    "brand": null,
+    "kcal_100g": 84,
+    "protein_100g": 4,
+    "carbs_100g": 8,
+    "fat_100g": 4,
+    "common_units": [
+      {
+        "label": "kašičica",
+        "grams": 5
+      }
+    ]
+  },
+  {
+    "name_sr": "Kečap",
+    "brand": null,
+    "kcal_100g": 111,
+    "protein_100g": 1.2,
+    "carbs_100g": 26,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Sirće",
+    "brand": null,
+    "kcal_100g": 4,
+    "protein_100g": 0,
+    "carbs_100g": 0.9,
+    "fat_100g": 0,
+    "common_units": []
+  },
+  {
+    "name_sr": "Kikiriki puter",
+    "brand": null,
+    "kcal_100g": 630,
+    "protein_100g": 25,
+    "carbs_100g": 20,
+    "fat_100g": 50,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 16
+      }
+    ]
+  },
+  {
+    "name_sr": "Pekmez od šljiva",
+    "brand": null,
+    "kcal_100g": 224,
+    "protein_100g": 0.6,
+    "carbs_100g": 55,
+    "fat_100g": 0.2,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Slatko od višanja",
+    "brand": null,
+    "kcal_100g": 262,
+    "protein_100g": 0.3,
+    "carbs_100g": 65,
+    "fat_100g": 0.1,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Musli, sa voćem",
+    "brand": null,
+    "kcal_100g": 359,
+    "protein_100g": 9,
+    "carbs_100g": 65,
+    "fat_100g": 7,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 50
+      }
+    ]
+  },
+  {
+    "name_sr": "Corn flakes",
+    "brand": null,
+    "kcal_100g": 373,
+    "protein_100g": 7,
+    "carbs_100g": 84,
+    "fat_100g": 1,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Kokice, bez masnoće, so",
+    "brand": null,
+    "kcal_100g": 385,
+    "protein_100g": 11,
+    "carbs_100g": 74,
+    "fat_100g": 5,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Čips, so",
+    "brand": null,
+    "kcal_100g": 524,
+    "protein_100g": 6,
+    "carbs_100g": 53,
+    "fat_100g": 32,
+    "common_units": [
+      {
+        "label": "kesica",
+        "grams": 40
+      }
+    ]
+  },
+  {
+    "name_sr": "Slani štapići",
+    "brand": null,
+    "kcal_100g": 446,
+    "protein_100g": 10,
+    "carbs_100g": 70,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "šaka",
+        "grams": 25
+      }
+    ]
+  },
+  {
+    "name_sr": "Hamburger, domaći",
+    "brand": null,
+    "kcal_100g": 287,
+    "protein_100g": 13,
+    "carbs_100g": 25,
+    "fat_100g": 15,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Sendvič tost, šunka i sir",
+    "brand": null,
+    "kcal_100g": 319,
+    "protein_100g": 14,
+    "carbs_100g": 32,
+    "fat_100g": 15,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Pica capricciosa",
+    "brand": null,
+    "kcal_100g": 242,
+    "protein_100g": 11,
+    "carbs_100g": 27,
+    "fat_100g": 10,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 130
+      }
+    ]
+  },
+  {
+    "name_sr": "Pomfrit iz frilajera",
+    "brand": null,
+    "kcal_100g": 313,
+    "protein_100g": 3.4,
+    "carbs_100g": 41,
+    "fat_100g": 15,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Pileći nagets, pečeni",
+    "brand": null,
+    "kcal_100g": 258,
+    "protein_100g": 15,
+    "carbs_100g": 18,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Šunka, kuvana",
+    "brand": null,
+    "kcal_100g": 112,
+    "protein_100g": 18,
+    "carbs_100g": 1,
+    "fat_100g": 4,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Šunka, dimljena",
+    "brand": null,
+    "kcal_100g": 156,
+    "protein_100g": 20,
+    "carbs_100g": 1,
+    "fat_100g": 8,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Pileća šunka",
+    "brand": null,
+    "kcal_100g": 113,
+    "protein_100g": 15,
+    "carbs_100g": 2,
+    "fat_100g": 5,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Zimska salama",
+    "brand": null,
+    "kcal_100g": 346,
+    "protein_100g": 18,
+    "carbs_100g": 1,
+    "fat_100g": 30,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Mortadela",
+    "brand": null,
+    "kcal_100g": 302,
+    "protein_100g": 14,
+    "carbs_100g": 3,
+    "fat_100g": 26,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Naresci, mešano meso",
+    "brand": null,
+    "kcal_100g": 252,
+    "protein_100g": 16,
+    "carbs_100g": 2,
+    "fat_100g": 20,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Pačja prsa, dimljena",
+    "brand": null,
+    "kcal_100g": 196,
+    "protein_100g": 22,
+    "carbs_100g": 0,
+    "fat_100g": 12,
+    "common_units": [
+      {
+        "label": "kriška",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Piletina, batak bez kože, kuvan",
+    "brand": null,
+    "kcal_100g": 150,
+    "protein_100g": 24,
+    "carbs_100g": 0,
+    "fat_100g": 6,
+    "common_units": []
+  },
+  {
+    "name_sr": "Piletina, file na žaru",
+    "brand": null,
+    "kcal_100g": 156,
+    "protein_100g": 30,
+    "carbs_100g": 0,
+    "fat_100g": 4,
+    "common_units": []
+  },
+  {
+    "name_sr": "Svinjska rebarca, na žaru",
+    "brand": null,
+    "kcal_100g": 294,
+    "protein_100g": 24,
+    "carbs_100g": 0,
+    "fat_100g": 22,
+    "common_units": []
+  },
+  {
+    "name_sr": "Svinjska pečenica, pečena",
+    "brand": null,
+    "kcal_100g": 184,
+    "protein_100g": 28,
+    "carbs_100g": 0,
+    "fat_100g": 8,
+    "common_units": []
+  },
+  {
+    "name_sr": "Teleći medaljoni, pečeni",
+    "brand": null,
+    "kcal_100g": 175,
+    "protein_100g": 28,
+    "carbs_100g": 0,
+    "fat_100g": 7,
+    "common_units": []
+  },
+  {
+    "name_sr": "Juneći odrezak, na žaru",
+    "brand": null,
+    "kcal_100g": 198,
+    "protein_100g": 27,
+    "carbs_100g": 0,
+    "fat_100g": 10,
+    "common_units": []
+  },
+  {
+    "name_sr": "Devrek sa susamom",
+    "brand": null,
+    "kcal_100g": 328,
+    "protein_100g": 10,
+    "carbs_100g": 54,
+    "fat_100g": 8,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 80
+      }
+    ]
+  },
+  {
+    "name_sr": "Somun sa susamom",
+    "brand": null,
+    "kcal_100g": 259,
+    "protein_100g": 9,
+    "carbs_100g": 49,
+    "fat_100g": 3,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Lignje, pržene",
+    "brand": null,
+    "kcal_100g": 234,
+    "protein_100g": 15,
+    "carbs_100g": 12,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Škampi, kuvani",
+    "brand": null,
+    "kcal_100g": 93,
+    "protein_100g": 20,
+    "carbs_100g": 1,
+    "fat_100g": 1,
+    "common_units": []
+  },
+  {
+    "name_sr": "Dagnje, kuvane",
+    "brand": null,
+    "kcal_100g": 82,
+    "protein_100g": 12,
+    "carbs_100g": 4,
+    "fat_100g": 2,
+    "common_units": []
+  },
+  {
+    "name_sr": "Bakalar, sušeni, kuvan",
+    "brand": null,
+    "kcal_100g": 93,
+    "protein_100g": 21,
+    "carbs_100g": 0,
+    "fat_100g": 1,
+    "common_units": []
+  },
+  {
+    "name_sr": "File oslića, pohovan",
+    "brand": null,
+    "kcal_100g": 220,
+    "protein_100g": 16,
+    "carbs_100g": 12,
+    "fat_100g": 12,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 120
+      }
+    ]
+  },
+  {
+    "name_sr": "Riblji štapići, pečeni",
+    "brand": null,
+    "kcal_100g": 201,
+    "protein_100g": 12,
+    "carbs_100g": 18,
+    "fat_100g": 9,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 25
+      }
+    ]
+  },
+  {
+    "name_sr": "Jogurt, light 0.9%",
+    "brand": "Imlek",
+    "kcal_100g": 41,
+    "protein_100g": 3.6,
+    "carbs_100g": 4.6,
+    "fat_100g": 0.9,
+    "common_units": [
+      {
+        "label": "šolja",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Pavlaka, kisela 18%",
+    "brand": "Imlek",
+    "kcal_100g": 185,
+    "protein_100g": 2.6,
+    "carbs_100g": 3.2,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 15
+      }
+    ]
+  },
+  {
+    "name_sr": "Sir, dimljeni",
+    "brand": null,
+    "kcal_100g": 312,
+    "protein_100g": 23,
+    "carbs_100g": 1,
+    "fat_100g": 24,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Sir, posni (dijetalni)",
+    "brand": null,
+    "kcal_100g": 112,
+    "protein_100g": 16,
+    "carbs_100g": 3,
+    "fat_100g": 4,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 30
+      }
+    ]
+  },
+  {
+    "name_sr": "Buter keks",
+    "brand": "Bambi",
+    "kcal_100g": 436,
+    "protein_100g": 7,
+    "carbs_100g": 66,
+    "fat_100g": 16,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 8
+      }
+    ]
+  },
+  {
+    "name_sr": "Petit Beurre keks",
+    "brand": "Bambi",
+    "kcal_100g": 420,
+    "protein_100g": 8,
+    "carbs_100g": 70,
+    "fat_100g": 12,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 7
+      }
+    ]
+  },
+  {
+    "name_sr": "Flips, kikiriki",
+    "brand": "Bambi",
+    "kcal_100g": 490,
+    "protein_100g": 9,
+    "carbs_100g": 55,
+    "fat_100g": 26,
+    "common_units": [
+      {
+        "label": "kesica",
+        "grams": 45
+      }
+    ]
+  },
+  {
+    "name_sr": "Cokolino instant kaša",
+    "brand": "Štark",
+    "kcal_100g": 388,
+    "protein_100g": 9,
+    "carbs_100g": 70,
+    "fat_100g": 8,
+    "common_units": [
+      {
+        "label": "kutijica",
+        "grams": 190
+      }
+    ]
+  },
+  {
+    "name_sr": "Sedmica keks",
+    "brand": "Štark",
+    "kcal_100g": 431,
+    "protein_100g": 8,
+    "carbs_100g": 66,
+    "fat_100g": 15,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Kokosanka",
+    "brand": "Štark",
+    "kcal_100g": 468,
+    "protein_100g": 5,
+    "carbs_100g": 58,
+    "fat_100g": 24,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Napolitanke, lešnik",
+    "brand": "Swisslion",
+    "kcal_100g": 498,
+    "protein_100g": 6,
+    "carbs_100g": 60,
+    "fat_100g": 26,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Čoko-banana",
+    "brand": "Swisslion",
+    "kcal_100g": 456,
+    "protein_100g": 5,
+    "carbs_100g": 64,
+    "fat_100g": 20,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 25
+      }
+    ]
+  },
+  {
+    "name_sr": "Keks maslac",
+    "brand": "Polimark",
+    "kcal_100g": 446,
+    "protein_100g": 7,
+    "carbs_100g": 64,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 10
+      }
+    ]
+  },
+  {
+    "name_sr": "Sok od kajsije",
+    "brand": "Nectar",
+    "kcal_100g": 50,
+    "protein_100g": 0.4,
+    "carbs_100g": 12,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Sok od jagode",
+    "brand": "Nectar",
+    "kcal_100g": 49,
+    "protein_100g": 0.3,
+    "carbs_100g": 12,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Nektar od kruške",
+    "brand": "Fructal",
+    "kcal_100g": 53,
+    "protein_100g": 0.3,
+    "carbs_100g": 13,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Voda sa ukusom limuna",
+    "brand": "Knjaz Miloš",
+    "kcal_100g": 16,
+    "protein_100g": 0,
+    "carbs_100g": 4,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Kisela voda, Aqua Viva",
+    "brand": "Knjaz Miloš",
+    "kcal_100g": 0,
+    "protein_100g": 0,
+    "carbs_100g": 0,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Šumsko voće sok",
+    "brand": "Nectar",
+    "kcal_100g": 46,
+    "protein_100g": 0.4,
+    "carbs_100g": 11,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "čaša",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Instant kafa",
+    "brand": "Grand kafa",
+    "kcal_100g": 68,
+    "protein_100g": 12,
+    "carbs_100g": 5,
+    "fat_100g": 0,
+    "common_units": [
+      {
+        "label": "kašičica",
+        "grams": 3
+      }
+    ]
+  },
+  {
+    "name_sr": "Aleva paprika, mlevena",
+    "brand": null,
+    "kcal_100g": 309,
+    "protein_100g": 14,
+    "carbs_100g": 34,
+    "fat_100g": 13,
+    "common_units": [
+      {
+        "label": "kašičica",
+        "grams": 2
+      }
+    ]
+  },
+  {
+    "name_sr": "Biber, mleveni",
+    "brand": null,
+    "kcal_100g": 223,
+    "protein_100g": 10,
+    "carbs_100g": 39,
+    "fat_100g": 3,
+    "common_units": [
+      {
+        "label": "kašičica",
+        "grams": 2
+      }
+    ]
+  },
+  {
+    "name_sr": "Ulje od maslina, extra devičansko",
+    "brand": "Zvijezda",
+    "kcal_100g": 900,
+    "protein_100g": 0,
+    "carbs_100g": 0,
+    "fat_100g": 100,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 14
+      }
+    ]
+  },
+  {
+    "name_sr": "Ulje suncokreta",
+    "brand": "Zvijezda",
+    "kcal_100g": 900,
+    "protein_100g": 0,
+    "carbs_100g": 0,
+    "fat_100g": 100,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 14
+      }
+    ]
+  },
+  {
+    "name_sr": "Senf, oštri",
+    "brand": "Zvijezda",
+    "kcal_100g": 84,
+    "protein_100g": 4,
+    "carbs_100g": 8,
+    "fat_100g": 4,
+    "common_units": [
+      {
+        "label": "kašičica",
+        "grams": 5
+      }
+    ]
+  },
+  {
+    "name_sr": "Čorba od pasulja, posna",
+    "brand": null,
+    "kcal_100g": 115,
+    "protein_100g": 6,
+    "carbs_100g": 16,
+    "fat_100g": 3,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Boranija, sa krompirom",
+    "brand": null,
+    "kcal_100g": 97,
+    "protein_100g": 3,
+    "carbs_100g": 10,
+    "fat_100g": 5,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Punjene tikvice, posne",
+    "brand": null,
+    "kcal_100g": 105,
+    "protein_100g": 3,
+    "carbs_100g": 12,
+    "fat_100g": 5,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Kupus, punjen mlevenim mesom (sarma van sezone)",
+    "brand": null,
+    "kcal_100g": 145,
+    "protein_100g": 8,
+    "carbs_100g": 8,
+    "fat_100g": 9,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 120
+      }
+    ]
+  },
+  {
+    "name_sr": "Vojvođanski đuveč, sa kobasicom",
+    "brand": null,
+    "kcal_100g": 165,
+    "protein_100g": 8,
+    "carbs_100g": 13,
+    "fat_100g": 9,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Šumadijski kupus sa rebrima",
+    "brand": null,
+    "kcal_100g": 216,
+    "protein_100g": 12,
+    "carbs_100g": 6,
+    "fat_100g": 16,
+    "common_units": [
+      {
+        "label": "tanjir",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Čvarci, pileći",
+    "brand": null,
+    "kcal_100g": 505,
+    "protein_100g": 25,
+    "carbs_100g": 0,
+    "fat_100g": 45,
+    "common_units": [
+      {
+        "label": "kašika",
+        "grams": 20
+      }
+    ]
+  },
+  {
+    "name_sr": "Pihtije od piletine",
+    "brand": null,
+    "kcal_100g": 97,
+    "protein_100g": 12,
+    "carbs_100g": 1,
+    "fat_100g": 5,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 150
+      }
+    ]
+  },
+  {
+    "name_sr": "Ćevapi u somunu, sa lukom",
+    "brand": null,
+    "kcal_100g": 286,
+    "protein_100g": 15,
+    "carbs_100g": 25,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 250
+      }
+    ]
+  },
+  {
+    "name_sr": "Pljeskavica u lepinji, punjena",
+    "brand": null,
+    "kcal_100g": 334,
+    "protein_100g": 16,
+    "carbs_100g": 27,
+    "fat_100g": 18,
+    "common_units": [
+      {
+        "label": "porcija",
+        "grams": 300
+      }
+    ]
+  },
+  {
+    "name_sr": "Rolovana pljeskavica, punjena kačkavaljem",
+    "brand": null,
+    "kcal_100g": 330,
+    "protein_100g": 21,
+    "carbs_100g": 3,
+    "fat_100g": 26,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 200
+      }
+    ]
+  },
+  {
+    "name_sr": "Torta, čokoladna",
+    "brand": null,
+    "kcal_100g": 410,
+    "protein_100g": 5,
+    "carbs_100g": 48,
+    "fat_100g": 22,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Torta, voćna",
+    "brand": null,
+    "kcal_100g": 302,
+    "protein_100g": 4,
+    "carbs_100g": 40,
+    "fat_100g": 14,
+    "common_units": [
+      {
+        "label": "parče",
+        "grams": 100
+      }
+    ]
+  },
+  {
+    "name_sr": "Napoleonka",
+    "brand": null,
+    "kcal_100g": 384,
+    "protein_100g": 5,
+    "carbs_100g": 46,
+    "fat_100g": 20,
+    "common_units": [
+      {
+        "label": "komad",
+        "grams": 100
+      }
+    ]
+  }
+]

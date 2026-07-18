@@ -67,3 +67,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T03:27Z — F021 COMPLETE. AS-033/034: 350 foods seeded live, idempotent, traditional dishes findable. Spawning F022 (OFF import).
 
 - 2026-07-18T03:57Z — F022 COMPLETE. AS-035 (OFF import, complete-macro filter, source=off verified=false, idempotent). 470 tests pass. Spawning F023 (search API).
+
+- 2026-07-18T04:22Z — F023 COMPLETE. AS-036/037/038 live-verified (Latin+Cyrillic+fuzzy on 1678 rows). Spawning F024 (search UI + recents).

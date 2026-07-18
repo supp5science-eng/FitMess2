@@ -47,3 +47,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-17T22:37Z — F014 COMPLETE. AS-021-026, AS-030 PASS (Mifflin-St Jeor + caps + macros + weekly + goal-adjust; unit-tested vs reference values). Worker noted AS-086 (redistribution) correctly belongs to F053, not F014. Spawning F015 (onboarding wizard).
 
 - 2026-07-17T23:08Z — F015 COMPLETE (5d28538). Onboarding wizard AS-018/019. Spawning F016 (summary + persist). [NOTE: Vercel deploy blocked on user — 404 platform NOT_FOUND, root dir needs to be claude-missions; awaiting Vercel token or manual fix. Holding GitHub pushes until Vercel fixed or M2 done.]
+
+- 2026-07-17T23:53Z — F016 COMPLETE (9cb71f6). AS-020/031 + bonus AS-128 a11y tests. 286 tests pass. FLAKINESS NOTE: full-suite runs occasionally hit Supabase Auth 429 (many integration tests create/delete test users) — transient, self-resolves on retry. M2 VALIDATORS: retry on 429, do NOT treat a transient rate-limit as a real FAIL. Consider a future test-isolation/backoff follow-up if it worsens. Spawning F017 (eating rules).

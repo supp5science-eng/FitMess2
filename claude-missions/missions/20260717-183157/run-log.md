@@ -75,3 +75,5 @@ Orchestrator decisions during /mission-run (no user prompts).
 - 2026-07-18T05:34Z — F025 COMPLETE. AS-041/042 (portion picker grams+units, live-verified). Shared core: src/lib/food/portions.ts + POST /api/logs (F031/F062/F064 reuse). Spawning F026 (edit/delete logs).
 
 - 2026-07-18T06:31Z — F026 COMPLETE (cdf550b). AS-044/045 (edit/delete logs, own-row, recompute). 608 tests pass. FLAKINESS NOTE: F020 foods-logs-rls test barcode fixture uses Date.now() -> can collide under CONCURRENT full-suite runs; harmless in normal sequential runs. Orchestrator: do NOT run npm run test while a worker is running. Non-blocking; optional future fix = unique-suffix the fixture. Spawning F027 (home screen).
+
+- 2026-07-18T07:28Z — F027 COMPLETE. AS-043/047/048/049/050 (+AS-128 a11y) — home screen ring+macro bars+meal list+neutral overshoot, immediate updates. 654 tests pass. App visual centerpiece done. Spawning F028 (Belgrade day boundaries + + add sheet) — last M3 feature.

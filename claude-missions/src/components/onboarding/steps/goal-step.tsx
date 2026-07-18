@@ -1,7 +1,19 @@
 "use client";
 
-import { NumberField } from "@/components/onboarding/number-field";
 import { FieldError } from "@/components/onboarding/field-error";
+import {
+  SelectField,
+  rangeInclusive,
+} from "@/components/onboarding/select-field";
+import {
+  MAX_TIMEFRAME_WEEKS,
+  MAX_WEIGHT_KG,
+  MIN_TIMEFRAME_WEEKS,
+  MIN_WEIGHT_KG,
+} from "@/lib/onboarding/validation";
+
+const TARGET_WEIGHT_OPTIONS = rangeInclusive(MIN_WEIGHT_KG, MAX_WEIGHT_KG);
+const WEEK_OPTIONS = rangeInclusive(MIN_TIMEFRAME_WEEKS, MAX_TIMEFRAME_WEEKS);
 
 function weekWord(weeks: number): string {
   if (weeks === 1) return "nedelju";
@@ -53,21 +65,24 @@ export function GoalStep({
           Unesi ciljnu težinu i rok u kojem želiš da je dostigneš.
         </p>
       </div>
-      <NumberField
+      <SelectField
         id="ciljna-tezina"
         label="Ciljna težina"
         suffix="kg"
         value={targetWeightKg}
         onChange={onChangeTargetWeight}
-        step={0.1}
+        options={TARGET_WEIGHT_OPTIONS}
+        placeholder="Izaberi ciljnu težinu"
         autoFocus
       />
-      <NumberField
+      <SelectField
         id="nedelje"
         label="Rok"
         suffix="nedelja"
         value={timeframeWeeks}
         onChange={onChangeTimeframe}
+        options={WEEK_OPTIONS}
+        placeholder="Izaberi rok"
       />
       <FieldError message={error} />
       {canPreview ? (

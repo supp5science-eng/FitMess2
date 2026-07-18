@@ -91,11 +91,10 @@ function advanceToStep(step: "godine" | "visina" | "tezina" | "aktivnost" | "cil
 }
 
 describe("AS-019: step 2 (godine) collects age", () => {
-  it("test_AS_019_godine_step_shows_a_serbian_error_for_an_out_of_range_age", () => {
+  it("test_AS_019_godine_step_blocks_next_with_a_serbian_error_when_no_age_is_picked", () => {
     advanceToStep("godine");
-    fireEvent.change(screen.getByLabelText(/Godine/), {
-      target: { value: "5" },
-    });
+    // The wheel/select only offers valid ages; the reachable failure is
+    // leaving it on the placeholder and pressing Dalje.
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -118,11 +117,8 @@ describe("AS-019: step 2 (godine) collects age", () => {
 });
 
 describe("AS-019: step 3 (visina) collects height in cm", () => {
-  it("test_AS_019_visina_step_shows_a_serbian_error_for_an_out_of_range_height", () => {
+  it("test_AS_019_visina_step_blocks_next_with_a_serbian_error_when_no_height_is_picked", () => {
     advanceToStep("visina");
-    fireEvent.change(screen.getByLabelText(/Visina/), {
-      target: { value: "50" },
-    });
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -145,11 +141,8 @@ describe("AS-019: step 3 (visina) collects height in cm", () => {
 });
 
 describe("AS-019: step 4 (težina) collects weight in kg", () => {
-  it("test_AS_019_tezina_step_shows_a_serbian_error_for_an_out_of_range_weight", () => {
+  it("test_AS_019_tezina_step_blocks_next_with_a_serbian_error_when_no_weight_is_picked", () => {
     advanceToStep("tezina");
-    fireEvent.change(screen.getByLabelText(/Težina/), {
-      target: { value: "10" },
-    });
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -220,14 +213,12 @@ describe("AS-019: step 6 (cilj) collects target weight + timeframe", () => {
     expect(pushMock).not.toHaveBeenCalled();
   });
 
-  it("test_AS_019_cilj_step_rejects_a_timeframe_below_one_week", () => {
+  it("test_AS_019_cilj_step_blocks_finish_when_the_timeframe_is_not_picked", () => {
     advanceToStep("cilj");
     fireEvent.change(screen.getByLabelText(/Ciljna težina/), {
       target: { value: "74" },
     });
-    fireEvent.change(screen.getByLabelText(/^Rok/), {
-      target: { value: "0" },
-    });
+    // Leave "Rok" on its placeholder -- the wheel only offers >= 1 week.
     fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();

@@ -1,9 +1,12 @@
 "use client";
 
-import { NumberField } from "@/components/onboarding/number-field";
+import { SelectField, rangeInclusive } from "@/components/onboarding/select-field";
+import { MAX_WEIGHT_KG, MIN_WEIGHT_KG } from "@/lib/onboarding/validation";
+
+const WEIGHT_OPTIONS = rangeInclusive(MIN_WEIGHT_KG, MAX_WEIGHT_KG);
 
 /** F015 step 4 (težina) -- AS-019: collects current weight in kilograms via a
- * simple numeric field. */
+ * native wheel/select (iOS renders its system picker). */
 export function WeightStep({
   value,
   onChange,
@@ -20,18 +23,19 @@ export function WeightStep({
           Kolika je tvoja trenutna težina?
         </h2>
         <p className="text-sm text-muted-foreground">
-          Unesi težinu u kilogramima -- ovo je tvoja polazna tačka.
+          Izaberi težinu u kilogramima -- ovo je tvoja polazna tačka.
         </p>
       </div>
-      <NumberField
+      <SelectField
         id="tezina"
         label="Težina"
         suffix="kg"
         value={value}
         onChange={onChange}
+        options={WEIGHT_OPTIONS}
+        placeholder="Izaberi težinu"
         error={error}
         autoFocus
-        step={0.1}
       />
     </div>
   );

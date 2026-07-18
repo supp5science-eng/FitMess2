@@ -1,9 +1,12 @@
 "use client";
 
-import { NumberField } from "@/components/onboarding/number-field";
+import { SelectField, rangeInclusive } from "@/components/onboarding/select-field";
+import { MAX_AGE_YEARS, MIN_AGE_YEARS } from "@/lib/onboarding/validation";
 
-/** F015 step 2 (godine) -- AS-019: collects age in whole years via a simple
- * numeric field. */
+const AGE_OPTIONS = rangeInclusive(MIN_AGE_YEARS, MAX_AGE_YEARS);
+
+/** F015 step 2 (godine) -- AS-019: collects age in whole years via a native
+ * wheel/select (iOS renders its system picker). */
 export function AgeStep({
   value,
   onChange,
@@ -23,11 +26,13 @@ export function AgeStep({
           Godine su deo formule za tvoj dnevni cilj kalorija.
         </p>
       </div>
-      <NumberField
+      <SelectField
         id="godine"
         label="Godine"
         value={value}
         onChange={onChange}
+        options={AGE_OPTIONS}
+        placeholder="Izaberi godine"
         error={error}
         autoFocus
       />

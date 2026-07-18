@@ -1,9 +1,12 @@
 "use client";
 
-import { NumberField } from "@/components/onboarding/number-field";
+import { SelectField, rangeInclusive } from "@/components/onboarding/select-field";
+import { MAX_HEIGHT_CM, MIN_HEIGHT_CM } from "@/lib/onboarding/validation";
 
-/** F015 step 3 (visina) -- AS-019: collects height in centimeters via a simple
- * numeric field. */
+const HEIGHT_OPTIONS = rangeInclusive(MIN_HEIGHT_CM, MAX_HEIGHT_CM);
+
+/** F015 step 3 (visina) -- AS-019: collects height in centimeters via a native
+ * wheel/select (iOS renders its system picker). */
 export function HeightStep({
   value,
   onChange,
@@ -20,15 +23,17 @@ export function HeightStep({
           Kolika je tvoja visina?
         </h2>
         <p className="text-sm text-muted-foreground">
-          Unesi visinu u centimetrima.
+          Izaberi visinu u centimetrima.
         </p>
       </div>
-      <NumberField
+      <SelectField
         id="visina"
         label="Visina"
         suffix="cm"
         value={value}
         onChange={onChange}
+        options={HEIGHT_OPTIONS}
+        placeholder="Izaberi visinu"
         error={error}
         autoFocus
       />

@@ -1,0 +1,13 @@
+=== AS-011: signed-out visitor to protected pages (expect 307 -> /prijava) ===
+GET /danas -> HTTP 307 | location: /prijava
+GET /nedelja -> HTTP 307 | location: /prijava
+GET /agent -> HTTP 307 | location: /prijava
+GET /profil -> HTTP 307 | location: /prijava
+GET /onboarding -> HTTP 307 | location: /prijava
+GET /onboarding/pregled -> HTTP 307 | location: /prijava
+
+=== public pages (expect 200) ===
+GET / -> HTTP 200
+GET /prijava -> HTTP 200
+GET /registracija -> HTTP 200
+GET /registracija/proveri-email -> HTTP 200

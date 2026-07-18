@@ -1,0 +1,49 @@
+U1 created bd779449-c3a5-493d-8d6a-e180dcfcf59b m2ux-walk-1784342169378@example.com
+after login url= http://localhost:3210/danas
+=== AS-018 ===
+AS-018 GET /danas -> final url=http://localhost:3210/onboarding heading="Koji je tvoj pol?"
+  shot: AS-018-danas-redirects-to-onboarding-375px.png
+=== AS-019 ===
+step1 (pol): Koji je tvoj pol?
+  shot: AS-019-step1-pol-375px.png
+step2 (godine): Koliko imaš godina?
+  shot: AS-019-step2-godine-375px.png
+step3 (visina): Kolika je tvoja visina?
+step4 (tezina): Kolika je tvoja trenutna težina?
+step5 (aktivnost): Koliko si aktivan/aktivna? opts= ["Sedentaran","Lagana aktivnost","Umerena aktivnost","Aktivan","Veoma aktivan"] count= 5
+  shot: AS-019-step5-aktivnost-5tiers-375px.png
+step6 (cilj): Koji je tvoj cilj?
+goal preview: -6 kg za 12 nedelja
+  shot: AS-019-step6-cilj-375px.png
+after Zavrsi url= http://localhost:3210/onboarding/pregled?pol=female&godine=30&visina=170&tezina=80&aktivnost=moderate&ciljnaTezina=74&nedelje=12
+=== AS-020 ===
+summary initial: {"daily":"1856","weekly":"12992 kcal nedeljno","protein":"160g","godine":"30","visina":"170","tezina":"80","cilj":"74","nedelje":"12","activitySelected":["Žensko","Umerena aktivnostUmereno vežbanje 3-5x nedeljno."]}
+  shot: AS-020-summary-initial-375px.png
+AS-020 daily-kcal before=1856 after very_active=2399 changed=true
+  shot: AS-020-summary-after-edit-375px.png
+after Zapocni url= http://localhost:3210/danas
+AS-020 profiles row: {"onboarded_at":"2026-07-18T02:36:23.614+00:00","sex":"female","activity_level":"very_active","weight_kg":80,"height_cm":170} 
+AS-020 targets row: null err:column targets.activity_level does not exist
+=== AS-014 ===
+profil url= http://localhost:3210/profil
+has export link: true
+  shot: AS-014-profil-export-button-375px.png
+AS-014 export: {"status":200,"cd":"attachment; filename=\"fitmess-podaci-2026-07-18.json\"","ct":"application/json; charset=utf-8","keys":["exported_at","schema_note","account","profile","rules","targets"],"accountEmail":"m2ux-walk-1784342169378@example.com","hasProfile":true,"targetsIsArray":true,"targetsLen":1}
+=== AS-012 ===
+AS-012 after sign out url= http://localhost:3210/prijava
+  shot: AS-012-after-signout-375px.png
+AS-012 GET /profil after signout -> url= http://localhost:3210/prijava
+AS-012 redirected to login: true
+=== AS-015 ===
+U2 onboarded_at set err= none
+U2 profil url= http://localhost:3210/profil
+  shot: AS-015-delete-dialog-375px.png
+AS-015 confirm btn disabled before=true after typing phrase=false
+  shot: AS-015-delete-dialog-confirmed-375px.png
+AS-015 after delete url= http://localhost:3210/prijava
+  shot: AS-015-after-delete-375px.png
+AS-015 auth user after delete: GONE
+AS-015 profiles rows after delete: []
+AS-016 login after delete url= http://localhost:3210/prijava alert= "Pogrešan email ili lozinka."
+cleanup deleted bd779449-c3a5-493d-8d6a-e180dcfcf59b
+DONE s2

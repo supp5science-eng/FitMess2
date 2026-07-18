@@ -1,0 +1,9 @@
+2026-07-18T02:38:46.066Z RETRY LOOP START
+2026-07-18T02:38:46.068Z attempt 1/18
+2026-07-18T02:38:51.765Z attempt failed url=http://localhost:3210/registracija alert="Previše pokušaja u kratkom periodu. Sačekaj malo pa pokušaj ponovo."
+2026-07-18T02:39:47.218Z attempt 2/18
+2026-07-18T02:39:53.026Z attempt failed url=http://localhost:3210/registracija alert="Previše pokušaja u kratkom periodu. Sačekaj malo pa pokušaj ponovo."
+2026-07-18T02:40:48.431Z attempt 3/18
+2026-07-18T02:40:54.581Z attempt failed url=http://localhost:3210/registracija alert="Previše pokušaja u kratkom periodu. Sačekaj malo pa pokušaj ponovo."
+2026-07-18T02:41:50.015Z attempt 4/18
+2026-07-18T02:41:56.022Z attempt failed url=http://localhost:3210/registracija alert="Previše pokušaja u kratkom periodu. Sačekaj malo pa pokušaj ponovo."

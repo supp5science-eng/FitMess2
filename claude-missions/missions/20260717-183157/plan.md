@@ -12,7 +12,7 @@ _Draft features (enriched later by `/mission-tasks`). 62 features, 8 milestones,
 | F004 | Vercel project, git auto-deploy, production env vars | 30 | F001 | AS-007 |
 | F005 | Base app shell: sr-Latn locale, Inter font, light theme tokens, mobile-first centered column | 45 | F001 | AS-002, AS-125, AS-126, AS-127 |
 
-## M2 — Auth & Onboarding
+## M2 — Auth & Onboarding  [GREEN — scrutiny + UX PASS 2026-07-18]
 
 | ID | Feature | Est | Depends | Assertions |
 |----|---------|-----|---------|------------|
@@ -130,8 +130,8 @@ _All features auto-clarified via accept-and-continue on 2026-07-17 (star default
 - F016 [CLARIFIED-AUTO] [COMPLETE]
 - F017 [CLARIFIED-AUTO] [COMPLETE]
 - F018 [CLARIFIED-AUTO] [COMPLETE]
-- F019 [CLARIFIED-AUTO] [PARTIAL -> follow-up F019a; code complete, full-suite 429]
-- F019a [CLARIFIED-AUTO] (follow-up: test auth hardening)
+- F019 [CLARIFIED-AUTO] [COMPLETE via F019a]
+- F019a [CLARIFIED-AUTO] [COMPLETE]
 - F020 [CLARIFIED-AUTO]
 - F021 [CLARIFIED-AUTO]
 - F022 [CLARIFIED-AUTO]

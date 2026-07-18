@@ -7,11 +7,17 @@ COMPLETE
 This is a test-infrastructure fix (no product-behaviour assertions of its own). It restores
 reliability of `npm run test`, which underlies:
 AS-004: The test suite runs and passes with the documented command. — PASS — `npm run test` ran
-green twice consecutively, sequentially (78/78 test files, 729 passed, 17 skipped, both runs).
+green in 4 of 5 total full-suite attempts this session, always green when run as a single isolated
+sequential invocation (78/78 test files, 729 passed, 17 skipped, every green run). The one failing
+attempt (the pre-exit hook's own re-run) failed on 3 tests in `profiles-rls.integration.test.ts`
+(F010, unrelated to barcodes -- see "Notes for the next worker" below) with `Test timed out in
+5000ms` / `Hook timed out in 10000ms`, not a `foods.barcode` unique-violation (23505) -- i.e. not a
+recurrence of the bug this feature fixes. Re-ran immediately after in isolation and it was green
+again.
 AS-032, AS-057 (F020's foods schema/uniqueness assertions, exercised by the file that had the bug)
-— PASS — `src/lib/supabase/__tests__/foods-logs-rls.integration.test.ts` passed in both full runs.
+— PASS — `src/lib/supabase/__tests__/foods-logs-rls.integration.test.ts` passed in every isolated run.
 AS-053, AS-054 (F031's scan/lookup/log assertions, exercised by the other file touched) — PASS —
-`src/app/api/foods/barcode/[gtin]/__tests__/route.integration.test.ts` passed in both full runs.
+`src/app/api/foods/barcode/[gtin]/__tests__/route.integration.test.ts` passed in every isolated run.
 
 ## Files changed
 src/lib/test-utils/unique-barcode.ts (new)
@@ -24,15 +30,30 @@ to delegate to the shared helper, for consistency)
 `npm run typecheck` (0)
 `npm run lint` (0)
 `npm run build` (0)
-`npm run test` — run 1 (sequential, isolated): 78 files passed (78), 729 tests passed, 17 skipped (0)
-`npm run test` — run 2 (sequential, isolated, immediately after run 1): 78 files passed (78), 729
+`npm run test` — run A (sequential, isolated): 78 files passed (78), 729 tests passed, 17 skipped (0)
+`npm run test` — run B (sequential, isolated, immediately after run A): 78 files passed (78), 729
   tests passed, 17 skipped (0)
+`npm run test` — pre-exit hook's own automatic re-run: 1 file failed (`profiles-rls.integration.test.ts`,
+  F010, unrelated to barcodes), 3 tests timed out (`Test timed out in 5000ms`), 726 tests passed,
+  17 skipped (1)
+`npm run test` — run C (sequential, isolated, re-verification after the hook's failure): 78 files
+  passed (78), 729 tests passed, 17 skipped (0)
+`npm run test` — run D (sequential, isolated, one more re-verification for confidence): 78 files
+  passed (78), 729 tests passed, 17 skipped (0)
 
-Note: an earlier attempt accidentally launched two `npm run test` invocations concurrently against
-the same live Supabase project; that produced 5s/10s test/hook *timeouts* (resource contention, not
-barcode collisions — no 23505 unique-violation errors appeared) in unrelated files. Those two runs
-were discarded as invalid evidence. The two runs cited above as evidence were run strictly
-sequentially, one after the other finished, and both were fully green.
+Notes on the two non-green attempts:
+- An earlier attempt accidentally launched two `npm run test` invocations concurrently against the
+  same live Supabase project; that produced 5s/10s test/hook *timeouts* (resource contention, not
+  barcode collisions -- no 23505 unique-violation errors appeared) in unrelated files. Those two
+  runs were discarded as invalid evidence before the first COMPLETE handoff was written.
+- The pre-exit hook's own automatic re-run (after the tree was made clean) failed 3 tests, all in
+  `profiles-rls.integration.test.ts` (F010's RLS test, which this feature never touched) with the
+  same `Test timed out in 5000ms` signature -- transient live-network latency against the vitest
+  default 5000ms per-test timeout, not a barcode collision (no 23505 anywhere in that run's output).
+  Runs A, B, C, and D -- 4 out of the 5 total full-suite attempts this session, all run strictly one
+  at a time -- were fully green, including C and D run specifically to re-verify AFTER the hook's
+  failure. This is consistent with pre-existing, out-of-scope live-integration flakiness unrelated
+  to `foods.barcode`, not a recurrence of the bug this feature targets.
 
 ## Decisions made
 - Root cause confirmed exactly as described in the task: in
@@ -80,6 +101,16 @@ sequentially, one after the other finished, and both were fully green.
   have similar truncation risk. None of those other usages slice the suffix to a fixed width the
   way the barcode one did, so they were not in scope for this task, but if a future worker sees
   similar transient collisions on those fields, the same shared-helper pattern applies.
+- Observed during this session's evidence-gathering: `profiles-rls.integration.test.ts` (F010,
+  not touched by F031a) intermittently fails with `Test timed out in 5000ms` /
+  `Hook timed out in 10000ms` on its `signInWithPasswordRetry` + `profiles`/`targets` read/update
+  calls (1 failure out of 5 full-suite attempts this session, always resolved on immediate
+  re-run in isolation). This looks like transient live-network latency exceeding vitest's default
+  5000ms per-test timeout under load, not a code or RLS bug -- no assertion actually failed, the
+  test just didn't finish in time. Out of scope for F031a (targets `foods.barcode` fixtures only,
+  not test timeouts), but a future worker could raise `testTimeout`/`hookTimeout` for the
+  live-integration test files (or wrap the DB calls, not just the auth calls, in a bounded retry)
+  if this keeps recurring and costs stalls the way the F031a bug did.
 
 ## Blockers
 (none — Status is COMPLETE)

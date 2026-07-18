@@ -187,6 +187,8 @@ export interface Database {
           barcode: string | null;
           submitted_by: string | null;
           label_photo_path: string | null;
+          is_removed: boolean;
+          removed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -204,6 +206,8 @@ export interface Database {
           barcode?: string | null;
           submitted_by?: string | null;
           label_photo_path?: string | null;
+          is_removed?: boolean;
+          removed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -221,6 +225,8 @@ export interface Database {
           barcode?: string | null;
           submitted_by?: string | null;
           label_photo_path?: string | null;
+          is_removed?: boolean;
+          removed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

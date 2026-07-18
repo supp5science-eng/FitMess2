@@ -46,6 +46,10 @@ export interface BarcodeLookupResult {
  * normal, expected outcome (F032's "unknown barcode -> first-time entry"
  * flow), never an error, per the clarified "sensible empty response (null)
  * with 200" answer.
+ *
+ * F034 / AS-063: excludes `is_removed = true` rows -- an admin-removed food
+ * must resolve as an ordinary miss here too, exactly like `search_foods()`
+ * (`supabase/migrations/0006_foods_removal.sql`) excludes it from search.
  */
 export async function lookupFoodByBarcode(
   supabase: SupabaseClient<Database>,
@@ -55,6 +59,7 @@ export async function lookupFoodByBarcode(
     .from("foods")
     .select("*")
     .eq("barcode", gtin)
+    .eq("is_removed", false)
     .maybeSingle();
 
   if (error) {

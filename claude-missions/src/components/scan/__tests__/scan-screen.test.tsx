@@ -44,6 +44,7 @@ function makeFood(overrides: Partial<Food> = {}): Food {
     common_units: [],
     source: "user",
     verified: false,
+    is_default: false,
     barcode: "5901234123457",
     submitted_by: null,
     label_photo_path: null,

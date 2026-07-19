@@ -186,9 +186,12 @@ export function planSeedUpsert(
 }
 
 /** Stamps a validated seed row for the DB write: source='seed',
- * verified=true, per the clarified Round-B decision #12. `barcode` is left
- * `undefined` (not `null`) when absent so an UPDATE payload never clobbers
- * an existing row's barcode that this seed row simply doesn't carry. */
+ * verified=true, is_default=true, per the clarified Round-B decision #12.
+ * `is_default=true` marks these as the pre-loaded starter catalog (0011) so a
+ * fresh DB seeded from this script matches the live backfill; admin-entered
+ * foods (createVerifiedFood) leave it false. `barcode` is left `undefined`
+ * (not `null`) when absent so an UPDATE payload never clobbers an existing
+ * row's barcode that this seed row simply doesn't carry. */
 export function toFoodInsert(row: SeedFoodRow): FoodInsert {
   return {
     name_sr: row.name_sr,
@@ -201,6 +204,7 @@ export function toFoodInsert(row: SeedFoodRow): FoodInsert {
     barcode: row.barcode ?? undefined,
     source: "seed",
     verified: true,
+    is_default: true,
   };
 }
 

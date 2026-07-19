@@ -19,6 +19,7 @@ function makeFood(overrides: Partial<Food> & { id: string }): Food {
     common_units: [],
     source: "seed",
     verified: true,
+    is_default: false,
     barcode: null,
     submitted_by: null,
     label_photo_path: null,
@@ -72,6 +73,25 @@ describe("F024 / AS-039: FoodListItem verified/unverified marker", () => {
     expect(
       screen.getByTestId("food-badge-neprovereno-unverified-2")
     ).toBeInTheDocument();
+  });
+
+  it("shows the 'default' badge for a pre-loaded starter food (is_default=true)", () => {
+    const defaultFood = makeFood({ id: "def-1", is_default: true });
+
+    render(<FoodListItem food={defaultFood} />);
+
+    expect(screen.getByTestId("food-badge-default-def-1")).toBeInTheDocument();
+    expect(screen.getByTestId("food-item-def-1")).toHaveTextContent(/default/i);
+  });
+
+  it("shows no 'default' badge for a self-added food (is_default=false)", () => {
+    const addedFood = makeFood({ id: "added-1", is_default: false });
+
+    render(<FoodListItem food={addedFood} />);
+
+    expect(
+      screen.queryByTestId("food-badge-default-added-1")
+    ).not.toBeInTheDocument();
   });
 
   it("test_food_item_shows_the_kcal_per_100g_macro_preview", () => {

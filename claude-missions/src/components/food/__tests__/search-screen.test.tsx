@@ -24,6 +24,7 @@ function makeFood(overrides: Partial<Food> & { id: string }): Food {
     common_units: [],
     source: "seed",
     verified: true,
+    is_default: false,
     barcode: null,
     submitted_by: null,
     label_photo_path: null,

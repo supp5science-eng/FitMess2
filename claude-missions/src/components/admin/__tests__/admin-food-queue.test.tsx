@@ -25,6 +25,7 @@ function makeQueueFood(
     common_units: [],
     source: "user",
     verified: false,
+    is_default: false,
     barcode: null,
     submitted_by: "user-a",
     label_photo_path: null,

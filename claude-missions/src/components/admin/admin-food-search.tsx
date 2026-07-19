@@ -123,9 +123,16 @@ export function AdminFoodSearch() {
           >
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {food.name_sr}
-                </p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="truncate text-sm font-medium text-foreground">
+                    {food.name_sr}
+                  </p>
+                  {food.is_default ? (
+                    <span className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[11px] font-medium text-primary">
+                      default
+                    </span>
+                  ) : null}
+                </div>
                 <p className="truncate text-xs text-muted-foreground">
                   {food.brand ? `${food.brand} · ` : ""}
                   {food.kcal_100g} kcal / 100g

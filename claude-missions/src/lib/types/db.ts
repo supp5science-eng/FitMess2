@@ -202,6 +202,7 @@ export interface Database {
           common_units: FoodCommonUnit[];
           source: FoodSource;
           verified: boolean;
+          is_default: boolean;
           barcode: string | null;
           submitted_by: string | null;
           label_photo_path: string | null;
@@ -221,6 +222,7 @@ export interface Database {
           common_units?: FoodCommonUnit[];
           source?: FoodSource;
           verified?: boolean;
+          is_default?: boolean;
           barcode?: string | null;
           submitted_by?: string | null;
           label_photo_path?: string | null;
@@ -240,6 +242,7 @@ export interface Database {
           common_units?: FoodCommonUnit[];
           source?: FoodSource;
           verified?: boolean;
+          is_default?: boolean;
           barcode?: string | null;
           submitted_by?: string | null;
           label_photo_path?: string | null;

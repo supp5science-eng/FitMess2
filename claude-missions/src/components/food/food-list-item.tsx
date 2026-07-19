@@ -42,6 +42,15 @@ export function FoodListItem({
             >
               {food.name_sr}
             </span>
+            {food.is_default ? (
+              <Badge
+                variant="outline"
+                data-testid={`food-badge-default-${food.id}`}
+                className="border-primary/40 bg-primary/10 text-primary"
+              >
+                default
+              </Badge>
+            ) : null}
             {!food.verified ? (
               <Badge
                 variant="outline"

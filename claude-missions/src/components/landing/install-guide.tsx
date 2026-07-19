@@ -176,19 +176,13 @@ function WebLines({ className = "" }: { className?: string }) {
   );
 }
 
-/** The FitMess home-screen tile that pops in on the final step. */
+/** The FitMess home-screen tile that pops in on the final step -- the real
+ * app icon (`/brand/fitmess-black.png`). */
 function AppTile() {
   return (
     <div className="ig-tile" aria-hidden="true">
-      <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
-        <path
-          d="M14 34V14h20M14 24h13"
-          stroke="#0a0c0b"
-          strokeWidth="4.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/brand/fitmess-black.png" alt="" width={62} height={62} />
       <span className="ig-tile-check">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="m5 13 4 4L19 7" />

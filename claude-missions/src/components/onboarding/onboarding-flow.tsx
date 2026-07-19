@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { ThemeChoiceStep } from "@/components/onboarding/theme-choice-step";
 import { WelcomeIntro } from "@/components/onboarding/welcome-intro";
 
 /**
@@ -12,16 +13,22 @@ import { WelcomeIntro } from "@/components/onboarding/welcome-intro";
  * a warm, animated welcome — never the raw questionnaire and never the app's
  * bottom navigation (this whole route is full-bleed).
  *
- * Two stages held in local state: the `WelcomeIntro` confirmation screen, then
- * the `OnboardingWizard` itself once they tap "Započni upitnik". Keeping the
- * gate here (rather than inside the wizard) leaves `OnboardingWizard` unchanged
- * and independently testable.
+ * Three stages held in local state: the `WelcomeIntro` confirmation screen, a
+ * one-time light/dark `ThemeChoiceStep` (offered right after sign-up), then the
+ * `OnboardingWizard` itself. Keeping the gating here (rather than inside the
+ * wizard) leaves `OnboardingWizard` unchanged and independently testable.
  */
-export function OnboardingFlow() {
-  const [started, setStarted] = useState(false);
+type Stage = "welcome" | "theme" | "wizard";
 
-  if (!started) {
-    return <WelcomeIntro onStart={() => setStarted(true)} />;
+export function OnboardingFlow() {
+  const [stage, setStage] = useState<Stage>("welcome");
+
+  if (stage === "welcome") {
+    return <WelcomeIntro onStart={() => setStage("theme")} />;
+  }
+
+  if (stage === "theme") {
+    return <ThemeChoiceStep onContinue={() => setStage("wizard")} />;
   }
 
   return <OnboardingWizard />;

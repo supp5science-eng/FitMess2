@@ -14,9 +14,12 @@ import { ResendForm } from "./resend-form";
 export default async function ProveriEmailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ email?: string }>;
+  searchParams: Promise<{ email?: string; poslato?: string }>;
 }) {
-  const { email } = await searchParams;
+  const { email, poslato } = await searchParams;
+  // Fresh from signup (email just sent) -> start the resend button on a
+  // cooldown so the first click can't hit GoTrue's per-address send window.
+  const justSent = poslato === "1";
 
   return (
     <>
@@ -34,7 +37,9 @@ export default async function ProveriEmailPage({
             Klikni na link u poruci da bi mogao/la da koristiš aplikaciju.
           </p>
         </div>
-        {email ? <ResendForm email={email} /> : null}
+        {email ? (
+          <ResendForm email={email} initialCooldown={justSent ? 60 : 0} />
+        ) : null}
       </div>
       <p className="auth-alt">
         Već potvrdio/la nalog? <Link href="/prijava">Prijavi se</Link>

@@ -53,8 +53,18 @@ async function emailRedirectOrigin(): Promise<string> {
   return `${proto}://${host}`;
 }
 
-function verifyEmailNoticePath(email: string): string {
-  return `/registracija/proveri-email?email=${encodeURIComponent(email)}`;
+/**
+ * The "proveri email" notice path. `justSent` is set only when we have just
+ * triggered a confirmation email (signup) -- the page uses it to start the
+ * resend button on a cooldown, so an immediate re-click can't hit GoTrue's
+ * ~60s per-address send window and surface a rate-limit error that reads as
+ * "resend is broken". The login-unconfirmed redirect does NOT set it (that
+ * path sends no email), so a returning user can resend right away.
+ */
+function verifyEmailNoticePath(email: string, justSent = false): string {
+  const params = new URLSearchParams({ email });
+  if (justSent) params.set("poslato", "1");
+  return `/registracija/proveri-email?${params.toString()}`;
 }
 
 /** AS-008: create an account with email + password. */
@@ -85,7 +95,7 @@ export async function signUpAction(
     return result;
   }
 
-  redirect(verifyEmailNoticePath(parsed.data.email));
+  redirect(verifyEmailNoticePath(parsed.data.email, true));
 }
 
 /**

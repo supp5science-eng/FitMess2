@@ -57,7 +57,22 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
+/**
+ * The in-app signup confirmation form: email (carried hidden from the notice
+ * page) + the 6-digit code from the confirmation email. Digits only, exactly 6
+ * -- matches GoTrue's `{{ .Token }}` OTP so a user can confirm without ever
+ * leaving the installed PWA.
+ */
+export const verifyCodeSchema = z.object({
+  email: emailSchema,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Unesi 6-cifreni kod iz mejla."),
+});
+
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+export type VerifyCodeInput = z.infer<typeof verifyCodeSchema>;

@@ -10,6 +10,7 @@ import {
   signInEmailPassword,
   signUpEmailPassword,
   updateUserPassword,
+  verifySignupOtp,
 } from "@/lib/auth/core";
 import { SR_AUTH_MESSAGES } from "@/lib/auth/errors";
 import {
@@ -18,6 +19,7 @@ import {
   resetPasswordSchema,
   signInSchema,
   signUpSchema,
+  verifyCodeSchema,
 } from "@/lib/auth/validation";
 
 /**
@@ -200,6 +202,42 @@ export async function resetPasswordAction(
 
   const supabase = await createClient();
   const result = await updateUserPassword(supabase, parsed.data.password);
+
+  if (!result.ok) {
+    return result;
+  }
+
+  redirect("/danas");
+}
+
+/**
+ * Confirms the account with the 6-digit code from the confirmation email,
+ * entered inside the app. On success GoTrue issues a session, so we send the
+ * user straight into the app (the middleware then routes a verified-but-not-
+ * onboarded user on to `/onboarding`) -- all without ever leaving the PWA,
+ * which is the whole point of the in-app code over the browser-opening link.
+ */
+export async function verifyEmailCodeAction(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const parsed = verifyCodeSchema.safeParse({
+    email: formData.get("email"),
+    code: formData.get("code"),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error_sr: parsed.error.issues[0]?.message ?? SR_AUTH_MESSAGES.generic,
+    };
+  }
+
+  const supabase = await createClient();
+  const result = await verifySignupOtp(
+    supabase,
+    parsed.data.email,
+    parsed.data.code
+  );
 
   if (!result.ok) {
     return result;

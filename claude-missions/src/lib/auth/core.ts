@@ -169,6 +169,43 @@ export async function resendConfirmationEmail(
 }
 
 /**
+ * Confirms a signup with the 6-digit code from the confirmation email
+ * (`type: "signup"` OTP). This is the in-app path: the user types the code
+ * inside the installed PWA instead of clicking the email link, which on iOS
+ * would open Safari/Chrome and drop them out of the app. On success GoTrue
+ * returns a real session, so the cookie-bound server client writes the auth
+ * cookies and the user is signed in exactly as if they'd clicked the link.
+ *
+ * Almost every failure here is "wrong or expired code" -- collapse the unknown
+ * `generic` fallback to a clear, actionable Serbian message while preserving
+ * the specific rate-limit / invalid-email copy.
+ */
+export async function verifySignupOtp(
+  supabase: SupabaseClient,
+  email: string,
+  token: string
+): Promise<AuthActionResult> {
+  const { error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "signup",
+  });
+
+  if (error) {
+    const mapped = mapAuthErrorToSerbian(error);
+    return {
+      ok: false,
+      error_sr:
+        mapped === SR_AUTH_MESSAGES.generic
+          ? SR_AUTH_MESSAGES.invalidCode
+          : mapped,
+    };
+  }
+
+  return { ok: true };
+}
+
+/**
  * Sends a password-recovery email (the "zaboravljena lozinka" flow).
  *
  * Supabase's `resetPasswordForEmail` is non-enumerating by design: it returns

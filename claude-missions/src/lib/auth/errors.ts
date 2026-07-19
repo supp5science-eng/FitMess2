@@ -41,6 +41,9 @@ export const SR_AUTH_MESSAGES = {
    * session is active on the set-new-password page. */
   passwordResetLinkInvalid:
     "Link za promenu lozinke je istekao ili je već iskorišćen. Zatraži novi.",
+  /** The 6-digit signup confirmation code the user typed is wrong or expired
+   * (the in-app OTP path, so a returning user never has to leave the app). */
+  invalidCode: "Kod nije ispravan ili je istekao. Zatraži novi kod ispod.",
   weakPassword: "Lozinka je preslaba. Koristi bar 8 karaktera.",
   invalidEmail: "Unesi ispravnu email adresu.",
   rateLimited: "Previše pokušaja u kratkom periodu. Sačekaj malo pa pokušaj ponovo.",

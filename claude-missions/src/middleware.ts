@@ -71,7 +71,14 @@ export async function middleware(request: NextRequest) {
       .eq("user_id", user.id)
       .maybeSingle();
     onboarded = Boolean(data?.onboarded_at);
-    hasPhone = Boolean(data?.phone);
+    // Only Google (OAuth) users are routed through the /telefon gate: they
+    // never saw the signup form's phone field. Email/password users give a
+    // phone at signup, and -- crucially -- legacy email accounts created
+    // BEFORE the phone field existed have phone = null but must NEVER be walled
+    // out of the whole app. So the phone requirement counts as met for any
+    // non-Google user, regardless of whether a phone is on file.
+    const signedUpWithGoogle = user.app_metadata?.provider === "google";
+    hasPhone = signedUpWithGoogle ? Boolean(data?.phone) : true;
   }
 
   const decision = decideRouteAccess({

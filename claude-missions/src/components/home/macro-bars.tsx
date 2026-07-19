@@ -1,47 +1,70 @@
-// F027 / AS-048: three macro bars (Proteini / UH / Masti) -- consumed vs.
-// target grams for each, below the ring. Pure, presentational; the numbers
-// come in as props (`src/lib/home/totals.ts` computes the consumed side,
-// the newest `targets` row -- newest `effective_from` wins -- provides the
-// target side).
+import type { RingView } from "@/components/home/ring";
+
+// F027 / AS-048: the three macros (Proteini / Masti / UH) shown below the
+// gauge. Pure, presentational; the numbers come in as props
+// (`src/lib/home/totals.ts` computes the consumed side, the newest `targets`
+// row provides the target side).
 //
-// The fill bar is capped visually at 100% (a macro can be over its target
-// without the bar overflowing its own track) but the numeric label always
-// shows the real consumed value, never clamped -- same "the number is real,
-// never hidden" posture as the ring's overshoot state (AS-050). Single
-// green accent throughout; no second color for "over."
+// Redesign (2026-07-19): three side-by-side columns, each a label above a
+// slim colour-coded bar above its "value / target g" -- protein coral, fat
+// amber, carbs green. The `view` toggle (shared with the gauge) switches the
+// shown value between consumed and remaining; the bar fill and the number
+// follow it. The bar caps visually at 100% (a macro can exceed its target
+// without overflowing its track) but the number always shows the real value.
+
+/** Per-macro accent colours (distinct from the teal calorie gauge). */
+const MACRO_COLORS = {
+  protein: "#f9745f",
+  fat: "#f2c14e",
+  carbs: "#45c78d",
+} as const;
 
 function MacroBar({
   label,
   consumedG,
   targetG,
+  color,
+  view,
   testId,
 }: {
   label: string;
   consumedG: number;
   targetG: number;
+  color: string;
+  view: RingView;
   testId: string;
 }) {
+  // In "remaining" view the shown value is what's LEFT (target - consumed,
+  // never negative); in "consumed" view it's what's been eaten.
+  const shown =
+    view === "remaining"
+      ? Math.max(0, targetG - consumedG)
+      : Math.max(0, consumedG);
   const safeTarget = targetG > 0 ? targetG : 1;
-  const percent = Math.min(100, Math.max(0, (consumedG / safeTarget) * 100));
+  const percent = Math.min(100, Math.max(0, (shown / safeTarget) * 100));
 
   return (
-    <div data-testid={testId} className="flex flex-col gap-1.5">
-      <div className="flex items-baseline justify-between text-sm">
-        <span className="font-medium text-foreground">{label}</span>
-        <span
-          data-testid={`${testId}-values`}
-          className="text-muted-foreground tabular-nums"
-        >
-          {Math.round(consumedG)} / {Math.round(targetG)} g
-        </span>
-      </div>
-      <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+    <div
+      data-testid={testId}
+      className="flex flex-1 flex-col items-center gap-2 text-center"
+    >
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <div
+        className="h-1.5 w-full overflow-hidden rounded-full"
+        style={{ backgroundColor: `color-mix(in oklab, ${color} 22%, transparent)` }}
+      >
         <div
           data-testid={`${testId}-fill`}
-          className="h-full rounded-full bg-primary transition-[width]"
-          style={{ width: `${percent}%` }}
+          className="h-full rounded-full transition-[width]"
+          style={{ width: `${percent}%`, backgroundColor: color }}
         />
       </div>
+      <span
+        data-testid={`${testId}-values`}
+        className="text-sm tabular-nums text-foreground"
+      >
+        {Math.round(shown)} / {Math.round(targetG)} g
+      </span>
     </div>
   );
 }
@@ -49,29 +72,37 @@ function MacroBar({
 export function MacroBars({
   consumed,
   target,
+  view = "consumed",
 }: {
   consumed: { protein: number; carbs: number; fat: number };
   target: { proteinG: number; carbsG: number; fatG: number };
+  view?: RingView;
 }) {
   return (
-    <div data-testid="home-macro-bars" className="flex flex-col gap-4">
+    <div data-testid="home-macro-bars" className="flex items-start gap-4">
       <MacroBar
         label="Proteini"
         consumedG={consumed.protein}
         targetG={target.proteinG}
+        color={MACRO_COLORS.protein}
+        view={view}
         testId="macro-bar-protein"
-      />
-      <MacroBar
-        label="UH"
-        consumedG={consumed.carbs}
-        targetG={target.carbsG}
-        testId="macro-bar-carbs"
       />
       <MacroBar
         label="Masti"
         consumedG={consumed.fat}
         targetG={target.fatG}
+        color={MACRO_COLORS.fat}
+        view={view}
         testId="macro-bar-fat"
+      />
+      <MacroBar
+        label="UH"
+        consumedG={consumed.carbs}
+        targetG={target.carbsG}
+        color={MACRO_COLORS.carbs}
+        view={view}
+        testId="macro-bar-carbs"
       />
     </div>
   );

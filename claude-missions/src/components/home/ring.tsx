@@ -1,104 +1,172 @@
 import { computeRemaining } from "@/lib/home/totals";
 
-// F027 / AS-047 (remaining ring), AS-050 (neutral overshoot): the big
-// circular progress ring, Cal AI-inspired centerpiece of `/danas`. Pure,
-// presentational -- consumed/target come in as props, every number shown is
-// computed by `src/lib/home/totals.ts` (never eyeballed here), matching the
-// "money-math rule" posture the rest of this codebase follows.
+// F027 / AS-047 (remaining ring), AS-050 (neutral overshoot): the calorie
+// gauge, centerpiece of `/danas`. Pure, presentational -- consumed/target
+// come in as props, every number shown is computed by
+// `src/lib/home/totals.ts` (never eyeballed here), matching the "money-math
+// rule" the rest of this codebase follows.
 //
-// Overshoot state (AS-050): the ring NEVER switches to a red/alarming
-// color -- it stays the app's single green accent (`var(--primary)`) at a
-// full 100% fill, and the center copy swaps from "Preostalo" to
-// "Prekoračeno" plus one short, calm, reassuring sentence. Per the
-// clarified "zero-shame tone" / "one bad day is small" philosophy, this is
-// a deliberate design choice: overshooting is shown plainly (the number is
-// real and visible), never punished visually.
+// Redesign (2026-07-19): a C-shaped gauge (open at the bottom) with the big
+// headline number centered inside it, flanked by two context columns -- the
+// non-selected metric on the left, the daily target on the right. A
+// `view` toggle (owned by `HomeScreen`) swaps the centered metric between
+// "Preostalo" (remaining, the default) and "Potrošeno" (consumed); the gauge
+// fill and both side columns follow it.
+//
+// Overshoot state (AS-050): the gauge NEVER switches to a red/alarming colour
+// -- it stays the app's teal accent (`var(--primary)`), the fill simply
+// empties, and the centre copy swaps to "Prekoračeno" plus one short, calm,
+// reassuring sentence. Zero-shame tone: overshooting is shown plainly, never
+// punished visually.
 
-const RING_SIZE = 232;
-const RING_RADIUS = 98;
-const RING_STROKE = 16;
-const CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+export type RingView = "remaining" | "consumed";
+
+const VIEW_BOX = 200;
+const CENTER = VIEW_BOX / 2;
+const RADIUS = 84;
+const STROKE = 14;
+// The gauge is a 270° arc with a 90° opening centred at the bottom: it runs
+// from the bottom-left (225°) clockwise over the top to the bottom-right.
+const START_ANGLE = 225;
+const SWEEP_DEG = 270;
+
+/** Point on the gauge circle at `angleDeg`, measured clockwise from 12 o'clock. */
+function polar(angleDeg: number): { x: number; y: number } {
+  const a = (angleDeg * Math.PI) / 180;
+  return {
+    x: CENTER + RADIUS * Math.sin(a),
+    y: CENTER - RADIUS * Math.cos(a),
+  };
+}
+
+/** SVG path for the full 270° gauge track (start -> clockwise -> end). */
+const start = polar(START_ANGLE);
+const end = polar(START_ANGLE + SWEEP_DEG);
+const ARC_PATH = `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${RADIUS} ${RADIUS} 0 1 1 ${end.x.toFixed(
+  2
+)} ${end.y.toFixed(2)}`;
 
 export function Ring({
   consumedKcal,
   targetKcal,
+  view = "remaining",
 }: {
   consumedKcal: number;
   targetKcal: number;
+  view?: RingView;
 }) {
   const { remainingKcal, isOver, overshootKcal } = computeRemaining(
     consumedKcal,
     targetKcal
   );
 
-  const safeTarget = targetKcal > 0 ? targetKcal : 1;
-  const rawPercent = (Math.max(0, consumedKcal) / safeTarget) * 100;
-  const percent = Math.min(100, Math.max(0, rawPercent));
-  const dashOffset = CIRCUMFERENCE * (1 - percent / 100);
+  const consumedRounded = Math.round(Math.max(0, consumedKcal));
+  const targetRounded = Math.round(Math.max(0, targetKcal));
 
-  const centerLabel = isOver ? "Prekoračeno" : "Preostalo";
-  const centerValue = isOver ? overshootKcal : remainingKcal;
+  const safeTarget = targetKcal > 0 ? targetKcal : 1;
+
+  // The metric shown in the centre + how full the gauge is, per the toggle.
+  const centerLabel =
+    view === "consumed"
+      ? "Potrošeno"
+      : isOver
+        ? "Prekoračeno"
+        : "Preostalo";
+  const centerValue =
+    view === "consumed"
+      ? consumedRounded
+      : isOver
+        ? overshootKcal
+        : remainingKcal;
+
+  const fillFraction =
+    view === "consumed"
+      ? Math.max(0, consumedKcal) / safeTarget
+      : Math.max(0, remainingKcal) / safeTarget;
+  const percent = Math.min(100, Math.max(0, fillFraction * 100));
+  // pathLength normalises the arc to 100 units so the dash maths is a plain
+  // percentage; the fill is drawn from the start and the rest is dashed out.
+  const dashOffset = 100 - percent;
+
+  // Left context column = whichever of consumed/remaining is NOT centred.
+  const leftLabel = view === "consumed" ? "Preostalo" : "Potrošeno";
+  const leftValue = view === "consumed" ? remainingKcal : consumedRounded;
 
   return (
     <div
       data-testid="home-ring"
       role="img"
       aria-label={`${centerLabel} ${centerValue} kcal`}
-      className="relative mx-auto flex shrink-0 items-center justify-center"
-      style={{ width: RING_SIZE, height: RING_SIZE }}
+      className="mx-auto flex w-full max-w-sm items-center justify-between gap-1"
     >
-      <svg
-        width={RING_SIZE}
-        height={RING_SIZE}
-        viewBox={`0 0 ${RING_SIZE} ${RING_SIZE}`}
-        className="-rotate-90"
-        aria-hidden="true"
-      >
-        <circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={RING_RADIUS}
-          fill="none"
-          stroke="var(--muted)"
-          strokeWidth={RING_STROKE}
-        />
-        <circle
-          data-testid="home-ring-arc"
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
-          r={RING_RADIUS}
-          fill="none"
-          stroke="var(--primary)"
-          strokeWidth={RING_STROKE}
-          strokeLinecap="round"
-          strokeDasharray={CIRCUMFERENCE}
-          strokeDashoffset={dashOffset}
-        />
-      </svg>
+      <SideColumn label={leftLabel} value={leftValue} />
 
-      <div className="absolute flex flex-col items-center justify-center gap-0.5 px-11 text-center">
-        <span
-          data-testid="home-ring-label"
-          className="text-sm font-medium text-muted-foreground"
+      <div
+        className="relative shrink-0"
+        style={{ width: 196, height: 196 }}
+      >
+        <svg
+          viewBox={`0 0 ${VIEW_BOX} ${VIEW_BOX}`}
+          className="h-full w-full"
+          aria-hidden="true"
         >
-          {centerLabel}
-        </span>
-        <span
-          data-testid="home-ring-value"
-          className="text-5xl font-bold tabular-nums text-foreground"
-        >
-          {centerValue}
-        </span>
-        <span className="text-sm font-medium text-muted-foreground">kcal</span>
-        {isOver ? (
-          <p
-            data-testid="home-ring-overshoot-note"
-            className="mt-1.5 max-w-[150px] text-[11px] leading-snug text-muted-foreground"
+          <path
+            d={ARC_PATH}
+            fill="none"
+            stroke="var(--muted)"
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+          />
+          <path
+            data-testid="home-ring-arc"
+            d={ARC_PATH}
+            fill="none"
+            stroke="var(--primary)"
+            strokeWidth={STROKE}
+            strokeLinecap="round"
+            pathLength={100}
+            strokeDasharray={100}
+            strokeDashoffset={dashOffset}
+            style={{ transition: "stroke-dashoffset 0.5s cubic-bezier(0.2,0,0,1)" }}
+          />
+        </svg>
+
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 px-10 text-center">
+          <span
+            data-testid="home-ring-value"
+            className="text-5xl font-bold tabular-nums text-foreground"
           >
-            Jedan dan više ne menja ništa. Nastavi sutra kao i obično.
-          </p>
-        ) : null}
+            {centerValue}
+          </span>
+          <span
+            data-testid="home-ring-label"
+            className="text-sm font-medium text-muted-foreground"
+          >
+            {centerLabel}
+          </span>
+          {isOver ? (
+            <p
+              data-testid="home-ring-overshoot-note"
+              className="mt-1 max-w-[150px] text-[11px] leading-snug text-muted-foreground"
+            >
+              Jedan dan više ne menja ništa. Nastavi sutra kao i obično.
+            </p>
+          ) : null}
+        </div>
       </div>
+
+      <SideColumn label="Cilj" value={targetRounded} />
+    </div>
+  );
+}
+
+function SideColumn({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex shrink-0 flex-col items-center gap-0.5">
+      <span className="text-2xl font-semibold tabular-nums text-foreground">
+        {value}
+      </span>
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
     </div>
   );
 }

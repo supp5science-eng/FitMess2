@@ -50,6 +50,23 @@ describe("AS-048: MacroBars shows protein/carbs/fat consumed vs target", () => {
     expect(fill).toHaveStyle({ width: "50%" });
   });
 
+  it("test_macro_remaining_view_shows_grams_left_and_fills_by_the_remaining_ratio", () => {
+    render(
+      <MacroBars
+        consumed={{ protein: 50, carbs: 100, fat: 30 }}
+        target={{ proteinG: 150, carbsG: 200, fatG: 60 }}
+        view="remaining"
+      />
+    );
+
+    // Protein: 150 - 50 = 100 g left -> "100 / 150 g", bar 100/150 = 66.67%.
+    expect(screen.getByTestId("macro-bar-protein-values")).toHaveTextContent(
+      "100 / 150 g"
+    );
+    const fill = screen.getByTestId("macro-bar-protein-fill");
+    expect(Number.parseFloat(fill.style.width)).toBeCloseTo(66.67, 1);
+  });
+
   it("test_AS_048_a_macro_consumed_beyond_its_target_still_shows_the_real_number_bar_capped_at_100_percent", () => {
     render(
       <MacroBars

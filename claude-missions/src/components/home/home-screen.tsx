@@ -6,11 +6,12 @@ import { DateStrip } from "@/components/home/date-strip";
 import { IntroCover } from "@/components/home/intro-cover";
 import { MacroBars } from "@/components/home/macro-bars";
 import { MealList } from "@/components/home/meal-list";
-import { Ring } from "@/components/home/ring";
+import { Ring, type RingView } from "@/components/home/ring";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import type { DayCell } from "@/lib/home/date-strip";
 import { computeDayTotals } from "@/lib/home/totals";
 import type { Log, Target } from "@/lib/types/db";
+import { cn } from "@/lib/utils";
 
 // useLayoutEffect on the client (measure + cover before first paint), a no-op
 // useEffect on the server (avoids the SSR warning).
@@ -59,6 +60,10 @@ export function HomeScreen({
   mealsHeading?: string;
 }) {
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
+
+  // Calorie/macro display mode. Defaults to "remaining" (Preostalo) -- what
+  // the user has left today -- with "consumed" (Potrošeno) as the alternate.
+  const [view, setView] = useState<RingView>("remaining");
 
   // Ring hand-off intro. Initial stage comes from the server prop so the SSR
   // markup already renders the cover (no flash of the assembled dashboard).
@@ -147,11 +152,18 @@ export function HomeScreen({
       </header>
 
       {target ? (
-        <div className="flex flex-col gap-8">
+        <div className="flex flex-col gap-7">
+          <h2 className="home-body text-xl font-semibold tracking-tight text-foreground">
+            Dnevni unos
+          </h2>
           {/* The ring lives in its own slot so the intro can fade just the
               ring in (where the ghost lands) after the body has risen in. */}
           <div ref={ringRef} className="home-ring-slot">
-            <Ring consumedKcal={totals.kcal} targetKcal={target.daily_kcal} />
+            <Ring
+              consumedKcal={totals.kcal}
+              targetKcal={target.daily_kcal}
+              view={view}
+            />
           </div>
           <div className="home-body">
             <MacroBars
@@ -165,8 +177,10 @@ export function HomeScreen({
                 carbsG: target.carbs_g,
                 fatG: target.fat_g,
               }}
+              view={view}
             />
           </div>
+          <ViewToggle view={view} onChange={setView} />
         </div>
       ) : (
         <div
@@ -192,5 +206,51 @@ export function HomeScreen({
         />
       ) : null}
     </main>
+  );
+}
+
+/**
+ * The "Potrošeno | Preostalo" segmented toggle that drives the gauge + macros
+ * display mode. Two real buttons in a pill; the selected one is a light,
+ * high-contrast fill (like the reference design). "Preostalo" is the default.
+ */
+function ViewToggle({
+  view,
+  onChange,
+}: {
+  view: RingView;
+  onChange: (next: RingView) => void;
+}) {
+  const options: { value: RingView; label: string }[] = [
+    { value: "consumed", label: "Potrošeno" },
+    { value: "remaining", label: "Preostalo" },
+  ];
+
+  return (
+    <div
+      role="group"
+      aria-label="Prikaz kalorija i makroa"
+      className="home-body mx-auto inline-flex items-center gap-1 rounded-full bg-muted p-1"
+    >
+      {options.map(({ value, label }) => {
+        const selected = view === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onChange(value)}
+            className={cn(
+              "min-h-11 rounded-full px-6 text-sm font-semibold transition-colors",
+              selected
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
   );
 }

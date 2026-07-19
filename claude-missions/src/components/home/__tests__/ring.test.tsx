@@ -22,17 +22,52 @@ describe("AS-047: Ring shows today's remaining calories, centered", () => {
     expect(screen.getByTestId("home-ring-value")).toHaveTextContent("2000");
   });
 
-  it("test_AS_047_the_progress_arc_reflects_consumed_over_target_as_a_partial_ring", () => {
-    render(<Ring consumedKcal={1000} targetKcal={2000} />);
+  it("test_AS_047_the_gauge_fill_reflects_the_remaining_over_target_fraction_by_default", () => {
+    // 500 of 2000 consumed -> 1500 (75%) remaining -> the fill (drawn from the
+    // start, the rest dashed out on a pathLength=100 arc) leaves offset 25.
+    render(<Ring consumedKcal={500} targetKcal={2000} />);
     const arc = screen.getByTestId("home-ring-arc");
-    const circumference = Number(arc.getAttribute("stroke-dasharray"));
     const offset = Number(arc.getAttribute("stroke-dashoffset"));
-    // 50% consumed -> offset should be roughly half the circumference.
-    expect(offset).toBeCloseTo(circumference * 0.5, 0);
+    expect(offset).toBeCloseTo(25, 0);
+  });
+
+  it("test_AS_047_context_columns_show_consumed_on_the_left_and_target_on_the_right", () => {
+    const ring = render(
+      <Ring consumedKcal={800} targetKcal={2000} />
+    ).container;
+    // Left column = Potrošeno 800, right column = Cilj 2000 (centre = Preostalo).
+    expect(ring).toHaveTextContent("Potrošeno");
+    expect(ring).toHaveTextContent("Cilj");
+    expect(ring).toHaveTextContent("800");
+    expect(ring).toHaveTextContent("2000");
   });
 });
 
-describe("AS-050: overshoot state is calm, neutral, and the ring stays functional", () => {
+describe("Ring view toggle: 'Potrošeno' (consumed) mode", () => {
+  it("test_ring_consumed_view_centers_the_consumed_value_with_the_potroseno_label", () => {
+    render(<Ring consumedKcal={1200} targetKcal={2000} view="consumed" />);
+
+    expect(screen.getByTestId("home-ring-label")).toHaveTextContent(
+      "Potrošeno"
+    );
+    expect(screen.getByTestId("home-ring-value")).toHaveTextContent("1200");
+    expect(screen.getByTestId("home-ring")).toHaveAttribute(
+      "aria-label",
+      "Potrošeno 1200 kcal"
+    );
+  });
+
+  it("test_ring_consumed_view_fills_the_gauge_by_consumed_over_target", () => {
+    // 1500 of 2000 consumed -> 75% -> offset 25.
+    render(<Ring consumedKcal={1500} targetKcal={2000} view="consumed" />);
+    const offset = Number(
+      screen.getByTestId("home-ring-arc").getAttribute("stroke-dashoffset")
+    );
+    expect(offset).toBeCloseTo(25, 0);
+  });
+});
+
+describe("AS-050: overshoot state is calm, neutral, and the gauge stays functional", () => {
   it("test_AS_050_consumed_exceeding_target_switches_the_center_copy_to_prekoraceno_with_the_overshoot_amount", () => {
     render(<Ring consumedKcal={2300} targetKcal={2000} />);
 
@@ -60,17 +95,15 @@ describe("AS-050: overshoot state is calm, neutral, and the ring stays functiona
     );
   });
 
-  it("test_AS_050_the_ring_arc_still_renders_a_completed_ring_never_a_broken_or_empty_state", () => {
+  it("test_AS_050_over_budget_drains_the_remaining_gauge_to_empty_never_a_broken_state", () => {
     render(<Ring consumedKcal={5000} targetKcal={2000} />);
     const arc = screen.getByTestId("home-ring-arc");
-    const circumference = Number(arc.getAttribute("stroke-dasharray"));
-    const offset = Number(arc.getAttribute("stroke-dashoffset"));
-    // Fully filled ring (100%), never overflowing past a full circle.
-    expect(offset).toBeCloseTo(0, 0);
-    expect(circumference).toBeGreaterThan(0);
+    // Nothing remaining -> the drained gauge is empty (offset = full 100).
+    expect(Number(arc.getAttribute("stroke-dashoffset"))).toBeCloseTo(100, 0);
+    expect(arc.getAttribute("d")).toBeTruthy();
   });
 
-  it("test_AS_050_the_ring_never_switches_to_a_destructive_red_stroke_color_stays_the_single_green_accent", () => {
+  it("test_AS_050_the_gauge_never_switches_to_a_destructive_red_stroke_color_stays_the_single_accent", () => {
     render(<Ring consumedKcal={2300} targetKcal={2000} />);
     const arc = screen.getByTestId("home-ring-arc");
     expect(arc).toHaveAttribute("stroke", "var(--primary)");

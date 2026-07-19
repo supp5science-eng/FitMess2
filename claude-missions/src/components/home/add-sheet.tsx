@@ -1,8 +1,16 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Barcode, Camera, Plus, Search, UtensilsCrossed, X } from "lucide-react";
+import {
+  Barcode,
+  Camera,
+  Plus,
+  Search,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -96,67 +104,76 @@ export function AddSheet() {
         <Plus className="size-7" aria-hidden="true" />
       </button>
 
-      {isOpen ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-0 sm:items-center sm:px-6"
-          data-testid="add-sheet-overlay"
-          onClick={close}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="add-sheet-title"
-            data-testid="add-sheet"
-            className="flex w-full max-w-sm flex-col gap-5 rounded-t-xl border border-border bg-background px-6 py-8 shadow-lg sm:rounded-xl"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="flex items-center justify-between">
-              <h2
-                id="add-sheet-title"
-                className="text-lg font-semibold text-foreground"
+      {/* The sheet renders through a portal to <body>, escaping the floating
+          nav bar's `pointer-events-none` / z-40 stacking context. Without this
+          the backdrop and options can't receive taps (clicks fall through to
+          the nav tabs behind), and the sheet can't be dismissed. */}
+      {isOpen && typeof document !== "undefined"
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-0 sm:items-center sm:px-6"
+              data-testid="add-sheet-overlay"
+              onClick={close}
+            >
+              <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="add-sheet-title"
+                data-testid="add-sheet"
+                className="flex w-full max-w-sm flex-col gap-5 rounded-t-xl border border-border bg-background px-6 py-8 shadow-lg sm:rounded-xl"
+                onClick={(event) => event.stopPropagation()}
               >
-                Dodaj unos
-              </h2>
-              <button
-                type="button"
-                onClick={close}
-                data-testid="add-sheet-close-button"
-                aria-label="Zatvori"
-                className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                <X className="size-5" aria-hidden="true" />
-              </button>
-            </div>
+                <div className="flex items-center justify-between">
+                  <h2
+                    id="add-sheet-title"
+                    className="text-lg font-semibold text-foreground"
+                  >
+                    Dodaj unos
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={close}
+                    data-testid="add-sheet-close-button"
+                    aria-label="Zatvori"
+                    className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                  >
+                    <X className="size-5" aria-hidden="true" />
+                  </button>
+                </div>
 
-            <div className="flex flex-col gap-2">
-              {OPTIONS.map(({ key, label, icon: Icon, href, available }) => (
-                <Link
-                  key={key}
-                  href={href}
-                  onClick={close}
-                  data-testid={`add-sheet-option-${key}`}
-                  className={cn(
-                    "flex items-center gap-3 rounded-xl border border-border px-4 py-3.5 text-left text-sm font-medium text-foreground transition-colors",
-                    "hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                    !available && "text-muted-foreground"
+                <div className="flex flex-col gap-2">
+                  {OPTIONS.map(
+                    ({ key, label, icon: Icon, href, available }) => (
+                      <Link
+                        key={key}
+                        href={href}
+                        onClick={close}
+                        data-testid={`add-sheet-option-${key}`}
+                        className={cn(
+                          "flex items-center gap-3 rounded-xl border border-border px-4 py-3.5 text-left text-sm font-medium text-foreground transition-colors",
+                          "hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                          !available && "text-muted-foreground",
+                        )}
+                      >
+                        <Icon className="size-5 shrink-0" aria-hidden="true" />
+                        <span className="flex-1">{label}</span>
+                        {!available ? (
+                          <Badge
+                            variant="secondary"
+                            data-testid={`add-sheet-soon-badge-${key}`}
+                          >
+                            Uskoro
+                          </Badge>
+                        ) : null}
+                      </Link>
+                    ),
                   )}
-                >
-                  <Icon className="size-5 shrink-0" aria-hidden="true" />
-                  <span className="flex-1">{label}</span>
-                  {!available ? (
-                    <Badge
-                      variant="secondary"
-                      data-testid={`add-sheet-soon-badge-${key}`}
-                    >
-                      Uskoro
-                    </Badge>
-                  ) : null}
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

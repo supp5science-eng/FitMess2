@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import {
   Bell,
   Download,
@@ -8,6 +9,7 @@ import {
   ScrollText,
   Shield,
   SlidersHorizontal,
+  SunMoon,
   Target,
   Trash2,
   User,
@@ -22,8 +24,10 @@ import {
   SettingsInfoRow,
   SettingsLinkRow,
 } from "@/components/settings/settings-row";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
+import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
 
 /**
  * `/profil` -- the "Podešavanja" (Settings) screen.
@@ -63,6 +67,9 @@ export default async function ProfilPage() {
     isAdmin = profile?.is_admin === true;
     phone = profile?.phone ?? null;
   }
+
+  const cookieStore = await cookies();
+  const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
@@ -110,6 +117,11 @@ export default async function ProfilPage() {
       </SettingsGroup>
 
       <SettingsGroup title="Aplikacija">
+        <SettingsInfoRow
+          icon={SunMoon}
+          label="Izgled"
+          trailing={<ThemeToggle initialTheme={theme} />}
+        />
         <SettingsInfoRow
           icon={Bell}
           label="Podsetnici"

@@ -55,8 +55,8 @@ function DayCircle({ cell }: { cell: DayCell }) {
               // as "done, but not today".
               "border-2 border-primary/40 text-foreground"
             : disabled
-              ? "border border-dashed border-white/10 text-white/25"
-              : "border border-dashed border-white/20 text-muted-foreground"
+              ? "border border-dashed border-foreground/15 text-foreground/30"
+              : "border border-dashed border-foreground/30 text-muted-foreground"
       )}
     >
       {cell.dayNum}
@@ -69,14 +69,14 @@ function DayCellInner({ cell }: { cell: DayCell }) {
     <span
       className={cn(
         "flex flex-col items-center gap-2 rounded-2xl px-1 py-2 transition-colors",
-        cell.isSelected && "bg-white/[0.07] ring-1 ring-white/10"
+        cell.isSelected && "bg-foreground/[0.06] ring-1 ring-foreground/10"
       )}
     >
       <span
         className={cn(
           "text-xs font-medium",
           cell.isFuture || cell.isBeforeStart
-            ? "text-white/25"
+            ? "text-foreground/30"
             : cell.isToday || cell.isSelected
               ? "text-foreground"
               : "text-muted-foreground"

@@ -111,7 +111,7 @@ export function Ring({
             data-testid="home-ring-arc"
             d={ARC_PATH}
             fill="none"
-            stroke="var(--primary)"
+            stroke="var(--gauge)"
             strokeWidth={STROKE}
             strokeLinecap="round"
             pathLength={100}

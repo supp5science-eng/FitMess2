@@ -75,6 +75,8 @@
   --border: #e5e7e9;
   --input: #e2e5e7;
   --ring: #0a0c0b;
+  /* Calorie-gauge fill: light blue in both themes (per product request). */
+  --gauge: #38bdf8;
   --chart-1: #0a0c0b;
   --chart-2: #646b6f;
   --chart-3: #8a9095;
@@ -117,6 +119,7 @@
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.14);
   --ring: #17d1a8;
+  --gauge: #38bdf8;
   --chart-1: #17d1a8;
   --chart-2: #6fd9c4;
   --chart-3: #a6b0ab;

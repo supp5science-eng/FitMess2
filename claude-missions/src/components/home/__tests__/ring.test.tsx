@@ -106,6 +106,6 @@ describe("AS-050: overshoot state is calm, neutral, and the gauge stays function
   it("test_AS_050_the_gauge_never_switches_to_a_destructive_red_stroke_color_stays_the_single_accent", () => {
     render(<Ring consumedKcal={2300} targetKcal={2000} />);
     const arc = screen.getByTestId("home-ring-arc");
-    expect(arc).toHaveAttribute("stroke", "var(--primary)");
+    expect(arc).toHaveAttribute("stroke", "var(--gauge)");
   });
 });

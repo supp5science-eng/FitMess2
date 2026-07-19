@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+
 import { HomeScreen } from "@/components/home/home-screen";
 import { getTodayData } from "@/lib/home/today";
 import { createClient } from "@/lib/supabase/server";
@@ -49,10 +51,18 @@ export default async function DanasPage() {
     );
   }
 
+  // One-time "ring hand-off" from onboarding: the plan-reveal drops the
+  // `fm_intro` cookie just before its hard navigation here (see
+  // `plan-reveal.tsx`). Presence is enough -- HomeScreen consumes/clears it
+  // client-side. Everyone else gets the dashboard with no intro.
+  const cookieStore = await cookies();
+  const intro = cookieStore.get("fm_intro") != null;
+
   return (
     <HomeScreen
       initialLogs={result.data.logs}
       target={result.data.target}
+      intro={intro}
     />
   );
 }

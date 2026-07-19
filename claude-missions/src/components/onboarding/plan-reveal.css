@@ -284,6 +284,76 @@
   color: var(--muted-foreground);
 }
 
+/* ---------- Outro (hand-off to /danas) ----------
+ * The reveal settles into a clean, centered ring on the dark ground -- the
+ * exact frame `/danas` re-draws (loading cover + intro ghost), so the hard
+ * navigation in between is invisible. The chrome clears, the ring takes one
+ * calm breath, and a single teal halo ripples outward. */
+.pr-leaving .pr-reveal-label,
+.pr-leaving .pr-macros {
+  animation: pr-outro-out 0.42s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@keyframes pr-outro-out {
+  to {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.pr-leaving .pr-ring {
+  animation: pr-outro-breath 0.9s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes pr-outro-breath {
+  0% {
+    transform: scale(1);
+  }
+  35% {
+    transform: scale(1.035);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.pr-leaving .pr-ring::after {
+  content: "";
+  position: absolute;
+  inset: -8px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  opacity: 0;
+  pointer-events: none;
+  animation: pr-outro-halo 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+@keyframes pr-outro-halo {
+  0% {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+.pr-leaving::before {
+  animation: pr-outro-glow 0.9s ease-out forwards;
+}
+@keyframes pr-outro-glow {
+  0% {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  45% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.25);
+  }
+  100% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
 /* ---------- Error fallback ---------- */
 .pr-error {
   z-index: 1;
@@ -313,7 +383,12 @@
   .pr-orb svg,
   .pr-orb-core,
   .pr-reveal,
-  .pr-macro {
+  .pr-macro,
+  .pr-leaving .pr-reveal-label,
+  .pr-leaving .pr-macros,
+  .pr-leaving .pr-ring,
+  .pr-leaving .pr-ring::after,
+  .pr-leaving::before {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

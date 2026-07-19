@@ -24,6 +24,13 @@ import "./plan-reveal.css";
 const CALC_MS = 2500;
 const COUNT_MS = 1300;
 const HOLD_MS = 1400;
+const OUTRO_MS = 900;
+
+// Shared with `/danas` (loading.tsx + HomeScreen): a short-lived cookie that
+// carries the just-computed daily target across the hard navigation so the
+// dashboard can play the "ring hand-off" intro (matching loading cover, then
+// a ghost ring that glides into the real daily ring) with zero seam.
+const INTRO_COOKIE = "fm_intro";
 
 const CALC_LINES = [
   "Analiziramo tvoje podatke…",
@@ -51,11 +58,13 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
   const calcMs = reduced ? 500 : CALC_MS;
   const countMs = reduced ? 0 : COUNT_MS;
   const holdMs = reduced ? 700 : HOLD_MS;
+  const outroMs = reduced ? 220 : OUTRO_MS;
 
   const [phase, setPhase] = useState<Phase>("calc");
   const [calcLine, setCalcLine] = useState(0);
   const [count, setCount] = useState(reduced ? target : 0);
   const [animationDone, setAnimationDone] = useState(false);
+  const [leaving, setLeaving] = useState(false);
 
   const [saveState, setSaveState] = useState<SaveState>("saving");
   const [saveError, setSaveError] = useState<string | undefined>(undefined);
@@ -125,17 +134,41 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
     };
   }, [phase, countMs, holdMs, target]);
 
-  // Leave only once the animation has finished AND the write has landed. A
-  // hard navigation (not the client router) is deliberate: the App Router
+  // Once the reveal has settled AND the write has landed: play the short
+  // outro (the ring "breathes", a teal halo ripples out, the chrome clears),
+  // then hand off to the dashboard. This is the first half of the
+  // ring-to-dashboard transition that continues on `/danas`.
+  //
+  // A hard navigation (not the client router) is deliberate: the App Router
   // cache could otherwise serve a `/danas` response captured BEFORE
   // `onboarded_at` was set -- i.e. the middleware's bounce back to
   // `/onboarding`. A full request re-runs the middleware against the now
   // fully-onboarded profile, so the user actually lands on the dashboard.
+  // Just before leaving we drop a short-lived cookie carrying the target so
+  // `/danas` can continue the ring hand-off seamlessly (skipped under reduced
+  // motion -- the dashboard then just appears).
+  //
+  // `setLeaving` runs inside a timer (not synchronously in the effect body)
+  // so a single frame of the settled reveal is committed before the outro.
   useEffect(() => {
-    if (animationDone && saveState === "done") {
+    if (!animationDone || saveState !== "done") return;
+    const enter = setTimeout(() => setLeaving(true), 0);
+    const leave = setTimeout(() => {
+      if (!reduced) {
+        try {
+          document.cookie = `${INTRO_COOKIE}=${target}; path=/; max-age=60; samesite=lax`;
+        } catch {
+          // A blocked cookie only means no intro animation -- never a blocked
+          // navigation, so we still hand off below.
+        }
+      }
       window.location.assign("/danas");
-    }
-  }, [animationDone, saveState]);
+    }, outroMs);
+    return () => {
+      clearTimeout(enter);
+      clearTimeout(leave);
+    };
+  }, [animationDone, saveState, outroMs, reduced, target]);
 
   function retry() {
     setSaveError(undefined);
@@ -157,7 +190,10 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
   }
 
   return (
-    <main className="pr" aria-live="polite">
+    <main
+      className={`pr${leaving ? " pr-leaving" : ""}`}
+      aria-live="polite"
+    >
       {phase === "calc" ? (
         <div className="pr-stage">
           <div className="pr-orb">

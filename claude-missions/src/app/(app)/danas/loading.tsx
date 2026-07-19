@@ -1,10 +1,25 @@
+import { cookies } from "next/headers";
+
+import { IntroCover } from "@/components/home/intro-cover";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // F027 (clarified "loading = skeleton" answer): Next's route-segment
 // `loading.tsx` -- shown automatically while `page.tsx`'s Server Component
 // data fetch (`getTodayData`) is in flight, so `/danas` never shows a blank
 // screen on first paint.
-export default function DanasLoading() {
+//
+// Onboarding exception: when the plan-reveal hands off here it drops the
+// `fm_intro` cookie carrying the daily target. During that hand-off we render
+// the ring-cover (identical to the reveal's final frame) instead of the
+// skeleton, so there is no skeleton flash between the ring and the dashboard.
+export default async function DanasLoading() {
+  const cookieStore = await cookies();
+  const introValue = cookieStore.get("fm_intro")?.value;
+  if (introValue) {
+    const kcal = Number.parseInt(introValue, 10);
+    return <IntroCover stage="cover" kcal={Number.isFinite(kcal) ? kcal : 0} />;
+  }
+
   return (
     <main
       data-testid="home-loading"

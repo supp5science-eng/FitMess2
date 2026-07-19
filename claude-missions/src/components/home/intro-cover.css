@@ -1,0 +1,156 @@
+/*
+ * `/danas` ring hand-off (`intro-cover.tsx`).
+ *
+ * A fixed, full-screen cover on the app's dark ground that opens on a
+ * centered ghost ring identical to the onboarding reveal's final frame, then:
+ *   - fades the cover away to reveal the dashboard underneath (`glide`),
+ *   - glides the ghost ring up onto the real daily ring's measured position
+ *     while its arc empties from ~90% to 0 (a fresh day),
+ *   - cross-fades the ghost out over the real ring (`land`).
+ * The matching reveal/dashboard classes (`.home-ring-slot`, `.home-body`)
+ * stagger the rest of the screen in beneath it. All motion collapses under
+ * `prefers-reduced-motion` (the dashboard just appears).
+ */
+
+.di {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--background);
+  overflow: hidden;
+  pointer-events: none; /* purely visual -- never eats a tap */
+  transition: background-color 520ms ease;
+}
+
+/* Soft teal glow behind the ghost, matching the reveal's ambient bloom. */
+.di::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 460px;
+  height: 460px;
+  max-width: 120vw;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 22%, transparent) 0%,
+    transparent 68%
+  );
+  filter: blur(10px);
+  opacity: 0.7;
+  pointer-events: none;
+  transition: opacity 520ms ease;
+}
+
+.di[data-stage="glide"],
+.di[data-stage="land"] {
+  background-color: transparent;
+}
+.di[data-stage="glide"]::before,
+.di[data-stage="land"]::before {
+  opacity: 0;
+}
+
+.di-ghost {
+  position: relative;
+  width: 232px;
+  height: 232px;
+  transform: translateY(0);
+  transition:
+    transform 660ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 300ms ease;
+}
+.di[data-stage="glide"] .di-ghost,
+.di[data-stage="land"] .di-ghost {
+  transform: translateY(var(--di-shift, 0));
+}
+.di[data-stage="land"] .di-ghost {
+  opacity: 0;
+}
+
+.di-ghost svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+.di-track {
+  stroke: color-mix(in srgb, var(--foreground) 10%, transparent);
+}
+.di-arc {
+  stroke: var(--primary);
+  /* Start ~90% filled (offset 55 of ~553), matching the reveal ring. */
+  stroke-dashoffset: 55;
+  transition: stroke-dashoffset 660ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* Empty the arc as it travels -- the dashboard's day-zero ring is empty. */
+.di[data-stage="glide"] .di-arc,
+.di[data-stage="land"] .di-arc {
+  stroke-dashoffset: 553;
+}
+
+.di-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.di-kcal {
+  font-size: 58px;
+  font-weight: 820;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--foreground);
+  font-variant-numeric: tabular-nums;
+}
+.di-unit {
+  margin-top: 6px;
+  font-size: 12.5px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+}
+
+/* ---------- Dashboard reveal (staggered under the cover) ---------- */
+/* While the intro runs the real screen is hidden; the body rises in as the
+ * cover clears, then the real ring fades in exactly where the ghost lands. */
+.home-main[data-intro] .home-ring-slot {
+  opacity: 0;
+}
+.home-main[data-intro="land"] .home-ring-slot {
+  opacity: 1;
+  transition: opacity 320ms ease;
+}
+.home-main[data-intro] .home-body {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.home-main[data-intro="glide"] .home-body,
+.home-main[data-intro="land"] .home-body {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 520ms ease,
+    transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .di,
+  .di::before,
+  .di-ghost,
+  .di-arc {
+    transition: none !important;
+  }
+  .home-main[data-intro] .home-ring-slot,
+  .home-main[data-intro] .home-body {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}

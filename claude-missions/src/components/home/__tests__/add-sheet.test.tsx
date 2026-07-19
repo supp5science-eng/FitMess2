@@ -35,7 +35,7 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
       pretrazi: "/dodaj/pretraga",
       barkod: "/dodaj/skener",
       deklaracija: "/dodaj/uskoro/deklaracija",
-      obrok: "/dodaj/uskoro/obrok",
+      obrok: "/dodaj/obrok",
     };
 
     for (const [key, href] of Object.entries(expectedHrefs)) {
@@ -52,9 +52,9 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    // Barcode scanning (F030) is now built, alongside search (F024) --
-    // only the two still-unbuilt photo methods keep the "Uskoro" badge.
-    for (const key of ["pretrazi", "barkod"]) {
+    // Search (F024), barcode (F030) and now meal photos (F064) are built --
+    // only the still-unbuilt label-photo method keeps the "Uskoro" badge.
+    for (const key of ["pretrazi", "barkod", "obrok"]) {
       expect(
         screen.queryByTestId(`add-sheet-soon-badge-${key}`)
       ).not.toBeInTheDocument();
@@ -65,11 +65,22 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    for (const key of ["deklaracija", "obrok"]) {
+    // Only the nutrition-label photo method is still unbuilt.
+    for (const key of ["deklaracija"]) {
       expect(
         screen.getByTestId(`add-sheet-soon-badge-${key}`)
       ).toHaveTextContent("Uskoro");
     }
+  });
+
+  it("test_AS_051_the_obrok_link_points_to_the_real_meal_photo_flow", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    expect(screen.getByTestId("add-sheet-option-obrok")).toHaveAttribute(
+      "href",
+      "/dodaj/obrok"
+    );
   });
 
   it("test_AS_051_the_pretrazi_link_points_to_the_real_active_search_screen", () => {
@@ -96,7 +107,7 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    for (const key of ["deklaracija", "obrok"]) {
+    for (const key of ["deklaracija"]) {
       const link = screen.getByTestId(`add-sheet-option-${key}`);
       expect(link).toHaveAttribute("href", `/dodaj/uskoro/${key}`);
       // Real anchors, never `aria-disabled`/non-navigable dead ends.

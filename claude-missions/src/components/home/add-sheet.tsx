@@ -72,8 +72,8 @@ const OPTIONS: AddSheetOption[] = [
     key: "obrok",
     label: "Slikaj obrok",
     icon: UtensilsCrossed,
-    href: "/dodaj/uskoro/obrok",
-    available: false,
+    href: "/dodaj/obrok",
+    available: true,
   },
 ];
 

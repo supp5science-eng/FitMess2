@@ -6,11 +6,19 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import {
   resendConfirmationEmail,
+  sendPasswordResetEmail,
   signInEmailPassword,
   signUpEmailPassword,
+  updateUserPassword,
 } from "@/lib/auth/core";
 import { SR_AUTH_MESSAGES } from "@/lib/auth/errors";
-import { emailSchema, signInSchema, signUpSchema } from "@/lib/auth/validation";
+import {
+  emailSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+  signInSchema,
+  signUpSchema,
+} from "@/lib/auth/validation";
 
 /**
  * F011: thin Server Action wrappers around `@/lib/auth/core`.
@@ -118,6 +126,75 @@ export async function signInAction(
   // Full onboarding/route-protection redirect matrix (not-onboarded ->
   // onboarding) lands with F013/F015; a confirmed user proceeds into the app
   // shell here (AS-018's onboarding gate is a later feature's concern).
+  redirect("/danas");
+}
+
+/** Where the recovery email drops the user after their token is verified. */
+function newPasswordPath(): string {
+  return "/nova-lozinka";
+}
+
+/**
+ * "Zaboravljena lozinka" -- request a password-recovery email (AS-008 sibling
+ * flow). Always resolves to the same neutral "check your email" state on
+ * success so a stranger can't use this form to learn whether an email has an
+ * account (the same non-enumeration rule signup follows). Only non-leaking
+ * failures (bad email format, rate limiting) surface a distinct message.
+ */
+export async function forgotPasswordAction(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const parsed = forgotPasswordSchema.safeParse({
+    email: formData.get("email"),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error_sr: parsed.error.issues[0]?.message ?? SR_AUTH_MESSAGES.generic,
+    };
+  }
+
+  const supabase = await createClient();
+  const result = await sendPasswordResetEmail(
+    supabase,
+    parsed.data.email,
+    `${await emailRedirectOrigin()}${newPasswordPath()}`
+  );
+
+  // On success return `ok: true` -- the form renders the neutral
+  // `passwordResetSent` notice, identical whether or not the email existed.
+  return result;
+}
+
+/**
+ * "Nova lozinka" -- set a new password using the recovery session that
+ * `/auth/confirm` established from the emailed link. On success the user is
+ * already signed in (recovery yields a real session), so we send them straight
+ * into the app rather than back to the login form.
+ */
+export async function resetPasswordAction(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const parsed = resetPasswordSchema.safeParse({
+    password: formData.get("password"),
+    confirmPassword: formData.get("confirmPassword"),
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error_sr: parsed.error.issues[0]?.message ?? SR_AUTH_MESSAGES.generic,
+    };
+  }
+
+  const supabase = await createClient();
+  const result = await updateUserPassword(supabase, parsed.data.password);
+
+  if (!result.ok) {
+    return result;
+  }
+
   redirect("/danas");
 }
 

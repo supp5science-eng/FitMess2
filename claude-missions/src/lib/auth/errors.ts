@@ -32,6 +32,15 @@ export const SR_AUTH_MESSAGES = {
    * account existence either. */
   checkYourEmail:
     "Proveri email! Poslali smo ti link za potvrdu naloga na email adresu koju si uneo/la.",
+  /** Shown after a "forgot password" request -- deliberately identical whether
+   * the email has an account or not, so this flow can't be used to probe
+   * account existence either (same non-enumeration rule as signup). */
+  passwordResetSent:
+    "Ako postoji nalog sa tom email adresom, poslali smo link za promenu lozinke. Proveri email.",
+  /** The recovery link expired or was already used, so no valid recovery
+   * session is active on the set-new-password page. */
+  passwordResetLinkInvalid:
+    "Link za promenu lozinke je istekao ili je već iskorišćen. Zatraži novi.",
   weakPassword: "Lozinka je preslaba. Koristi bar 8 karaktera.",
   invalidEmail: "Unesi ispravnu email adresu.",
   rateLimited: "Previše pokušaja u kratkom periodu. Sačekaj malo pa pokušaj ponovo.",

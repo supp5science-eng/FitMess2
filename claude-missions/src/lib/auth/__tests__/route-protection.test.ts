@@ -9,6 +9,7 @@ import {
   isAuthCallbackPath,
   isLoginOrSignupPath,
   isOnboardingPath,
+  isPasswordResetPath,
   isPublicPath,
 } from "@/lib/auth/route-protection";
 
@@ -54,6 +55,22 @@ describe("AS-011: a signed-out visitor requesting any in-app page is redirected 
   it.each(["/", "/prijava", "/registracija", "/registracija/proveri-email", "/auth/callback"])(
     "test_AS_011_signed_out_visitor_requesting_the_public_path_%s_is_allowed_through",
     (pathname) => {
+      const decision = decideRouteAccess({
+        pathname,
+        isAuthenticated: false,
+        isEmailVerified: false,
+        isOnboarded: false,
+      });
+
+      expect(decision).toEqual({ action: "allow" });
+    }
+  );
+
+  it.each(["/zaboravljena-lozinka", "/nova-lozinka"])(
+    "test_signed_out_visitor_requesting_the_password_reset_path_%s_is_allowed_through",
+    (pathname) => {
+      // A user who forgot their password is by definition signed out; the
+      // forgot-password request page must stay reachable for them.
       const decision = decideRouteAccess({
         pathname,
         isAuthenticated: false,
@@ -185,6 +202,21 @@ describe("verified-but-not-onboarded users are routed to /onboarding, with no re
 
     expect(decision).toEqual({ action: "allow" });
   });
+
+  it("test_recovery_session_user_reaching_nova_lozinka_before_onboarding_is_not_bounced_to_onboarding", () => {
+    // The recovery link establishes a real (verified) session, but a user who
+    // signed up long ago may never have finished onboarding. `/nova-lozinka`
+    // must stay reachable so they can actually set the new password instead of
+    // being redirect-looped to /onboarding first.
+    const decision = decideRouteAccess({
+      pathname: "/nova-lozinka",
+      isAuthenticated: true,
+      isEmailVerified: true,
+      isOnboarded: false,
+    });
+
+    expect(decision).toEqual({ action: "allow" });
+  });
 });
 
 describe("fully set-up users (verified + onboarded) are bounced away from the login/signup pages", () => {
@@ -233,14 +265,31 @@ describe("fully set-up users (verified + onboarded) are bounced away from the lo
 });
 
 describe("path classifier helpers", () => {
-  it("test_isPublicPath_covers_marketing_home_login_signup_and_auth_callback", () => {
+  it("test_isPublicPath_covers_marketing_home_login_signup_auth_callback_and_password_reset", () => {
     expect(isPublicPath("/")).toBe(true);
     expect(isPublicPath("/prijava")).toBe(true);
     expect(isPublicPath("/registracija")).toBe(true);
     expect(isPublicPath("/registracija/proveri-email")).toBe(true);
     expect(isPublicPath("/auth/callback")).toBe(true);
+    expect(isPublicPath("/zaboravljena-lozinka")).toBe(true);
+    expect(isPublicPath("/nova-lozinka")).toBe(true);
     expect(isPublicPath("/danas")).toBe(false);
     expect(isPublicPath("/profil")).toBe(false);
+  });
+
+  it("test_isPasswordResetPath_matches_only_the_recovery_pages", () => {
+    expect(isPasswordResetPath("/zaboravljena-lozinka")).toBe(true);
+    expect(isPasswordResetPath("/nova-lozinka")).toBe(true);
+    expect(isPasswordResetPath("/prijava")).toBe(false);
+    expect(isPasswordResetPath("/nova-lozinkaX")).toBe(false);
+  });
+
+  it("test_password_reset_paths_are_not_treated_as_login_or_signup_pages", () => {
+    // They must NOT be login/signup paths -- otherwise a fully set-up signed-in
+    // user (e.g. a recovery session) would be bounced away from /nova-lozinka
+    // before setting the new password.
+    expect(isLoginOrSignupPath("/zaboravljena-lozinka")).toBe(false);
+    expect(isLoginOrSignupPath("/nova-lozinka")).toBe(false);
   });
 
   it("test_isLoginOrSignupPath_excludes_the_auth_callback_route", () => {

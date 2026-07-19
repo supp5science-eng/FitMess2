@@ -167,3 +167,55 @@ export async function resendConfirmationEmail(
 
   return { ok: true };
 }
+
+/**
+ * Sends a password-recovery email (the "zaboravljena lozinka" flow).
+ *
+ * Supabase's `resetPasswordForEmail` is non-enumerating by design: it returns
+ * success and sends nothing for an email that has no account, so the two cases
+ * are indistinguishable to the caller -- exactly the "never reveal whether an
+ * email exists" rule the signup path also follows. The only errors that come
+ * back here are non-leaking ones (rate limiting, malformed email), which
+ * `mapAuthErrorToSerbian` already collapses to safe generic copy.
+ *
+ * The recovery email itself must point at `/auth/confirm?type=recovery` (the
+ * stateless `token_hash` + `verifyOtp` path) so it works cross-device the same
+ * way the signup confirmation link does -- see the "Reset Password" email
+ * template configured on the live project. `redirectTo` is where the user
+ * lands *after* the token is verified: the set-new-password page.
+ */
+export async function sendPasswordResetEmail(
+  supabase: SupabaseClient,
+  email: string,
+  redirectTo: string
+): Promise<AuthActionResult> {
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo,
+  });
+
+  if (error) {
+    return { ok: false, error_sr: mapAuthErrorToSerbian(error) };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * Sets a new password for the currently-authenticated user (the final step of
+ * the recovery flow). The caller must already hold the recovery session that
+ * `/auth/confirm`'s `verifyOtp({ type: "recovery" })` established -- without a
+ * session Supabase returns an auth error, which surfaces here as a prompt to
+ * request a fresh recovery link rather than a silent no-op.
+ */
+export async function updateUserPassword(
+  supabase: SupabaseClient,
+  password: string
+): Promise<AuthActionResult> {
+  const { error } = await supabase.auth.updateUser({ password });
+
+  if (error) {
+    return { ok: false, error_sr: mapAuthErrorToSerbian(error) };
+  }
+
+  return { ok: true };
+}

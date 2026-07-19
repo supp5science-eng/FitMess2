@@ -54,8 +54,20 @@ const LOGIN_SIGNUP_PREFIXES = ["/prijava", "/registracija"];
 const AUTH_CALLBACK_PREFIX = "/auth";
 const MARKETING_HOME_PATH = "/";
 
+/** The self-service password-recovery pages: the "forgot password" request
+ * form and the "set a new password" form the recovery email lands on. Both are
+ * public so a signed-out user who forgot their password can reach the request
+ * form, and so the recovery-session user the email drops onto `/nova-lozinka`
+ * is never bounced to `/onboarding` before they can set a new password. */
+const PASSWORD_RESET_PREFIXES = ["/zaboravljena-lozinka", "/nova-lozinka"];
+
 function matchesPrefix(pathname: string, prefix: string): boolean {
   return pathname === prefix || pathname.startsWith(`${prefix}/`);
+}
+
+/** `/zaboravljena-lozinka` and `/nova-lozinka` -- the password-recovery flow. */
+export function isPasswordResetPath(pathname: string): boolean {
+  return PASSWORD_RESET_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
 }
 
 /** `/prijava` and `/registracija*` (including the F011 verification-notice
@@ -84,7 +96,8 @@ export function isPublicPath(pathname: string): boolean {
   return (
     pathname === MARKETING_HOME_PATH ||
     isLoginOrSignupPath(pathname) ||
-    isAuthCallbackPath(pathname)
+    isAuthCallbackPath(pathname) ||
+    isPasswordResetPath(pathname)
   );
 }
 

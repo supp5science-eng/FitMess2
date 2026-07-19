@@ -24,6 +24,9 @@ export default async function PrijavaPage({
           </p>
         ) : null}
         <SignInForm />
+        <p className="auth-alt" style={{ marginTop: 0 }}>
+          <Link href="/zaboravljena-lozinka">Zaboravio/la si lozinku?</Link>
+        </p>
         <GoogleSignInButton />
       </div>
       <p className="auth-alt">

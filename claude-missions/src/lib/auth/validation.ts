@@ -37,5 +37,27 @@ export const signInSchema = z.object({
   password: z.string().min(1, "Unesi lozinku."),
 });
 
+/** The "forgot password" request form -- only an email is collected. */
+export const forgotPasswordSchema = z.object({
+  email: emailSchema,
+});
+
+/**
+ * The "set a new password" form the recovery email lands on. Reuses the same
+ * 8-char floor as signup (`passwordSchema`) and requires a matching
+ * confirmation so a mistyped new password can't silently lock the user out.
+ */
+export const resetPasswordSchema = z
+  .object({
+    password: passwordSchema,
+    confirmPassword: z.string().min(1, "Ponovi novu lozinku."),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Lozinke se ne poklapaju.",
+    path: ["confirmPassword"],
+  });
+
 export type SignUpInput = z.infer<typeof signUpSchema>;
 export type SignInInput = z.infer<typeof signInSchema>;
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;

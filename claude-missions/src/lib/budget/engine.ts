@@ -92,6 +92,15 @@ export const TONE_DEFICIT_PCT = 0.1;
 /** Default protein target, within the clarified 1.8-2.2 g/kg range (AS-025). */
 export const PROTEIN_G_PER_KG = 2.0;
 
+/**
+ * Last-resort protein floor. For a heavy person on a max deficit, protein at
+ * the 2.0 g/kg default plus fat at its 0.6 g/kg floor can exceed the whole
+ * kcal budget (carbs would go negative). Rather than return an impossible
+ * split, `macroTargets` walks protein down toward this floor (still a solid,
+ * muscle-sparing 1.6 g/kg) to make the numbers fit. See engine.test.ts.
+ */
+export const PROTEIN_G_PER_KG_MIN = 1.6;
+
 /** Default fat target -- comfortably above the 0.6 g/kg safety floor. */
 export const FAT_G_PER_KG_DEFAULT = 0.8;
 
@@ -193,7 +202,11 @@ export function dailyTarget(
 
   const raw = roundKcal(safeTdee * (1 - deficitPct));
 
-  return Math.max(raw, floor);
+  // The floor lifts the target up, but it must never lift it *above* TDEE --
+  // otherwise a small/older/sedentary person whose TDEE is below the floor
+  // would be handed a surplus while trying to lose. Cap at TDEE (maintenance
+  // via food); the remaining deficit has to come from activity.
+  return Math.min(Math.max(raw, floor), safeTdee);
 }
 
 // ---------------------------------------------------------------------
@@ -223,41 +236,52 @@ export interface MacroTargets {
  *  - carbs: whatever kcal remain (protein & carbs at 4 kcal/g, fat at
  *    9 kcal/g), clamped to never go negative
  *
- * When even protein + fat-at-floor exceed dailyKcal, fat still holds at
- * its floor (a physiological minimum takes priority over exactly hitting
- * the kcal number), carbs go to 0, and `clamped` is true so the caller
- * (F016 UI) can note that the plan is unusually tight.
+ * When the budget is too tight to fit even protein + fat-at-floor, we walk
+ * the two down in priority order -- fat first (toward its 0.6 g/kg floor),
+ * then, only if still over, protein (toward its 1.6 g/kg floor) -- so the
+ * split always fits the kcal budget instead of pushing carbs negative. In
+ * every tight case `clamped` is true so the caller (F016 UI) can note that
+ * the plan is unusually tight. Only in the truly extreme edge (protein@1.6 +
+ * fat@0.6 still over budget) does carbs land at 0 with a small overshoot.
  */
 export function macroTargets(weightKg: number, dailyKcal: number): MacroTargets {
   const w = clampNumber(weightKg, MIN_WEIGHT_KG, MAX_WEIGHT_KG);
   const kcal = Math.max(0, dailyKcal);
 
   const defaultProteinG = round1(w * PROTEIN_G_PER_KG);
+  const proteinFloorG = round1(w * PROTEIN_G_PER_KG_MIN);
   const defaultFatG = round1(w * FAT_G_PER_KG_DEFAULT);
   const fatFloorG = round1(w * FAT_G_PER_KG_MIN);
 
-  const proteinKcal = defaultProteinG * 4;
-  const defaultFatKcal = defaultFatG * 9;
-
+  let proteinG = defaultProteinG;
   let fatG = defaultFatG;
   let clamped = false;
 
-  if (proteinKcal + defaultFatKcal > kcal) {
+  // Step 1: fat gives way first -- pull it down toward its floor to fit.
+  if (proteinG * 4 + fatG * 9 > kcal) {
     clamped = true;
-    const fatKcalBudget = Math.max(0, kcal - proteinKcal);
-    const fatGFromBudget = round1(fatKcalBudget / 9);
-    // Never go below the physiological floor, even if that means the
-    // protein+fat total still exceeds dailyKcal (carbs absorb the rest,
-    // clamped at 0 below).
-    fatG = Math.max(fatFloorG, Math.min(defaultFatG, fatGFromBudget));
+    const fatKcalBudget = Math.max(0, kcal - proteinG * 4);
+    fatG = Math.max(fatFloorG, Math.min(defaultFatG, round1(fatKcalBudget / 9)));
   }
 
-  const fatKcal = fatG * 9;
-  const carbsKcal = Math.max(0, kcal - proteinKcal - fatKcal);
+  // Step 2: only once fat is already pinned at its floor AND the split still
+  // overflows does protein give way -- down toward its 1.6 g/kg muscle-sparing
+  // floor. Gating on `fatG === fatFloorG` (not a bare kcal compare) avoids a
+  // sub-kcal rounding overshoot spuriously trimming protein.
+  if (fatG === fatFloorG && proteinG * 4 + fatG * 9 > kcal) {
+    clamped = true;
+    const proteinKcalBudget = Math.max(0, kcal - fatG * 9);
+    proteinG = Math.max(
+      proteinFloorG,
+      Math.min(defaultProteinG, round1(proteinKcalBudget / 4))
+    );
+  }
+
+  const carbsKcal = Math.max(0, kcal - proteinG * 4 - fatG * 9);
   const carbsG = round1(carbsKcal / 4);
 
   return {
-    proteinG: defaultProteinG,
+    proteinG,
     fatG,
     carbsG,
     clamped,
@@ -282,7 +306,15 @@ export function weeklyBudget(dailyKcal: number): number {
 export type GoalAdjustReasonCode =
   | "deficit_capped_25_percent"
   | "floor_kcal_applied"
-  | "surplus_capped_20_percent";
+  | "surplus_capped_20_percent"
+  /**
+   * The sex-specific kcal floor is at or above this person's TDEE, so there
+   * is NO safe way to create a deficit through food alone (a very small /
+   * older / sedentary person). We cap the daily target at TDEE (maintenance
+   * via food) rather than handing back a "deficit" that is actually a surplus
+   * -- the UI should then steer the deficit toward activity instead.
+   */
+  | "floor_exceeds_tdee";
 
 export interface GoalAdjustmentInput {
   sex: Sex;
@@ -388,6 +420,20 @@ export function planGoalAdjustment(
     appliedDeficitPct = tdeeKcal > 0 ? 1 - dailyKcal / tdeeKcal : 0;
   }
 
+  // The floor must never push the target above TDEE (would turn a weight-loss
+  // plan into a surplus for a very small/sedentary person). Cap at TDEE and
+  // flag it so the UI can steer the deficit toward activity instead of food.
+  if (dailyKcal > tdeeKcal) {
+    dailyKcal = tdeeKcal;
+    adjusted = true;
+    // The floor we just applied is itself above TDEE, so "floor applied" would
+    // be misleading -- replace it with the more accurate floor_exceeds_tdee.
+    const i = reasonCodes.indexOf("floor_kcal_applied");
+    if (i !== -1) reasonCodes.splice(i, 1);
+    reasonCodes.push("floor_exceeds_tdee");
+    appliedDeficitPct = 0;
+  }
+
   return {
     dailyKcal,
     weeklyKcal: dailyKcal * 7,
@@ -405,6 +451,14 @@ export function planGoalAdjustment(
  * at or below current implies no surplus (just maintenance). The surplus is
  * recorded as a negative deficit on the shared result shape so callers/UI can
  * treat "deficit" as a single signed lever (negative = eating above TDEE).
+ *
+ * NOTE on KCAL_PER_KG_BODY_MASS (7700): that is the energy density of FAT,
+ * whereas muscle is only ~1800-2700 kcal/kg -- so using 7700 for a muscle-gain
+ * goal is a deliberate, clinically-sanctioned simplification, not an oversight.
+ * In practice it lands on the right number: a healthy lean-bulk target weight
+ * over a sane timeframe implies ~0.25 kg/week, i.e. 0.25*7700/7 ~= +275 kcal/day
+ * -- a textbook lean-bulk surplus. The MAX_SURPLUS_PCT (20%) cap plus the UI's
+ * >0.5%/week pace warning keep faster (fat-heavy) requests in check.
  */
 export function planWeightGain(
   input: GoalAdjustmentInput
@@ -495,8 +549,19 @@ export function planForGoal(input: GoalPlanInput): GoalAdjustmentResult {
   if (input.goal === "tone") {
     const floor = KCAL_FLOOR[input.sex] ?? KCAL_FLOOR.male;
     const raw = roundKcal(tdeeKcal * (1 - TONE_DEFICIT_PCT));
-    const dailyKcal = Math.max(raw, floor);
-    const floorApplied = dailyKcal !== raw;
+    const floored = Math.max(raw, floor);
+    // Same guard as the lose path: the floor must never lift the target above
+    // TDEE (surplus while trying to recomp). Cap at TDEE and flag it.
+    const dailyKcal = Math.min(floored, tdeeKcal);
+    const reasonCodes: GoalAdjustReasonCode[] = [];
+    // At most one of these: if the floor itself exceeds TDEE, that's the
+    // accurate story (capped at TDEE); otherwise, if the floor merely lifted
+    // the raw deficit, flag that.
+    if (floored > tdeeKcal) {
+      reasonCodes.push("floor_exceeds_tdee");
+    } else if (floored !== raw) {
+      reasonCodes.push("floor_kcal_applied");
+    }
     const appliedDeficitPct = tdeeKcal > 0 ? 1 - dailyKcal / tdeeKcal : 0;
 
     return {
@@ -504,8 +569,8 @@ export function planForGoal(input: GoalPlanInput): GoalAdjustmentResult {
       weeklyKcal: dailyKcal * 7,
       impliedDeficitPct: TONE_DEFICIT_PCT,
       appliedDeficitPct,
-      adjusted: floorApplied,
-      reasonCodes: floorApplied ? ["floor_kcal_applied"] : [],
+      adjusted: reasonCodes.length > 0,
+      reasonCodes,
     };
   }
 

@@ -13,9 +13,11 @@ import {
   MIN_HEIGHT_CM,
   MIN_WEIGHT_KG,
   PROTEIN_G_PER_KG,
+  PROTEIN_G_PER_KG_MIN,
   bmr,
   dailyTarget,
   macroTargets,
+  planForGoal,
   planGoalAdjustment,
   tdee,
   weeklyBudget,
@@ -150,12 +152,15 @@ describe("F014: tdee (AS-022)", () => {
 
 describe("F014: dailyTarget floors (AS-023)", () => {
   it("test_AS_023_never_below_1400_for_men_even_with_a_large_requested_deficit", () => {
-    // TDEE=1000, 20% default deficit -> raw 800, well under the 1400 floor.
-    expect(dailyTarget(1000, "male")).toBe(1400);
+    // TDEE=1800 (> the 1400 floor), 25% deficit -> raw 1350, under the floor,
+    // so the floor wins -> 1400. (TDEE stays above the floor, so the separate
+    // "floor never exceeds TDEE" cap doesn't apply here.)
+    expect(dailyTarget(1800, "male", 0.25)).toBe(1400);
   });
 
   it("test_AS_023_never_below_1200_for_women_even_with_a_large_requested_deficit", () => {
-    expect(dailyTarget(1000, "female")).toBe(1200);
+    // TDEE=1500 (> the 1200 floor), 25% deficit -> raw 1125, under the floor.
+    expect(dailyTarget(1500, "female", 0.25)).toBe(1200);
   });
 
   it("test_AS_023_value_exactly_at_the_male_floor_is_not_pushed_higher", () => {
@@ -256,18 +261,19 @@ describe("F014: macroTargets (AS-025)", () => {
     expect(result.carbsG).toBe(0);
   });
 
-  it("test_AS_025_when_protein_plus_floor_fat_still_exceeds_dailyKcal_fat_holds_its_floor_and_carbs_go_to_zero", () => {
-    // weight=120kg: default protein 240g (960 kcal) alone leaves only
-    // 440 kcal (48.9g) of budget for fat, which is below the 72g floor
-    // (0.6*120) -- fat must still hold at the floor, exceeding the total
-    // budget by design, with carbs clamped to 0 and `clamped` flagged.
+  it("test_AS_025_when_protein_plus_floor_fat_still_exceeds_dailyKcal_fat_holds_floor_then_protein_walks_to_its_floor", () => {
+    // weight=120kg, 1400 kcal: default protein 240g (960) + fat floor 72g
+    // (648) = 1608 > 1400. Fat holds at its 72g floor; protein then gives way
+    // toward its 1.6 g/kg floor (192g) so the split fits far closer to budget.
     const result = macroTargets(120, 1400);
     expect(result.clamped).toBe(true);
-    expect(result.proteinG).toBe(240);
-    expect(result.fatG).toBe(72); // the floor, not the (lower) budget-derived value
+    expect(result.fatG).toBe(72); // fat pinned at its floor
+    expect(result.proteinG).toBe(192); // protein walked down to its 1.6 g/kg floor
+    expect(result.proteinG).toBeGreaterThanOrEqual(round1(120 * 1.6));
     expect(result.carbsG).toBe(0);
+    // Only a tiny overshoot remains (both macros at their physiological floors).
     const totalKcal = result.proteinG * 4 + result.fatG * 9;
-    expect(totalKcal).toBeGreaterThan(1400); // budget deliberately exceeded to respect the fat floor
+    expect(totalKcal).toBeLessThan(1608); // much tighter than the old fat-only clamp
   });
 
   it("test_AS_025_zero_or_negative_dailyKcal_does_not_throw_and_carbs_clamp_to_zero", () => {
@@ -464,5 +470,68 @@ describe("F014: purity / no side effects", () => {
     const snapshot = { ...input };
     planGoalAdjustment(input);
     expect(input).toEqual(snapshot);
+  });
+});
+
+// Fixes from the clinical review (2026-07-19): the two spots where the engine
+// could otherwise return a nonsensical plan for an edge-case user.
+describe("F014: clinical-review fixes", () => {
+  // #1 -- the sex-specific kcal floor must never lift a deficit target ABOVE
+  // TDEE. A small/older/sedentary woman can have TDEE < the 1200 floor; the
+  // old code handed her `floor` (a surplus while trying to lose).
+  it("test_floor_never_exceeds_tdee_in_dailyTarget", () => {
+    // TDEE 1100 < female floor 1200 -> target caps at TDEE (1100), not 1200.
+    expect(dailyTarget(1100, "female", 0.2)).toBe(1100);
+    expect(dailyTarget(1100, "female", 0.2)).toBeLessThanOrEqual(1100);
+  });
+
+  it("test_normal_deficit_is_unchanged_by_the_tdee_cap", () => {
+    // Regression guard: a comfortable TDEE is unaffected by the new cap.
+    expect(dailyTarget(2500, "male", 0.2)).toBe(2000);
+  });
+
+  it("test_floor_exceeds_tdee_flag_on_lose_goal", () => {
+    const result = planGoalAdjustment({
+      sex: "female",
+      currentWeightKg: 60,
+      targetWeightKg: 50,
+      timeframeWeeks: 8,
+      tdeeKcal: 1100,
+    });
+    expect(result.dailyKcal).toBe(1100); // capped at TDEE, not the 1200 floor
+    expect(result.dailyKcal).toBeLessThanOrEqual(1100);
+    expect(result.reasonCodes).toContain("floor_exceeds_tdee");
+  });
+
+  it("test_floor_exceeds_tdee_flag_on_tone_goal", () => {
+    const result = planForGoal({
+      goal: "tone",
+      sex: "female",
+      currentWeightKg: 50,
+      targetWeightKg: null,
+      timeframeWeeks: null,
+      tdeeKcal: 1100,
+    });
+    expect(result.dailyKcal).toBe(1100); // never a surplus for a recomp goal
+    expect(result.reasonCodes).toContain("floor_exceeds_tdee");
+  });
+
+  // #2 -- protein must give way (down to its 1.6 g/kg floor) once fat is
+  // already at its floor, instead of pushing the split over budget / carbs
+  // negative for a heavy user on a max deficit.
+  it("test_protein_walks_down_to_its_floor_when_budget_is_extremely_tight", () => {
+    const result = macroTargets(150, 1200);
+    expect(result.clamped).toBe(true);
+    expect(result.fatG).toBe(round1(150 * FAT_G_PER_KG_MIN)); // fat at its floor
+    expect(result.proteinG).toBe(round1(150 * PROTEIN_G_PER_KG_MIN)); // protein at its floor
+    expect(result.proteinG).toBeGreaterThanOrEqual(round1(150 * PROTEIN_G_PER_KG_MIN));
+    expect(result.carbsG).toBe(0);
+  });
+
+  it("test_protein_stays_at_default_under_a_comfortable_budget", () => {
+    // Regression guard: normal budgets keep protein at the 2.0 g/kg default.
+    const result = macroTargets(80, 2400);
+    expect(result.proteinG).toBe(round1(80 * PROTEIN_G_PER_KG));
+    expect(result.clamped).toBe(false);
   });
 });

@@ -242,6 +242,8 @@ export function explainGoalAdjustment(
           return `Dnevni kalorijski cilj je prilagođen na najniži bezbedan nivo od ${floorKcal} kcal, da ne bi unosio/la premalo.`;
         case "surplus_capped_20_percent":
           return `Tvoj cilj bi zahtevao veći dnevni višak nego što je zdravo za čisto dobijanje mase, zato smo ga ograničili na najviše ${maxSurplusPercent}% iznad tvog dnevnog utroška energije (TDEE).`;
+        case "floor_exceeds_tdee":
+          return `Tvoj dnevni utrošak energije je nizak, pa bi bezbedan minimalni unos (${floorKcal} kcal) bio veći od njega. Zato smo dnevni cilj postavili na održavanje — kod tebe je deficit bezbednije praviti kroz aktivnost (šetnja, trening) nego dodatnim rezanjem hrane.`;
         default:
           return "";
       }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { SearchScreen } from "@/components/food/search-screen";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import { getRecentFoods } from "@/lib/food/recents";
 import { createClient } from "@/lib/supabase/server";
 
@@ -22,17 +23,15 @@ import { createClient } from "@/lib/supabase/server";
  */
 export default async function PretragaPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getCurrentUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return (
       <RetryErrorState message="Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo." />
     );
   }
 
-  const { data: recents, error } = await getRecentFoods(supabase, user.id);
+  const { data: recents, error } = await getRecentFoods(supabase, userId);
 
   if (error) {
     console.error("[F024 /dodaj/pretraga] getRecentFoods failed:", error.message);

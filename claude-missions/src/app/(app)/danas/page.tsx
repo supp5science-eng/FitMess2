@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 
 import { HomeScreen } from "@/components/home/home-screen";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import { getTodayData } from "@/lib/home/today";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,11 +22,9 @@ import { createClient } from "@/lib/supabase/server";
 // page reload).
 export default async function DanasPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getCurrentUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return (
       <RetryErrorState
         message="Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo."
@@ -35,7 +34,19 @@ export default async function DanasPage() {
     );
   }
 
-  const result = await getTodayData(supabase, user.id);
+  // Fetch today's data and the greeting name concurrently -- the name read is
+  // independent of today's logs/target, so it must not wait behind it.
+  // Personalization: the greeting on the dashboard is the user's name,
+  // collected in onboarding (`profiles.full_name`). A missing name just
+  // degrades to a neutral header -- never a broken screen.
+  const [result, profileResult] = await Promise.all([
+    getTodayData(supabase, userId),
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
 
   if (result.error) {
     console.error("[F027 /danas] getTodayData failed:", result.error.message);
@@ -51,14 +62,7 @@ export default async function DanasPage() {
     );
   }
 
-  // Personalization: the greeting on the dashboard is the user's name,
-  // collected in onboarding (`profiles.full_name`). A missing name just
-  // degrades to a neutral header -- never a broken screen.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("full_name")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  const profile = profileResult.data;
 
   // One-time "ring hand-off" from onboarding: the plan-reveal drops the
   // `fm_intro` cookie just before its hard navigation here (see

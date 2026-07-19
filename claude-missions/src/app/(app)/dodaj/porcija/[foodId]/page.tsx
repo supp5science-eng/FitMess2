@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { PortionPicker } from "@/components/food/portion-picker";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -24,11 +25,9 @@ export default async function PorcijaPage({
 }) {
   const { foodId } = await params;
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const userId = await getCurrentUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return (
       <RetryErrorState message="Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo." />
     );

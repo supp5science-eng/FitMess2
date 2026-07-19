@@ -3,7 +3,7 @@ import Link from "next/link";
 import { signOutAction } from "../actions";
 import { Button } from "@/components/ui/button";
 import { DeleteAccountDialog } from "@/components/profil/delete-account-dialog";
-import { resolveAdminSession } from "@/lib/auth/admin";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -41,17 +41,27 @@ import { createClient } from "@/lib/supabase/server";
  */
 export default async function ProfilPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  const email = user?.email ?? null;
+  // Identity + email come from the locally-verified access token (getClaims),
+  // no Auth-server round trip. `middleware.ts` already guarantees an
+  // authenticated user reaches here.
+  const currentUser = await getCurrentUser(supabase);
+  const email = currentUser?.email ?? null;
 
   // Admin-only entry point: the /admin area has no other link in the app, so an
-  // admin would otherwise have to type the URL. Reuses the same server-side
-  // gate that protects the area itself (is_admin=true), so a non-admin never
-  // even sees the link. AS-059.
-  const adminSession = await resolveAdminSession();
-  const isAdmin = adminSession.status === "ok";
+  // admin would otherwise have to type the URL. This is only a UI affordance --
+  // the actual enforcement is `src/app/admin/layout.tsx`'s `requireAdmin()`
+  // (is_admin=true) -- so a lightweight own-row read of `is_admin` (governed by
+  // `profiles_select_own` RLS, same as the shared admin gate) is enough to
+  // decide whether to show the link, and avoids that gate's extra getUser call.
+  let isAdmin = false;
+  if (currentUser) {
+    const { data: adminRow } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+    isAdmin = adminRow?.is_admin === true;
+  }
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-10">

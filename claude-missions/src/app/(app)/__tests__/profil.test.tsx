@@ -23,8 +23,10 @@ vi.mock("next/navigation", () => ({
 }));
 
 // Settings redesign: `/profil` is now an async Server Component that reads the
-// signed-in user's email from the session-scoped Supabase client. Mock it the
-// same way `/profil/pravila`'s page test does.
+// signed-in user's email from the session-scoped Supabase client. Perf pass:
+// identity + email now come from the locally-verified access token
+// (`auth.getClaims()`), and the admin-link check is a lightweight own-row
+// `profiles.is_admin` read -- both mocked here.
 const createClientMock = vi.fn();
 vi.mock("@/lib/supabase/server", () => ({
   createClient: () => createClientMock(),
@@ -33,8 +35,22 @@ vi.mock("@/lib/supabase/server", () => ({
 function mockCreateClient(user: { email?: string } | null = { email: "test@fitmess.app" }) {
   return {
     auth: {
-      getUser: vi.fn().mockResolvedValue({ data: { user } }),
+      getClaims: vi.fn().mockResolvedValue({
+        data: user
+          ? { claims: { sub: "user-123", email: user.email ?? null } }
+          : null,
+        error: null,
+      }),
     },
+    from: vi.fn().mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          maybeSingle: vi
+            .fn()
+            .mockResolvedValue({ data: { is_admin: false }, error: null }),
+        }),
+      }),
+    }),
   };
 }
 

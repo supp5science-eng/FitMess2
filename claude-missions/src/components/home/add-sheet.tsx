@@ -94,7 +94,7 @@ export function AddSheet() {
             aria-label="Dodaj unos"
             aria-haspopup="dialog"
             aria-expanded={isOpen}
-            className="pointer-events-auto flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
+            className="liquid-glass pointer-events-auto flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
           >
             <Plus className="size-7" aria-hidden="true" />
           </button>

@@ -43,10 +43,14 @@ type IntroStage = "idle" | "cover" | "glide" | "land" | "done";
 export function HomeScreen({
   initialLogs,
   target,
+  name = null,
   intro = false,
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
+  // The signed-in user's name (`profiles.full_name`), used to personalize the
+  // dashboard greeting. Null just falls back to a neutral header.
+  name?: string | null;
   // Set by `/danas` (from the one-time `fm_intro` cookie) when the user has
   // just finished onboarding, so we play the ring hand-off exactly once.
   intro?: boolean;
@@ -124,7 +128,11 @@ export function HomeScreen({
       data-intro={dataIntro}
       className="home-main flex flex-1 flex-col gap-8 px-6 py-8"
     >
-      <h1 className="sr-only">Danas</h1>
+      <header className="home-body">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          {name ? `Zdravo, ${name}` : "Danas"}
+        </h1>
+      </header>
 
       {target ? (
         <div className="flex flex-col gap-8">

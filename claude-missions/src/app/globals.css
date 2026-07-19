@@ -156,6 +156,57 @@
   }
 }
 
+/* ---------------------------------------------------------------------
+   Liquid glass — "boja + glass sjaj".
+   Layers an Apple-style glossy glass sheen ON TOP of a button's existing
+   fill (teal, white, destructive…) without touching its background colour,
+   so text/icon contrast stays exactly as before. The gloss lives on a
+   ::before with z-index:-1, so it paints above the fill but BELOW the label
+   (crisp text), and `border-radius: inherit` makes it hug any shape (pill,
+   rounded-lg, circle). No overflow:hidden -> focus rings are never clipped.
+   The pseudo carries its own box-shadow (top lit edge + border sheen +
+   bottom inner shade) so it never clobbers a host's own box-shadow (the
+   auth teal glow / landing drop stay intact). Apply to any filled button.
+   --------------------------------------------------------------------- */
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+}
+.liquid-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.42) 0%,
+    rgba(255, 255, 255, 0.14) 26%,
+    rgba(255, 255, 255, 0.02) 50%,
+    rgba(255, 255, 255, 0) 62%
+  );
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+    inset 0 -14px 22px -18px rgba(0, 0, 0, 0.6);
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+/* A touch more gloss on hover, and a subtle press-down on active — layered
+   on top of whatever motion the host button already defines. */
+.liquid-glass:hover::before {
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.52) 0%,
+    rgba(255, 255, 255, 0.18) 26%,
+    rgba(255, 255, 255, 0.03) 50%,
+    rgba(255, 255, 255, 0) 62%
+  );
+}
+.liquid-glass:active::before {
+  opacity: 0.85;
+}
+
 /* iOS Safari only: bump form controls to 16px so focusing an input never
    triggers the page-zoom that fires when the field text is < 16px. */
 @supports (-webkit-touch-callout: none) {

@@ -110,7 +110,7 @@ export function ScanScreen() {
           type="button"
           data-testid="scanner-lookup-retry-button"
           onClick={() => setState({ status: "scanning" })}
-          className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
+          className="liquid-glass inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
         >
           Pokušaj ponovo
         </button>

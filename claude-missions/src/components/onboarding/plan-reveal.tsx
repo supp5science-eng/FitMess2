@@ -227,6 +227,9 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
             />
           </div>
           <div>
+            {data.name ? (
+              <div className="pr-calc-greeting">Zdravo, {data.name}!</div>
+            ) : null}
             <div className="pr-calc-title">Računamo tvoj plan</div>
             <div className="pr-calc-sub" key={calcLine}>
               {CALC_LINES[calcLine]}

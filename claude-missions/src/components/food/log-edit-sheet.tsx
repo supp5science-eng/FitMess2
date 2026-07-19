@@ -222,7 +222,7 @@ export function LogEditSheet({
                       }
                       className={`rounded-full border px-4 py-2 text-sm font-medium transition-colors ${
                         mode === "unit" && selectedUnitIndex === index
-                          ? "border-primary bg-primary text-primary-foreground"
+                          ? "liquid-glass border-primary bg-primary text-primary-foreground"
                           : "border-border bg-background text-foreground"
                       }`}
                     >

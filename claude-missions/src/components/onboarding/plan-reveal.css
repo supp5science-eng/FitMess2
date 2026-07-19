@@ -112,6 +112,14 @@
   }
 }
 
+.pr-calc-greeting {
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--primary);
+  animation: pr-fade 0.5s ease;
+}
 .pr-calc-title {
   font-size: 22px;
   font-weight: 750;

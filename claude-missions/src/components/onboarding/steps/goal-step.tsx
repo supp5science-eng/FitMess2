@@ -44,6 +44,63 @@ function weekWord(weeks: number): string {
   return "nedelja";
 }
 
+interface PaceAdvice {
+  severity: "warn" | "caution";
+  text: string;
+}
+
+/**
+ * Doctor-tone pace check based on weekly weight change as a % of current
+ * bodyweight -- deliberately TDEE-free so it works with only the data this
+ * step has. Clinical rules of thumb: safe fat loss is up to ~1% of bodyweight
+ * per week; lean muscle gain is far slower (~0.25-0.5 kg/week, anything faster
+ * is mostly fat). When the requested pace exceeds those, the budget engine
+ * clamps the plan anyway (25% deficit / 20% surplus caps) -- this surfaces the
+ * *why* to the user instead of silently overriding them.
+ */
+function paceAdvice(
+  isGain: boolean,
+  deltaKg: number,
+  weeks: number,
+  currentWeightKg: number
+): PaceAdvice | null {
+  const round1 = (v: number) => Math.round(v * 10) / 10;
+  const weeklyKg = deltaKg / weeks;
+  const weeklyPct = (weeklyKg / currentWeightKg) * 100;
+
+  if (isGain) {
+    if (weeklyPct > 0.75) {
+      return {
+        severity: "warn",
+        text: `Tražiš oko ${round1(weeklyKg)} kg nedeljno — pri tom tempu se dobija uglavnom salo, ne mišić. Čista mišićna masa raste sporo, realno ~0.25–0.5 kg nedeljno. Produži rok za kvalitetniju masu.`,
+      };
+    }
+    if (weeklyPct > 0.5) {
+      return {
+        severity: "caution",
+        text: "Nešto brže nego što je optimalno za čistu masu. Sporiji suficit znači manje sala uz isti mišić.",
+      };
+    }
+    return null;
+  }
+
+  const safeWeeklyKg = currentWeightKg * 0.01;
+  const minWeeks = Math.max(1, Math.ceil(deltaKg / safeWeeklyKg));
+  if (weeklyPct > 1.5) {
+    return {
+      severity: "warn",
+      text: `Tražiš oko ${round1(weeklyKg)} kg nedeljno — to je vrlo agresivno. Bezbedan tempo je do ~1% telesne težine (oko ${round1(safeWeeklyKg)} kg) nedeljno. Ovako brzo obično se gubi i mišić, pada energija i lakše se sve vrati nazad. Za ovaj cilj realno treba bar ~${minWeeks} nedelja.`,
+    };
+  }
+  if (weeklyPct > 1.0) {
+    return {
+      severity: "caution",
+      text: "Malo brže nego što se preporučuje (do ~1% težine nedeljno). Izvodljivo je, ali blaži tempo se lakše održava i bolje čuva mišiće.",
+    };
+  }
+  return null;
+}
+
 /** F015 step 6 (cilj) -- AS-019: collects target weight (kg) + timeframe
  * (weeks) together, per the clarified spec's single "cilj" step. Shows a
  * big-friendly-number live preview (e.g. "-6 kg za 12 nedelja") once both
@@ -94,6 +151,11 @@ export function GoalStep({
     ? Math.round(Math.abs(currentWeightKg! - targetWeightKg!) * 10) / 10
     : null;
 
+  const advice =
+    canPreview && deltaKg !== null
+      ? paceAdvice(isGain, deltaKg, timeframeWeeks!, currentWeightKg!)
+      : null;
+
   return (
     <div className="flex flex-col gap-4">
       <div>
@@ -133,6 +195,19 @@ export function GoalStep({
         >
           {isGain ? "+" : "-"}
           {deltaKg} kg za {timeframeWeeks} {weekWord(timeframeWeeks!)}
+        </p>
+      ) : null}
+      {advice ? (
+        <p
+          data-testid="pace-advice"
+          role={advice.severity === "warn" ? "alert" : undefined}
+          className={
+            advice.severity === "warn"
+              ? "rounded-lg border border-destructive/50 p-3 text-sm leading-relaxed text-destructive"
+              : "text-sm leading-relaxed text-muted-foreground"
+          }
+        >
+          {advice.text}
         </p>
       ) : null}
     </div>

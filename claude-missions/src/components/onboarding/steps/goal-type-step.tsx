@@ -57,6 +57,16 @@ export function GoalTypeStep({
         onChange={onChange}
       />
       <FieldError message={error} />
+      <div className="rounded-lg border border-border bg-card p-3">
+        <p className="text-sm font-medium text-foreground">
+          Zašto tražimo ove podatke?
+        </p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+          Koristimo ih isključivo da tvoj plan izračunamo što tačnije, prema
+          tvom cilju — po proverenim naučnim formulama (Mifflin-St Jeor), a ne
+          po nasumičnim brojkama sa interneta.
+        </p>
+      </div>
     </div>
   );
 }

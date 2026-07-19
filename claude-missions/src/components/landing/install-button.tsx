@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { InstallGuide } from "@/components/landing/install-guide";
+
 /**
  * The landing page's "Instaliraj FitMess" call to action — the single most
  * important control on the marketing page, since driving PWA installs is the
@@ -31,6 +33,20 @@ interface BeforeInstallPromptEvent extends Event {
 const APP_HOME = "/danas";
 
 type Mode = "install" | "ios" | "open" | "manual";
+/** Which animated walkthrough the guide should show. `other` (desktop /
+ * unknown) falls back to the Android/Chrome-style "open the menu" flow. */
+type GuidePlatform = "ios" | "android";
+
+function detectPlatform(): "ios" | "android" | "other" {
+  const ua = window.navigator.userAgent;
+  const isIos = /iphone|ipad|ipod/i.test(ua);
+  const isIpadOs =
+    window.navigator.platform === "MacIntel" &&
+    window.navigator.maxTouchPoints > 1;
+  if (isIos || isIpadOs) return "ios";
+  if (/android/i.test(ua)) return "android";
+  return "other";
+}
 
 /** Resolve what the current browser can do, post-hydration (window-only). */
 function detectInitialMode(): Mode {
@@ -64,6 +80,7 @@ export function InstallButton({
   // Start in a deterministic state so server and first client render match;
   // real capabilities are resolved in the effect below, after mount.
   const [mode, setMode] = useState<Mode>("install");
+  const [platform, setPlatform] = useState<"ios" | "android" | "other">("other");
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
 
@@ -74,6 +91,7 @@ export function InstallButton({
     // and the real capability is only knowable from window APIs on the client.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMode(initialMode);
+    setPlatform(detectPlatform());
 
     if (initialMode === "open") {
       // Already installed & running standalone — install events won't fire.
@@ -139,36 +157,21 @@ export function InstallButton({
       </button>
 
       {helpOpen ? (
-        <InstallHelp mode={mode} onClose={() => setHelpOpen(false)} />
+        <InstallGuide
+          platform={guidePlatform(mode, platform)}
+          onClose={() => setHelpOpen(false)}
+        />
       ) : null}
     </>
   );
 }
 
-function InstallHelp({ mode, onClose }: { mode: Mode; onClose: () => void }) {
-  const isIos = mode === "ios";
-  return (
-    <div className="lp-modal" role="dialog" aria-modal="true" aria-label="Kako da instaliraš FitMess" onClick={onClose}>
-      <div className="lp-modal-card" onClick={(e) => e.stopPropagation()}>
-        <button type="button" className="lp-modal-x" onClick={onClose} aria-label="Zatvori">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" /></svg>
-        </button>
-        <h3>Dodaj FitMess na početni ekran</h3>
-        {isIos ? (
-          <ol className="lp-modal-steps">
-            <li><span>1</span><p>Tapni na <b>Podeli</b> <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="lp-inline-ic"><path d="M12 3v13" /><path d="m8 7 4-4 4 4" /><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7" /></svg> u dnu Safari-ja.</p></li>
-            <li><span>2</span><p>Skroluj i izaberi <b>Dodaj na početni ekran</b>.</p></li>
-            <li><span>3</span><p>Potvrdi na <b>Dodaj</b> — i FitMess je na tvom ekranu.</p></li>
-          </ol>
-        ) : (
-          <ol className="lp-modal-steps">
-            <li><span>1</span><p>Otvori meni pregledača (<b>⋮</b> ili <b>⋯</b> u uglu).</p></li>
-            <li><span>2</span><p>Izaberi <b>Instaliraj aplikaciju</b> ili <b>Dodaj na početni ekran</b>.</p></li>
-            <li><span>3</span><p>Potvrdi — FitMess se dodaje kao aplikacija.</p></li>
-          </ol>
-        )}
-        <p className="lp-modal-foot">Radi na Chrome-u, Edge-u i Safari-ju. Za najbolje iskustvo koristi telefon.</p>
-      </div>
-    </div>
-  );
+/** Which walkthrough to show: iOS gets Safari; everything else (Android and
+ * desktop/unknown) gets the Chrome menu flow. */
+function guidePlatform(
+  mode: Mode,
+  platform: "ios" | "android" | "other"
+): GuidePlatform {
+  if (mode === "ios" || platform === "ios") return "ios";
+  return "android";
 }

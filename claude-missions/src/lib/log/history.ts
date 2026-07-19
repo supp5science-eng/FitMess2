@@ -6,9 +6,10 @@ import type { Database } from "@/lib/types/db";
 
 /**
  * Meal-history read for `/analitika`'s "Svi obroci" section: the user's
- * logged meals over a trailing window (default 30 days, matching the app's
- * 30-day retention -- older logs are pruned server-side, see
- * `supabase/migrations/0010_logs_retention.sql`). Session-bound RLS client;
+ * logged meals over a trailing window (default 30 days -- the app only ever
+ * SHOWS the last 30 days). Rows are retained in the DB longer (pruned after
+ * 3 months server-side, see `supabase/migrations/0010_logs_retention.sql`),
+ * but this view never reaches past 30 days. Session-bound RLS client;
  * `logs_select_own` enforces "own rows only". Newest first.
  *
  * Only the fields the list renders are selected -- no foods join (the meal

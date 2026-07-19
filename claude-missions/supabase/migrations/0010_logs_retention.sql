@@ -1,11 +1,14 @@
--- 30-day meal-log retention: automatically delete logged meals older than 30
--- days.
+-- 3-month meal-log retention: automatically delete logged meals older than 3
+-- months.
 --
--- Product decision (2026-07-19): the "Svi obroci" meal-history list on
--- /analitika shows only the last 30 days; beyond that, logs are pruned rather
--- than kept forever. This keeps the history intentionally short and the table
--- small. The weekly dashboard only ever looks at the current week, so pruning
--- 30-day-old rows never affects any live view.
+-- Product decision (2026-07-19): two separate windows. The app ONLY EVER
+-- SHOWS the last 30 days ("Svi obroci" on /analitika, via getMealHistory's
+-- 30-day query window) -- but the rows themselves (meal name + quantity +
+-- macros, denormalized on each log) are KEPT IN THE DB for 3 months before
+-- being pruned. So a meal disappears from the UI after 30 days but is still
+-- on record for ~2 more months (useful for later analytics / recompute),
+-- then hard-deleted. The weekly dashboard only looks at the current week, so
+-- pruning 3-month-old rows never affects any live view.
 --
 -- Implemented as a daily pg_cron job (server-side, no app involvement) so the
 -- deletion happens even if the user never opens the app. Runs at 03:30 UTC
@@ -29,5 +32,5 @@ $$;
 select cron.schedule(
   'fitmess-prune-old-logs',
   '30 3 * * *',
-  $$delete from public.logs where logged_at < now() - interval '30 days';$$
+  $$delete from public.logs where logged_at < now() - interval '3 months';$$
 );

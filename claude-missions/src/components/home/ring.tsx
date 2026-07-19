@@ -6,18 +6,18 @@ import { computeRemaining } from "@/lib/home/totals";
 // `src/lib/home/totals.ts` (never eyeballed here), matching the "money-math
 // rule" the rest of this codebase follows.
 //
-// Redesign (2026-07-19): a C-shaped gauge (open at the bottom) with the big
-// headline number centered inside it, flanked by two context columns -- the
-// non-selected metric on the left, the daily target on the right. A
-// `view` toggle (owned by `HomeScreen`) swaps the centered metric between
-// "Preostalo" (remaining, the default) and "Potrošeno" (consumed); the gauge
-// fill and both side columns follow it.
+// Layout (2026-07-19): a C-shaped gauge (open at the bottom) with the daily
+// target ("Cilj") big in the centre, flanked by "Preostalo" (remaining) on
+// the LEFT and "Potrošeno" (consumed) on the RIGHT. A `view` toggle (owned by
+// `HomeScreen`) flips how the gauge FILLS -- draining as you eat in the
+// "Preostalo" default, or filling up in "Potrošeno" -- while the three
+// numbers stay put.
 //
-// Overshoot state (AS-050): the gauge NEVER switches to a red/alarming colour
-// -- it stays the app's teal accent (`var(--primary)`), the fill simply
-// empties, and the centre copy swaps to "Prekoračeno" plus one short, calm,
-// reassuring sentence. Zero-shame tone: overshooting is shown plainly, never
-// punished visually.
+// Accessibility + overshoot (AS-047/AS-050): the accessible name always
+// reports the remaining/overshoot number (the actionable one), and the gauge
+// NEVER turns red/alarming -- it stays the teal accent, drains to empty when
+// over budget, and the centre carries one short, calm, reassuring note.
+// Zero-shame tone: overshooting is shown plainly, never punished visually.
 
 export type RingView = "remaining" | "consumed";
 
@@ -62,23 +62,15 @@ export function Ring({
 
   const consumedRounded = Math.round(Math.max(0, consumedKcal));
   const targetRounded = Math.round(Math.max(0, targetKcal));
-
   const safeTarget = targetKcal > 0 ? targetKcal : 1;
 
-  // The metric shown in the centre + how full the gauge is, per the toggle.
-  const centerLabel =
-    view === "consumed"
-      ? "Potrošeno"
-      : isOver
-        ? "Prekoračeno"
-        : "Preostalo";
-  const centerValue =
-    view === "consumed"
-      ? consumedRounded
-      : isOver
-        ? overshootKcal
-        : remainingKcal;
+  // The left "remaining" column also carries the accessible name + the
+  // overshoot state (AS-050): "Preostalo" normally, "Prekoračeno" once over.
+  const remainingLabel = isOver ? "Prekoračeno" : "Preostalo";
+  const remainingValue = isOver ? overshootKcal : remainingKcal;
 
+  // How full the gauge is, per the toggle: what's left (drains as you eat) vs.
+  // what's been eaten (fills up).
   const fillFraction =
     view === "consumed"
       ? Math.max(0, consumedKcal) / safeTarget
@@ -88,23 +80,21 @@ export function Ring({
   // percentage; the fill is drawn from the start and the rest is dashed out.
   const dashOffset = 100 - percent;
 
-  // Left context column = whichever of consumed/remaining is NOT centred.
-  const leftLabel = view === "consumed" ? "Preostalo" : "Potrošeno";
-  const leftValue = view === "consumed" ? remainingKcal : consumedRounded;
-
   return (
     <div
       data-testid="home-ring"
       role="img"
-      aria-label={`${centerLabel} ${centerValue} kcal`}
+      aria-label={`${remainingLabel} ${remainingValue} kcal`}
       className="mx-auto flex w-full max-w-sm items-center justify-between gap-1"
     >
-      <SideColumn label={leftLabel} value={leftValue} />
+      <SideColumn
+        label={remainingLabel}
+        value={remainingValue}
+        valueTestId="home-ring-value"
+        labelTestId="home-ring-label"
+      />
 
-      <div
-        className="relative shrink-0"
-        style={{ width: 196, height: 196 }}
-      >
+      <div className="relative shrink-0" style={{ width: 196, height: 196 }}>
         <svg
           viewBox={`0 0 ${VIEW_BOX} ${VIEW_BOX}`}
           className="h-full w-full"
@@ -133,17 +123,12 @@ export function Ring({
 
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 px-10 text-center">
           <span
-            data-testid="home-ring-value"
+            data-testid="home-ring-target"
             className="text-5xl font-bold tabular-nums text-foreground"
           >
-            {centerValue}
+            {targetRounded}
           </span>
-          <span
-            data-testid="home-ring-label"
-            className="text-sm font-medium text-muted-foreground"
-          >
-            {centerLabel}
-          </span>
+          <span className="text-sm font-medium text-muted-foreground">Cilj</span>
           {isOver ? (
             <p
               data-testid="home-ring-overshoot-note"
@@ -155,18 +140,40 @@ export function Ring({
         </div>
       </div>
 
-      <SideColumn label="Cilj" value={targetRounded} />
+      <SideColumn
+        label="Potrošeno"
+        value={consumedRounded}
+        valueTestId="home-ring-consumed"
+      />
     </div>
   );
 }
 
-function SideColumn({ label, value }: { label: string; value: number }) {
+function SideColumn({
+  label,
+  value,
+  valueTestId,
+  labelTestId,
+}: {
+  label: string;
+  value: number;
+  valueTestId?: string;
+  labelTestId?: string;
+}) {
   return (
     <div className="flex shrink-0 flex-col items-center gap-0.5">
-      <span className="text-2xl font-semibold tabular-nums text-foreground">
+      <span
+        data-testid={valueTestId}
+        className="text-2xl font-semibold tabular-nums text-foreground"
+      >
         {value}
       </span>
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span
+        data-testid={labelTestId}
+        className="text-xs font-medium text-muted-foreground"
+      >
+        {label}
+      </span>
     </div>
   );
 }

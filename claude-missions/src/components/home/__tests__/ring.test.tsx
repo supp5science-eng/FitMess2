@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 
 import { Ring } from "@/components/home/ring";
 
-describe("AS-047: Ring shows today's remaining calories, centered", () => {
+describe("AS-047: Ring reports today's remaining calories", () => {
   it("test_AS_047_shows_preostalo_label_and_the_correctly_computed_remaining_kcal_value", () => {
     render(<Ring consumedKcal={1200} targetKcal={2000} />);
 
@@ -26,37 +26,27 @@ describe("AS-047: Ring shows today's remaining calories, centered", () => {
     // 500 of 2000 consumed -> 1500 (75%) remaining -> the fill (drawn from the
     // start, the rest dashed out on a pathLength=100 arc) leaves offset 25.
     render(<Ring consumedKcal={500} targetKcal={2000} />);
-    const arc = screen.getByTestId("home-ring-arc");
-    const offset = Number(arc.getAttribute("stroke-dashoffset"));
+    const offset = Number(
+      screen.getByTestId("home-ring-arc").getAttribute("stroke-dashoffset")
+    );
     expect(offset).toBeCloseTo(25, 0);
   });
 
-  it("test_AS_047_context_columns_show_consumed_on_the_left_and_target_on_the_right", () => {
-    const ring = render(
+  it("test_ring_columns_show_preostalo_left_cilj_center_potroseno_right", () => {
+    const { container } = render(
       <Ring consumedKcal={800} targetKcal={2000} />
-    ).container;
-    // Left column = Potrošeno 800, right column = Cilj 2000 (centre = Preostalo).
-    expect(ring).toHaveTextContent("Potrošeno");
-    expect(ring).toHaveTextContent("Cilj");
-    expect(ring).toHaveTextContent("800");
-    expect(ring).toHaveTextContent("2000");
+    );
+    // Left = Preostalo 1200, centre = Cilj 2000, right = Potrošeno 800.
+    expect(container).toHaveTextContent("Preostalo");
+    expect(container).toHaveTextContent("Cilj");
+    expect(container).toHaveTextContent("Potrošeno");
+    expect(screen.getByTestId("home-ring-value")).toHaveTextContent("1200");
+    expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
+    expect(screen.getByTestId("home-ring-consumed")).toHaveTextContent("800");
   });
 });
 
-describe("Ring view toggle: 'Potrošeno' (consumed) mode", () => {
-  it("test_ring_consumed_view_centers_the_consumed_value_with_the_potroseno_label", () => {
-    render(<Ring consumedKcal={1200} targetKcal={2000} view="consumed" />);
-
-    expect(screen.getByTestId("home-ring-label")).toHaveTextContent(
-      "Potrošeno"
-    );
-    expect(screen.getByTestId("home-ring-value")).toHaveTextContent("1200");
-    expect(screen.getByTestId("home-ring")).toHaveAttribute(
-      "aria-label",
-      "Potrošeno 1200 kcal"
-    );
-  });
-
+describe("Ring view toggle: 'Potrošeno' (consumed) mode fills the gauge up", () => {
   it("test_ring_consumed_view_fills_the_gauge_by_consumed_over_target", () => {
     // 1500 of 2000 consumed -> 75% -> offset 25.
     render(<Ring consumedKcal={1500} targetKcal={2000} view="consumed" />);
@@ -65,10 +55,20 @@ describe("Ring view toggle: 'Potrošeno' (consumed) mode", () => {
     );
     expect(offset).toBeCloseTo(25, 0);
   });
+
+  it("test_ring_consumed_view_keeps_the_three_labelled_columns_unchanged", () => {
+    render(<Ring consumedKcal={1500} targetKcal={2000} view="consumed" />);
+    // The toggle only changes the gauge fill; the numbers stay put.
+    expect(screen.getByTestId("home-ring-label")).toHaveTextContent(
+      "Preostalo"
+    );
+    expect(screen.getByTestId("home-ring-value")).toHaveTextContent("500");
+    expect(screen.getByTestId("home-ring-consumed")).toHaveTextContent("1500");
+  });
 });
 
 describe("AS-050: overshoot state is calm, neutral, and the gauge stays functional", () => {
-  it("test_AS_050_consumed_exceeding_target_switches_the_center_copy_to_prekoraceno_with_the_overshoot_amount", () => {
+  it("test_AS_050_consumed_exceeding_target_switches_the_copy_to_prekoraceno_with_the_overshoot_amount", () => {
     render(<Ring consumedKcal={2300} targetKcal={2000} />);
 
     expect(screen.getByTestId("home-ring-label")).toHaveTextContent(

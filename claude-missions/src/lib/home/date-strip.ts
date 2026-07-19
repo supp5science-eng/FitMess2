@@ -16,7 +16,11 @@ export interface DayCell {
   isToday: boolean;
   /** This cell is in the future (after today) -- shown faint, not tappable. */
   isFuture: boolean;
-  /** The user logged at least one meal on this day (drives the teal ring). */
+  /** This cell is before the user's sign-up day -- an "imaginary" filler day
+   * that exists only so today can sit centered. Faint, not tappable. */
+  isBeforeStart: boolean;
+  /** The user logged at least one meal on this (past) day -- drives the faded
+   * teal ring. Today is always shown green regardless (handled in the view). */
   isLogged: boolean;
   /** This is the day currently being viewed. */
   isSelected: boolean;
@@ -41,12 +45,16 @@ export function buildDateStrip({
   loggedDays,
   startKey,
   endKey,
+  minKey,
 }: {
   now?: Date;
   selectedKey: string;
   loggedDays: Set<string>;
   startKey: string;
   endKey: string;
+  /** The user's sign-up day (`"YYYY-MM-DD"`). Days before it are "imaginary"
+   * filler (disabled). Omitted -> every in-range day is real. */
+  minKey?: string;
 }): DayCell[] {
   const todayKey = toBelgradeCalendarDay(now);
   const [year, month, day] = startKey.split("-").map(Number);
@@ -60,15 +68,18 @@ export function buildDateStrip({
     if (key > endKey) break;
 
     const isFuture = key > todayKey;
+    const isBeforeStart = minKey !== undefined && key < minKey;
+    const disabled = isFuture || isBeforeStart;
     cells.push({
       key,
       dayLabel: SR_WEEKDAYS_SHORT[belgradeWeekdayIndex(instant)]!,
       dayNum: Number(key.split("-")[2]),
       isToday: key === todayKey,
       isFuture,
-      isLogged: !isFuture && loggedDays.has(key),
-      // A future day is never shown as selected.
-      isSelected: key === selectedKey && !isFuture,
+      isBeforeStart,
+      isLogged: !disabled && loggedDays.has(key),
+      // A disabled (future / pre-signup) day is never shown as selected.
+      isSelected: key === selectedKey && !disabled,
     });
   }
   return cells;

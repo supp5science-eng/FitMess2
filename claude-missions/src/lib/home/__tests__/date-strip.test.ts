@@ -109,4 +109,24 @@ describe("buildDateStrip", () => {
     });
     expect(viewingFuture.some((d) => d.isSelected)).toBe(false);
   });
+
+  it("marks pre-sign-up days as imaginary filler: disabled, never logged/selected", () => {
+    // Signed up on the 17th, but the strip starts 5 before today (the 14th) so
+    // today can center -> the 14th..16th are imaginary filler.
+    const days = buildDateStrip({
+      now: NOW,
+      selectedKey: "2026-07-15",
+      loggedDays: new Set(["2026-07-15"]),
+      startKey: "2026-07-14",
+      endKey: "2026-07-20",
+      minKey: "2026-07-17",
+    });
+    const filler = days.find((d) => d.key === "2026-07-15")!;
+    expect(filler.isBeforeStart).toBe(true);
+    expect(filler.isLogged).toBe(false); // never logged, even if the set says so
+    expect(filler.isSelected).toBe(false); // disabled cell is never selected
+    expect(days.find((d) => d.key === "2026-07-14")!.isBeforeStart).toBe(true);
+    expect(days.find((d) => d.key === "2026-07-17")!.isBeforeStart).toBe(false);
+    expect(days.find((d) => d.key === "2026-07-18")!.isBeforeStart).toBe(false);
+  });
 });

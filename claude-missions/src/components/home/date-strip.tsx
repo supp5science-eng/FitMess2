@@ -42,16 +42,20 @@ function accessibleLabel(cell: DayCell): string {
 }
 
 function DayCircle({ cell }: { cell: DayCell }) {
+  const disabled = cell.isFuture || cell.isBeforeStart;
   return (
     <span
       className={cn(
         "flex size-10 items-center justify-center rounded-full border text-sm font-semibold tabular-nums transition-colors",
-        cell.isLogged
-          ? "border-2 border-primary text-foreground"
-          : cell.isFuture
-            ? "border border-dashed border-white/10 text-white/25"
-            : cell.isToday
-              ? "border border-white/40 text-foreground"
+        cell.isToday
+          ? // Today is ALWAYS green (full teal), even before anything is logged.
+            "border-2 border-primary text-foreground"
+          : cell.isLogged
+            ? // A past day with a meal logged -- a FADED teal ring, so it reads
+              // as "done, but not today".
+              "border-2 border-primary/40 text-foreground"
+            : disabled
+              ? "border border-dashed border-white/10 text-white/25"
               : "border border-dashed border-white/20 text-muted-foreground"
       )}
     >
@@ -71,7 +75,7 @@ function DayCellInner({ cell }: { cell: DayCell }) {
       <span
         className={cn(
           "text-xs font-medium",
-          cell.isFuture
+          cell.isFuture || cell.isBeforeStart
             ? "text-white/25"
             : cell.isToday || cell.isSelected
               ? "text-foreground"
@@ -114,7 +118,7 @@ export function DateStrip({ days }: { days: DayCell[] }) {
             }
           : undefined;
 
-        return cell.isFuture ? (
+        return cell.isFuture || cell.isBeforeStart ? (
           <div
             key={cell.key}
             className="w-14 shrink-0 snap-center"

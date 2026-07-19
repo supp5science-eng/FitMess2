@@ -117,9 +117,16 @@ export default async function DanasPage({
 
   // Date strip range: from the user's sign-up day (earliest viewable) through
   // today + 30 future days (scrollable forward "through time", though empty).
-  const startKey = profileResult.data?.created_at
+  // Sign-up day = the earliest REAL (tappable) day; days before it are
+  // "imaginary" filler. Always render at least 5 days before today so today can
+  // sit centered even for a user who signed up today: start at the earlier of
+  // sign-up and today-5.
+  const signupKey = profileResult.data?.created_at
     ? toBelgradeCalendarDay(new Date(profileResult.data.created_at))
-    : addDaysKey(todayKey, -14);
+    : undefined;
+  const fiveBefore = addDaysKey(todayKey, -5);
+  const startKey =
+    signupKey && signupKey < fiveBefore ? signupKey : fiveBefore;
   const endKey = addDaysKey(todayKey, 30);
 
   // "Logged" rings only need the past window (start..today) -- future is empty.
@@ -130,7 +137,14 @@ export default async function DanasPage({
     now
   );
 
-  const days = buildDateStrip({ now, selectedKey, loggedDays, startKey, endKey });
+  const days = buildDateStrip({
+    now,
+    selectedKey,
+    loggedDays,
+    startKey,
+    endKey,
+    minKey: signupKey,
+  });
 
   // One-time "ring hand-off" from onboarding: the plan-reveal drops the
   // `fm_intro` cookie just before its hard navigation here (see

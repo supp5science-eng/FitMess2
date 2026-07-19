@@ -1,4 +1,5 @@
 import { computeRemaining } from "@/lib/home/totals";
+import { cn } from "@/lib/utils";
 
 // F027 / AS-047 (remaining ring), AS-050 (neutral overshoot): the calorie
 // gauge, centerpiece of `/danas`. Pure, presentational -- consumed/target
@@ -121,18 +122,32 @@ export function Ring({
           />
         </svg>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5 px-10 text-center">
+        {/* The centre stack must stay inside the gauge's inner circle. With the
+            overshoot note present the stack is taller, so the number sits
+            higher up where the circle narrows -- everything scales down a
+            notch in that state to keep clear of the stroke. */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center px-11 text-center">
           <span
             data-testid="home-ring-target"
-            className="text-5xl font-bold tabular-nums text-foreground"
+            className={cn(
+              "font-bold tabular-nums text-foreground",
+              isOver ? "text-4xl" : "text-5xl"
+            )}
           >
             {targetRounded}
           </span>
-          <span className="text-sm font-medium text-muted-foreground">Cilj</span>
+          <span
+            className={cn(
+              "font-medium text-muted-foreground",
+              isOver ? "text-xs" : "text-sm"
+            )}
+          >
+            Cilj
+          </span>
           {isOver ? (
             <p
               data-testid="home-ring-overshoot-note"
-              className="mt-1 max-w-[150px] text-[11px] leading-snug text-muted-foreground"
+              className="mt-1 max-w-[130px] text-[10px] leading-snug text-muted-foreground"
             >
               Jedan dan više ne menja ništa. Nastavi sutra kao i obično.
             </p>

@@ -181,7 +181,7 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
       <main className="pr">
         <div className="pr-error" role="alert">
           <p>{saveError ?? "Nešto je pošlo naopako."}</p>
-          <button type="button" className="pr-retry" onClick={retry}>
+          <button type="button" className="pr-retry liquid-glass" onClick={retry}>
             Pokušaj ponovo
           </button>
         </div>

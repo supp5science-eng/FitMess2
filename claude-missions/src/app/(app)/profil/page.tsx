@@ -98,6 +98,12 @@ export default async function ProfilPage() {
       ) : null}
 
       <Link
+        href="/profil/podaci"
+        className="inline-flex items-center justify-center rounded-md border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-muted"
+      >
+        Lični podaci
+      </Link>
+      <Link
         href="/profil/pravila"
         className="inline-flex items-center justify-center rounded-md border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-muted"
       >

@@ -150,3 +150,63 @@ export function getBelgradeDayRange(date: Date = new Date()): DayRange {
     endIsoExclusive: endOfBelgradeDayExclusive(date).toISOString(),
   };
 }
+
+// ---------------------------------------------------------------------------
+// F040/F041: week helpers. "The week is the unit of success" -- the weekly
+// dashboard needs Monday-anchored week boundaries (Serbian/EU convention,
+// week starts Monday) in the SAME Europe/Belgrade calendar frame as the day
+// helpers above, never raw `new Date()` week math.
+// ---------------------------------------------------------------------------
+
+/**
+ * 0-based weekday index of a Belgrade calendar day, Monday = 0 ... Sunday = 6
+ * (EU/Serbian convention -- differs from JS's Sunday = 0). Computed purely
+ * from the calendar day's Y-M-D so it is timezone-frame-independent (a given
+ * calendar date always falls on the same weekday everywhere).
+ */
+export function belgradeWeekdayIndex(date: Date = new Date()): number {
+  const [year, month, day] = toBelgradeCalendarDay(date).split("-").map(Number);
+  // getUTCDay(): Sunday = 0 ... Saturday = 6. Shift so Monday = 0.
+  const jsDay = new Date(Date.UTC(year!, month! - 1, day!)).getUTCDay();
+  return (jsDay + 6) % 7;
+}
+
+/**
+ * The `"YYYY-MM-DD"` Belgrade calendar day of the MONDAY that starts the week
+ * `date` falls in.
+ */
+export function belgradeWeekStartDay(date: Date = new Date()): string {
+  const [year, month, day] = toBelgradeCalendarDay(date).split("-").map(Number);
+  const offset = belgradeWeekdayIndex(date);
+  // `day - offset` may go non-positive (e.g. Monday is in the previous month);
+  // Date.UTC normalizes the overflow, and en-CA re-formats to YYYY-MM-DD.
+  const monday = new Date(Date.UTC(year!, month! - 1, day! - offset));
+  return toBelgradeCalendarDay(monday);
+}
+
+/**
+ * The 7 Belgrade calendar-day keys (`"YYYY-MM-DD"`, Monday..Sunday) of the
+ * week `date` falls in. Handy for bucketing a week of logs into fixed
+ * Mon..Sun slots (empty days included).
+ */
+export function belgradeWeekDayKeys(date: Date = new Date()): string[] {
+  const [year, month, day] = belgradeWeekStartDay(date).split("-").map(Number);
+  return Array.from({ length: 7 }, (_, i) =>
+    toBelgradeCalendarDay(new Date(Date.UTC(year!, month! - 1, day! + i)))
+  );
+}
+
+/**
+ * The Belgrade "week range" (`{ startIso, endIsoExclusive }`, both ISO 8601
+ * UTC strings) for the Monday..Sunday week `date` falls in -- ready to drive
+ * a `logged_at >= startIso AND logged_at < endIsoExclusive` query over a full
+ * week of logs. Start is Monday 00:00 Belgrade; end is the FOLLOWING Monday
+ * 00:00 Belgrade (exclusive).
+ */
+export function getBelgradeWeekRange(date: Date = new Date()): DayRange {
+  const [year, month, day] = belgradeWeekStartDay(date).split("-").map(Number);
+  return {
+    startIso: belgradeMidnightUtc(year!, month!, day!).toISOString(),
+    endIsoExclusive: belgradeMidnightUtc(year!, month!, day! + 7).toISOString(),
+  };
+}

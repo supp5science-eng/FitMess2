@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+
 import type { GoalType } from "@/lib/types/db";
 import { FieldError } from "@/components/onboarding/field-error";
 import {
@@ -13,8 +15,28 @@ import {
   MIN_WEIGHT_KG,
 } from "@/lib/onboarding/validation";
 
-const TARGET_WEIGHT_OPTIONS = rangeInclusive(MIN_WEIGHT_KG, MAX_WEIGHT_KG);
 const WEEK_OPTIONS = rangeInclusive(MIN_TIMEFRAME_WEEKS, MAX_TIMEFRAME_WEEKS);
+
+/**
+ * The target-weight wheel only offers values that make sense for the chosen
+ * goal, so an invalid target can't even be picked (not just rejected on
+ * "Dalje"): for `gain` only weights ABOVE the current weight, for `lose` only
+ * weights BELOW it. Falls back to the full range if the current weight is
+ * somehow unknown (defensive -- step 4 always runs before this one).
+ */
+function targetWeightOptions(
+  isGain: boolean,
+  currentWeightKg: number | null
+): number[] {
+  if (currentWeightKg === null || Number.isNaN(currentWeightKg)) {
+    return rangeInclusive(MIN_WEIGHT_KG, MAX_WEIGHT_KG);
+  }
+  const current = Math.round(currentWeightKg);
+  if (isGain) {
+    return rangeInclusive(Math.max(MIN_WEIGHT_KG, current + 1), MAX_WEIGHT_KG);
+  }
+  return rangeInclusive(MIN_WEIGHT_KG, Math.min(MAX_WEIGHT_KG, current - 1));
+}
 
 function weekWord(weeks: number): string {
   if (weeks === 1) return "nedelju";
@@ -45,6 +67,11 @@ export function GoalStep({
   error?: string;
 }) {
   const isGain = goal === "gain";
+
+  const targetOptions = useMemo(
+    () => targetWeightOptions(isGain, currentWeightKg),
+    [isGain, currentWeightKg]
+  );
 
   const numbersReady =
     currentWeightKg !== null &&
@@ -85,7 +112,7 @@ export function GoalStep({
         suffix="kg"
         value={targetWeightKg}
         onChange={onChangeTargetWeight}
-        options={TARGET_WEIGHT_OPTIONS}
+        options={targetOptions}
         placeholder="Izaberi ciljnu težinu"
         autoFocus
       />

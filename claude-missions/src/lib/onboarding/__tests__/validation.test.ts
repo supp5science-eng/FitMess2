@@ -173,6 +173,22 @@ describe("AS-019: validateGoal (cilj step -- target weight + timeframe)", () => 
     expect(result.valid).toBe(false);
   });
 
+  it("test_AS_019_validateGoal_accepts_a_sane_gain_goal_above_the_current_weight", () => {
+    expect(validateGoal(90, 12, 80, "gain")).toEqual({ valid: true });
+  });
+
+  it("test_AS_019_validateGoal_rejects_a_gain_target_below_the_current_weight", () => {
+    const result = validateGoal(75, 12, 80, "gain");
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.error).toMatch(/veća od trenutne/i);
+  });
+
+  it("test_AS_019_validateGoal_rejects_a_gain_target_equal_to_the_current_weight", () => {
+    const result = validateGoal(80, 12, 80, "gain");
+    expect(result.valid).toBe(false);
+    if (!result.valid) expect(result.error).toMatch(/veća od trenutne/i);
+  });
+
   it("test_AS_019_validateGoal_rejects_a_timeframe_below_one_week", () => {
     const result = validateGoal(74, 0, 80);
     expect(result.valid).toBe(false);

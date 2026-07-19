@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 
 import { DELETE_CONFIRMATION_PHRASE } from "@/lib/account/constants";
@@ -40,7 +40,13 @@ const GENERIC_DELETE_ERROR_SR =
  * matching `signOutAction`'s own post-sign-out destination (AS-016: the
  * deleted credentials no longer authenticate from that point on).
  */
-export function DeleteAccountDialog() {
+export function DeleteAccountDialog({
+  trigger,
+}: {
+  /** Optional custom trigger content (e.g. a settings row). Wrapped in a
+   * button that opens the dialog. Defaults to a plain destructive button. */
+  trigger?: ReactNode;
+} = {}) {
   const [isOpen, setIsOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
@@ -92,14 +98,25 @@ export function DeleteAccountDialog() {
 
   return (
     <div>
-      <Button
-        type="button"
-        variant="destructive"
-        onClick={openDialog}
-        data-testid="delete-account-open-button"
-      >
-        Obriši nalog
-      </Button>
+      {trigger ? (
+        <button
+          type="button"
+          onClick={openDialog}
+          data-testid="delete-account-open-button"
+          className="block w-full text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+        >
+          {trigger}
+        </button>
+      ) : (
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={openDialog}
+          data-testid="delete-account-open-button"
+        >
+          Obriši nalog
+        </Button>
+      )}
 
       {isOpen ? (
         <div

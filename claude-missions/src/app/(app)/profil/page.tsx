@@ -1,126 +1,204 @@
-import Link from "next/link";
+import {
+  Bell,
+  Download,
+  FileText,
+  LifeBuoy,
+  LogOut,
+  Phone,
+  ScrollText,
+  Shield,
+  SlidersHorizontal,
+  Target,
+  Trash2,
+  User,
+  UtensilsCrossed,
+} from "lucide-react";
 
 import { signOutAction } from "../actions";
-import { Button } from "@/components/ui/button";
 import { DeleteAccountDialog } from "@/components/profil/delete-account-dialog";
+import { RefreshAppButton } from "@/components/settings/refresh-app-button";
+import { SettingsGroup } from "@/components/settings/settings-group";
+import {
+  SettingsInfoRow,
+  SettingsLinkRow,
+} from "@/components/settings/settings-row";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * F013: minimal `/profil` page -- the bottom nav (F005) has pointed at this
- * route since it shipped, but nothing rendered it yet (a 404). This
- * feature's only requirement here is the "Odjavi se" (sign out) control
- * (AS-012); the rest of the profile screen (F0xx, out of this feature's
- * scope) is deliberately left minimal rather than guessed at.
+ * `/profil` -- the "Podešavanja" (Settings) screen.
  *
- * The sign-out button is a plain `<form action={signOutAction}>` -- React
- * 19's built-in server-action form handling needs no client-side JS or
- * `"use client"` boundary for this to work.
+ * Redesigned (2026-07-19) from a flat stack of buttons into grouped,
+ * iOS-style settings sections (`SettingsGroup` + `SettingsLinkRow`), all
+ * theme-token styled so it renders in both the dark and the (in-progress)
+ * light theme. Server Component: identity/email come from the locally
+ * verified access token (`getCurrentUser`, no Auth round trip); a single
+ * own-row `profiles` read (RLS `profiles_select_own`) fetches `is_admin` (to
+ * decide whether to show the Admin link) and `phone` (shown/edited in the
+ * Nalog group). `middleware.ts` already guarantees an authenticated user
+ * reaches here; every read degrades gracefully rather than blanking the
+ * screen.
  *
- * F017 added the single "Pravila ishrane" link below, pointing at
- * `/profil/pravila` (AS-028/AS-029) -- the only integration point this
- * feature needed on the pre-existing profile screen.
- *
- * F018 added the "Preuzmi moje podatke" link below (AS-014) -- a plain
- * anchor to `/api/export`, no client-side JS needed: the browser's normal
- * navigation plus that route's `Content-Disposition: attachment` header is
- * what triggers the download.
- *
- * F019 added the "Obriši nalog" control below (AS-015, AS-016) -- the only
- * client-interactive piece on this otherwise server-rendered page, so it's
- * isolated into its own `"use client"` component
- * (`DeleteAccountDialog`) rather than converting this whole page to a
- * client component.
- *
- * Settings redesign (2026-07-19): first step of tidying this screen up --
- * show the signed-in account's email at the top. Reads it from the
- * session-scoped Supabase client (same pattern as `/danas`, `/profil/
- * pravila`); `middleware.ts` already guarantees an authenticated user
- * reaches here, but we still degrade gracefully to a short note rather than
- * a blank/broken card if the read ever comes back empty.
+ * The only interactive pieces needing client JS are isolated into their own
+ * `"use client"` components (`RefreshAppButton`, `DeleteAccountDialog`); the
+ * rest is server-rendered links/forms.
  */
+
+const SUPPORT_EMAIL = "podrska@fitmess.app";
+const APP_VERSION = "0.1.0";
+
 export default async function ProfilPage() {
   const supabase = await createClient();
-  // Identity + email come from the locally-verified access token (getClaims),
-  // no Auth-server round trip. `middleware.ts` already guarantees an
-  // authenticated user reaches here.
   const currentUser = await getCurrentUser(supabase);
   const email = currentUser?.email ?? null;
 
-  // Admin-only entry point: the /admin area has no other link in the app, so an
-  // admin would otherwise have to type the URL. This is only a UI affordance --
-  // the actual enforcement is `src/app/admin/layout.tsx`'s `requireAdmin()`
-  // (is_admin=true) -- so a lightweight own-row read of `is_admin` (governed by
-  // `profiles_select_own` RLS, same as the shared admin gate) is enough to
-  // decide whether to show the link, and avoids that gate's extra getUser call.
   let isAdmin = false;
+  let phone: string | null = null;
   if (currentUser) {
-    const { data: adminRow } = await supabase
+    const { data: profile } = await supabase
       .from("profiles")
-      .select("is_admin")
+      .select("is_admin, phone")
       .eq("user_id", currentUser.id)
       .maybeSingle();
-    isAdmin = adminRow?.is_admin === true;
+    isAdmin = profile?.is_admin === true;
+    phone = profile?.phone ?? null;
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-6 px-6 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
+      <h1 className="px-1 text-2xl font-semibold tracking-tight text-foreground">
         Podešavanja
       </h1>
 
-      <section className="rounded-2xl border border-border bg-card p-5">
-        <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Nalog
-        </p>
-        {email ? (
-          <p
-            data-testid="profil-email"
-            className="mt-1.5 break-all text-base font-medium text-foreground"
-          >
-            {email}
-          </p>
-        ) : (
-          <p className="mt-1.5 text-sm text-muted-foreground">
-            Nismo uspeli da učitamo tvoj nalog. Osveži stranicu i pokušaj ponovo.
-          </p>
-        )}
-      </section>
+      <SettingsGroup title="Nalog">
+        <SettingsInfoRow
+          icon={User}
+          label="Email"
+          value={email ?? "—"}
+        />
+        <SettingsLinkRow
+          href="/telefon"
+          icon={Phone}
+          label="Broj telefona"
+          value={phone ?? "Dodaj"}
+        />
+        <SettingsLinkRow
+          href="/profil/lozinka"
+          icon={Shield}
+          label="Promeni lozinku"
+        />
+      </SettingsGroup>
+
+      <SettingsGroup title="Cilj i plan">
+        <SettingsLinkRow
+          href="/profil/cilj"
+          icon={Target}
+          label="Cilj i plan"
+          description="Promeni cilj i preračunaj kalorije"
+        />
+        <SettingsLinkRow
+          href="/profil/podaci"
+          icon={SlidersHorizontal}
+          label="Lični podaci"
+          description="Pol, godine, visina, težina, aktivnost"
+        />
+        <SettingsLinkRow
+          href="/profil/pravila"
+          icon={UtensilsCrossed}
+          label="Pravila ishrane"
+        />
+      </SettingsGroup>
+
+      <SettingsGroup title="Aplikacija">
+        <SettingsInfoRow
+          icon={Bell}
+          label="Podsetnici"
+          description="Podsećanje na unos i merenje"
+          trailing={
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+              uskoro
+            </span>
+          }
+        />
+        <RefreshAppButton />
+      </SettingsGroup>
 
       {isAdmin ? (
-        <Link
-          href="/admin"
-          data-testid="profil-admin-link"
-          className="inline-flex items-center justify-center rounded-md border border-primary/40 bg-primary/10 px-6 py-3 text-sm font-semibold text-primary hover:bg-primary/15"
-        >
-          Admin panel
-        </Link>
+        <SettingsGroup title="Admin">
+          <SettingsLinkRow
+            href="/admin"
+            icon={Shield}
+            label="Admin panel"
+          />
+        </SettingsGroup>
       ) : null}
 
-      <Link
-        href="/profil/podaci"
-        className="inline-flex items-center justify-center rounded-md border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-muted"
-      >
-        Lični podaci
-      </Link>
-      <Link
-        href="/profil/pravila"
-        className="inline-flex items-center justify-center rounded-md border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-muted"
-      >
-        Pravila ishrane
-      </Link>
-      <a
-        href="/api/export"
-        className="inline-flex items-center justify-center rounded-md border border-border bg-background px-6 py-3 text-sm font-medium text-foreground hover:bg-muted"
-      >
-        Preuzmi moje podatke
-      </a>
-      <form action={signOutAction}>
-        <Button type="submit" variant="outline">
-          Odjavi se
-        </Button>
-      </form>
-      <DeleteAccountDialog />
+      <SettingsGroup title="Podaci i privatnost">
+        <SettingsLinkRow
+          href="/api/export"
+          external
+          icon={Download}
+          label="Preuzmi moje podatke"
+        />
+        <SettingsLinkRow
+          href="/profil/privatnost"
+          icon={FileText}
+          label="Politika privatnosti"
+        />
+        <SettingsLinkRow
+          href="/profil/uslovi"
+          icon={ScrollText}
+          label="Uslovi korišćenja"
+        />
+      </SettingsGroup>
+
+      <SettingsGroup title="Podrška">
+        <SettingsLinkRow
+          href={`mailto:${SUPPORT_EMAIL}`}
+          external
+          icon={LifeBuoy}
+          label="Kontaktiraj podršku"
+          value={SUPPORT_EMAIL}
+        />
+        <SettingsInfoRow
+          icon={FileText}
+          label="Verzija aplikacije"
+          value={APP_VERSION}
+        />
+      </SettingsGroup>
+
+      <SettingsGroup>
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            className="block w-full text-left transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-inset"
+          >
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+                <LogOut className="size-[18px]" aria-hidden={true} />
+              </span>
+              <span className="text-sm font-medium text-foreground">
+                Odjavi se
+              </span>
+            </div>
+          </button>
+        </form>
+      </SettingsGroup>
+
+      <SettingsGroup>
+        <DeleteAccountDialog
+          trigger={
+            <div className="flex items-center gap-3 px-4 py-3.5">
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+                <Trash2 className="size-[18px]" aria-hidden={true} />
+              </span>
+              <span className="text-sm font-medium text-destructive">
+                Obriši nalog
+              </span>
+            </div>
+          }
+        />
+      </SettingsGroup>
     </main>
   );
 }

@@ -29,6 +29,8 @@ export const FOOD_VERIFY_FAILED_ERROR_SR =
   "Nismo uspeli da potvrdimo namirnicu. Pokušaj ponovo.";
 export const FOOD_REMOVE_FAILED_ERROR_SR =
   "Nismo uspeli da uklonimo namirnicu. Pokušaj ponovo.";
+export const FOOD_RESTORE_FAILED_ERROR_SR =
+  "Nismo uspeli da vratimo namirnicu. Pokušaj ponovo.";
 
 /** A queue row plus the submitter's email. `public.profiles` has no email
  * column (only `auth.users` does), so the email is looked up separately via
@@ -157,6 +159,34 @@ export async function removeFood(
 
   if (error) {
     return { ok: false, error_sr: FOOD_REMOVE_FAILED_ERROR_SR, status: 500 };
+  }
+  if (!data) {
+    return { ok: false, error_sr: FOOD_NOT_FOUND_ERROR_SR, status: 404 };
+  }
+  return { ok: true, data };
+}
+
+/**
+ * Reverses `removeFood` (F035 admin restore): clears `is_removed` + `removed_at`
+ * so a mistakenly-pulled food reappears in search and barcode lookup. Scoped to
+ * `is_removed = true` so restoring a food that was never removed resolves as
+ * "not found" rather than a silent no-op. The food keeps its previous
+ * `verified` state -- restore only undoes the removal, nothing else.
+ */
+export async function restoreFood(
+  admin: SupabaseClient<Database>,
+  foodId: string
+): Promise<AdminFoodMutationResult> {
+  const { data, error } = await admin
+    .from("foods")
+    .update({ is_removed: false, removed_at: null })
+    .eq("id", foodId)
+    .eq("is_removed", true)
+    .select("*")
+    .maybeSingle();
+
+  if (error) {
+    return { ok: false, error_sr: FOOD_RESTORE_FAILED_ERROR_SR, status: 500 };
   }
   if (!data) {
     return { ok: false, error_sr: FOOD_NOT_FOUND_ERROR_SR, status: 404 };

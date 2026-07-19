@@ -24,6 +24,23 @@ vi.mock("@/lib/food/admin-review", () => ({
   listUnverifiedFoods: vi.fn(),
 }));
 
+// F035 added client children to the page (`AdminScanButton` uses `useRouter`,
+// `AdminFoodSearch` fetches on type) -- give them a router + a no-op stats read
+// so this page test stays focused on the queue render/error contract.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }),
+}));
+
+vi.mock("@/lib/food/admin-foods", () => ({
+  getFoodStats: vi.fn(async () => ({
+    total: 0,
+    verified: 0,
+    unverified: 0,
+    removed: 0,
+    bySource: { seed: 0, off: 0, user: 0 },
+  })),
+}));
+
 import { listUnverifiedFoods } from "@/lib/food/admin-review";
 import AdminHranaPage from "../page";
 

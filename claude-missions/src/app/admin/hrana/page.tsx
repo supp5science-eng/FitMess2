@@ -1,8 +1,14 @@
 import Link from "next/link";
 
 import { AdminFoodQueue } from "@/components/admin/admin-food-queue";
+import { AdminFoodSearch } from "@/components/admin/admin-food-search";
+import { AdminFoodStats } from "@/components/admin/admin-food-stats";
+import { AdminScanButton } from "@/components/admin/admin-scan-button";
+import { getFoodStats } from "@/lib/food/admin-foods";
 import { listUnverifiedFoods } from "@/lib/food/admin-review";
 import { createAdminClient } from "@/lib/supabase/server";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 /**
  * F034 / AS-060: `/admin/hrana` -- the admin review queue. Reachable only
@@ -21,6 +27,14 @@ import { createAdminClient } from "@/lib/supabase/server";
  * initial props (clarified data-shape answer) -- only the verify/remove
  * interactions are client state.
  */
+const ZERO_STATS = {
+  total: 0,
+  verified: 0,
+  unverified: 0,
+  removed: 0,
+  bySource: { seed: 0, off: 0, user: 0 },
+} as const;
+
 export default async function AdminHranaPage() {
   const admin = createAdminClient();
   const { data, error } = await listUnverifiedFoods(admin);
@@ -30,7 +44,43 @@ export default async function AdminHranaPage() {
     return <LoadErrorState />;
   }
 
-  return <AdminFoodQueue initialFoods={data ?? []} />;
+  // A stats failure must never blank the page -- fall back to zeros.
+  let stats;
+  try {
+    stats = await getFoodStats(admin);
+  } catch (statsError) {
+    console.error("[F035 /admin/hrana] getFoodStats failed:", statsError);
+    stats = ZERO_STATS;
+  }
+
+  return (
+    <main className="flex flex-1 flex-col gap-6 px-6 py-8">
+      <div className="flex items-start justify-between gap-3">
+        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          Hrana
+        </h1>
+        <Link
+          href="/admin/hrana/novi"
+          className={cn(buttonVariants({ variant: "default", size: "sm" }))}
+        >
+          + Novi proizvod
+        </Link>
+      </div>
+
+      <AdminFoodStats stats={stats} />
+
+      <AdminScanButton />
+
+      <AdminFoodSearch />
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-semibold text-foreground">
+          Red za proveru
+        </h2>
+        <AdminFoodQueue initialFoods={data ?? []} />
+      </section>
+    </main>
+  );
 }
 
 function LoadErrorState() {

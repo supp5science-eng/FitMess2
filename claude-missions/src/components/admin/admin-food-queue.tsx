@@ -82,17 +82,12 @@ export function AdminFoodQueue({
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-6 px-6 py-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Provera hrane
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {foods.length > 0
-            ? `${foods.length} u redu za proveru.`
-            : "Namirnice koje korisnici dodaju čekaju ovde na tvoju proveru."}
-        </p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <p className="text-sm text-muted-foreground">
+        {foods.length > 0
+          ? `${foods.length} u redu za proveru.`
+          : "Namirnice koje korisnici dodaju čekaju ovde na tvoju proveru."}
+      </p>
 
       {foods.length === 0 ? (
         <EmptyState />
@@ -110,7 +105,7 @@ export function AdminFoodQueue({
           ))}
         </ul>
       )}
-    </main>
+    </div>
   );
 }
 

@@ -119,7 +119,8 @@
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.14);
   --ring: #17d1a8;
-  --gauge: #38bdf8;
+  /* Dark theme keeps the teal accent on the gauge (same as the + button). */
+  --gauge: #17d1a8;
   --chart-1: #17d1a8;
   --chart-2: #6fd9c4;
   --chart-3: #a6b0ab;

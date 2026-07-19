@@ -100,8 +100,9 @@ function advanceToStep(
 describe("AS-019: step 2 (godine) collects age", () => {
   it("test_AS_019_godine_step_blocks_next_with_a_serbian_error_when_no_age_is_picked", () => {
     advanceToStep("godine");
-    // The wheel/select only offers valid ages; the reachable failure is
-    // leaving it on the placeholder and pressing Dalje.
+    // The step opens pre-filled with a sensible default; the reachable failure
+    // is clearing it back to the placeholder and pressing Dalje.
+    fireEvent.change(screen.getByLabelText(/Godine/), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -126,6 +127,7 @@ describe("AS-019: step 2 (godine) collects age", () => {
 describe("AS-019: step 3 (visina) collects height in cm", () => {
   it("test_AS_019_visina_step_blocks_next_with_a_serbian_error_when_no_height_is_picked", () => {
     advanceToStep("visina");
+    fireEvent.change(screen.getByLabelText(/Visina/), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
@@ -150,6 +152,7 @@ describe("AS-019: step 3 (visina) collects height in cm", () => {
 describe("AS-019: step 4 (težina) collects weight in kg", () => {
   it("test_AS_019_tezina_step_blocks_next_with_a_serbian_error_when_no_weight_is_picked", () => {
     advanceToStep("tezina");
+    fireEvent.change(screen.getByLabelText(/Težina/), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();

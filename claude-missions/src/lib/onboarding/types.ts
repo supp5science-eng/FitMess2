@@ -38,6 +38,21 @@ export const EMPTY_ONBOARDING_DATA: OnboardingData = {
   timeframeWeeks: null,
 };
 
+/**
+ * The values the wizard starts with. The numeric steps (godine/visina/težina)
+ * use a native picker whose opening position is its currently-selected value,
+ * so pre-selecting a sensible middle-of-the-range default lands the wheel there
+ * ("gde počinje kada neko krene da ide gore-dole") instead of at the very
+ * bottom of the range. Non-numeric steps (pol, aktivnost, cilj...) stay unset
+ * so the user still makes a deliberate choice.
+ */
+export const DEFAULT_ONBOARDING_DATA: OnboardingData = {
+  ...EMPTY_ONBOARDING_DATA,
+  ageYears: 25,
+  heightCm: 175,
+  weightKg: 75,
+};
+
 /** Every possible step, in order. The `cilj` (target weight + timeframe) step
  * is conditional -- see `visibleStepIds` -- since maintain/tone goals have no
  * target weight to collect. */

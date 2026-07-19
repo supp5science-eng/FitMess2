@@ -14,7 +14,7 @@ import { GoalTypeStep } from "@/components/onboarding/steps/goal-type-step";
 import { GoalStep } from "@/components/onboarding/steps/goal-step";
 import {
   buildOnboardingSummaryUrl,
-  EMPTY_ONBOARDING_DATA,
+  DEFAULT_ONBOARDING_DATA,
   visibleStepIds,
 } from "@/lib/onboarding/types";
 import type {
@@ -82,7 +82,7 @@ function validateStep(
 export function OnboardingWizard() {
   const router = useRouter();
   const [stepIndex, setStepIndex] = useState(0);
-  const [data, setData] = useState<OnboardingData>(EMPTY_ONBOARDING_DATA);
+  const [data, setData] = useState<OnboardingData>(DEFAULT_ONBOARDING_DATA);
   const [error, setError] = useState<string | undefined>(undefined);
 
   const stepIds = useMemo(() => visibleStepIds(data.goal), [data.goal]);

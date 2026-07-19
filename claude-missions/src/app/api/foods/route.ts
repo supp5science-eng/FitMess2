@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createFoodEntry, FOOD_CREATE_FAILED_ERROR_SR } from "@/lib/food/create";
 import type { Database } from "@/lib/types/db";
 
@@ -41,12 +42,9 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const userId = await getCurrentUserId(supabase);
 
-  if (userError || !user) {
+  if (!userId) {
     return NextResponse.json(
       { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR },
       { status: 401 }
@@ -65,7 +63,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await createFoodEntry(supabase, {
-      submittedBy: user.id,
+      submittedBy: userId,
       entry: rawBody,
     });
 

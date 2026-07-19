@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createLogFromPortion } from "@/lib/food/portions";
 import type { Database, LogMethod } from "@/lib/types/db";
 
@@ -64,12 +65,9 @@ export async function POST(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  const userId = await getCurrentUserId(supabase);
 
-  if (userError || !user) {
+  if (!userId) {
     return NextResponse.json(
       { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR },
       { status: 401 }
@@ -119,7 +117,7 @@ export async function POST(request: NextRequest) {
     }
 
     const result = await createLogFromPortion(supabase, {
-      userId: user.id,
+      userId,
       food,
       grams,
       method,

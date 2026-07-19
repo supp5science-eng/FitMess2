@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import {
   deleteLog,
   LOG_DELETE_FAILED_ERROR_SR,
@@ -50,14 +51,13 @@ const patchBodySchema = z.object({
 
 const idSchema = z.string().min(1, MALFORMED_ID_ERROR_SR);
 
-async function getSessionUser(
+async function getSessionUserId(
   supabase: ReturnType<typeof createServerClient<Database>>
-) {
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-  return { user: error ? null : user, error };
+): Promise<string | null> {
+  // getClaims verifies the token locally (no Auth-server round trip). These
+  // handlers only need "is there a signed-in caller"; RLS (`logs_*_own`)
+  // filters the target row by ownership, so the id itself isn't used here.
+  return getCurrentUserId(supabase);
 }
 
 function buildSessionClient(request: NextRequest) {
@@ -91,9 +91,9 @@ export async function PATCH(
   const logId = parsedId.data;
 
   const supabase = buildSessionClient(request);
-  const { user } = await getSessionUser(supabase);
+  const userId = await getSessionUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json(
       { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR },
       { status: 401 }
@@ -204,9 +204,9 @@ export async function DELETE(
   const logId = parsedId.data;
 
   const supabase = buildSessionClient(request);
-  const { user } = await getSessionUser(supabase);
+  const userId = await getSessionUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return NextResponse.json(
       { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR },
       { status: 401 }

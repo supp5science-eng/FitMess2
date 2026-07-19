@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import {
   BARCODE_LOOKUP_FAILED_ERROR_SR,
   gtinSchema,
@@ -64,12 +65,11 @@ export async function GET(
     }
   );
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  // Only gates on "is there a signed-in user" -- barcode lookup reads the
+  // shared `foods` catalog. Resolve locally via getClaims (no network).
+  const userId = await getCurrentUserId(supabase);
 
-  if (userError || !user) {
+  if (!userId) {
     return NextResponse.json(
       { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR },
       { status: 401 }

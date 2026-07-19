@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import { searchFoods, searchQuerySchema } from "@/lib/food/search";
 import type { Database } from "@/lib/types/db";
 
@@ -49,12 +50,12 @@ export async function GET(request: NextRequest) {
     }
   );
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
+  // Search-as-you-type hits this route on every keystroke, so resolve the
+  // caller locally (getClaims, no Auth-server round trip). We only need to
+  // know a signed-in user exists -- `foods` is a shared catalog read.
+  const userId = await getCurrentUserId(supabase);
 
-  if (userError || !user) {
+  if (!userId) {
     return NextResponse.json(
       { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR },
       { status: 401 }

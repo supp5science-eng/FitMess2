@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { requireAdmin } from "@/lib/auth/admin";
@@ -22,5 +23,26 @@ export default async function AdminLayout({
 }) {
   await requireAdmin();
 
-  return <>{children}</>;
+  return (
+    <div className="flex min-h-[100dvh] flex-col">
+      {/* Persistent admin header: the /admin area is its own route group with
+          no bottom nav, so without this the only way out was to close the app.
+          Safe-area aware so the back link clears the iOS notch. */}
+      <header
+        className="sticky top-0 z-20 flex items-center justify-between gap-3 border-b border-border bg-card/95 px-4 pb-3 backdrop-blur"
+        style={{ paddingTop: "calc(env(safe-area-inset-top, 0px) + 12px)" }}
+      >
+        <Link
+          href="/danas"
+          className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
+        >
+          <span aria-hidden="true">←</span> Nazad u aplikaciju
+        </Link>
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Admin
+        </span>
+      </header>
+      <div className="flex flex-1 flex-col">{children}</div>
+    </div>
+  );
 }

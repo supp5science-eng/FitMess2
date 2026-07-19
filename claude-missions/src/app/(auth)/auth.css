@@ -187,6 +187,22 @@
   /* room for the 44px reveal button so text never runs under the eye */
   padding-right: 50px;
 }
+
+/* ---------- Phone field (dial-code picker + local number) ---------- */
+.auth-phone {
+  display: flex;
+  gap: 8px;
+}
+.auth-phone-cc {
+  width: auto;
+  flex: 0 0 auto;
+  padding-right: 12px;
+  font-weight: 600;
+}
+.auth-phone-local {
+  flex: 1 1 auto;
+  min-width: 0;
+}
 .auth-reveal {
   position: absolute;
   top: 0;

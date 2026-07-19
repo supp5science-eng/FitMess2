@@ -5,6 +5,7 @@ import { useFormStatus } from "react-dom";
 
 import { signUpAction, type AuthFormState } from "../actions";
 import { PasswordInput } from "../password-input";
+import { PhoneField } from "./phone-field";
 
 const initialState: AuthFormState = null;
 
@@ -41,6 +42,7 @@ export function SignUpForm() {
           aria-invalid={invalid}
         />
       </div>
+      <PhoneField invalid={invalid} />
       <PasswordInput
         name="password"
         label="Lozinka"

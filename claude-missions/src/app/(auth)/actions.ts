@@ -16,6 +16,7 @@ import { SR_AUTH_MESSAGES } from "@/lib/auth/errors";
 import {
   emailSchema,
   forgotPasswordSchema,
+  normalizePhone,
   resetPasswordSchema,
   signInSchema,
   signUpSchema,
@@ -77,6 +78,10 @@ export async function signUpAction(
   const parsed = signUpSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
+    phone: normalizePhone(
+      String(formData.get("phone_cc") ?? ""),
+      String(formData.get("phone_local") ?? "")
+    ),
   });
   if (!parsed.success) {
     return {
@@ -90,7 +95,8 @@ export async function signUpAction(
     supabase,
     parsed.data.email,
     parsed.data.password,
-    `${await emailRedirectOrigin()}/auth/callback`
+    `${await emailRedirectOrigin()}/auth/callback`,
+    parsed.data.phone
   );
 
   if (!result.ok) {

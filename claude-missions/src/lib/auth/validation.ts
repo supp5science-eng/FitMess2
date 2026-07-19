@@ -22,9 +22,32 @@ export const passwordSchema = z
   .string()
   .min(8, "Lozinka mora imati bar 8 karaktera.");
 
+/**
+ * Phone number in E.164 form (`+` then 7-15 digits). Collected as a mandatory
+ * signup field for later cold-calling -- NOT used for any verification, just
+ * stored on the profile. The UI splits it into a country dial-code picker
+ * (default +381) plus the local part; `normalizePhone` recombines them.
+ */
+export const phoneSchema = z
+  .string()
+  .trim()
+  .regex(/^\+[1-9]\d{6,14}$/, "Unesi ispravan broj telefona.");
+
+/**
+ * Recombine the dial-code picker value (e.g. "+381") with the locally-typed
+ * part into an E.164 string. Strips everything but digits from the local part
+ * and drops the national trunk "0" (so "060 063 7486" under +381 becomes
+ * "+381600637486"), matching how the number is actually dialed internationally.
+ */
+export function normalizePhone(dialCode: string, local: string): string {
+  const localDigits = local.replace(/\D/g, "").replace(/^0+/, "");
+  return `${dialCode}${localDigits}`;
+}
+
 export const signUpSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
+  phone: phoneSchema,
 });
 
 export const signInSchema = z.object({

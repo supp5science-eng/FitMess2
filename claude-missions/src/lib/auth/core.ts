@@ -74,12 +74,19 @@ export async function signUpEmailPassword(
   supabase: SupabaseClient,
   email: string,
   password: string,
-  emailRedirectTo: string
+  emailRedirectTo: string,
+  phone?: string
 ): Promise<AuthActionResult> {
   const { error } = await supabase.auth.signUp({
     email,
     password,
-    options: { emailRedirectTo },
+    options: {
+      emailRedirectTo,
+      // Stash the phone in user_metadata so the `handle_new_auth_user` trigger
+      // (migration 0009) can copy it onto profiles.phone atomically at signup.
+      // Not used for verification -- carried purely for later cold-calling.
+      data: phone ? { phone } : undefined,
+    },
   });
 
   if (error) {

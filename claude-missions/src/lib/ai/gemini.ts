@@ -1,4 +1,10 @@
 import {
+  LABEL_PROMPT,
+  LABEL_RESPONSE_SCHEMA,
+  labelEstimateSchema,
+  type LabelEstimate,
+} from "@/lib/ai/label-estimate";
+import {
   MEAL_PROMPT,
   MEAL_RESPONSE_SCHEMA,
   mealEstimateSchema,
@@ -23,15 +29,16 @@ interface GeminiResponse {
 }
 
 /**
- * Sends a food photo (base64 + mime type) to Gemini and returns a validated
- * meal estimate for the depicted portion. Throws `GeminiError` on any
- * transport/parse failure -- the caller (a server action) maps that to a
- * friendly Serbian message.
+ * Sends one image + prompt to Gemini and returns the raw JSON text the model
+ * produced (constrained to `responseSchema`). Throws `GeminiError` on any
+ * transport/HTTP/empty-body failure. Shared by every vision estimator below.
  */
-export async function estimateMealFromImage(
+async function generateJsonFromImage(
+  prompt: string,
+  responseSchema: unknown,
   base64Image: string,
   mimeType: string
-): Promise<MealEstimate> {
+): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new GeminiError("GEMINI_API_KEY is not set");
 
@@ -43,14 +50,14 @@ export async function estimateMealFromImage(
       {
         role: "user",
         parts: [
-          { text: MEAL_PROMPT },
+          { text: prompt },
           { inline_data: { mime_type: mimeType, data: base64Image } },
         ],
       },
     ],
     generationConfig: {
       responseMimeType: "application/json",
-      responseSchema: MEAL_RESPONSE_SCHEMA,
+      responseSchema,
       temperature: 0.2,
     },
   };
@@ -88,15 +95,47 @@ export async function estimateMealFromImage(
     .trim();
 
   if (!text) throw new GeminiError("Gemini returned an empty response");
+  return text;
+}
 
-  let raw: unknown;
+function parseJson(text: string): unknown {
   try {
-    raw = JSON.parse(text);
+    return JSON.parse(text);
   } catch {
     throw new GeminiError("Gemini returned non-JSON output");
   }
+}
 
-  const parsed = mealEstimateSchema.safeParse(raw);
+/** Food photo -> validated meal estimate for the depicted portion. */
+export async function estimateMealFromImage(
+  base64Image: string,
+  mimeType: string
+): Promise<MealEstimate> {
+  const text = await generateJsonFromImage(
+    MEAL_PROMPT,
+    MEAL_RESPONSE_SCHEMA,
+    base64Image,
+    mimeType
+  );
+  const parsed = mealEstimateSchema.safeParse(parseJson(text));
+  if (!parsed.success) {
+    throw new GeminiError("Gemini output did not match the expected shape");
+  }
+  return parsed.data;
+}
+
+/** Nutrition-label photo -> validated per-100g product values. */
+export async function estimateLabelFromImage(
+  base64Image: string,
+  mimeType: string
+): Promise<LabelEstimate> {
+  const text = await generateJsonFromImage(
+    LABEL_PROMPT,
+    LABEL_RESPONSE_SCHEMA,
+    base64Image,
+    mimeType
+  );
+  const parsed = labelEstimateSchema.safeParse(parseJson(text));
   if (!parsed.success) {
     throw new GeminiError("Gemini output did not match the expected shape");
   }

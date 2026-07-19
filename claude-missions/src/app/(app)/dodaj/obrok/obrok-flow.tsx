@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Camera, Loader2, Sparkles } from "lucide-react";
 
 import type { MealEstimate } from "@/lib/ai/meal-estimate";
+import { downscaleImage } from "@/lib/image/downscale";
 import { estimateMealAction, logMealAction } from "./actions";
 
 type Phase = "capture" | "estimating" | "confirm" | "saving";
@@ -22,33 +23,6 @@ const CONFIDENCE_LABEL: Record<MealEstimate["sigurnost"], string> = {
   srednja: "Srednja sigurnost",
   visoka: "Visoka sigurnost",
 };
-
-// Downscale + re-encode the picked photo before upload -- faster, cheaper, and
-// well within Gemini's needs. Falls back to the original file if anything odd
-// happens with the canvas path.
-async function downscale(file: File, maxDim = 1280, quality = 0.82): Promise<Blob> {
-  try {
-    const bitmap = await createImageBitmap(file);
-    const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
-    const w = Math.round(bitmap.width * scale);
-    const h = Math.round(bitmap.height * scale);
-    const canvas = document.createElement("canvas");
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return file;
-    ctx.drawImage(bitmap, 0, 0, w, h);
-    return await new Promise<Blob>((resolve) =>
-      canvas.toBlob(
-        (blob) => resolve(blob ?? file),
-        "image/jpeg",
-        quality
-      )
-    );
-  } catch {
-    return file;
-  }
-}
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
@@ -81,7 +55,7 @@ export function ObrokFlow() {
     });
     setPhase("estimating");
 
-    const blob = await downscale(file);
+    const blob = await downscaleImage(file);
     const formData = new FormData();
     formData.append("slika", blob, "obrok.jpg");
 

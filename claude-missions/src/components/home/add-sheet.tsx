@@ -65,8 +65,8 @@ const OPTIONS: AddSheetOption[] = [
     key: "deklaracija",
     label: "Slikaj deklaraciju",
     icon: Camera,
-    href: "/dodaj/uskoro/deklaracija",
-    available: false,
+    href: "/dodaj/deklaracija",
+    available: true,
   },
   {
     key: "obrok",

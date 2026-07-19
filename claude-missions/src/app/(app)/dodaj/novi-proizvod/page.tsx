@@ -22,13 +22,29 @@ import { NewProductForm } from "@/components/food/new-product-form";
 // step either way; F063 should feed its own prefilled values into
 // `NewProductForm` as new optional props rather than duplicating this form.
 
+function first(value: string | string[] | undefined): string | undefined {
+  const v = Array.isArray(value) ? value[0] : value;
+  return v && v.length > 0 ? v : undefined;
+}
+
 export default async function NoviProizvodPage({
   searchParams,
 }: {
-  searchParams: Promise<{ barkod?: string | string[] }>;
+  searchParams: Promise<{
+    barkod?: string | string[];
+    // F063: prefill from a photographed nutrition label.
+    naziv?: string | string[];
+    brend?: string | string[];
+    kcal?: string | string[];
+    protein?: string | string[];
+    uh?: string | string[];
+    mast?: string | string[];
+    izvor?: string | string[];
+  }>;
 }) {
-  const { barkod } = await searchParams;
-  const gtin = Array.isArray(barkod) ? barkod[0] : barkod;
+  const params = await searchParams;
+  const gtin = first(params.barkod);
+  const fromLabel = first(params.izvor) === "deklaracija";
 
   return (
     <main
@@ -39,7 +55,13 @@ export default async function NoviProizvodPage({
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Novi proizvod
         </h1>
-        {gtin ? (
+        {fromLabel ? (
+          <p className="text-sm text-muted-foreground">
+            Popunili smo vrednosti sa deklaracije —{" "}
+            <span className="font-medium text-foreground">proveri</span> i
+            doteraj po potrebi pa sačuvaj.
+          </p>
+        ) : gtin ? (
           <p className="text-sm text-muted-foreground">
             Barkod{" "}
             <span
@@ -58,7 +80,15 @@ export default async function NoviProizvodPage({
         )}
       </div>
 
-      <NewProductForm initialBarcode={gtin} />
+      <NewProductForm
+        initialBarcode={gtin}
+        initialName={first(params.naziv)}
+        initialBrand={first(params.brend)}
+        initialKcal={first(params.kcal)}
+        initialProtein={first(params.protein)}
+        initialCarbs={first(params.uh)}
+        initialFat={first(params.mast)}
+      />
     </main>
   );
 }

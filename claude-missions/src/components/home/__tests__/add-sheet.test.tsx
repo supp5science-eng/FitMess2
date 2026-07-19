@@ -34,7 +34,7 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     const expectedHrefs: Record<string, string> = {
       pretrazi: "/dodaj/pretraga",
       barkod: "/dodaj/skener",
-      deklaracija: "/dodaj/uskoro/deklaracija",
+      deklaracija: "/dodaj/deklaracija",
       obrok: "/dodaj/obrok",
     };
 
@@ -48,38 +48,31 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     }
   });
 
-  it("test_AS_051_pretrazi_and_barkod_the_built_methods_have_no_uskoro_badge", () => {
+  it("test_AS_051_all_methods_are_built_so_none_show_an_uskoro_badge", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    // Search (F024), barcode (F030) and now meal photos (F064) are built --
-    // only the still-unbuilt label-photo method keeps the "Uskoro" badge.
-    for (const key of ["pretrazi", "barkod", "obrok"]) {
+    // Search (F024), barcode (F030), meal photos (F064) and label photos
+    // (F063) are all built now -- no method is stubbed, so none carries the
+    // "Uskoro" badge.
+    for (const key of ["pretrazi", "barkod", "obrok", "deklaracija"]) {
       expect(
         screen.queryByTestId(`add-sheet-soon-badge-${key}`)
       ).not.toBeInTheDocument();
     }
   });
 
-  it("test_AS_051_photo_methods_are_shown_with_an_uskoro_badge_not_hidden_or_missing", () => {
-    render(<AddSheet />);
-    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
-
-    // Only the nutrition-label photo method is still unbuilt.
-    for (const key of ["deklaracija"]) {
-      expect(
-        screen.getByTestId(`add-sheet-soon-badge-${key}`)
-      ).toHaveTextContent("Uskoro");
-    }
-  });
-
-  it("test_AS_051_the_obrok_link_points_to_the_real_meal_photo_flow", () => {
+  it("test_AS_051_the_photo_links_point_to_the_real_meal_and_label_flows", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
     expect(screen.getByTestId("add-sheet-option-obrok")).toHaveAttribute(
       "href",
       "/dodaj/obrok"
+    );
+    expect(screen.getByTestId("add-sheet-option-deklaracija")).toHaveAttribute(
+      "href",
+      "/dodaj/deklaracija"
     );
   });
 
@@ -103,17 +96,6 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     );
   });
 
-  it("test_AS_051_stubbed_photo_methods_link_to_a_real_uskoro_placeholder_route_not_a_dead_click", () => {
-    render(<AddSheet />);
-    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
-
-    for (const key of ["deklaracija"]) {
-      const link = screen.getByTestId(`add-sheet-option-${key}`);
-      expect(link).toHaveAttribute("href", `/dodaj/uskoro/${key}`);
-      // Real anchors, never `aria-disabled`/non-navigable dead ends.
-      expect(link).not.toHaveAttribute("aria-disabled", "true");
-    }
-  });
 });
 
 describe("AS-051: closing the sheet", () => {

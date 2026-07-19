@@ -21,6 +21,16 @@ export type EstimateResult =
 export async function estimateMealAction(
   formData: FormData
 ): Promise<EstimateResult> {
+  // Auth-gate before touching the paid vision API.
+  const supabase = await createClient();
+  const userId = await getCurrentUserId(supabase);
+  if (!userId) {
+    return {
+      ok: false,
+      error_sr: "Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.",
+    };
+  }
+
   const file = formData.get("slika");
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error_sr: "Nema slike. Slikaj obrok pa pokušaj ponovo." };

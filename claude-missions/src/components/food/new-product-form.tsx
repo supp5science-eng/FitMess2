@@ -55,6 +55,12 @@ interface CreateFoodResponseBody {
 
 export function NewProductForm({
   initialBarcode,
+  initialName,
+  initialBrand,
+  initialKcal,
+  initialProtein,
+  initialCarbs,
+  initialFat,
 }: {
   /** The scanned GTIN from `ScanScreen`'s MISS redirect, when present
    * (`searchParams.barkod` on the server page) -- pre-fills, but does NOT
@@ -63,14 +69,23 @@ export function NewProductForm({
    * scan can still attach a barcode manually, and a mis-scanned digit can
    * be corrected before saving). */
   initialBarcode?: string;
+  /** F063: values read off a photographed nutrition label (Gemini), passed
+   * via the URL by the server page. All optional -- every field stays fully
+   * editable; this is a prefill, never a lock. */
+  initialName?: string;
+  initialBrand?: string;
+  initialKcal?: string;
+  initialProtein?: string;
+  initialCarbs?: string;
+  initialFat?: string;
 }) {
-  const [name, setName] = useState("");
-  const [brand, setBrand] = useState("");
+  const [name, setName] = useState(initialName ?? "");
+  const [brand, setBrand] = useState(initialBrand ?? "");
   const [barcode, setBarcode] = useState(initialBarcode ?? "");
-  const [kcal, setKcal] = useState("");
-  const [protein, setProtein] = useState("");
-  const [carbs, setCarbs] = useState("");
-  const [fat, setFat] = useState("");
+  const [kcal, setKcal] = useState(initialKcal ?? "");
+  const [protein, setProtein] = useState(initialProtein ?? "");
+  const [carbs, setCarbs] = useState(initialCarbs ?? "");
+  const [fat, setFat] = useState(initialFat ?? "");
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<FormStatus>("idle");

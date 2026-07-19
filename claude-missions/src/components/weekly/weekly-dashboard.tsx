@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { DayBars } from "@/components/weekly/day-bars";
 import { WeeklyRing } from "@/components/weekly/weekly-ring";
 import type { WeekStatus, WeekSummary } from "@/lib/week/summary";
@@ -59,7 +61,13 @@ function StatCard({
   );
 }
 
-export function WeeklyDashboard({ summary }: { summary: WeekSummary }) {
+export function WeeklyDashboard({
+  summary,
+  footer,
+}: {
+  summary: WeekSummary;
+  footer?: ReactNode;
+}) {
   const status = STATUS_META[summary.status];
   const hasData = summary.loggedDaysCount > 0;
 
@@ -128,6 +136,9 @@ export function WeeklyDashboard({ summary }: { summary: WeekSummary }) {
         </div>
         <DayBars summary={summary} />
       </section>
+
+      {/* "Svi obroci" meal-history log (bottom of the page) */}
+      {footer}
     </main>
   );
 }

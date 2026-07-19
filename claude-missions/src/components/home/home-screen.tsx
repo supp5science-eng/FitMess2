@@ -2,11 +2,13 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
+import { DateStrip } from "@/components/home/date-strip";
 import { IntroCover } from "@/components/home/intro-cover";
 import { MacroBars } from "@/components/home/macro-bars";
 import { MealList } from "@/components/home/meal-list";
 import { Ring } from "@/components/home/ring";
 import type { LogWithFood } from "@/lib/home/attach-food";
+import type { DayCell } from "@/lib/home/date-strip";
 import { computeDayTotals } from "@/lib/home/totals";
 import type { Log, Target } from "@/lib/types/db";
 
@@ -43,12 +45,18 @@ export function HomeScreen({
   initialLogs,
   target,
   intro = false,
+  days = [],
+  mealsHeading = "Obroci danas",
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
   // Set by `/danas` (from the one-time `fm_intro` cookie) when the user has
   // just finished onboarding, so we play the ring hand-off exactly once.
   intro?: boolean;
+  // The date strip's day cells (built server-side) + the meals-section heading
+  // for the day currently being viewed ("Obroci danas" for today).
+  days?: DayCell[];
+  mealsHeading?: string;
 }) {
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
 
@@ -123,7 +131,7 @@ export function HomeScreen({
       data-intro={dataIntro}
       className="home-main flex flex-1 flex-col gap-8 px-6 py-8"
     >
-      <header className="home-body">
+      <header className="home-body flex flex-col gap-5">
         {/* FitMess wordmark in the display face (Archivo Black); "Mess" in the
             teal accent the primary buttons use (--primary). No greeting, no
             mark -- just the brand lockup. */}
@@ -135,6 +143,7 @@ export function HomeScreen({
         >
           Fit<span className="text-primary">Mess</span>
         </h1>
+        {days.length > 0 ? <DateStrip days={days} /> : null}
       </header>
 
       {target ? (
@@ -170,7 +179,7 @@ export function HomeScreen({
 
       <section className="home-body flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-foreground">
-          Obroci danas
+          {mealsHeading}
         </h2>
         <MealList logs={logs} onSaved={handleSaved} onDeleted={handleDeleted} />
       </section>

@@ -2,8 +2,32 @@ import { cookies } from "next/headers";
 
 import { HomeScreen } from "@/components/home/home-screen";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getBelgradeDayRange, toBelgradeCalendarDay } from "@/lib/dates";
+import { buildDateStrip } from "@/lib/home/date-strip";
+import { getLoggedDays } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
 import { createClient } from "@/lib/supabase/server";
+
+const SR_MONTHS_SHORT = [
+  "jan",
+  "feb",
+  "mar",
+  "apr",
+  "maj",
+  "jun",
+  "jul",
+  "avg",
+  "sep",
+  "okt",
+  "nov",
+  "dec",
+];
+
+/** `"YYYY-MM-DD"` -> `"17. jul"` for the meals-section heading of a past day. */
+function shortDate(key: string): string {
+  const [, month, day] = key.split("-").map(Number);
+  return `${day}. ${SR_MONTHS_SHORT[month! - 1]}`;
+}
 
 // F027 / AS-043, AS-047, AS-048, AS-049, AS-050: `/danas` -- the home
 // screen, this app's primary/centerpiece view (`src/components/shell/
@@ -20,7 +44,13 @@ import { createClient } from "@/lib/supabase/server";
 // as server-fetched initial props, which owns the small bit of client state
 // needed for AS-043 (immediate update after an edit/delete without a full
 // page reload).
-export default async function DanasPage() {
+export default async function DanasPage({
+  searchParams,
+}: {
+  // `?dan=YYYY-MM-DD` selects which day the dashboard shows (from the date
+  // strip). Absent (or invalid/future) -> today.
+  searchParams: Promise<{ dan?: string | string[] }>;
+}) {
   const supabase = await createClient();
   const userId = await getCurrentUserId(supabase);
 
@@ -34,7 +64,40 @@ export default async function DanasPage() {
     );
   }
 
-  const result = await getTodayData(supabase, userId);
+  const now = new Date();
+  const todayKey = toBelgradeCalendarDay(now);
+
+  // Which day to show: the `dan` param if it's a valid, non-future calendar
+  // day, else today. (The lower bound -- can't go before sign-up -- is enforced
+  // on the strip, which never links to pre-sign-up days.)
+  const { dan } = await searchParams;
+  const danParam = Array.isArray(dan) ? dan[0] : dan;
+  const selectedKey =
+    typeof danParam === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(danParam) &&
+    danParam <= todayKey
+      ? danParam
+      : todayKey;
+  const isToday = selectedKey === todayKey;
+
+  // Belgrade day range for the selected day (noon-UTC is a robust in-day
+  // instant). The strip's "logged" rings need a wider window; sign-up day
+  // (`profiles.created_at`) is the earliest selectable day.
+  const range = getBelgradeDayRange(new Date(`${selectedKey}T12:00:00.000Z`));
+  const [result, loggedDays, profileResult] = await Promise.all([
+    getTodayData(supabase, userId, range),
+    getLoggedDays(
+      supabase,
+      userId,
+      new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+      now
+    ),
+    supabase
+      .from("profiles")
+      .select("created_at")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
 
   if (result.error) {
     console.error("[F027 /danas] getTodayData failed:", result.error.message);
@@ -50,18 +113,25 @@ export default async function DanasPage() {
     );
   }
 
+  const minKey = profileResult.data?.created_at
+    ? toBelgradeCalendarDay(new Date(profileResult.data.created_at))
+    : undefined;
+
+  const days = buildDateStrip({ now, selectedKey, loggedDays, minKey });
+
   // One-time "ring hand-off" from onboarding: the plan-reveal drops the
   // `fm_intro` cookie just before its hard navigation here (see
-  // `plan-reveal.tsx`). Presence is enough -- HomeScreen consumes/clears it
-  // client-side. Everyone else gets the dashboard with no intro.
+  // `plan-reveal.tsx`). Only ever plays for today, never a past day.
   const cookieStore = await cookies();
-  const intro = cookieStore.get("fm_intro") != null;
+  const intro = isToday && cookieStore.get("fm_intro") != null;
 
   return (
     <HomeScreen
       initialLogs={result.data.logs}
       target={result.data.target}
       intro={intro}
+      days={days}
+      mealsHeading={isToday ? "Obroci danas" : `Obroci · ${shortDate(selectedKey)}`}
     />
   );
 }

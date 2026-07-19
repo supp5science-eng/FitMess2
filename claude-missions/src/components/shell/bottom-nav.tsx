@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
  * activate with Enter) with no extra wiring required.
  */
 const NAV_ITEMS = [
-  { href: "/danas", label: "Danas", icon: Home },
+  { href: "/danas", label: "Početna", icon: Home },
   { href: "/nedelja", label: "Nedelja", icon: CalendarDays },
   { href: "/agent", label: "Agent", icon: Bot },
   { href: "/profil", label: "Profil", icon: User },

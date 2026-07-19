@@ -128,9 +128,27 @@ export function HomeScreen({
       data-intro={dataIntro}
       className="home-main flex flex-1 flex-col gap-8 px-6 py-8"
     >
-      <header className="home-body">
+      <header className="home-body flex flex-col gap-1.5">
+        {/* Brand lockup: white woven mark + "FitMess" wordmark ("Mess" in the
+            brand green already used across the UI). Mark is decorative here --
+            the adjacent text carries the name for screen readers. */}
+        <div className="flex items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/fitmess-mark-white.png"
+            alt=""
+            aria-hidden="true"
+            width={30}
+            height={30}
+            draggable={false}
+            className="h-[30px] w-[30px] select-none"
+          />
+          <span className="text-xl font-bold tracking-tight text-foreground">
+            Fit<span className="text-[#16a34a]">Mess</span>
+          </span>
+        </div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          {name ? `Zdravo, ${name}` : "Danas"}
+          {name ? `Zdravo, ${name}` : "Početna"}
         </h1>
       </header>
 

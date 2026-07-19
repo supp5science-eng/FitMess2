@@ -92,6 +92,7 @@ function makeCookieJarClient() {
 }
 
 const ONBOARDING_DATA: OnboardingData = {
+  name: "Marko",
   sex: "male",
   ageYears: 34,
   heightCm: 182,

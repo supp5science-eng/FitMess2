@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   MAX_AGE_YEARS,
   MAX_HEIGHT_CM,
+  MAX_NAME_LENGTH,
   MAX_TIMEFRAME_WEEKS,
   MAX_WEIGHT_KG,
   MIN_AGE_YEARS,
@@ -13,9 +14,31 @@ import {
   validateAge,
   validateGoal,
   validateHeight,
+  validateName,
   validateSex,
   validateWeight,
 } from "../validation";
+
+describe("validateName: the onboarding 'ime' step", () => {
+  it("accepts a normal name", () => {
+    expect(validateName("Ana")).toEqual({ valid: true });
+  });
+
+  it("trims surrounding whitespace before judging emptiness", () => {
+    expect(validateName("  Marko  ")).toEqual({ valid: true });
+  });
+
+  it("rejects null, empty, and whitespace-only input", () => {
+    expect(validateName(null).valid).toBe(false);
+    expect(validateName("").valid).toBe(false);
+    expect(validateName("   ").valid).toBe(false);
+  });
+
+  it("rejects a name longer than MAX_NAME_LENGTH", () => {
+    expect(validateName("a".repeat(MAX_NAME_LENGTH)).valid).toBe(true);
+    expect(validateName("a".repeat(MAX_NAME_LENGTH + 1)).valid).toBe(false);
+  });
+});
 
 // F015: pure unit coverage for every per-step validation rule the wizard UI
 // relies on (AS-019 -- "onboarding collects sex, age, height, weight,

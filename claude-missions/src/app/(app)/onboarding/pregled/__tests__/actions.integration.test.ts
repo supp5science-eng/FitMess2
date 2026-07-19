@@ -120,6 +120,7 @@ function redirectPath(response: Response): string | null {
 }
 
 const BASE_ONBOARDING_DATA: OnboardingData = {
+  name: "Ana",
   sex: "female",
   ageYears: 29,
   heightCm: 168,

@@ -15,6 +15,7 @@ import type { OnboardingData } from "../types";
 // correctly encoded.
 
 const FULL_DATA: OnboardingData = {
+  name: "Ana",
   sex: "female",
   ageYears: 29,
   heightCm: 168,
@@ -36,6 +37,13 @@ describe("AS-019: buildOnboardingSummaryUrl carries all seven collected inputs t
       buildOnboardingSummaryUrl(FULL_DATA).split("?")[1]
     );
     expect(params.get("pol")).toBe("female");
+  });
+
+  it("test_url_encodes_name", () => {
+    const params = new URLSearchParams(
+      buildOnboardingSummaryUrl(FULL_DATA).split("?")[1]
+    );
+    expect(params.get("ime")).toBe("Ana");
   });
 
   it("test_AS_019_url_encodes_age", () => {

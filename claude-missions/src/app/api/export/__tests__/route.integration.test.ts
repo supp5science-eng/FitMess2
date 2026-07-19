@@ -147,6 +147,7 @@ describe.skipIf(!hasCredentials)(
     }
 
     const OWNER_ONBOARDING: OnboardingData = {
+      name: "Ana",
       sex: "female",
       ageYears: 29,
       heightCm: 170,
@@ -158,6 +159,7 @@ describe.skipIf(!hasCredentials)(
     };
 
     const OTHER_ONBOARDING: OnboardingData = {
+      name: "Marko",
       sex: "male",
       ageYears: 41,
       heightCm: 182,

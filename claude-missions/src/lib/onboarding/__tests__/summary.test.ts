@@ -16,6 +16,7 @@ import type { OnboardingData } from "../types";
 describe("parseOnboardingSearchParams: reads the F015 -> F016 hand-off query string", () => {
   it("test_AS_020_parses_all_seven_query_params_into_typed_fields", () => {
     const data = parseOnboardingSearchParams({
+      ime: "Ana",
       pol: "female",
       godine: "29",
       visina: "168",
@@ -26,6 +27,7 @@ describe("parseOnboardingSearchParams: reads the F015 -> F016 hand-off query str
     });
 
     expect(data).toEqual({
+      name: "Ana",
       sex: "female",
       ageYears: 29,
       heightCm: 168,
@@ -63,6 +65,7 @@ describe("parseOnboardingSearchParams: reads the F015 -> F016 hand-off query str
 describe("isOnboardingDataComplete: the empty-state gate", () => {
   it("test_AS_020_a_fully_populated_hand_off_is_complete", () => {
     const data: OnboardingData = {
+      name: "Ana",
       sex: "female",
       ageYears: 29,
       heightCm: 168,
@@ -77,6 +80,7 @@ describe("isOnboardingDataComplete: the empty-state gate", () => {
 
   it("test_AS_020_a_single_missing_field_is_not_complete_renders_empty_state", () => {
     const data: OnboardingData = {
+      name: "Ana",
       sex: "female",
       ageYears: 29,
       heightCm: 168,
@@ -96,6 +100,7 @@ describe("isOnboardingDataComplete: the empty-state gate", () => {
 
 describe("computeBudgetSummary: recompute-on-edit is a pure function of the current inputs (AS-020)", () => {
   const base = {
+    name: "Ana",
     sex: "female" as const,
     ageYears: 29,
     heightCm: 168,
@@ -183,6 +188,7 @@ describe("explainGoalAdjustment: AS-030 Serbian explanation copy", () => {
 
   it("test_AS_030_a_goal_within_safe_bounds_never_triggers_an_adjustment_explanation_end_to_end", () => {
     const summary = computeBudgetSummary({
+      name: "Ana",
       sex: "female",
       ageYears: 29,
       heightCm: 168,
@@ -202,6 +208,7 @@ describe("explainGoalAdjustment: AS-030 Serbian explanation copy", () => {
     // Aggressive: 30kg in 4 weeks for a smaller-bodied woman -- guaranteed
     // to blow through both the 25% deficit cap and the 1200 kcal floor.
     const summary = computeBudgetSummary({
+      name: "Ana",
       sex: "female",
       ageYears: 29,
       heightCm: 160,

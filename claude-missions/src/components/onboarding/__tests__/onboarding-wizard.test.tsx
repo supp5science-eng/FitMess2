@@ -33,7 +33,7 @@ describe("AS-018: the wizard's first render is step 1 (pol) -- reachable, not bl
     expect(
       screen.getByRole("heading", { name: /Koji je tvoj pol\?/ })
     ).toBeInTheDocument();
-    expect(screen.getByText(/Korak 1 od 6/)).toBeInTheDocument();
+    expect(screen.getByText(/Korak 1 od 7/)).toBeInTheDocument();
   });
 
   it("test_AS_018_step_1_offers_a_clear_next_action_button", () => {
@@ -56,23 +56,58 @@ describe("AS-019: step 1 (pol) collects sex", () => {
     ).toBeInTheDocument();
   });
 
-  it("test_AS_019_pol_step_accepts_a_selection_and_advances_to_godine", () => {
+  it("test_AS_019_pol_step_accepts_a_selection_and_advances_to_ime", () => {
     render(<OnboardingWizard />);
     fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(
+      screen.getByRole("heading", { name: /Kako se zoveš\?/ })
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Korak 2 od 7/)).toBeInTheDocument();
+  });
+});
+
+describe("Onboarding step 2 (ime) collects the user's name", () => {
+  it("test_ime_step_blocks_next_with_a_serbian_error_when_empty", () => {
+    render(<OnboardingWizard />);
+    fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+
+    // On the ime step with an empty field, Dalje must block and stay put.
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+    expect(screen.getByRole("alert")).toHaveTextContent(/ime/i);
+    expect(
+      screen.getByRole("heading", { name: /Kako se zoveš\?/ })
+    ).toBeInTheDocument();
+  });
+
+  it("test_ime_step_accepts_a_name_and_advances_to_godine", () => {
+    render(<OnboardingWizard />);
+    fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+
+    fireEvent.change(screen.getByLabelText(/Ime/), {
+      target: { value: "Ana" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+
+    expect(
       screen.getByRole("heading", { name: /Koliko imaš godina\?/ })
     ).toBeInTheDocument();
-    expect(screen.getByText(/Korak 2 od 6/)).toBeInTheDocument();
+    expect(screen.getByText(/Korak 3 od 7/)).toBeInTheDocument();
   });
 });
 
 function advanceToStep(
-  step: "godine" | "visina" | "tezina" | "aktivnost" | "cilj-tip" | "cilj"
+  step: "ime" | "godine" | "visina" | "tezina" | "aktivnost" | "cilj-tip" | "cilj"
 ) {
   render(<OnboardingWizard />);
   fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+  if (step === "ime") return;
+
+  fireEvent.change(screen.getByLabelText(/Ime/), { target: { value: "Ana" } });
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
   if (step === "godine") return;
 
@@ -93,7 +128,7 @@ function advanceToStep(
   if (step === "cilj-tip") return;
 
   // Pick a weight-change goal so the target-weight ("cilj") step appears.
-  fireEvent.click(screen.getByRole("radio", { name: /Mršavljenje/ }));
+  fireEvent.click(screen.getByRole("radio", { name: /Smršaj/ }));
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 }
 
@@ -211,10 +246,10 @@ describe("AS-019: step 5 (nivo aktivnosti) collects one of 5 activity tiers", ()
 describe("goal type (cilj-tip) step drives the flow", () => {
   it("renders all four goals and blocks Dalje until one is picked", () => {
     advanceToStep("cilj-tip");
-    expect(screen.getByRole("radio", { name: /Mršavljenje/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Smršaj/ })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: /Održavanje/ })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Gojenje/ })).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Zategnutost/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Nabaci mišiće/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Zategni se/ })).toBeInTheDocument();
 
     // With no goal picked yet this is the last visible step, so the button
     // reads "Završi"; pressing it must still block on the missing goal.
@@ -222,9 +257,9 @@ describe("goal type (cilj-tip) step drives the flow", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/cilj/i);
   });
 
-  it("a weight-change goal (Mršavljenje) reveals the target-weight step", () => {
+  it("a weight-change goal (Smršaj) reveals the target-weight step", () => {
     advanceToStep("cilj-tip");
-    fireEvent.click(screen.getByRole("radio", { name: /Mršavljenje/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Smršaj/ }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(screen.getByLabelText(/Ciljna težina/)).toBeInTheDocument();
@@ -245,18 +280,48 @@ describe("goal type (cilj-tip) step drives the flow", () => {
 });
 
 describe("AS-019: step 6 (cilj) collects target weight + timeframe", () => {
-  it("test_AS_019_cilj_step_rejects_a_target_weight_that_is_not_below_the_current_weight", () => {
+  it("test_AS_019_cilj_step_for_a_lose_goal_only_offers_target_weights_below_the_current_weight", () => {
+    // advanceToStep picks Smršaj (lose) with a current weight of 80 kg.
+    // The target-weight wheel must not even OFFER 80 (equal) or anything above
+    // it -- a lower-than-current target can't be a wrong choice because a
+    // not-lower value is never selectable in the first place.
     advanceToStep("cilj");
-    fireEvent.change(screen.getByLabelText(/Ciljna težina/), {
-      target: { value: "85" },
-    });
-    fireEvent.change(screen.getByLabelText(/^Rok/), {
-      target: { value: "12" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
+    const select = screen.getByLabelText(/Ciljna težina/) as HTMLSelectElement;
+    const values = Array.from(select.options).map((option) => option.value);
 
-    expect(screen.getByRole("alert")).toHaveTextContent(/manja od trenutne/i);
-    expect(pushMock).not.toHaveBeenCalled();
+    expect(values).toContain("79");
+    expect(values).toContain("35");
+    expect(values).not.toContain("80"); // equal to current -- not allowed
+    expect(values).not.toContain("85"); // above current -- not allowed for lose
+  });
+
+  it("test_gain_goal_only_offers_target_weights_above_the_current_weight", () => {
+    // Same current weight (80 kg), but a Nabaci mišiće (gain) goal: now the wheel
+    // must offer only weights ABOVE 80 and never 80 or below, so a target
+    // lighter than the current weight can't be entered for a gain goal.
+    render(<OnboardingWizard />);
+    fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+    fireEvent.change(screen.getByLabelText(/Ime/), { target: { value: "Ana" } });
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+    fireEvent.change(screen.getByLabelText(/Godine/), { target: { value: "30" } });
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+    fireEvent.change(screen.getByLabelText(/Visina/), { target: { value: "175" } });
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+    fireEvent.change(screen.getByLabelText(/Težina/), { target: { value: "80" } });
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Umerena aktivnost/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Nabaci mišiće/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+
+    const select = screen.getByLabelText(/Ciljna težina/) as HTMLSelectElement;
+    const values = Array.from(select.options).map((option) => option.value);
+
+    expect(values).toContain("81");
+    expect(values).toContain("300");
+    expect(values).not.toContain("80"); // equal to current -- not allowed
+    expect(values).not.toContain("79"); // below current -- not allowed for gain
   });
 
   it("test_AS_019_cilj_step_blocks_finish_when_the_timeframe_is_not_picked", () => {
@@ -300,6 +365,7 @@ describe("AS-019: step 6 (cilj) collects target weight + timeframe", () => {
     expect(url.startsWith("/onboarding/pregled?")).toBe(true);
 
     const params = new URLSearchParams(url.split("?")[1]);
+    expect(params.get("ime")).toBe("Ana");
     expect(params.get("pol")).toBe("female");
     expect(params.get("godine")).toBe("30");
     expect(params.get("visina")).toBe("175");
@@ -316,7 +382,7 @@ describe("AS-019: Back navigation preserves previously entered data (nothing los
     fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
     expect(
-      screen.getByRole("heading", { name: /Koliko imaš godina\?/ })
+      screen.getByRole("heading", { name: /Kako se zoveš\?/ })
     ).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Nazad/ }));
@@ -357,7 +423,7 @@ describe("F015 definition-of-done: forced-failure render test (inline Serbian er
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /Koliko imaš godina\?/ })
+      screen.getByRole("heading", { name: /Kako se zoveš\?/ })
     ).toBeInTheDocument();
   });
 });

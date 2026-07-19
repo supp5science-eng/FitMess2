@@ -17,6 +17,7 @@ import type { ActivityLevel, GoalType, Sex } from "@/lib/types/db";
 export type { ActivityLevel, GoalType, Sex };
 
 export interface OnboardingData {
+  name: string | null;
   sex: Sex | null;
   ageYears: number | null;
   heightCm: number | null;
@@ -28,6 +29,7 @@ export interface OnboardingData {
 }
 
 export const EMPTY_ONBOARDING_DATA: OnboardingData = {
+  name: null,
   sex: null,
   ageYears: null,
   heightCm: null,
@@ -58,6 +60,7 @@ export const DEFAULT_ONBOARDING_DATA: OnboardingData = {
  * target weight to collect. */
 export const ONBOARDING_STEP_IDS = [
   "pol",
+  "ime",
   "godine",
   "visina",
   "tezina",
@@ -123,6 +126,7 @@ export const ONBOARDING_SUMMARY_PATH = "/onboarding/pregled";
 
 /** Query-param keys used to carry the collected data to `ONBOARDING_SUMMARY_PATH`. */
 export const ONBOARDING_QUERY_KEYS = {
+  name: "ime",
   sex: "pol",
   ageYears: "godine",
   heightCm: "visina",
@@ -138,6 +142,8 @@ export const ONBOARDING_QUERY_KEYS = {
  * maintain/tone they're irrelevant and omitted. */
 export function buildOnboardingSummaryUrl(data: OnboardingData): string {
   const params = new URLSearchParams();
+  if (data.name && data.name.trim() !== "")
+    params.set(ONBOARDING_QUERY_KEYS.name, data.name.trim());
   if (data.sex) params.set(ONBOARDING_QUERY_KEYS.sex, data.sex);
   if (data.ageYears !== null)
     params.set(ONBOARDING_QUERY_KEYS.ageYears, String(data.ageYears));

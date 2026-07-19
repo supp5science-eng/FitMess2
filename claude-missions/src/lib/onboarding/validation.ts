@@ -18,6 +18,11 @@
 
 import type { ActivityLevel, GoalType, Sex } from "@/lib/types/db";
 
+/** Name: at least 1 visible character, capped well under the DB's 80-char
+ * guard so a real name always fits and a runaway value is rejected here
+ * first (see `supabase/migrations/0008_profile_name.sql`). */
+export const MAX_NAME_LENGTH = 60;
+
 export const MIN_AGE_YEARS = 14;
 export const MAX_AGE_YEARS = 100;
 export const MIN_HEIGHT_CM = 100;
@@ -47,6 +52,19 @@ const VALID: ValidationResult = { valid: true };
 
 function invalid(error: string): ValidationResult {
   return { valid: false, error };
+}
+
+/** Onboarding step "ime": a non-empty name, trimmed, up to
+ * `MAX_NAME_LENGTH` characters. */
+export function validateName(name: string | null): ValidationResult {
+  const trimmed = (name ?? "").trim();
+  if (trimmed === "") {
+    return invalid("Unesi svoje ime.");
+  }
+  if (trimmed.length > MAX_NAME_LENGTH) {
+    return invalid(`Ime može imati najviše ${MAX_NAME_LENGTH} karaktera.`);
+  }
+  return VALID;
 }
 
 /** AS-019 step 1 (pol): must pick one of the two options. */

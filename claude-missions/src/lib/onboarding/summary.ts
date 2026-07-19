@@ -92,6 +92,12 @@ function parseNumber(value: string | null): number | null {
   return Number.isFinite(parsed) ? parsed : null;
 }
 
+function parseName(value: string | null): string | null {
+  if (value === null) return null;
+  const trimmed = value.trim();
+  return trimmed === "" ? null : trimmed;
+}
+
 /**
  * Reads the seven `ONBOARDING_QUERY_KEYS` params F015's wizard hands off.
  * Never throws -- an absent or malformed param simply becomes `null` on
@@ -102,6 +108,7 @@ export function parseOnboardingSearchParams(
   params: RawSearchParams
 ): OnboardingData {
   return {
+    name: parseName(readParam(params, ONBOARDING_QUERY_KEYS.name)),
     sex: parseSex(readParam(params, ONBOARDING_QUERY_KEYS.sex)),
     ageYears: parseNumber(readParam(params, ONBOARDING_QUERY_KEYS.ageYears)),
     heightCm: parseNumber(readParam(params, ONBOARDING_QUERY_KEYS.heightCm)),
@@ -123,6 +130,7 @@ export function parseOnboardingSearchParams(
  * engine functions need. `targetWeightKg`/`timeframeWeeks` stay nullable
  * because maintain/tone goals legitimately have none. */
 export interface CompleteOnboardingData {
+  name: string;
   sex: Sex;
   ageYears: number;
   heightCm: number;
@@ -142,6 +150,7 @@ export function isOnboardingDataComplete(
   data: OnboardingData
 ): data is CompleteOnboardingData {
   const baseComplete =
+    data.name !== null &&
     data.sex !== null &&
     data.ageYears !== null &&
     data.heightCm !== null &&

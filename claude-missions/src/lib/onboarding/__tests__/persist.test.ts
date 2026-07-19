@@ -11,6 +11,7 @@ import type { OnboardingData } from "../types";
 // `src/app/(app)/onboarding/pregled/__tests__/actions.integration.test.ts`.
 
 const VALID_DATA: OnboardingData = {
+  name: "Ana",
   sex: "female",
   ageYears: 29,
   heightCm: 168,
@@ -60,6 +61,20 @@ describe("ageYearsToBirthYear: converts collected age -> profiles.birth_year", (
 });
 
 describe("persistOnboarding: server-side re-validation (never trusts client-sent data)", () => {
+  it("test_rejects_a_missing_name_before_writing_anything", async () => {
+    const supabase = makeMockSupabase();
+    const result = await persistOnboarding(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      supabase as any,
+      "user-1",
+      { ...VALID_DATA, name: "   " }
+    );
+
+    expect(result.ok).toBe(false);
+    expect(supabase.update).not.toHaveBeenCalled();
+    expect(supabase.insert).not.toHaveBeenCalled();
+  });
+
   it("test_AS_020_rejects_a_missing_sex_before_writing_anything", async () => {
     const supabase = makeMockSupabase();
     const result = await persistOnboarding(
@@ -126,6 +141,7 @@ describe("persistOnboarding: the write shape (AS-031: profiles update + targets 
 
     expect(supabase.from).toHaveBeenCalledWith("profiles");
     const profilePayload = supabase.update.mock.calls[0][0];
+    expect(profilePayload.full_name).toBe("Ana");
     expect(profilePayload.sex).toBe("female");
     expect(profilePayload.height_cm).toBe(168);
     expect(profilePayload.weight_kg).toBe(80);

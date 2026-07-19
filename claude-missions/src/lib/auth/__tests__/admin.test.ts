@@ -39,6 +39,7 @@ function fakeUser(id: string): User {
 function fakeProfile(overrides: Partial<Profile>): Profile {
   return {
     user_id: "u1",
+    full_name: null,
     sex: null,
     birth_year: null,
     height_cm: null,

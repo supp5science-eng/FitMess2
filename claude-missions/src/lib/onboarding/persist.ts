@@ -31,6 +31,7 @@ import {
   validateGoal,
   validateGoalType,
   validateHeight,
+  validateName,
   validateSex,
   validateWeight,
 } from "@/lib/onboarding/validation";
@@ -74,6 +75,9 @@ export async function persistOnboarding(
   userId: string,
   data: OnboardingData
 ): Promise<PersistOnboardingResult> {
+  const nameResult = validateName(data.name);
+  if (!nameResult.valid) return { ok: false, error_sr: nameResult.error };
+
   const sexResult = validateSex(data.sex);
   if (!sexResult.valid) return { ok: false, error_sr: sexResult.error };
 
@@ -95,6 +99,7 @@ export async function persistOnboarding(
     return { ok: false, error_sr: goalTypeResult.error };
 
   // Non-null after their validators passed.
+  const fullName = data.name!.trim();
   const sex = data.sex!;
   const ageYears = data.ageYears!;
   const heightCm = data.heightCm!;
@@ -151,6 +156,7 @@ export async function persistOnboarding(
   const { error: profileError } = await supabase
     .from("profiles")
     .update({
+      full_name: fullName,
       sex,
       birth_year: ageYearsToBirthYear(ageYears),
       height_cm: heightCm,

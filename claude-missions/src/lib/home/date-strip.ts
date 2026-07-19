@@ -16,9 +16,6 @@ export interface DayCell {
   isToday: boolean;
   /** This cell is in the future (after today) -- shown faint, not tappable. */
   isFuture: boolean;
-  /** This cell is before the user's sign-up day -- the earliest viewable day.
-   * Shown faint and not tappable, like a future day. */
-  isBeforeStart: boolean;
   /** The user logged at least one meal on this day (drives the teal ring). */
   isLogged: boolean;
   /** This is the day currently being viewed. */
@@ -30,48 +27,48 @@ export interface DayCell {
 const SR_WEEKDAYS_SHORT = ["Pon", "Uto", "Sre", "Čet", "Pet", "Sub", "Ned"];
 
 /**
- * Builds the date strip's day cells: a fixed window of `past` days before today
- * through `future` days after (default 5 before + today + 1 after = 7, matching
- * the reference layout). `loggedDays` is the set of `"YYYY-MM-DD"` days that
- * have at least one meal logged; `selectedKey` is the day currently viewed.
+ * Builds the date strip's day cells over the inclusive range `[startKey,
+ * endKey]` (both `"YYYY-MM-DD"`). `startKey` is the earliest viewable day
+ * (the user's sign-up day); `endKey` is today + N future days (the strip
+ * scrolls forward through them even though they're empty). `loggedDays` is the
+ * set of days with at least one meal logged; `selectedKey` is the day being
+ * viewed. Days after today are marked `isFuture` (faint, not tappable) and are
+ * never "logged" or "selected".
  */
 export function buildDateStrip({
   now = new Date(),
   selectedKey,
   loggedDays,
-  minKey,
-  past = 5,
-  future = 1,
+  startKey,
+  endKey,
 }: {
   now?: Date;
   selectedKey: string;
   loggedDays: Set<string>;
-  /** The user's sign-up day (`"YYYY-MM-DD"`) -- the earliest viewable day. */
-  minKey?: string;
-  past?: number;
-  future?: number;
+  startKey: string;
+  endKey: string;
 }): DayCell[] {
   const todayKey = toBelgradeCalendarDay(now);
-  const [year, month, day] = todayKey.split("-").map(Number);
+  const [year, month, day] = startKey.split("-").map(Number);
 
   const cells: DayCell[] = [];
-  for (let offset = -past; offset <= future; offset++) {
+  for (let offset = 0; ; offset++) {
     // Noon UTC on the target Y-M-D is always safely inside that same Belgrade
     // calendar day (offset +1/+2h), so it's a robust representative instant.
     const instant = new Date(Date.UTC(year!, month! - 1, day! + offset, 12));
     const key = toBelgradeCalendarDay(instant);
+    if (key > endKey) break;
+
     const isFuture = key > todayKey;
-    const isBeforeStart = minKey !== undefined && key < minKey;
     cells.push({
       key,
       dayLabel: SR_WEEKDAYS_SHORT[belgradeWeekdayIndex(instant)]!,
       dayNum: Number(key.split("-")[2]),
       isToday: key === todayKey,
       isFuture,
-      isBeforeStart,
-      isLogged: !isFuture && !isBeforeStart && loggedDays.has(key),
-      // A disabled (future / pre-signup) cell is never shown as selected.
-      isSelected: key === selectedKey && !isFuture && !isBeforeStart,
+      isLogged: !isFuture && loggedDays.has(key),
+      // A future day is never shown as selected.
+      isSelected: key === selectedKey && !isFuture,
     });
   }
   return cells;

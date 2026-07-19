@@ -29,6 +29,15 @@ function shortDate(key: string): string {
   return `${day}. ${SR_MONTHS_SHORT[month! - 1]}`;
 }
 
+/** Shifts a Belgrade calendar-day key by `n` days (noon-UTC is a robust
+ * in-day instant; `Date.UTC` normalizes month/year overflow). */
+function addDaysKey(key: string, n: number): string {
+  const [year, month, day] = key.split("-").map(Number);
+  return toBelgradeCalendarDay(
+    new Date(Date.UTC(year!, month! - 1, day! + n, 12))
+  );
+}
+
 // F027 / AS-043, AS-047, AS-048, AS-049, AS-050: `/danas` -- the home
 // screen, this app's primary/centerpiece view (`src/components/shell/
 // bottom-nav.tsx` has pointed here since F005; F025's portion picker has
@@ -81,17 +90,10 @@ export default async function DanasPage({
   const isToday = selectedKey === todayKey;
 
   // Belgrade day range for the selected day (noon-UTC is a robust in-day
-  // instant). The strip's "logged" rings need a wider window; sign-up day
-  // (`profiles.created_at`) is the earliest selectable day.
+  // instant). Fetch the day's data + the sign-up day in parallel.
   const range = getBelgradeDayRange(new Date(`${selectedKey}T12:00:00.000Z`));
-  const [result, loggedDays, profileResult] = await Promise.all([
+  const [result, profileResult] = await Promise.all([
     getTodayData(supabase, userId, range),
-    getLoggedDays(
-      supabase,
-      userId,
-      new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-      now
-    ),
     supabase
       .from("profiles")
       .select("created_at")
@@ -113,11 +115,22 @@ export default async function DanasPage({
     );
   }
 
-  const minKey = profileResult.data?.created_at
+  // Date strip range: from the user's sign-up day (earliest viewable) through
+  // today + 30 future days (scrollable forward "through time", though empty).
+  const startKey = profileResult.data?.created_at
     ? toBelgradeCalendarDay(new Date(profileResult.data.created_at))
-    : undefined;
+    : addDaysKey(todayKey, -14);
+  const endKey = addDaysKey(todayKey, 30);
 
-  const days = buildDateStrip({ now, selectedKey, loggedDays, minKey });
+  // "Logged" rings only need the past window (start..today) -- future is empty.
+  const loggedDays = await getLoggedDays(
+    supabase,
+    userId,
+    new Date(`${startKey}T12:00:00.000Z`),
+    now
+  );
+
+  const days = buildDateStrip({ now, selectedKey, loggedDays, startKey, endKey });
 
   // One-time "ring hand-off" from onboarding: the plan-reveal drops the
   // `fm_intro` cookie just before its hard navigation here (see

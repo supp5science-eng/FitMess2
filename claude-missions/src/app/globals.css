@@ -218,6 +218,34 @@
    Tailwind's utility layer; the shared transition also keeps the common
    colour/background hover-and-active fades smooth. Reduced-motion aware, and
    disabled controls never move. --------------------------------------- */
+/* The pressed state applies ALWAYS (even under reduced-motion, where it just
+   snaps instead of easing) so a tap always registers. iOS Safari only fires
+   :active while a touch listener exists on the page — <HapticProvider> adds a
+   passive `touchstart` listener precisely to enable this. A combined
+   scale-down + slight dim reads clearly as "pressed" even on tiny controls. */
+button:active,
+a:active,
+[role="button"]:active,
+summary:active {
+  transform: scale(0.94);
+  filter: brightness(0.9);
+}
+/* Bottom-nav tabs ("4 sekcije") get a touch more travel so switching
+   sections has an unmistakable press. */
+nav[aria-label="Glavna navigacija"] a:active {
+  transform: scale(0.88);
+}
+/* Disabled controls never move. */
+button:disabled:active,
+button[aria-disabled="true"]:active,
+a[aria-disabled="true"]:active,
+[role="button"][aria-disabled="true"]:active {
+  transform: none;
+  filter: none;
+}
+/* Ease the press only when the user hasn't asked to reduce motion. The colour
+   / background transitions here also keep the common hover-and-active fades
+   smooth. Unlayered so it composes over Tailwind's utility layer. */
 @media (prefers-reduced-motion: no-preference) {
   button,
   a,
@@ -225,27 +253,11 @@
   summary {
     transition:
       transform 0.14s cubic-bezier(0.2, 0, 0, 1),
+      filter 0.14s ease,
       color 0.15s ease,
       background-color 0.15s ease,
       border-color 0.15s ease,
       opacity 0.15s ease;
-  }
-  button:active,
-  a:active,
-  [role="button"]:active,
-  summary:active {
-    transform: scale(0.95);
-  }
-  /* Bottom-nav tabs ("4 sekcije") get a touch more travel so switching
-     sections has an unmistakable press. */
-  nav[aria-label="Glavna navigacija"] a:active {
-    transform: scale(0.9);
-  }
-  button:disabled:active,
-  button[aria-disabled="true"]:active,
-  a[aria-disabled="true"]:active,
-  [role="button"][aria-disabled="true"]:active {
-    transform: none;
   }
 }
 

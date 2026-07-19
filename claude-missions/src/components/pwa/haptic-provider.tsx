@@ -3,16 +3,20 @@
 import { useEffect } from "react";
 
 /**
- * App-wide tap haptics. A single delegated `pointerdown` listener fires a tiny
- * vibration whenever a tappable control (button, link, the bottom-nav tabs, or
- * anything `role="button"`) is pressed — so a tap feels physical, not just
- * visual. Renders nothing; mounted once in the root layout.
+ * App-wide tap feedback. A single delegated `touchstart` listener does two
+ * jobs, for every tappable control (button, link, the bottom-nav tabs, or
+ * anything `role="button"`), with zero per-button wiring:
  *
- * `navigator.vibrate` is ANDROID-ONLY: iOS Safari / installed iOS PWAs expose
- * no Vibration API at all, so on iPhone this is a deliberate silent no-op and
- * the CSS press-scale in `globals.css` carries the "click" feel instead. Doing
- * it here (event delegation) rather than per-button means every current and
- * future control gets it with zero extra wiring.
+ *  1. Enables the CSS press-scale. iOS Safari only applies `:active` styles
+ *     while SOME touch listener exists on the page — without one, the
+ *     press-scale in `globals.css` never triggers on iPhone. This listener's
+ *     mere presence fixes that, so it must be attached even when there is no
+ *     Vibration API.
+ *  2. Fires a tiny real vibration where supported. `navigator.vibrate` is
+ *     ANDROID-ONLY (iOS exposes no Vibration API), so the buzz is a silent
+ *     no-op on iPhone — where the visual press from job #1 carries the feel.
+ *
+ * Renders nothing; mounted once in the root layout.
  */
 
 /** Controls that should buzz on press. */
@@ -31,19 +35,18 @@ function isDisabled(el: Element): boolean {
 
 export function HapticProvider() {
   useEffect(() => {
-    if (
-      typeof navigator === "undefined" ||
-      typeof navigator.vibrate !== "function"
-    ) {
-      // No Vibration API (iOS + some desktop browsers): nothing to attach.
-      return;
-    }
+    // Attached UNCONDITIONALLY: even with no Vibration API, the listener's
+    // presence is what makes iOS Safari apply :active (the CSS press-scale).
+    const canVibrate =
+      typeof navigator !== "undefined" &&
+      typeof navigator.vibrate === "function";
 
-    const onPointerDown = (event: PointerEvent) => {
+    const onTouchStart = (event: TouchEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
       const control = target.closest(TAP_SELECTOR);
       if (!control || isDisabled(control)) return;
+      if (!canVibrate) return;
       try {
         navigator.vibrate(TAP_DURATION_MS);
       } catch {
@@ -52,8 +55,8 @@ export function HapticProvider() {
       }
     };
 
-    document.addEventListener("pointerdown", onPointerDown, { passive: true });
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("touchstart", onTouchStart, { passive: true });
+    return () => document.removeEventListener("touchstart", onTouchStart);
   }, []);
 
   return null;

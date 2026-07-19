@@ -7,23 +7,25 @@ import { OptionGroup } from "@/components/onboarding/option-group";
 const GOAL_OPTIONS: { value: GoalType; label: string; description: string }[] = [
   {
     value: "lose",
-    label: "Mršavljenje",
+    label: "Smršaj",
     description: "Skini kilograme uz kontrolisan kalorijski deficit.",
+  },
+  {
+    value: "tone",
+    label: "Zategni se",
+    description:
+      "Blagi deficit da izgubiš salo i dobiješ čvrstu, zategnutu liniju.",
+  },
+  {
+    value: "gain",
+    label: "Nabaci mišiće",
+    description:
+      "Kalorijski višak da izgradiš čistu mišićnu masu i postaneš jači.",
   },
   {
     value: "maintain",
     label: "Održavanje",
     description: "Zadrži trenutnu težinu i navike.",
-  },
-  {
-    value: "gain",
-    label: "Gojenje",
-    description: "Dobij na masi uz kalorijski višak.",
-  },
-  {
-    value: "tone",
-    label: "Zategnutost",
-    description: "Zategni se — mišić uz zadržavanje težine.",
   },
 ];
 

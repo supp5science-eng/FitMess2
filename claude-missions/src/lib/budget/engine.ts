@@ -79,6 +79,16 @@ export const MAX_SURPLUS_PCT = 0.2;
  */
 export const DEFAULT_DEFICIT_PCT = 0.2;
 
+/**
+ * Mild deficit applied to the `tone` ("zategni se") goal. Toning is a body
+ * recomposition intent -- shed a little fat and reveal muscle while holding
+ * roughly the same weight -- so it eats slightly *below* maintenance rather
+ * than at TDEE. A gentle 10% cut: enough to lean out over time without the
+ * hunger/adherence cost of a full fat-loss deficit. Still clamped to the
+ * sex-specific kcal floor like every other deficit.
+ */
+export const TONE_DEFICIT_PCT = 0.1;
+
 /** Default protein target, within the clarified 1.8-2.2 g/kg range (AS-025). */
 export const PROTEIN_G_PER_KG = 2.0;
 
@@ -466,9 +476,12 @@ export interface GoalPlanInput {
 /**
  * The single entry point the onboarding summary + persist use: turns the
  * chosen goal type into a daily/weekly kcal plan.
- *  - `maintain` / `tone` -> eat at maintenance (TDEE), no adjustment
- *  - `lose`              -> `planGoalAdjustment` (deficit from target weight)
- *  - `gain`             -> `planWeightGain` (surplus toward target weight)
+ *  - `maintain` -> eat at maintenance (TDEE), no adjustment
+ *  - `tone`     -> eat at a mild fixed deficit (TONE_DEFICIT_PCT, ~10%) for
+ *                  body recomposition; no target weight / timeframe needed,
+ *                  still clamped to the sex-specific kcal floor
+ *  - `lose`     -> `planGoalAdjustment` (deficit from target weight)
+ *  - `gain`     -> `planWeightGain` (surplus toward target weight)
  *
  * Missing target/timeframe (maintain/tone, or a partially-filled edge) never
  * throws -- it degrades to maintenance.
@@ -476,9 +489,28 @@ export interface GoalPlanInput {
 export function planForGoal(input: GoalPlanInput): GoalAdjustmentResult {
   const tdeeKcal = Math.max(0, roundKcal(input.tdeeKcal));
 
+  // `tone` = body recomposition: a mild fixed deficit below maintenance,
+  // independent of any target weight (that step is skipped for tone). Mirrors
+  // the floor-clamp logic of `dailyTarget`.
+  if (input.goal === "tone") {
+    const floor = KCAL_FLOOR[input.sex] ?? KCAL_FLOOR.male;
+    const raw = roundKcal(tdeeKcal * (1 - TONE_DEFICIT_PCT));
+    const dailyKcal = Math.max(raw, floor);
+    const floorApplied = dailyKcal !== raw;
+    const appliedDeficitPct = tdeeKcal > 0 ? 1 - dailyKcal / tdeeKcal : 0;
+
+    return {
+      dailyKcal,
+      weeklyKcal: dailyKcal * 7,
+      impliedDeficitPct: TONE_DEFICIT_PCT,
+      appliedDeficitPct,
+      adjusted: floorApplied,
+      reasonCodes: floorApplied ? ["floor_kcal_applied"] : [],
+    };
+  }
+
   if (
     input.goal === "maintain" ||
-    input.goal === "tone" ||
     input.targetWeightKg === null ||
     input.timeframeWeeks === null
   ) {

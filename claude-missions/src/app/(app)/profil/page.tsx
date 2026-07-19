@@ -3,6 +3,7 @@ import Link from "next/link";
 import { signOutAction } from "../actions";
 import { Button } from "@/components/ui/button";
 import { DeleteAccountDialog } from "@/components/profil/delete-account-dialog";
+import { resolveAdminSession } from "@/lib/auth/admin";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -45,6 +46,13 @@ export default async function ProfilPage() {
   } = await supabase.auth.getUser();
   const email = user?.email ?? null;
 
+  // Admin-only entry point: the /admin area has no other link in the app, so an
+  // admin would otherwise have to type the URL. Reuses the same server-side
+  // gate that protects the area itself (is_admin=true), so a non-admin never
+  // even sees the link. AS-059.
+  const adminSession = await resolveAdminSession();
+  const isAdmin = adminSession.status === "ok";
+
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-10">
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
@@ -68,6 +76,16 @@ export default async function ProfilPage() {
           </p>
         )}
       </section>
+
+      {isAdmin ? (
+        <Link
+          href="/admin"
+          data-testid="profil-admin-link"
+          className="inline-flex items-center justify-center rounded-md border border-primary/40 bg-primary/10 px-6 py-3 text-sm font-semibold text-primary hover:bg-primary/15"
+        >
+          Admin panel
+        </Link>
+      ) : null}
 
       <Link
         href="/profil/pravila"

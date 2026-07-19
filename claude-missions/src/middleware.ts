@@ -1,6 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isEmailVerified } from "@/lib/auth/core";
 import { isMobileUserAgent } from "@/lib/device/is-mobile";
 import {
   decideRouteAccess,
@@ -10,6 +9,18 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 /** The phone-only gate route (see `src/app/samo-za-telefon/page.tsx`). */
 const PHONE_ONLY_PATH = "/samo-za-telefon";
+
+/**
+ * Cookie that caches "this user has cleared both onboarding + phone gates."
+ * Both are one-way, permanent states (a user never un-onboards, and a phone is
+ * never removed), so once set we can skip the per-navigation `profiles` round
+ * trip entirely. The value is the user id, so the cache is only trusted for
+ * the exact user it was issued to -- a different (or re-registered) account
+ * won't match and falls back to a fresh DB check.
+ */
+const GATE_COOKIE = "fm_gate";
+/** ~400 days -- the upper bound browsers honour for a persistent cookie. */
+const GATE_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
 
 /**
  * F013: the app-wide route-protection boundary (AS-011, AS-012).
@@ -52,33 +63,60 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const { response, user, supabase } = await updateSession(request);
+  const { response, claims, supabase } = await updateSession(request);
   const { pathname } = request.nextUrl;
 
-  const authenticated = Boolean(user);
-  const verified = authenticated && isEmailVerified(user);
+  const authenticated = Boolean(claims);
+  // The project requires email confirmation, so Supabase never issues a
+  // session to an unverified account (proven by the route-protection
+  // integration test: an unverified user "has no session at all"). A present,
+  // locally-verified token therefore implies a verified email -- which lets us
+  // avoid `getUser()`'s network call while keeping the exact same access
+  // decisions.
+  const verified = authenticated;
 
   // Only spend a DB round trip on the profile checks once we already know the
   // user is authenticated + verified -- an anonymous or unverified visitor is
-  // redirected before onboarding/phone status is ever relevant. One query
-  // fetches both the onboarding marker and the phone (Google users lack it).
+  // redirected before onboarding/phone status is ever relevant.
   let onboarded = false;
   let hasPhone = true;
-  if (verified && user) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("onboarded_at, phone")
-      .eq("user_id", user.id)
-      .maybeSingle();
-    onboarded = Boolean(data?.onboarded_at);
-    // Only Google (OAuth) users are routed through the /telefon gate: they
-    // never saw the signup form's phone field. Email/password users give a
-    // phone at signup, and -- crucially -- legacy email accounts created
-    // BEFORE the phone field existed have phone = null but must NEVER be walled
-    // out of the whole app. So the phone requirement counts as met for any
-    // non-Google user, regardless of whether a phone is on file.
-    const signedUpWithGoogle = user.app_metadata?.provider === "google";
-    hasPhone = signedUpWithGoogle ? Boolean(data?.phone) : true;
+  if (verified && claims) {
+    // Fast path: if the gate cookie was issued to THIS user, both gates are
+    // already permanently cleared -- skip the `profiles` round trip entirely.
+    const gateHit = request.cookies.get(GATE_COOKIE)?.value === claims.sub;
+    if (gateHit) {
+      onboarded = true;
+      hasPhone = true;
+    } else {
+      // One query fetches both the onboarding marker and the phone (Google
+      // users lack it).
+      const { data } = await supabase
+        .from("profiles")
+        .select("onboarded_at, phone")
+        .eq("user_id", claims.sub)
+        .maybeSingle();
+      onboarded = Boolean(data?.onboarded_at);
+      // Only Google (OAuth) users are routed through the /telefon gate: they
+      // never saw the signup form's phone field. Email/password users give a
+      // phone at signup, and -- crucially -- legacy email accounts created
+      // BEFORE the phone field existed have phone = null but must NEVER be
+      // walled out of the whole app. So the phone requirement counts as met
+      // for any non-Google user, regardless of whether a phone is on file.
+      const signedUpWithGoogle = claims.provider === "google";
+      hasPhone = signedUpWithGoogle ? Boolean(data?.phone) : true;
+
+      // Cache the cleared-gates state so subsequent navigations take the fast
+      // path above. Bound to the user id; only set once BOTH gates pass.
+      if (onboarded && hasPhone) {
+        response.cookies.set(GATE_COOKIE, claims.sub, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+          maxAge: GATE_COOKIE_MAX_AGE,
+        });
+      }
+    }
   }
 
   const decision = decideRouteAccess({
@@ -97,8 +135,8 @@ export async function middleware(request: NextRequest) {
     // user's own email -- a convenience, not a security decision (the value
     // only ever comes from the already-authenticated session, never from
     // request input).
-    if (decision.to === VERIFY_EMAIL_NOTICE_PATH && user?.email) {
-      url.searchParams.set("email", user.email);
+    if (decision.to === VERIFY_EMAIL_NOTICE_PATH && claims?.email) {
+      url.searchParams.set("email", claims.email);
     }
     return NextResponse.redirect(url);
   }

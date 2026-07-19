@@ -1,8 +1,25 @@
 import { createServerClient } from "@supabase/ssr";
-import type { SupabaseClient, User } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 
 import type { Database } from "@/lib/types/db";
+
+/**
+ * The minimal, trustworthy slice of the access-token JWT the middleware needs.
+ * Resolved by `auth.getClaims()`, which cryptographically verifies the token's
+ * signature against the project's cached public key -- so these values are as
+ * trustworthy as `auth.getUser()`'s, but without its per-request network call.
+ */
+export type SessionClaims = {
+  /** The signed-in user's id (`sub`). */
+  sub: string;
+  /** The user's email, when present in the token (used only to prefill the
+   * resend-confirmation form). */
+  email: string | null;
+  /** The auth provider (`app_metadata.provider`), e.g. `"google"` -- drives
+   * the Google-only `/telefon` phone gate. */
+  provider: string | null;
+};
 
 export type SessionRefreshResult = {
   /** The response carrying the refreshed session cookie(s). The caller
@@ -10,10 +27,11 @@ export type SessionRefreshResult = {
    * -- replacing it with a fresh `NextResponse.next()` would drop the
    * refreshed cookies and can cause random sign-outs. */
   response: NextResponse;
-  /** The signed-in user for this request, re-validated against Supabase
-   * Auth's servers by `auth.getUser()` (never a locally-decoded JWT), or
-   * `null` if there is no valid session. */
-  user: User | null;
+  /** The signed-in user's locally-verified claims for this request, or `null`
+   * if there is no valid session. Resolved via `auth.getClaims()` (local
+   * ES256 signature verification against the cached JWKS), NOT `getUser()`'s
+   * network round trip to the Auth server. */
+  claims: SessionClaims | null;
   /** The same cookie-bound client used for the refresh, typed to the
    * project's schema so callers (F013's route-protection middleware) can
    * run further own-row-RLS-scoped reads -- e.g. the onboarding-status
@@ -71,12 +89,30 @@ export async function updateSession(
     }
   );
 
-  // Do not run code between `createServerClient` and `auth.getUser()`.
-  // Both are required to keep the session cookie fresh; skipping the call
-  // can cause users to be randomly signed out (per Supabase SSR docs).
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Do not run code between `createServerClient` and this auth call. It is
+  // required to keep the session cookie fresh; skipping it can cause users to
+  // be randomly signed out (per Supabase SSR docs).
+  //
+  // `getClaims()` verifies the access-token JWT LOCALLY against the project's
+  // cached public key (the project uses asymmetric ES256 signing keys), so it
+  // avoids `getUser()`'s network round trip to the Auth server on every single
+  // request -- the dominant source of navigation latency. It still reads and
+  // refreshes the session via `getSession()` internally (preserving the
+  // cookie-refresh contract above) AND cryptographically verifies the
+  // signature (unlike the insecure bare `getSession()`), so the resolved
+  // subject is safe to trust for RLS-scoped reads and access decisions.
+  const { data } = await supabase.auth.getClaims();
+  const raw = data?.claims ?? null;
+  const claims: SessionClaims | null =
+    raw && typeof raw.sub === "string"
+      ? {
+          sub: raw.sub,
+          email: typeof raw.email === "string" ? raw.email : null,
+          provider:
+            (raw.app_metadata as { provider?: string } | undefined)?.provider ??
+            null,
+        }
+      : null;
 
-  return { response: supabaseResponse, user, supabase };
+  return { response: supabaseResponse, claims, supabase };
 }

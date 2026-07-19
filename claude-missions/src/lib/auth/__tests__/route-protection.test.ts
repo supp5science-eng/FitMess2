@@ -23,7 +23,7 @@ import {
 // project lives in
 // `src/app/(app)/__tests__/route-protection.integration.test.ts`.
 
-const PROTECTED_PATHS = ["/danas", "/nedelja", "/agent", "/profil", "/dodaj/obrok"];
+const PROTECTED_PATHS = ["/danas", "/analitika", "/agent", "/profil", "/dodaj/obrok"];
 
 describe("AS-011: a signed-out visitor requesting any in-app page is redirected to the login screen", () => {
   it.each(PROTECTED_PATHS)(

@@ -67,7 +67,7 @@ export function WeeklyDashboard({ summary }: { summary: WeekSummary }) {
     <main className="flex flex-1 flex-col gap-6 px-5 py-8">
       <header className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Napredak
+          Analitika
         </h1>
         <p className="text-sm text-muted-foreground">Ova nedelja</p>
       </header>

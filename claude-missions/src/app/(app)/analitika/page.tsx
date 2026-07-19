@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { computeWeekSummary } from "@/lib/week/summary";
 import { getWeekData } from "@/lib/week/week";
 
-// F041 / AS-068..AS-071: `/nedelja` -- the weekly dashboard ("Napredak").
+// F041 / AS-068..AS-071: `/analitika` -- the analytics dashboard ("Analitika").
 // The bottom nav (F005) has pointed here since it shipped. Server Component:
 // reads the newest target + this Belgrade week's logs via `getWeekData`
 // (session-scoped RLS client), derives the whole view with the pure
@@ -32,14 +32,17 @@ export default async function NedeljaPage() {
   const result = await getWeekData(supabase, user.id);
 
   if (result.error) {
-    console.error("[F041 /nedelja] getWeekData failed:", result.error.message);
+    console.error(
+      "[F041 /analitika] getWeekData failed:",
+      result.error.message
+    );
   }
 
   if (result.error || !result.data) {
     return (
       <RetryErrorState
         message="Nismo uspeli da učitamo tvoju nedelju. Pokušaj ponovo."
-        href="/nedelja"
+        href="/analitika"
         linkLabel="Pokušaj ponovo"
       />
     );
@@ -82,7 +85,7 @@ function RetryErrorState({
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
       <p
         role="alert"
-        data-testid="nedelja-load-error"
+        data-testid="analitika-load-error"
         className="text-sm text-destructive"
       >
         {message}

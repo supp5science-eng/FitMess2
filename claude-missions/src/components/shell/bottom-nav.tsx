@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, CalendarDays, Home, User } from "lucide-react";
+import { Bot, ChartColumnBig, Home, User } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
  */
 const NAV_ITEMS = [
   { href: "/danas", label: "Početna", icon: Home },
-  { href: "/nedelja", label: "Nedelja", icon: CalendarDays },
+  { href: "/analitika", label: "Analitika", icon: ChartColumnBig },
   { href: "/agent", label: "Agent", icon: Bot },
   { href: "/profil", label: "Profil", icon: User },
 ] as const;

@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Archivo_Black } from "next/font/google";
 import "./globals.css";
 
 import { AppShell } from "@/components/shell/app-shell";
@@ -11,6 +11,16 @@ import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register"
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin", "latin-ext"],
+  display: "swap",
+});
+
+// Display face for the FitMess wordmark only (heavy, geometric). Archivo Black
+// ships a single weight (400 = black); exposed via --font-display and applied
+// locally where the brand lockup renders -- body copy stays on Inter.
+const archivoBlack = Archivo_Black({
+  variable: "--font-display",
+  subsets: ["latin", "latin-ext"],
+  weight: "400",
   display: "swap",
 });
 
@@ -59,7 +69,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sr" className={`dark ${inter.variable} h-full antialiased`}>
+    <html
+      lang="sr"
+      className={`dark ${inter.variable} ${archivoBlack.variable} h-full antialiased`}
+    >
       <body className="min-h-full">
         <AppShell>{children}</AppShell>
         <ServiceWorkerRegister />

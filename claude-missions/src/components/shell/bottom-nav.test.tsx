@@ -15,7 +15,7 @@ describe("BottomNav (F005 base shell)", () => {
     expect(
       screen.getByRole("navigation", { name: "Glavna navigacija" })
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Danas/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Početna/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Nedelja/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Agent/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Profil/ })).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe("BottomNav (F005 base shell)", () => {
 
   it("test_AS_002_bottom_nav_links_point_to_the_expected_serbian_routes", () => {
     render(<BottomNav />);
-    expect(screen.getByRole("link", { name: /Danas/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Početna/ })).toHaveAttribute(
       "href",
       "/danas"
     );
@@ -47,7 +47,7 @@ describe("BottomNav (F005 base shell)", () => {
     // token defined in globals.css.
     vi.mocked(usePathname).mockReturnValue("/danas");
     render(<BottomNav />);
-    const activeLink = screen.getByRole("link", { name: /Danas/ });
+    const activeLink = screen.getByRole("link", { name: /Početna/ });
     expect(activeLink).toHaveAttribute("aria-current", "page");
     expect(activeLink.className).toMatch(/text-primary/);
 
@@ -58,7 +58,7 @@ describe("BottomNav (F005 base shell)", () => {
 
   it("every nav item is a real anchor element, so it is reachable and activatable via keyboard alone", () => {
     render(<BottomNav />);
-    for (const name of [/Danas/, /Nedelja/, /Agent/, /Profil/]) {
+    for (const name of [/Početna/, /Nedelja/, /Agent/, /Profil/]) {
       const link = screen.getByRole("link", { name });
       expect(link.tagName).toBe("A");
       expect(link).not.toHaveAttribute("tabindex", "-1");

@@ -7,10 +7,13 @@ import { Bot, CalendarDays, Home, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * F005: bottom navigation skeleton. Four Serbian tabs; routes may 404 for
- * now (later features fill /danas, /nedelja, /agent, /profil). Plain
- * `next/link` anchors are natively keyboard-reachable (Tab / Shift+Tab,
- * activate with Enter) with no extra wiring required.
+ * F005: bottom navigation. Four Serbian tabs; plain `next/link` anchors are
+ * natively keyboard-reachable (Tab / Shift+Tab, activate with Enter).
+ *
+ * Rendered as a floating dark frosted-glass pill (see `AppNavBar`), always
+ * visible over scrolling content. `liquid-glass` adds the top-edge gloss;
+ * `backdrop-blur` + the translucent card tint make it read as frosted glass
+ * on the dark theme.
  */
 const NAV_ITEMS = [
   { href: "/danas", label: "Početna", icon: Home },
@@ -25,8 +28,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Glavna navigacija"
-      // iOS standalone PWA: pad past the home indicator so the tabs stay tappable.
-      className="sticky bottom-0 z-10 flex w-full items-stretch justify-around border-t border-border bg-background pb-[env(safe-area-inset-bottom)]"
+      className="liquid-glass pointer-events-auto flex flex-1 items-stretch justify-around gap-0.5 rounded-full border border-white/10 bg-[#14181a]/80 px-1.5 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl"
     >
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive =
@@ -38,7 +40,7 @@ export function BottomNav() {
             href={href}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "flex flex-1 flex-col items-center gap-1 rounded-md px-2 py-2.5 text-xs font-medium transition-colors",
+              "flex flex-1 flex-col items-center gap-0.5 rounded-full px-1 py-1 text-[11px] font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
               isActive
                 ? "text-primary"

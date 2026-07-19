@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
-import { BottomNav } from "@/components/shell/bottom-nav";
+import { AppNavBar } from "@/components/shell/app-nav-bar";
 
 /**
  * F005: app-wide mobile-first shell.
@@ -14,9 +14,9 @@ import { BottomNav } from "@/components/shell/bottom-nav";
  *   light neutral background, while the inner column stays clamped to the
  *   mobile max-width and is horizontally centered via `mx-auto` (AS-126).
  *
- * `min-h-dvh` + `flex-col` on the inner column means the bottom nav sits at
- * the bottom of the viewport on short pages and simply scrolls with content
- * (via `sticky bottom-0` on BottomNav) on tall pages.
+ * The navigation is a floating bar (`AppNavBar`) fixed to the bottom of the
+ * viewport, so it stays visible no matter how far the content scrolls; the
+ * inner column adds bottom padding so nothing hides behind it.
  *
  * Full-bleed exception: the public marketing landing (`/`) and the desktop
  * "open on your phone" gate (`/samo-za-telefon`) are full-width pages with
@@ -69,8 +69,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-dvh w-full bg-muted">
       <div className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">
-        <div className="flex flex-1 flex-col">{children}</div>
-        <BottomNav />
+        {/* Bottom padding clears the floating nav bar (fixed, out of flow) so
+            the last of the content is never hidden behind it. */}
+        <div className="flex flex-1 flex-col pb-28">{children}</div>
+        <AppNavBar />
       </div>
     </div>
   );

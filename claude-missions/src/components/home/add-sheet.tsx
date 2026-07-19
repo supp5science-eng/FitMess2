@@ -82,24 +82,19 @@ export function AddSheet() {
 
   return (
     <>
-      <div
-        aria-hidden={isOpen}
-        className="pointer-events-none fixed inset-x-0 bottom-24 z-40"
+      {/* Inline "+" trigger -- positioned by the floating nav bar
+          (`AppNavBar`) beside the tab pill, not self-positioned. */}
+      <button
+        type="button"
+        onClick={open}
+        data-testid="add-sheet-open-button"
+        aria-label="Dodaj unos"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        className="liquid-glass pointer-events-auto flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
       >
-        <div className="pointer-events-none mx-auto flex w-full max-w-[430px] justify-end px-6">
-          <button
-            type="button"
-            onClick={open}
-            data-testid="add-sheet-open-button"
-            aria-label="Dodaj unos"
-            aria-haspopup="dialog"
-            aria-expanded={isOpen}
-            className="liquid-glass pointer-events-auto flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
-          >
-            <Plus className="size-7" aria-hidden="true" />
-          </button>
-        </div>
-      </div>
+        <Plus className="size-7" aria-hidden="true" />
+      </button>
 
       {isOpen ? (
         <div

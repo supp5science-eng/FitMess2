@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { AddSheet } from "@/components/home/add-sheet";
 import { IntroCover } from "@/components/home/intro-cover";
 import { MacroBars } from "@/components/home/macro-bars";
 import { MealList } from "@/components/home/meal-list";
@@ -43,14 +42,10 @@ type IntroStage = "idle" | "cover" | "glide" | "land" | "done";
 export function HomeScreen({
   initialLogs,
   target,
-  name = null,
   intro = false,
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
-  // The signed-in user's name (`profiles.full_name`), used to personalize the
-  // dashboard greeting. Null just falls back to a neutral header.
-  name?: string | null;
   // Set by `/danas` (from the one-time `fm_intro` cookie) when the user has
   // just finished onboarding, so we play the ring hand-off exactly once.
   intro?: boolean;
@@ -128,27 +123,17 @@ export function HomeScreen({
       data-intro={dataIntro}
       className="home-main flex flex-1 flex-col gap-8 px-6 py-8"
     >
-      <header className="home-body flex flex-col gap-1.5">
-        {/* Brand lockup: white woven mark + "FitMess" wordmark ("Mess" in the
-            brand green already used across the UI). Mark is decorative here --
-            the adjacent text carries the name for screen readers. */}
-        <div className="flex items-center gap-2.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/fitmess-mark-white.png"
-            alt=""
-            aria-hidden="true"
-            width={30}
-            height={30}
-            draggable={false}
-            className="h-[30px] w-[30px] select-none"
-          />
-          <span className="text-xl font-bold tracking-tight text-foreground">
-            Fit<span className="text-[#16a34a]">Mess</span>
-          </span>
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          {name ? `Zdravo, ${name}` : "Početna"}
+      <header className="home-body">
+        {/* FitMess wordmark in the display face (Archivo Black); "Mess" in the
+            teal accent the primary buttons use (--primary). No greeting, no
+            mark -- just the brand lockup. */}
+        <h1
+          className="text-4xl tracking-tight text-foreground"
+          style={{
+            fontFamily: "var(--font-display), var(--font-sans), sans-serif",
+          }}
+        >
+          Fit<span className="text-primary">Mess</span>
         </h1>
       </header>
 
@@ -189,10 +174,6 @@ export function HomeScreen({
         </h2>
         <MealList logs={logs} onSaved={handleSaved} onDeleted={handleDeleted} />
       </section>
-
-      {/* F028 / AS-051: floating "+" -> bottom sheet with every logging
-          method, at most 2 taps away from here. */}
-      <AddSheet />
 
       {introActive ? (
         <IntroCover

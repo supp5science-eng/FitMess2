@@ -34,19 +34,7 @@ export default async function DanasPage() {
     );
   }
 
-  // Fetch today's data and the greeting name concurrently -- the name read is
-  // independent of today's logs/target, so it must not wait behind it.
-  // Personalization: the greeting on the dashboard is the user's name,
-  // collected in onboarding (`profiles.full_name`). A missing name just
-  // degrades to a neutral header -- never a broken screen.
-  const [result, profileResult] = await Promise.all([
-    getTodayData(supabase, userId),
-    supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("user_id", userId)
-      .maybeSingle(),
-  ]);
+  const result = await getTodayData(supabase, userId);
 
   if (result.error) {
     console.error("[F027 /danas] getTodayData failed:", result.error.message);
@@ -62,8 +50,6 @@ export default async function DanasPage() {
     );
   }
 
-  const profile = profileResult.data;
-
   // One-time "ring hand-off" from onboarding: the plan-reveal drops the
   // `fm_intro` cookie just before its hard navigation here (see
   // `plan-reveal.tsx`). Presence is enough -- HomeScreen consumes/clears it
@@ -75,7 +61,6 @@ export default async function DanasPage() {
     <HomeScreen
       initialLogs={result.data.logs}
       target={result.data.target}
-      name={profile?.full_name ?? null}
       intro={intro}
     />
   );

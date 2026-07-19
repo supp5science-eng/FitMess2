@@ -1,5 +1,8 @@
-import { describe, expect, it } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { describe, expect, it, vi } from "vitest";
 
+import { updateProfilePhone } from "@/lib/auth/core";
+import { SR_AUTH_MESSAGES } from "@/lib/auth/errors";
 import {
   normalizePhone,
   phoneSchema,
@@ -65,5 +68,33 @@ describe("signUpSchema now requires a phone", () => {
       password: "lozinka12",
     });
     expect(parsed.success).toBe(false);
+  });
+});
+
+describe("updateProfilePhone", () => {
+  function stubDbClient(result: { error: unknown }) {
+    const eq = vi.fn().mockResolvedValue(result);
+    const update = vi.fn(() => ({ eq }));
+    const from = vi.fn(() => ({ update }));
+    return { client: { from } as unknown as SupabaseClient, from, update, eq };
+  }
+
+  it("updates the caller's own profile row and returns ok", async () => {
+    const { client, from, update, eq } = stubDbClient({ error: null });
+
+    const result = await updateProfilePhone(client, "user-123", "+381600637486");
+
+    expect(result).toEqual({ ok: true });
+    expect(from).toHaveBeenCalledWith("profiles");
+    expect(update).toHaveBeenCalledWith({ phone: "+381600637486" });
+    expect(eq).toHaveBeenCalledWith("user_id", "user-123");
+  });
+
+  it("returns a Serbian error when the update fails", async () => {
+    const { client } = stubDbClient({ error: { message: "nope" } });
+
+    const result = await updateProfilePhone(client, "user-123", "+381600637486");
+
+    expect(result).toEqual({ ok: false, error_sr: SR_AUTH_MESSAGES.generic });
   });
 });

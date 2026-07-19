@@ -58,17 +58,20 @@ export async function middleware(request: NextRequest) {
   const authenticated = Boolean(user);
   const verified = authenticated && isEmailVerified(user);
 
-  // Only spend a DB round trip on the onboarding check once we already know
-  // the user is authenticated + verified -- an anonymous or unverified
-  // visitor is redirected before onboarding status is ever relevant.
+  // Only spend a DB round trip on the profile checks once we already know the
+  // user is authenticated + verified -- an anonymous or unverified visitor is
+  // redirected before onboarding/phone status is ever relevant. One query
+  // fetches both the onboarding marker and the phone (Google users lack it).
   let onboarded = false;
+  let hasPhone = true;
   if (verified && user) {
     const { data } = await supabase
       .from("profiles")
-      .select("onboarded_at")
+      .select("onboarded_at, phone")
       .eq("user_id", user.id)
       .maybeSingle();
     onboarded = Boolean(data?.onboarded_at);
+    hasPhone = Boolean(data?.phone);
   }
 
   const decision = decideRouteAccess({
@@ -76,6 +79,7 @@ export async function middleware(request: NextRequest) {
     isAuthenticated: authenticated,
     isEmailVerified: verified,
     isOnboarded: onboarded,
+    hasPhone,
   });
 
   if (decision.action === "redirect") {

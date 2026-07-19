@@ -75,6 +75,7 @@ describe("AppShell (F005 base shell)", () => {
     ["/prijava"],
     ["/registracija"],
     ["/registracija/proveri-email"],
+    ["/telefon"],
   ])(
     "renders auth route %s full-bleed: no app column, no bottom nav",
     (pathname) => {

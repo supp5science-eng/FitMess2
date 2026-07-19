@@ -213,6 +213,30 @@ export async function verifySignupOtp(
 }
 
 /**
+ * Writes the phone number onto the current user's own profile row. Used by the
+ * `/telefon` capture page that Google OAuth users pass through once (they never
+ * saw the signup form's phone field). RLS (`profiles_update_own`) already
+ * restricts the update to the caller's own row; passing `userId` keeps the
+ * `where` explicit and unit-testable. Phone is stored for cold-calling only.
+ */
+export async function updateProfilePhone(
+  supabase: SupabaseClient,
+  userId: string,
+  phone: string
+): Promise<AuthActionResult> {
+  const { error } = await supabase
+    .from("profiles")
+    .update({ phone })
+    .eq("user_id", userId);
+
+  if (error) {
+    return { ok: false, error_sr: SR_AUTH_MESSAGES.generic };
+  }
+
+  return { ok: true };
+}
+
+/**
  * Sends a password-recovery email (the "zaboravljena lozinka" flow).
  *
  * Supabase's `resetPasswordForEmail` is non-enumerating by design: it returns

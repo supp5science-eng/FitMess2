@@ -35,6 +35,12 @@ export type RouteProtectionInput = {
   /** `profiles.onboarded_at IS NOT NULL` for the current user -- ignored
    * when `isAuthenticated` is false or the email isn't verified yet. */
   isOnboarded: boolean;
+  /** `profiles.phone IS NOT NULL` for the current user. Email/password signups
+   * collect the phone on the registration form (stored at signup); Google
+   * OAuth users don't, so they're routed through the `/telefon` capture page
+   * once, right after signing in. Optional + defaults to "has phone" so a
+   * caller that doesn't care (most unit tests) never trips the gate. */
+  hasPhone?: boolean;
 };
 
 export type RouteDecision =
@@ -47,6 +53,9 @@ export const SIGNED_OUT_REDIRECT_PATH = "/prijava";
 export const VERIFY_EMAIL_NOTICE_PATH = "/registracija/proveri-email";
 /** Where a verified-but-not-yet-onboarded visitor to a protected page is sent. */
 export const ONBOARDING_PATH = "/onboarding";
+/** Where a verified visitor who has no phone on file yet is sent (Google OAuth
+ * users, who never saw the signup form's phone field). */
+export const PHONE_CAPTURE_PATH = "/telefon";
 /** Where a fully set-up visitor landing on an auth page is bounced to. */
 export const SIGNED_IN_HOME_PATH = "/danas";
 
@@ -90,6 +99,12 @@ export function isOnboardingPath(pathname: string): boolean {
   return matchesPrefix(pathname, ONBOARDING_PATH);
 }
 
+/** `/telefon` -- the phone-capture page, exempt from the "no phone yet"
+ * redirect so visiting it while phone-less never loops back to itself. */
+export function isPhoneCapturePath(pathname: string): boolean {
+  return matchesPrefix(pathname, PHONE_CAPTURE_PATH);
+}
+
 /** Never gated regardless of auth/verification/onboarding state: the public
  * marketing landing page, the login/signup pages, and the auth callback. */
 export function isPublicPath(pathname: string): boolean {
@@ -106,8 +121,13 @@ export function isPublicPath(pathname: string): boolean {
  * this path be allowed through, or redirected -- and to where."
  */
 export function decideRouteAccess(input: RouteProtectionInput): RouteDecision {
-  const { pathname, isAuthenticated, isEmailVerified: verified, isOnboarded } =
-    input;
+  const {
+    pathname,
+    isAuthenticated,
+    isEmailVerified: verified,
+    isOnboarded,
+    hasPhone = true,
+  } = input;
 
   // 1. No session at all (AS-011).
   if (!isAuthenticated) {
@@ -123,6 +143,18 @@ export function decideRouteAccess(input: RouteProtectionInput): RouteDecision {
   if (!verified) {
     if (isPublicPath(pathname)) return { action: "allow" };
     return { action: "redirect", to: VERIFY_EMAIL_NOTICE_PATH };
+  }
+
+  // 2.5. Verified, but no phone on file yet. Email/password signups already
+  //    have one (collected on the registration form); this only ever catches
+  //    Google OAuth users, who are routed through `/telefon` once before
+  //    anything else -- deliberately BEFORE onboarding, both to capture the
+  //    number right after sign-in and to stay out of the onboarding ->
+  //    plan-reveal -> /danas hand-off entirely.
+  if (!hasPhone) {
+    if (isPhoneCapturePath(pathname)) return { action: "allow" }; // no loop
+    if (isPublicPath(pathname)) return { action: "allow" };
+    return { action: "redirect", to: PHONE_CAPTURE_PATH };
   }
 
   // 3. Verified, but onboarding isn't complete yet.

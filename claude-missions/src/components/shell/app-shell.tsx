@@ -43,7 +43,12 @@ const FULL_BLEED_ROUTES = new Set(["/", "/samo-za-telefon"]);
  *   + questionnaire own the whole viewport and must NOT expose the bottom
  *   navigation — its tabs (Danas / Nedelja / Agent / Profil) only become
  *   available once onboarding is finished (`profiles.onboarded_at` set). */
-const FULL_BLEED_PREFIXES = ["/prijava", "/registracija", "/onboarding"] as const;
+const FULL_BLEED_PREFIXES = [
+  "/prijava",
+  "/registracija",
+  "/onboarding",
+  "/telefon",
+] as const;
 
 function isFullBleed(pathname: string): boolean {
   return (

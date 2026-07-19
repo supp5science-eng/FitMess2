@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ONBOARDING_PATH,
+  PHONE_CAPTURE_PATH,
   SIGNED_IN_HOME_PATH,
   SIGNED_OUT_REDIRECT_PATH,
   VERIFY_EMAIL_NOTICE_PATH,
@@ -10,6 +11,7 @@ import {
   isLoginOrSignupPath,
   isOnboardingPath,
   isPasswordResetPath,
+  isPhoneCapturePath,
   isPublicPath,
 } from "@/lib/auth/route-protection";
 
@@ -264,6 +266,84 @@ describe("fully set-up users (verified + onboarded) are bounced away from the lo
   );
 });
 
+describe("verified users with no phone on file are routed to /telefon once (Google OAuth)", () => {
+  it.each(PROTECTED_PATHS)(
+    "test_verified_phoneless_user_requesting_%s_is_redirected_to_telefon",
+    (pathname) => {
+      const decision = decideRouteAccess({
+        pathname,
+        isAuthenticated: true,
+        isEmailVerified: true,
+        isOnboarded: false,
+        hasPhone: false,
+      });
+
+      expect(decision).toEqual({ action: "redirect", to: PHONE_CAPTURE_PATH });
+    }
+  );
+
+  it("test_phoneless_user_on_the_telefon_page_itself_is_allowed_no_loop", () => {
+    const decision = decideRouteAccess({
+      pathname: "/telefon",
+      isAuthenticated: true,
+      isEmailVerified: true,
+      isOnboarded: false,
+      hasPhone: false,
+    });
+
+    expect(decision).toEqual({ action: "allow" });
+  });
+
+  it("test_phone_gate_takes_precedence_over_onboarding", () => {
+    // A phone-less, not-yet-onboarded user visiting /onboarding must be sent to
+    // /telefon first -- phone is captured before onboarding, on purpose.
+    const decision = decideRouteAccess({
+      pathname: "/onboarding",
+      isAuthenticated: true,
+      isEmailVerified: true,
+      isOnboarded: false,
+      hasPhone: false,
+    });
+
+    expect(decision).toEqual({ action: "redirect", to: PHONE_CAPTURE_PATH });
+  });
+
+  it("test_phoneless_user_can_still_reach_public_paths", () => {
+    const decision = decideRouteAccess({
+      pathname: "/auth/callback",
+      isAuthenticated: true,
+      isEmailVerified: true,
+      isOnboarded: false,
+      hasPhone: false,
+    });
+
+    expect(decision).toEqual({ action: "allow" });
+  });
+
+  it("test_user_with_a_phone_skips_the_gate_and_proceeds_to_onboarding", () => {
+    const decision = decideRouteAccess({
+      pathname: "/danas",
+      isAuthenticated: true,
+      isEmailVerified: true,
+      isOnboarded: false,
+      hasPhone: true,
+    });
+
+    expect(decision).toEqual({ action: "redirect", to: ONBOARDING_PATH });
+  });
+
+  it("test_hasPhone_defaults_to_true_so_a_caller_that_omits_it_never_trips_the_gate", () => {
+    const decision = decideRouteAccess({
+      pathname: "/danas",
+      isAuthenticated: true,
+      isEmailVerified: true,
+      isOnboarded: true,
+    });
+
+    expect(decision).toEqual({ action: "allow" });
+  });
+});
+
 describe("path classifier helpers", () => {
   it("test_isPublicPath_covers_marketing_home_login_signup_auth_callback_and_password_reset", () => {
     expect(isPublicPath("/")).toBe(true);
@@ -308,5 +388,12 @@ describe("path classifier helpers", () => {
     expect(isOnboardingPath("/onboarding")).toBe(true);
     expect(isOnboardingPath("/onboarding/korak-1")).toBe(true);
     expect(isOnboardingPath("/onboardingfoo")).toBe(false);
+  });
+
+  it("test_isPhoneCapturePath_matches_the_telefon_prefix_only", () => {
+    expect(isPhoneCapturePath("/telefon")).toBe(true);
+    expect(isPhoneCapturePath("/telefon/x")).toBe(true);
+    expect(isPhoneCapturePath("/telefonx")).toBe(false);
+    expect(isPhoneCapturePath("/prijava")).toBe(false);
   });
 });

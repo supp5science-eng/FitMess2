@@ -9,6 +9,7 @@ import {
   sendPasswordResetEmail,
   signInEmailPassword,
   signUpEmailPassword,
+  updateProfilePhone,
   updateUserPassword,
   verifySignupOtp,
 } from "@/lib/auth/core";
@@ -17,6 +18,7 @@ import {
   emailSchema,
   forgotPasswordSchema,
   normalizePhone,
+  phoneSchema,
   resetPasswordSchema,
   signInSchema,
   signUpSchema,
@@ -245,6 +247,48 @@ export async function verifyEmailCodeAction(
     parsed.data.code
   );
 
+  if (!result.ok) {
+    return result;
+  }
+
+  redirect("/danas");
+}
+
+/**
+ * Saves the phone number for a signed-in user who doesn't have one yet -- the
+ * `/telefon` gate that Google OAuth users hit once right after signing in
+ * (email/password users already gave a phone on the signup form). On success we
+ * send them onward; the middleware then routes a not-yet-onboarded user into
+ * onboarding, or a returning user straight into the app.
+ */
+export async function savePhoneAction(
+  _prevState: AuthFormState,
+  formData: FormData
+): Promise<AuthFormState> {
+  const parsed = phoneSchema.safeParse(
+    normalizePhone(
+      String(formData.get("phone_cc") ?? ""),
+      String(formData.get("phone_local") ?? "")
+    )
+  );
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error_sr: parsed.error.issues[0]?.message ?? SR_AUTH_MESSAGES.generic,
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    // The route-protection gate only sends authenticated users here, so this
+    // is a defensive guard rather than a reachable state.
+    return { ok: false, error_sr: SR_AUTH_MESSAGES.generic };
+  }
+
+  const result = await updateProfilePhone(supabase, user.id, parsed.data);
   if (!result.ok) {
     return result;
   }

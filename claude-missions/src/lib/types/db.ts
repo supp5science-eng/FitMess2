@@ -85,6 +85,7 @@ export interface Database {
         Row: {
           user_id: string;
           full_name: string | null;
+          phone: string | null;
           sex: Sex | null;
           birth_year: number | null;
           height_cm: number | null;
@@ -99,6 +100,7 @@ export interface Database {
         Insert: {
           user_id: string;
           full_name?: string | null;
+          phone?: string | null;
           sex?: Sex | null;
           birth_year?: number | null;
           height_cm?: number | null;
@@ -113,6 +115,7 @@ export interface Database {
         Update: {
           user_id?: string;
           full_name?: string | null;
+          phone?: string | null;
           sex?: Sex | null;
           birth_year?: number | null;
           height_cm?: number | null;

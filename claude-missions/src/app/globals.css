@@ -49,45 +49,46 @@
 
 :root {
   /*
-   * F005: single "energetic green" brand accent — Tailwind green-600
-   * (#16a34a), a vivid, energetic green with enough contrast against white
-   * for buttons/links (Cal AI-style calorie/fitness UI). Every accent
-   * touchpoint (primary actions, focus ring, active nav state, sidebar
-   * primary) derives from this ONE hue -- no second brand color. Light
-   * theme only; the .dark block below is inert scaffold, unused by the app.
+   * LIGHT THEME (selectable in Settings; `.dark` below is the default).
+   * The accent here is BLACK, not the dark theme's teal: primary buttons,
+   * the calorie gauge, active nav, focus ring -- every `--primary` touchpoint
+   * -- render near-black on white (per product decision: "in the white theme
+   * the buttons are black; in dark they're the teal/greenish accent"). Clean
+   * neutral surfaces; the macro colours (coral/amber/green) are set per-mark
+   * and read fine on white.
    */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #16a34a;
+  --background: #ffffff;
+  --foreground: #0a0c0b;
+  --card: #ffffff;
+  --card-foreground: #0a0c0b;
+  --popover: #ffffff;
+  --popover-foreground: #0a0c0b;
+  --primary: #0a0c0b;
   --primary-foreground: #ffffff;
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: #ecfdf5;
-  --accent-foreground: #15803d;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: #16a34a;
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
+  --secondary: #f4f5f5;
+  --secondary-foreground: #0a0c0b;
+  --muted: #f1f2f3;
+  --muted-foreground: #646b6f;
+  --accent: #f1f2f3;
+  --accent-foreground: #0a0c0b;
+  --destructive: #d64545;
+  --border: #e5e7e9;
+  --input: #e2e5e7;
+  --ring: #0a0c0b;
+  --chart-1: #0a0c0b;
+  --chart-2: #646b6f;
+  --chart-3: #8a9095;
+  --chart-4: #b0b5b9;
+  --chart-5: #c9a24b;
   --radius: 1.25rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #16a34a;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #0a0c0b;
+  --sidebar-primary: #0a0c0b;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #ecfdf5;
-  --sidebar-accent-foreground: #15803d;
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: #16a34a;
+  --sidebar-accent: #f1f2f3;
+  --sidebar-accent-foreground: #0a0c0b;
+  --sidebar-border: #e5e7e9;
+  --sidebar-ring: #0a0c0b;
 }
 
 /*

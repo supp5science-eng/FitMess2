@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Archivo_Black } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
 
 import { AppShell } from "@/components/shell/app-shell";
 import { HapticProvider } from "@/components/pwa/haptic-provider";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
+import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
 
 // F005: single app-wide typeface, loaded via next/font (self-hosted, no
 // layout shift) and applied through the --font-sans CSS variable that
@@ -55,24 +57,36 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-export const viewport: Viewport = {
-  themeColor: "#0a0c0b",
-  width: "device-width",
-  initialScale: 1,
-  // iOS PWA: let content extend into the notch/home-indicator area; the
-  // `env(safe-area-inset-*)` paddings below keep UI clear of them.
-  viewportFit: "cover",
-};
+// Theme-color (PWA status-bar tint) follows the chosen theme -- read per
+// request from the same cookie the root layout uses.
+export async function generateViewport(): Promise<Viewport> {
+  const cookieStore = await cookies();
+  const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
+  return {
+    themeColor: theme === "light" ? "#ffffff" : "#0a0c0b",
+    width: "device-width",
+    initialScale: 1,
+    // iOS PWA: let content extend into the notch/home-indicator area; the
+    // `env(safe-area-inset-*)` paddings below keep UI clear of them.
+    viewportFit: "cover",
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // The chosen theme is server-rendered onto <html> so there is no flash of
+  // the wrong theme on first paint. Existing users (no cookie) stay dark.
+  const cookieStore = await cookies();
+  const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
+
   return (
     <html
       lang="sr"
-      className={`dark ${inter.variable} ${archivoBlack.variable} h-full antialiased`}
+      className={`${theme} ${inter.variable} ${archivoBlack.variable} h-full antialiased`}
+      style={{ colorScheme: theme }}
     >
       <body className="min-h-full">
         <AppShell>{children}</AppShell>

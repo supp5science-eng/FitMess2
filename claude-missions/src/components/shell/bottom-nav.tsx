@@ -28,7 +28,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Glavna navigacija"
-      className="liquid-glass pointer-events-auto flex flex-1 items-stretch justify-around gap-0.5 rounded-full border border-white/10 bg-[#14181a]/80 px-1.5 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.5)] backdrop-blur-xl"
+      className="liquid-glass pointer-events-auto flex flex-1 items-stretch justify-around gap-0.5 rounded-full border border-border bg-card/80 px-1.5 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl"
     >
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
         const isActive =

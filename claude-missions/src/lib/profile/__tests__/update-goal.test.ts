@@ -21,9 +21,11 @@ function makeMockSupabase(options?: {
   profileError?: { message: string };
   targetsError?: { message: string };
 }) {
-  const insert = vi.fn(() =>
-    Promise.resolve({ error: options?.targetsError ?? null })
-  );
+  const insert = vi.fn<
+    (payload: Record<string, unknown>) => Promise<{
+      error: { message: string } | null;
+    }>
+  >(() => Promise.resolve({ error: options?.targetsError ?? null }));
   const maybeSingle = vi.fn().mockResolvedValue({
     data: options && "profile" in options ? options.profile : PROFILE,
     error: options?.profileError ?? null,
@@ -108,7 +110,7 @@ describe("updateGoal: recompute + write shape", () => {
     );
 
     expect(result.ok).toBe(true);
-    const payload = supabase.insert.mock.calls[0]![0] as Record<string, unknown>;
+    const payload = supabase.insert.mock.calls[0][0];
     expect(payload.user_id).toBe("user-1");
     expect(payload.goal).toBe("maintain");
     expect(payload.goal_weight_kg).toBeNull();
@@ -128,7 +130,7 @@ describe("updateGoal: recompute + write shape", () => {
     );
 
     expect(result.ok).toBe(true);
-    const payload = supabase.insert.mock.calls[0]![0] as Record<string, unknown>;
+    const payload = supabase.insert.mock.calls[0][0];
     expect(payload.goal).toBe("gain");
     expect(payload.goal_weight_kg).toBe(92);
     expect(payload.timeframe_weeks).toBe(16);

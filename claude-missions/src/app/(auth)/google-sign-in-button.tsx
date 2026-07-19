@@ -65,6 +65,11 @@ export function GoogleSignInButton() {
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        // Always show Google's account chooser. Without this, once the browser
+        // is already signed into a single Google account, Google silently
+        // reuses it and bounces straight back -- giving the user no chance to
+        // pick which account. `prompt: "select_account"` forces the picker.
+        queryParams: { prompt: "select_account" },
       },
     });
 

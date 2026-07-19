@@ -66,6 +66,7 @@ describe("AS-010: a user can sign in with Google OAuth", () => {
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
+        queryParams: { prompt: "select_account" },
       },
     });
   });

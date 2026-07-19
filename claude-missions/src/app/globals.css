@@ -207,6 +207,48 @@
   opacity: 0.85;
 }
 
+/* ---------------------------------------------------------------------
+   Tactile "press" feedback — osećaj klika.
+   Every tappable control (buttons, links styled as buttons, the bottom-nav
+   tabs, role=button) squishes slightly while pressed and springs back on
+   release, so a tap ALWAYS feels registered. This is the iOS substitute for
+   haptics: Safari / iOS PWAs expose no Vibration API, so the real buzz is
+   Android-only (fired by <HapticProvider>) while this visual press carries
+   the feel everywhere. Kept unlayered on purpose so it composes over
+   Tailwind's utility layer; the shared transition also keeps the common
+   colour/background hover-and-active fades smooth. Reduced-motion aware, and
+   disabled controls never move. --------------------------------------- */
+@media (prefers-reduced-motion: no-preference) {
+  button,
+  a,
+  [role="button"],
+  summary {
+    transition:
+      transform 0.14s cubic-bezier(0.2, 0, 0, 1),
+      color 0.15s ease,
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      opacity 0.15s ease;
+  }
+  button:active,
+  a:active,
+  [role="button"]:active,
+  summary:active {
+    transform: scale(0.95);
+  }
+  /* Bottom-nav tabs ("4 sekcije") get a touch more travel so switching
+     sections has an unmistakable press. */
+  nav[aria-label="Glavna navigacija"] a:active {
+    transform: scale(0.9);
+  }
+  button:disabled:active,
+  button[aria-disabled="true"]:active,
+  a[aria-disabled="true"]:active,
+  [role="button"][aria-disabled="true"]:active {
+    transform: none;
+  }
+}
+
 /* iOS Safari only: bump form controls to 16px so focusing an input never
    triggers the page-zoom that fires when the field text is < 16px. */
 @supports (-webkit-touch-callout: none) {

@@ -3,6 +3,7 @@ import { Inter, Archivo_Black } from "next/font/google";
 import "./globals.css";
 
 import { AppShell } from "@/components/shell/app-shell";
+import { HapticProvider } from "@/components/pwa/haptic-provider";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 
 // F005: single app-wide typeface, loaded via next/font (self-hosted, no
@@ -76,6 +77,7 @@ export default function RootLayout({
       <body className="min-h-full">
         <AppShell>{children}</AppShell>
         <ServiceWorkerRegister />
+        <HapticProvider />
       </body>
     </html>
   );

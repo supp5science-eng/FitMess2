@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bot, ChartColumnBig, Home, User } from "lucide-react";
+import { Bot, ChartColumnBig, Home, Settings } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   { href: "/danas", label: "Početna", icon: Home },
   { href: "/analitika", label: "Analitika", icon: ChartColumnBig },
   { href: "/agent", label: "Agent", icon: Bot },
-  { href: "/profil", label: "Profil", icon: User },
+  { href: "/profil", label: "Podešavanja", icon: Settings },
 ] as const;
 
 export function BottomNav() {
@@ -48,7 +48,7 @@ export function BottomNav() {
             )}
           >
             <Icon className="size-5" aria-hidden="true" />
-            <span>{label}</span>
+            <span className="whitespace-nowrap">{label}</span>
           </Link>
         );
       })}

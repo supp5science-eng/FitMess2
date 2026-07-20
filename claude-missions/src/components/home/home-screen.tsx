@@ -7,6 +7,7 @@ import { IntroCover } from "@/components/home/intro-cover";
 import { MacroBars } from "@/components/home/macro-bars";
 import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
+import type { AdaptivePlan } from "@/lib/home/adaptive";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import type { DayCell } from "@/lib/home/date-strip";
 import { computeDayTotals } from "@/lib/home/totals";
@@ -48,6 +49,7 @@ export function HomeScreen({
   intro = false,
   days = [],
   mealsHeading = "Obroci danas",
+  adaptivePlan = null,
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
@@ -58,6 +60,12 @@ export function HomeScreen({
   // for the day currently being viewed ("Obroci danas" for today).
   days?: DayCell[];
   mealsHeading?: string;
+  // "Deo 2": the adaptive daily-target plan for TODAY (computed server-side
+  // from this week's logs). Only passed for the today view; when it signals an
+  // adjustment, the ring targets the adapted number and a short note explains
+  // why. Null/absent (past days, or a week that's on track) => the ring uses
+  // the plain daily target, exactly as before.
+  adaptivePlan?: AdaptivePlan | null;
 }) {
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
 
@@ -161,10 +169,17 @@ export function HomeScreen({
           <div ref={ringRef} className="home-ring-slot">
             <Ring
               consumedKcal={totals.kcal}
-              targetKcal={target.daily_kcal}
+              targetKcal={
+                adaptivePlan?.isAdjusted
+                  ? adaptivePlan.adaptiveDailyTarget
+                  : target.daily_kcal
+              }
               view={view}
             />
           </div>
+          {adaptivePlan?.isAdjusted ? (
+            <AdaptiveNote plan={adaptivePlan} />
+          ) : null}
           <div className="home-body">
             <MacroBars
               consumed={{
@@ -206,6 +221,43 @@ export function HomeScreen({
         />
       ) : null}
     </main>
+  );
+}
+
+/**
+ * "Deo 2": a short, calm note shown on today's dashboard when the week's
+ * earlier overshoot has trimmed today's target. Explains the adjusted number
+ * (so the ring's smaller "Cilj" isn't a mystery) and, when food alone can't
+ * absorb the overshoot without dropping below the safe floor, suggests a bit
+ * of activity to cover the rest.
+ */
+function AdaptiveNote({ plan }: { plan: AdaptivePlan }) {
+  return (
+    <div
+      data-testid="adaptive-note"
+      className="home-body rounded-2xl border border-border bg-muted/40 px-4 py-3.5 text-sm"
+    >
+      <p className="font-semibold text-foreground">Prilagođeno ove nedelje</p>
+      <p className="mt-0.5 text-muted-foreground">
+        Zbog ranijeg prekoračenja, današnji cilj je snižen na{" "}
+        <span data-testid="adaptive-note-target" className="font-medium text-foreground">
+          {plan.adaptiveDailyTarget} kcal
+        </span>{" "}
+        (redovni: {plan.baseDailyTarget}) — da se nedelja vrati na prag.
+      </p>
+      {plan.trainingSuggestionKcal > 0 ? (
+        <p
+          data-testid="adaptive-note-training"
+          className="mt-1.5 text-muted-foreground"
+        >
+          Preostalo pokrij aktivnošću:{" "}
+          <span className="font-medium text-foreground">
+            ~{plan.trainingSuggestionKcal} kcal
+          </span>{" "}
+          danas (≈ {plan.trainingWalkMinutes} min brzog hoda).
+        </p>
+      ) : null}
+    </div>
   );
 }
 

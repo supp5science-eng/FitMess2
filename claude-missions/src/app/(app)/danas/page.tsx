@@ -2,7 +2,16 @@ import { cookies } from "next/headers";
 
 import { HomeScreen } from "@/components/home/home-screen";
 import { getCurrentUserId } from "@/lib/auth/current-user";
-import { getBelgradeDayRange, toBelgradeCalendarDay } from "@/lib/dates";
+import {
+  getBelgradeDayRange,
+  getBelgradeWeekRange,
+  toBelgradeCalendarDay,
+} from "@/lib/dates";
+import {
+  computeAdaptivePlan,
+  computeCarryInFromLastWeek,
+  type AdaptivePlan,
+} from "@/lib/home/adaptive";
 import { buildDateStrip } from "@/lib/home/date-strip";
 import { getLoggedDays } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
@@ -96,7 +105,7 @@ export default async function DanasPage({
     getTodayData(supabase, userId, range),
     supabase
       .from("profiles")
-      .select("created_at")
+      .select("created_at, sex")
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
@@ -152,6 +161,22 @@ export default async function DanasPage({
   const cookieStore = await cookies();
   const intro = isToday && cookieStore.get("fm_intro") != null;
 
+  // "Deo 2": today's adaptive daily target. Only for the today view and only
+  // when a target exists -- redistributes any earlier-in-week overshoot across
+  // the rest of the week (carrying last week's debt in). Computed from this
+  // week's logs; a failed read just falls back to no adjustment (never breaks
+  // the dashboard).
+  const adaptivePlan =
+    isToday && result.data.target
+      ? await getAdaptivePlan(
+          supabase,
+          userId,
+          result.data.target.daily_kcal,
+          profileResult.data?.sex ?? "male",
+          now
+        )
+      : null;
+
   return (
     <HomeScreen
       initialLogs={result.data.logs}
@@ -159,8 +184,63 @@ export default async function DanasPage({
       intro={intro}
       days={days}
       mealsHeading={isToday ? "Obroci danas" : `Obroci · ${shortDate(selectedKey)}`}
+      adaptivePlan={adaptivePlan}
     />
   );
+}
+
+/**
+ * Fetches this week's + last week's logged kcal and derives today's adaptive
+ * plan. Returns null on any read error so the dashboard degrades to the plain
+ * daily target rather than failing.
+ */
+async function getAdaptivePlan(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  baseDailyTarget: number,
+  sex: "male" | "female",
+  now: Date
+): Promise<AdaptivePlan | null> {
+  const thisWeek = getBelgradeWeekRange(now);
+  const lastWeek = getBelgradeWeekRange(
+    new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+  );
+
+  const [thisWeekResult, lastWeekResult] = await Promise.all([
+    supabase
+      .from("logs")
+      .select("logged_at, kcal")
+      .eq("user_id", userId)
+      .gte("logged_at", thisWeek.startIso)
+      .lt("logged_at", thisWeek.endIsoExclusive),
+    supabase
+      .from("logs")
+      .select("logged_at, kcal")
+      .eq("user_id", userId)
+      .gte("logged_at", lastWeek.startIso)
+      .lt("logged_at", lastWeek.endIsoExclusive),
+  ]);
+
+  if (thisWeekResult.error || lastWeekResult.error) {
+    console.error(
+      "[/danas adaptive] week logs read failed:",
+      thisWeekResult.error?.message ?? lastWeekResult.error?.message
+    );
+    return null;
+  }
+
+  const carryInKcal = computeCarryInFromLastWeek(
+    lastWeekResult.data ?? [],
+    baseDailyTarget
+  );
+
+  return computeAdaptivePlan({
+    weekLogs: thisWeekResult.data ?? [],
+    baseDailyTarget,
+    sex,
+    carryInKcal,
+    now,
+  });
 }
 
 function RetryErrorState({

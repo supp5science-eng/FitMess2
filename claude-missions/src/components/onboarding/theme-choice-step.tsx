@@ -8,6 +8,30 @@ import { applyTheme, type Theme } from "@/lib/theme/theme";
 import { cn } from "@/lib/utils";
 
 /**
+ * Mini-preview swatch colours, hard-coded per theme. This is the ONE
+ * deliberate exception to "colours come from tokens": each card must preview
+ * BOTH themes' real colours at once, regardless of which theme is currently
+ * active, so it can't read the live `--surface`/`--primary`/etc. tokens (those
+ * only ever hold the ACTIVE theme's values). These literals mirror `:root`
+ * (light) and `.dark` in `src/app/globals.css` -- keep them in sync if those
+ * change.
+ */
+const THEME_PREVIEW_COLORS = {
+  light: {
+    surface: "#ffffff",
+    accent: "#0a0c0b",
+    line: "#e5e7e9",
+    swatchBorder: "#e5e7e9",
+  },
+  dark: {
+    surface: "#0a0c0b",
+    accent: "#17d1a8",
+    line: "#191e20",
+    swatchBorder: "rgba(255,255,255,0.1)",
+  },
+} as const;
+
+/**
  * First thing after sign-up (between the welcome screen and the questionnaire):
  * pick a light or dark look. Tapping a card applies the theme LIVE (the whole
  * screen switches immediately) and writes the cookie, so the choice is already
@@ -73,12 +97,8 @@ function ThemeCard({
   onSelect: (theme: Theme) => void;
 }) {
   const isLight = theme === "light";
-  // The mini-preview swatches are hard-coded to each theme's real colours so
-  // BOTH options stay visible regardless of which theme is currently active.
-  const surface = isLight ? "#ffffff" : "#0a0c0b";
-  const accent = isLight ? "#0a0c0b" : "#17d1a8";
-  const line = isLight ? "#e5e7e9" : "#191e20";
-  const swatchBorder = isLight ? "#e5e7e9" : "rgba(255,255,255,0.1)";
+  const preview = isLight ? THEME_PREVIEW_COLORS.light : THEME_PREVIEW_COLORS.dark;
+  const { surface, accent, line, swatchBorder } = preview;
 
   return (
     <button

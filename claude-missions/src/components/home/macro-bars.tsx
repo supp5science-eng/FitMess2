@@ -12,11 +12,13 @@ import type { RingView } from "@/components/home/ring";
 // follow it. The bar caps visually at 100% (a macro can exceed its target
 // without overflowing its track) but the number always shows the real value.
 
-/** Per-macro accent colours (distinct from the teal calorie gauge). */
+/** Per-macro accent colours (distinct from the teal calorie gauge). Driven by
+ * the themed `--macro-*` tokens in `globals.css`, so each is right for dark
+ * AND light (the `color-mix` track below works with `var()` values too). */
 const MACRO_COLORS = {
-  protein: "#f9745f",
-  fat: "#f2c14e",
-  carbs: "#45c78d",
+  protein: "var(--macro-protein)",
+  fat: "var(--macro-fat)",
+  carbs: "var(--macro-carbs)",
 } as const;
 
 function MacroBar({

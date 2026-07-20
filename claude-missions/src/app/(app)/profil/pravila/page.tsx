@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { RulesScreen } from "@/components/profil/rules-screen";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 import type { PersistedRule } from "@/lib/budget/rules";
 
@@ -19,33 +20,35 @@ import type { PersistedRule } from "@/lib/budget/rules";
  */
 export default async function PravilaPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Local access-token verification (`getClaims`) instead of `auth.getUser()`'s
+  // per-navigation network round trip -- same fast path as `/profil`.
+  const userId = await getCurrentUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return <RetryErrorState message="Sesija je istekla. Prijavi se ponovo." />;
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("rules")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  // The two reads are independent -- fetch them in parallel so the page waits
+  // on one round trip, not two in series.
+  const [
+    { data: profile, error: profileError },
+    { data: target },
+  ] = await Promise.all([
+    supabase.from("profiles").select("rules").eq("user_id", userId).maybeSingle(),
+    supabase
+      .from("targets")
+      .select("daily_kcal")
+      .eq("user_id", userId)
+      .order("effective_from", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+  ]);
 
   if (profileError) {
     return (
       <RetryErrorState message="Nismo uspeli da učitamo tvoja pravila. Proveri konekciju i pokušaj ponovo." />
     );
   }
-
-  const { data: target } = await supabase
-    .from("targets")
-    .select("daily_kcal")
-    .eq("user_id", user.id)
-    .order("effective_from", { ascending: false })
-    .limit(1)
-    .maybeSingle();
 
   const rules: PersistedRule[] = profile?.rules ?? [];
 

@@ -26,6 +26,12 @@ function mockCreateClient(options: {
 
   return {
     auth: {
+      // The page resolves identity via `getClaims` (local verify); `getUser`
+      // is kept for any other caller but no longer drives this page.
+      getClaims: vi.fn().mockResolvedValue({
+        data: { claims: user ? { sub: user.id } : null },
+        error: null,
+      }),
       getUser: vi.fn().mockResolvedValue({ data: { user } }),
     },
     from: vi.fn((table: string) => {

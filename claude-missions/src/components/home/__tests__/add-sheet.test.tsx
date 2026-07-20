@@ -96,6 +96,19 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     );
   });
 
+  it("test_the_dodaj_proizvod_option_links_to_the_add_product_flow_with_its_note", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    const option = screen.getByTestId("add-sheet-option-proizvod");
+    expect(option.tagName).toBe("A");
+    expect(option).toHaveAttribute("href", "/dodaj/proizvod");
+    // The "only products with a declaration + barcode" note is shown inline.
+    expect(screen.getByTestId("add-sheet-desc-proizvod")).toHaveTextContent(
+      "Samo proizvodi sa deklaracijom i barkodom"
+    );
+  });
+
 });
 
 describe("AS-051: closing the sheet", () => {

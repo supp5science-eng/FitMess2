@@ -29,6 +29,8 @@ export const FOOD_CARBS_INVALID_ERROR_SR =
   "Unesi ispravnu vrednost za ugljene hidrate (0–100 na 100g).";
 export const FOOD_FAT_INVALID_ERROR_SR =
   "Unesi ispravnu vrednost za masti (0–100 na 100g).";
+export const FOOD_PRICE_INVALID_ERROR_SR =
+  "Unesi ispravnu cenu u dinarima (0 ili više).";
 export const FOOD_CREATE_FAILED_ERROR_SR =
   "Nismo uspeli da sačuvamo proizvod. Pokušaj ponovo.";
 export const FOOD_DUPLICATE_BARCODE_ERROR_SR =
@@ -45,6 +47,13 @@ export const MALFORMED_FOOD_REQUEST_ERROR_SR = "Neispravan zahtev.";
  * verified=false). */
 export const MAX_KCAL_PER_100G = 900;
 export const MAX_MACRO_GRAMS_PER_100G = 100;
+
+/** Upper bound for a product's reference price in RSD -- generous enough for
+ * any realistic packaged product (matches the `numeric(10,2)` column's ceiling
+ * headroom in `0012_food_price.sql`) while still rejecting an obviously
+ * fat-fingered value. Price is OPTIONAL: an empty string / undefined means "not
+ * provided," same treatment as `brand`/`barcode`. */
+export const MAX_PRICE_RSD = 1_000_000;
 
 /** An empty string is treated as "not provided" for optional fields
  * (brand, barcode) -- a bare HTML text input naturally produces `""`, not
@@ -92,6 +101,16 @@ export const newFoodEntrySchema = z.object({
     .finite({ message: FOOD_FAT_INVALID_ERROR_SR })
     .min(0, FOOD_FAT_INVALID_ERROR_SR)
     .max(MAX_MACRO_GRAMS_PER_100G, FOOD_FAT_INVALID_ERROR_SR),
+  // Optional reference price in RSD for the whole product (not per 100 g).
+  // Omitted (undefined) when the user leaves the field blank -- the client
+  // simply doesn't include the key, same "empty -> not provided" treatment as
+  // brand/barcode above.
+  price: z
+    .number({ message: FOOD_PRICE_INVALID_ERROR_SR })
+    .finite({ message: FOOD_PRICE_INVALID_ERROR_SR })
+    .min(0, FOOD_PRICE_INVALID_ERROR_SR)
+    .max(MAX_PRICE_RSD, FOOD_PRICE_INVALID_ERROR_SR)
+    .optional(),
 });
 
 export type NewFoodEntryInput = z.input<typeof newFoodEntrySchema>;
@@ -151,8 +170,16 @@ export async function createFoodEntry(
     return { ok: false, error_sr: errorSr, status: 400 };
   }
 
-  const { name_sr, brand, barcode, kcal_100g, protein_100g, carbs_100g, fat_100g } =
-    parsed.data;
+  const {
+    name_sr,
+    brand,
+    barcode,
+    kcal_100g,
+    protein_100g,
+    carbs_100g,
+    fat_100g,
+    price,
+  } = parsed.data;
 
   const { data, error } = await supabase
     .from("foods")
@@ -160,6 +187,7 @@ export async function createFoodEntry(
       name_sr,
       brand: brand ?? null,
       barcode: barcode ?? null,
+      price: price ?? null,
       kcal_100g,
       protein_100g,
       carbs_100g,

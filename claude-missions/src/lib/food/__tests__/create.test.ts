@@ -7,8 +7,10 @@ import {
   FOOD_KCAL_INVALID_ERROR_SR,
   FOOD_NAME_REQUIRED_ERROR_SR,
   FOOD_NAME_TOO_LONG_ERROR_SR,
+  FOOD_PRICE_INVALID_ERROR_SR,
   FOOD_PROTEIN_INVALID_ERROR_SR,
   isUniqueBarcodeViolation,
+  MAX_PRICE_RSD,
   newFoodEntrySchema,
 } from "@/lib/food/create";
 
@@ -172,6 +174,51 @@ describe("F032: newFoodEntrySchema", () => {
       })
     );
     expect(result.success).toBe(true);
+  });
+});
+
+describe("Dodaj proizvod: optional price (RSD) on newFoodEntrySchema", () => {
+  it("test_an_omitted_price_is_valid_price_is_optional", () => {
+    const result = newFoodEntrySchema.safeParse(validEntry());
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.price).toBeUndefined();
+    }
+  });
+
+  it("test_a_valid_price_parses_and_is_kept", () => {
+    const result = newFoodEntrySchema.safeParse(validEntry({ price: 149.99 }));
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.price).toBe(149.99);
+    }
+  });
+
+  it("test_a_price_of_zero_is_accepted_boundary", () => {
+    const result = newFoodEntrySchema.safeParse(validEntry({ price: 0 }));
+    expect(result.success).toBe(true);
+  });
+
+  it("test_a_negative_price_is_rejected_with_a_serbian_error", () => {
+    const result = newFoodEntrySchema.safeParse(validEntry({ price: -1 }));
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues[0]?.message).toBe(FOOD_PRICE_INVALID_ERROR_SR);
+    }
+  });
+
+  it("test_an_insane_price_over_the_ceiling_is_rejected", () => {
+    const result = newFoodEntrySchema.safeParse(
+      validEntry({ price: MAX_PRICE_RSD + 1 })
+    );
+    expect(result.success).toBe(false);
+  });
+
+  it("test_a_non_numeric_price_is_rejected", () => {
+    const result = newFoodEntrySchema.safeParse(
+      validEntry({ price: Number.NaN })
+    );
+    expect(result.success).toBe(false);
   });
 });
 

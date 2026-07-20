@@ -1,0 +1,129 @@
+/* "Dodaj proizvod" success screen -- a smooth, tasteful confirmation shown
+   the instant a product is saved. A soft ring scales in, a checkmark draws
+   itself along its own stroke, and the text/actions ease up into place.
+   Respects prefers-reduced-motion (everything just appears, no motion). */
+
+.dp-success {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.25rem;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+}
+
+.dp-success__badge {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--primary) 14%, transparent);
+  animation: dp-badge-pop 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.dp-success__badge::after {
+  /* Expanding halo that fades out once, like a gentle pulse. */
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in oklch, var(--primary) 45%, transparent);
+  animation: dp-halo 900ms ease-out 120ms both;
+}
+
+.dp-success__check {
+  width: 52px;
+  height: 52px;
+  color: var(--primary);
+}
+
+.dp-success__check path {
+  stroke-dasharray: 48;
+  stroke-dashoffset: 48;
+  animation: dp-check-draw 460ms cubic-bezier(0.65, 0, 0.35, 1) 320ms both;
+}
+
+.dp-success__title {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+  animation: dp-rise 460ms ease-out 240ms both;
+}
+
+.dp-success__subtitle {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+  animation: dp-rise 460ms ease-out 320ms both;
+}
+
+.dp-success__actions {
+  display: flex;
+  width: 100%;
+  max-width: 20rem;
+  flex-direction: column;
+  gap: 0.75rem;
+  animation: dp-rise 460ms ease-out 420ms both;
+}
+
+@keyframes dp-badge-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes dp-halo {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+@keyframes dp-check-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes dp-rise {
+  from {
+    transform: translateY(8px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dp-success__badge,
+  .dp-success__badge::after,
+  .dp-success__check path,
+  .dp-success__title,
+  .dp-success__subtitle,
+  .dp-success__actions {
+    animation: none;
+  }
+  .dp-success__check path {
+    stroke-dashoffset: 0;
+  }
+}

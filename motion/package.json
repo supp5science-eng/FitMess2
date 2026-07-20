@@ -1,0 +1,20 @@
+{
+  "name": "fitmess-motion",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Motion graphics (launch teasers, feature showcases) for FitMess — built with Remotion, using the app's real brand tokens.",
+  "scripts": {
+    "dev": "remotion studio",
+    "render": "remotion render LaunchTeaser out/fitmess-launch-9x16.mp4",
+    "render:all": "remotion render LaunchTeaser out/fitmess-launch-9x16.mp4 && remotion render LaunchTeaser16x9 out/fitmess-launch-16x9.mp4 && remotion render LaunchTeaser1x1 out/fitmess-launch-1x1.mp4"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.494",
+    "@remotion/google-fonts": "^4.0.494",
+    "@types/react": "^19.2.17",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "remotion": "^4.0.494",
+    "typescript": "^5.9.3"
+  }
+}

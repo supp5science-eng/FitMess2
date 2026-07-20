@@ -55,7 +55,10 @@ export function ObrokFlow() {
     });
     setPhase("estimating");
 
-    const blob = await downscaleImage(file);
+    // Vece razmere + visi kvalitet nego default: prepoznavanje hrane gubi
+    // sitne sastojke na 1280px/q0.82. Obrok ide na Pro model, pa mu dajemo
+    // ostriju sliku (deklaracija namerno ostaje na jeftinijem defaultu).
+    const blob = await downscaleImage(file, 1568, 0.9);
     const formData = new FormData();
     formData.append("slika", blob, "obrok.jpg");
 

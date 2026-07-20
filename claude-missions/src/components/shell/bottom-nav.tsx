@@ -133,7 +133,7 @@ export function BottomNav() {
             }}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "relative z-10 flex flex-1 flex-col items-center gap-0.5 rounded-full px-1 py-1 text-[11px] font-medium transition-colors",
+              "relative z-10 flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-full px-0.5 py-1 font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
               isActive
                 ? "text-foreground"
@@ -141,7 +141,11 @@ export function BottomNav() {
             )}
           >
             <Icon className="size-5" aria-hidden="true" />
-            <span className="whitespace-nowrap">{label}</span>
+            {/* 10px + tight tracking so even the longest label ("Podešavanja")
+                stays inside its tab — and inside the glass lens — down to 375px. */}
+            <span className="max-w-full whitespace-nowrap text-[10px] leading-none tracking-tight">
+              {label}
+            </span>
           </Link>
         );
       })}

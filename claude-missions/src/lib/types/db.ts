@@ -204,6 +204,9 @@ export interface Database {
           verified: boolean;
           is_default: boolean;
           barcode: string | null;
+          // 0012: optional reference price in RSD for the whole product/package
+          // (NOT per 100 g). Nullable -- most foods have none.
+          price: number | null;
           submitted_by: string | null;
           label_photo_path: string | null;
           is_removed: boolean;
@@ -224,6 +227,7 @@ export interface Database {
           verified?: boolean;
           is_default?: boolean;
           barcode?: string | null;
+          price?: number | null;
           submitted_by?: string | null;
           label_photo_path?: string | null;
           is_removed?: boolean;
@@ -244,6 +248,7 @@ export interface Database {
           verified?: boolean;
           is_default?: boolean;
           barcode?: string | null;
+          price?: number | null;
           submitted_by?: string | null;
           label_photo_path?: string | null;
           is_removed?: boolean;

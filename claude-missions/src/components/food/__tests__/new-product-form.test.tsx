@@ -35,6 +35,7 @@ function makeFood(overrides: Partial<Food> = {}): Food {
     barcode: null,
     submitted_by: "user-a",
     label_photo_path: null,
+    price: null,
     is_removed: false,
     removed_at: null,
     created_at: "2026-01-01T00:00:00.000Z",
@@ -260,6 +261,127 @@ describe("F032: NewProductForm save flow", () => {
     await waitFor(() =>
       expect(screen.getByTestId("novi-proizvod-error")).toBeInTheDocument()
     );
+  });
+});
+
+describe("Dodaj proizvod: price field + onCreated + label capture", () => {
+  it("test_an_entered_price_is_included_in_the_posted_entry", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      jsonResponse({ ok: true, data: makeFood() })
+    );
+
+    render(<NewProductForm initialBarcode="5901234123457" />);
+    fillValidForm();
+    fireEvent.change(screen.getByTestId("novi-proizvod-price-input"), {
+      target: { value: "149.99" },
+    });
+    fireEvent.click(screen.getByTestId("novi-proizvod-submit-button"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("portion-picker")).toBeInTheDocument()
+    );
+
+    const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
+    const [, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const sentBody = JSON.parse(requestInit.body as string);
+    expect(sentBody.price).toBe(149.99);
+  });
+
+  it("test_an_empty_price_is_omitted_from_the_posted_entry", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      jsonResponse({ ok: true, data: makeFood() })
+    );
+
+    render(<NewProductForm initialBarcode="5901234123457" />);
+    fillValidForm();
+    fireEvent.click(screen.getByTestId("novi-proizvod-submit-button"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("portion-picker")).toBeInTheDocument()
+    );
+
+    const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
+    const [, requestInit] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const sentBody = JSON.parse(requestInit.body as string);
+    expect("price" in sentBody).toBe(false);
+  });
+
+  it("test_onCreated_is_called_with_the_created_food_and_the_portion_picker_is_not_shown", async () => {
+    const created = makeFood({ id: "food-created-99" });
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      jsonResponse({ ok: true, data: created })
+    );
+    const onCreated = vi.fn();
+
+    render(<NewProductForm onCreated={onCreated} />);
+    fillValidForm();
+    fireEvent.click(screen.getByTestId("novi-proizvod-submit-button"));
+
+    await waitFor(() => expect(onCreated).toHaveBeenCalledTimes(1));
+    expect(onCreated.mock.calls[0][0]).toMatchObject({ id: "food-created-99" });
+    expect(screen.queryByTestId("portion-picker")).not.toBeInTheDocument();
+  });
+
+  it("test_the_label_capture_prefills_the_macro_fields_from_the_estimate", async () => {
+    const estimateLabel = vi.fn().mockResolvedValue({
+      ok: true,
+      data: {
+        naziv: "Grčki jogurt",
+        brend: "Moja Kravica",
+        kcal_100g: 97,
+        protein_100g: 9,
+        uh_100g: 4,
+        mast_100g: 5,
+        sigurnost: "visoka",
+        napomena: "",
+      },
+    });
+
+    render(
+      <NewProductForm enableLabelCapture estimateLabel={estimateLabel} />
+    );
+
+    const file = new File(["x"], "deklaracija.jpg", { type: "image/jpeg" });
+    fireEvent.change(
+      screen.getByTestId("novi-proizvod-label-upload-input"),
+      { target: { files: [file] } }
+    );
+
+    await waitFor(() => expect(estimateLabel).toHaveBeenCalledTimes(1));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("novi-proizvod-name-input")).toHaveValue(
+        "Grčki jogurt"
+      )
+    );
+    expect(screen.getByTestId("novi-proizvod-brand-input")).toHaveValue(
+      "Moja Kravica"
+    );
+    expect(screen.getByTestId("novi-proizvod-kcal-input")).toHaveValue(97);
+    expect(screen.getByTestId("novi-proizvod-protein-input")).toHaveValue(9);
+    expect(screen.getByTestId("novi-proizvod-carbs-input")).toHaveValue(4);
+    expect(screen.getByTestId("novi-proizvod-fat-input")).toHaveValue(5);
+  });
+
+  it("test_a_label_read_failure_shows_a_serbian_error_and_leaves_fields_editable", async () => {
+    const estimateLabel = vi
+      .fn()
+      .mockResolvedValue({ ok: false, error_sr: "Nismo uspeli da pročitamo deklaraciju." });
+
+    render(
+      <NewProductForm enableLabelCapture estimateLabel={estimateLabel} />
+    );
+
+    const file = new File(["x"], "deklaracija.jpg", { type: "image/jpeg" });
+    fireEvent.change(
+      screen.getByTestId("novi-proizvod-label-upload-input"),
+      { target: { files: [file] } }
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("novi-proizvod-label-error")).toBeInTheDocument()
+    );
+    expect(screen.getByTestId("novi-proizvod-form")).toBeInTheDocument();
   });
 });
 

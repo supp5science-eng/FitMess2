@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Barcode,
   Camera,
+  PackagePlus,
   Plus,
   Search,
   UtensilsCrossed,
@@ -44,6 +45,9 @@ interface AddSheetOption {
   icon: typeof Search;
   href: string;
   available: boolean;
+  /** Optional muted helper line under the label (e.g. the "Dodaj proizvod"
+   * note that this method is for products with a declaration + barcode). */
+  description?: string;
 }
 
 const OPTIONS: AddSheetOption[] = [
@@ -74,6 +78,14 @@ const OPTIONS: AddSheetOption[] = [
     icon: UtensilsCrossed,
     href: "/dodaj/obrok",
     available: true,
+  },
+  {
+    key: "proizvod",
+    label: "Dodaj proizvod",
+    icon: PackagePlus,
+    href: "/dodaj/proizvod",
+    available: true,
+    description: "Samo proizvodi sa deklaracijom i barkodom",
   },
 ];
 
@@ -143,7 +155,7 @@ export function AddSheet() {
 
                 <div className="flex flex-col gap-2">
                   {OPTIONS.map(
-                    ({ key, label, icon: Icon, href, available }) => (
+                    ({ key, label, icon: Icon, href, available, description }) => (
                       <Link
                         key={key}
                         href={href}
@@ -156,7 +168,17 @@ export function AddSheet() {
                         )}
                       >
                         <Icon className="size-5 shrink-0" aria-hidden="true" />
-                        <span className="flex-1">{label}</span>
+                        <span className="flex flex-1 flex-col">
+                          <span>{label}</span>
+                          {description ? (
+                            <span
+                              data-testid={`add-sheet-desc-${key}`}
+                              className="text-xs font-normal text-muted-foreground"
+                            >
+                              {description}
+                            </span>
+                          ) : null}
+                        </span>
                         {!available ? (
                           <Badge
                             variant="secondary"

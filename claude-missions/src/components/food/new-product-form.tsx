@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { Camera, Loader2, Upload } from "lucide-react";
 
 import { PortionPicker } from "@/components/food/portion-picker";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,8 @@ import {
   FOOD_CREATE_FAILED_ERROR_SR,
   newFoodEntrySchema,
 } from "@/lib/food/create";
+import { downscaleImage } from "@/lib/image/downscale";
+import type { LabelEstimate } from "@/lib/ai/label-estimate";
 import type { Food } from "@/lib/types/db";
 
 // F032 / AS-055 (a barcode miss offers a first-time entry form pre-filled
@@ -21,36 +24,49 @@ import type { Food } from "@/lib/types/db";
 // at `/dodaj/novi-proizvod` (`src/app/(app)/dodaj/novi-proizvod/page.tsx`)
 // after `ScanScreen` (F031) routes here on a barcode-lookup MISS.
 //
+// It is ALSO the confirm/edit step of the dedicated "Dodaj proizvod" flow
+// (`src/app/(app)/dodaj/proizvod/`), which pre-fills the barcode from a scan
+// OR an uploaded photo and asks for a reference price. Two optional-prop
+// seams keep that reuse clean instead of forking the form:
+//   * `enableLabelCapture` + `estimateLabel` -> render an inline "fill from a
+//     photographed nutrition label" affordance (camera OR gallery upload) that
+//     runs the same Gemini `estimateLabelAction` the standalone
+//     `/dodaj/deklaracija` flow uses, writing its per-100g result straight into
+//     this form's fields (still fully editable -- a prefill, never a lock).
+//   * `onCreated` -> after a successful save, hand the created `Food` back to
+//     the caller (the "Dodaj proizvod" flow shows a success animation) instead
+//     of this form's own default of swapping in the reused `PortionPicker`.
+//
 // "Server as source of truth; small client state (form/optimistic) only"
 // (clarified state-location answer): the only server-fetched prop is the
-// scanned GTIN itself (`initialBarcode`, read from the URL by the server
-// component page); everything else here is transient form state until
-// `POST /api/foods` (F032) persists it.
-//
-// On a successful save, this component swaps itself for the REUSED,
-// unmodified F025 `PortionPicker` (same reuse pattern F031's `ScanScreen`
-// established) so the user can log the just-created product right away,
-// tagging the resulting `logs` row `method: 'barcode'` when a barcode was
-// attached, `'search'` otherwise (there is no dedicated `LogMethod` for
-// "just created" -- 'barcode'/'search' both already exist and best
-// describe how the food was FOUND for this log entry).
-//
-// M7 note (see this feature's own handoff): F063 will add a label-photo
-// prefill step BEFORE this form renders (auto-filling name/brand/macros
-// from a photographed nutrition label) -- this component itself remains
-// the confirm/edit step either way, so F063 should pass its own prefilled
-// values in as new optional initial-value props here rather than
-// duplicating this form.
+// scanned GTIN itself (`initialBarcode`); everything else here is transient
+// form state until `POST /api/foods` (F032) persists it.
 
 const DECIMAL_INPUT_MODE = "decimal" as const;
 
+const LABEL_READ_FAILED_ERROR_SR =
+  "Nismo uspeli da pročitamo deklaraciju. Uslikaj tabelu izbliza i pokušaj ponovo.";
+
 type FormStatus = "idle" | "saving" | "error";
+type LabelPhase = "idle" | "reading";
+
+/** The shape `estimateLabel` (a Gemini-backed server action) resolves to --
+ * mirrors `LabelResult` in `src/app/(app)/dodaj/proizvod/actions.ts` without
+ * importing a server-action module into this client component. */
+export type LabelEstimateResult =
+  | { ok: true; data: LabelEstimate }
+  | { ok: false; error_sr: string };
 
 interface CreateFoodResponseBody {
   ok: boolean;
   data?: Food;
   error_sr?: string;
   existingFoodId?: string;
+}
+
+// Number -> a clean string for a prefilled field (drop a trailing ".0").
+function num(value: number): string {
+  return String(Math.round(value * 10) / 10);
 }
 
 export function NewProductForm({
@@ -61,6 +77,10 @@ export function NewProductForm({
   initialProtein,
   initialCarbs,
   initialFat,
+  initialPrice,
+  enableLabelCapture = false,
+  estimateLabel,
+  onCreated,
 }: {
   /** The scanned GTIN from `ScanScreen`'s MISS redirect, when present
    * (`searchParams.barkod` on the server page) -- pre-fills, but does NOT
@@ -78,10 +98,24 @@ export function NewProductForm({
   initialProtein?: string;
   initialCarbs?: string;
   initialFat?: string;
+  /** Optional reference price (RSD) prefill. */
+  initialPrice?: string;
+  /** When true (and `estimateLabel` is provided), renders the inline
+   * "fill from a photographed nutrition label" affordance. */
+  enableLabelCapture?: boolean;
+  /** Gemini-backed server action that reads a nutrition label and returns
+   * per-100g values -- wired by the caller so this client component never
+   * imports a server-action module directly. */
+  estimateLabel?: (formData: FormData) => Promise<LabelEstimateResult>;
+  /** When provided, called with the created food after a successful save
+   * instead of swapping in the portion picker (the "Dodaj proizvod" flow
+   * uses this to show its own success screen). */
+  onCreated?: (food: Food) => void;
 }) {
   const [name, setName] = useState(initialName ?? "");
   const [brand, setBrand] = useState(initialBrand ?? "");
   const [barcode, setBarcode] = useState(initialBarcode ?? "");
+  const [price, setPrice] = useState(initialPrice ?? "");
   const [kcal, setKcal] = useState(initialKcal ?? "");
   const [protein, setProtein] = useState(initialProtein ?? "");
   const [carbs, setCarbs] = useState(initialCarbs ?? "");
@@ -97,9 +131,14 @@ export function NewProductForm({
   );
   const [createdFood, setCreatedFood] = useState<Food | null>(null);
 
+  const [labelPhase, setLabelPhase] = useState<LabelPhase>("idle");
+  const [labelError, setLabelError] = useState<string | null>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+
   // Once saved, hand off straight to the (reused, unmodified) portion
   // picker so the user can log it immediately -- never a dead end after
-  // "save."
+  // "save." (Skipped entirely when `onCreated` owns the post-save UX.)
   if (createdFood) {
     return (
       <PortionPicker
@@ -118,10 +157,43 @@ export function NewProductForm({
     });
   }
 
+  async function handleLabelPhoto(file: File) {
+    if (!estimateLabel) return;
+    setLabelError(null);
+    setLabelPhase("reading");
+    try {
+      const blob = await downscaleImage(file);
+      const formData = new FormData();
+      formData.append("slika", blob, "deklaracija.jpg");
+
+      const result = await estimateLabel(formData);
+      if (!result.ok) {
+        setLabelError(result.error_sr);
+        setLabelPhase("idle");
+        return;
+      }
+
+      // Write the extracted per-100g values into the (still-editable) form.
+      const est = result.data;
+      if (est.naziv) setName(est.naziv);
+      if (est.brend) setBrand(est.brend);
+      setKcal(num(est.kcal_100g));
+      setProtein(num(est.protein_100g));
+      setCarbs(num(est.uh_100g));
+      setFat(num(est.mast_100g));
+      setFieldErrors({});
+      setStatus("idle");
+      setLabelPhase("idle");
+    } catch {
+      setLabelError(LABEL_READ_FAILED_ERROR_SR);
+      setLabelPhase("idle");
+    }
+  }
+
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const candidate = {
+    const candidate: Record<string, unknown> = {
       name_sr: name,
       brand,
       barcode,
@@ -130,6 +202,11 @@ export function NewProductForm({
       carbs_100g: Number.parseFloat(carbs),
       fat_100g: Number.parseFloat(fat),
     };
+    // Price is optional: only include it when the user typed something, so an
+    // empty field stays "not provided" (undefined) rather than NaN.
+    if (price.trim() !== "") {
+      candidate.price = Number.parseFloat(price);
+    }
 
     const parsed = newFoodEntrySchema.safeParse(candidate);
     if (!parsed.success) {
@@ -168,6 +245,10 @@ export function NewProductForm({
       }
 
       setStatus("idle");
+      if (onCreated) {
+        onCreated(body.data);
+        return;
+      }
       setCreatedFood(body.data);
     } catch {
       setStatus("error");
@@ -178,6 +259,8 @@ export function NewProductForm({
   const isDuplicateBarcodeError =
     status === "error" && Boolean(existingFoodId) && Boolean(errorMessage);
 
+  const showLabelCapture = enableLabelCapture && Boolean(estimateLabel);
+
   return (
     <form
       data-testid="novi-proizvod-form"
@@ -185,6 +268,92 @@ export function NewProductForm({
       className="flex flex-1 flex-col gap-5"
       noValidate
     >
+      {showLabelCapture ? (
+        <div
+          data-testid="novi-proizvod-label-capture"
+          className="flex flex-col gap-3 rounded-2xl border border-dashed border-border bg-muted/30 px-4 py-4"
+        >
+          <div className="flex flex-col gap-0.5">
+            <h2 className="text-sm font-semibold text-foreground">
+              Popuni sa deklaracije
+            </h2>
+            <p className="text-xs text-muted-foreground">
+              Slikaj ili otpremi nutritivnu tabelu — AI popuni vrednosti, ti
+              samo proveriš.
+            </p>
+          </div>
+
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="sr-only"
+            data-testid="novi-proizvod-label-camera-input"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void handleLabelPhoto(file);
+              event.target.value = "";
+            }}
+          />
+          <input
+            ref={uploadInputRef}
+            type="file"
+            accept="image/*"
+            className="sr-only"
+            data-testid="novi-proizvod-label-upload-input"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void handleLabelPhoto(file);
+              event.target.value = "";
+            }}
+          />
+
+          {labelPhase === "reading" ? (
+            <div
+              className="flex items-center gap-2 text-sm text-muted-foreground"
+              data-testid="novi-proizvod-label-reading"
+            >
+              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+              <span>Čitam deklaraciju…</span>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                data-testid="novi-proizvod-label-camera-button"
+                onClick={() => cameraInputRef.current?.click()}
+              >
+                <Camera aria-hidden="true" />
+                Slikaj
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1"
+                data-testid="novi-proizvod-label-upload-button"
+                onClick={() => uploadInputRef.current?.click()}
+              >
+                <Upload aria-hidden="true" />
+                Otpremi
+              </Button>
+            </div>
+          )}
+
+          {labelError ? (
+            <p
+              role="alert"
+              data-testid="novi-proizvod-label-error"
+              className="text-xs font-medium text-destructive"
+            >
+              {labelError}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+
       <FormField
         id="novi-proizvod-name-input"
         label="Naziv namirnice"
@@ -194,7 +363,7 @@ export function NewProductForm({
           clearFieldError("name_sr");
         }}
         error={fieldErrors.name_sr}
-        placeholder="Npr. Domaći ajvar"
+        placeholder="Npr. Jogurt, Smoki, čips"
         required
       />
 
@@ -221,6 +390,20 @@ export function NewProductForm({
         error={fieldErrors.barcode}
         placeholder="Npr. 5901234123457"
         inputMode="numeric"
+      />
+
+      <FormField
+        id="novi-proizvod-price-input"
+        label="Cena (RSD, opciono)"
+        value={price}
+        onChange={(value) => {
+          setPrice(value);
+          clearFieldError("price");
+        }}
+        error={fieldErrors.price}
+        placeholder="Npr. 149.99"
+        type="number"
+        inputMode={DECIMAL_INPUT_MODE}
       />
 
       <div className="flex flex-col gap-1">

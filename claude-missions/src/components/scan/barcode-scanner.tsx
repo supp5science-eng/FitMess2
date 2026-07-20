@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CameraOff, RefreshCw } from "lucide-react";
+import { CameraOff, RefreshCw, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,6 +32,13 @@ const GENERIC_UNAVAILABLE_MESSAGE_SR =
   "Skener trenutno ne radi na ovom uređaju. Pretraži ručno.";
 const DECODE_ERROR_MESSAGE_SR = "Skeniranje trenutno ne radi. Pokušaj ponovo.";
 
+const DEFAULT_TITLE_SR = "Skeniraj barkod";
+const DEFAULT_SUBTITLE_SR = "Uperi kameru u barkod proizvoda.";
+const UPLOAD_NOT_FOUND_MESSAGE_SR =
+  "Nismo našli barkod na slici. Slikaj izbliza, ravno, dobro osvetljeno — pa pokušaj ponovo.";
+const UPLOAD_FAILED_MESSAGE_SR =
+  "Nismo uspeli da očitamo sliku. Pokušaj ponovo.";
+
 type ScanStatus = "requesting" | "scanning" | "denied" | "error";
 
 function messageForCameraError(error: unknown): string {
@@ -51,19 +58,31 @@ function messageForCameraError(error: unknown): string {
 
 export interface BarcodeScannerProps {
   onDetected: (code: string) => void;
+  /** Optional heading/subheading overrides -- default to the "Skeniraj
+   * barkod" logging copy. The "Dodaj proizvod" flow passes its own so the
+   * same scanner reads as "add a product" there. */
+  title?: string;
+  subtitle?: string;
 }
 
-export function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
+export function BarcodeScanner({
+  onDetected,
+  title = DEFAULT_TITLE_SR,
+  subtitle = DEFAULT_SUBTITLE_SR,
+}: BarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const stoppedRef = useRef(false);
+  const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const [status, setStatus] = useState<ScanStatus>("requesting");
   const [statusMessage, setStatusMessage] = useState(
     GENERIC_UNAVAILABLE_MESSAGE_SR
   );
   const [attempt, setAttempt] = useState(0);
+  const [uploadBusy, setUploadBusy] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
 
   const stopStream = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -208,6 +227,70 @@ export function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
     setAttempt((current) => current + 1);
   }
 
+  // AS-052 stays true for uploads too: `decodeBarcode` runs the SAME
+  // entirely-client-side WASM decoder against the chosen image `File` (a
+  // `Blob`, a valid decode source) -- the picked photo never leaves the
+  // device. On a hit we stop the live camera (if running) and emit the GTIN
+  // exactly like a live scan; a miss is a friendly "no barcode found here,"
+  // never a crash or a silent no-op.
+  async function handleUpload(file: File) {
+    setUploadMessage(null);
+    setUploadBusy(true);
+    try {
+      const result = await decodeBarcode(file);
+      if (!result) {
+        setUploadMessage(UPLOAD_NOT_FOUND_MESSAGE_SR);
+        setUploadBusy(false);
+        return;
+      }
+      stoppedRef.current = true;
+      stopStream();
+      onDetected(result.value);
+    } catch (error) {
+      console.error("[F030 BarcodeScanner] upload decode failed:", error);
+      setUploadMessage(UPLOAD_FAILED_MESSAGE_SR);
+      setUploadBusy(false);
+    }
+  }
+
+  function renderUpload() {
+    return (
+      <div className="flex flex-col items-center gap-2">
+        <input
+          ref={uploadInputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          data-testid="scanner-upload-input"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void handleUpload(file);
+            event.target.value = "";
+          }}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          disabled={uploadBusy}
+          onClick={() => uploadInputRef.current?.click()}
+          data-testid="scanner-upload-button"
+        >
+          <Upload aria-hidden="true" />
+          {uploadBusy ? "Očitavam sliku…" : "Otpremi sliku barkoda"}
+        </Button>
+        {uploadMessage ? (
+          <p
+            role="alert"
+            data-testid="scanner-upload-message"
+            className="text-center text-sm font-medium text-destructive"
+          >
+            {uploadMessage}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   if (status === "requesting") {
     return (
       <main
@@ -236,6 +319,7 @@ export function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
         <p role="alert" data-testid="scanner-denied-message" className="text-sm text-foreground">
           {statusMessage}
         </p>
+        {renderUpload()}
         <Link
           href="/dodaj/pretraga"
           data-testid="scanner-manual-search-link"
@@ -269,6 +353,7 @@ export function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
           <RefreshCw aria-hidden="true" />
           Pokušaj ponovo
         </Button>
+        {renderUpload()}
         <Link
           href="/dodaj/pretraga"
           data-testid="scanner-manual-search-link"
@@ -286,12 +371,8 @@ export function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
       data-testid="scanner-screen"
     >
       <div>
-        <h1 className="text-xl font-semibold text-foreground">
-          Skeniraj barkod
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Uperi kameru u barkod proizvoda.
-        </p>
+        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+        <p className="text-sm text-muted-foreground">{subtitle}</p>
       </div>
       <div className="relative aspect-3/4 w-full overflow-hidden rounded-2xl bg-black">
         <video
@@ -309,6 +390,8 @@ export function BarcodeScanner({ onDetected }: BarcodeScannerProps) {
           className="pointer-events-none absolute inset-x-8 top-1/2 h-28 -translate-y-1/2 rounded-xl border-2 border-primary shadow-[0_0_0_9999px_rgba(0,0,0,0.35)]"
         />
       </div>
+      {renderUpload()}
+
       <Link
         href="/dodaj/pretraga"
         data-testid="scanner-manual-search-link"

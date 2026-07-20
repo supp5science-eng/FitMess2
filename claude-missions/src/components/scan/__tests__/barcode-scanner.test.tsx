@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { BarcodeScanner } from "@/components/scan/barcode-scanner";
 
@@ -207,6 +207,65 @@ describe("AS-052/AS-058 wiring: BarcodeScanner's other rendered states", () => {
       expect(onDetected).toHaveBeenCalledWith("5901234123457");
     });
     expect(screen.queryByTestId("scanner-error-state")).not.toBeInTheDocument();
+  });
+});
+
+describe("Barcode image upload: decode a chosen photo entirely client-side", () => {
+  beforeEach(() => {
+    mockDecodeBarcode.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    deleteMediaDevices();
+  });
+
+  it("test_uploading_an_image_with_a_decodable_barcode_calls_onDetected_with_the_gtin", async () => {
+    // No camera -> the denied fallback still offers the upload affordance.
+    deleteMediaDevices();
+    mockDecodeBarcode.mockResolvedValue({
+      value: "5901234123457",
+      format: "ean_13",
+    });
+
+    const onDetected = vi.fn();
+    render(<BarcodeScanner onDetected={onDetected} />);
+    await screen.findByTestId("scanner-permission-denied");
+
+    const file = new File(["barcode-bytes"], "barcode.jpg", {
+      type: "image/jpeg",
+    });
+    fireEvent.change(screen.getByTestId("scanner-upload-input"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() =>
+      expect(onDetected).toHaveBeenCalledWith("5901234123457")
+    );
+    // The decode ran against the chosen File itself (client-side WASM) --
+    // proving no server round-trip is involved for an uploaded image either.
+    expect(mockDecodeBarcode).toHaveBeenCalledWith(file);
+  });
+
+  it("test_uploading_an_image_with_no_barcode_shows_a_friendly_message_and_does_not_call_onDetected", async () => {
+    deleteMediaDevices();
+    mockDecodeBarcode.mockResolvedValue(null);
+
+    const onDetected = vi.fn();
+    render(<BarcodeScanner onDetected={onDetected} />);
+    await screen.findByTestId("scanner-permission-denied");
+
+    const file = new File(["not-a-barcode"], "photo.jpg", {
+      type: "image/jpeg",
+    });
+    fireEvent.change(screen.getByTestId("scanner-upload-input"), {
+      target: { files: [file] },
+    });
+
+    await waitFor(() =>
+      expect(screen.getByTestId("scanner-upload-message")).toBeInTheDocument()
+    );
+    expect(onDetected).not.toHaveBeenCalled();
   });
 });
 

@@ -1,8 +1,10 @@
 import type { ReactNode } from "react";
 
+import { Card } from "@/components/ui/card";
+
 // A titled group of settings rows -- an iOS-style grouped list section.
-// Theme-token based (bg-card / border-border / text-muted-foreground) so it
-// renders correctly in both the dark and the light theme.
+// Uses the shared `Card` surface (bg-card) so it matches every other content
+// card and renders correctly in both the dark and the light theme.
 export function SettingsGroup({
   title,
   children,
@@ -17,9 +19,9 @@ export function SettingsGroup({
           {title}
         </h2>
       ) : null}
-      <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+      <Card className="divide-y divide-border overflow-hidden">
         {children}
-      </div>
+      </Card>
     </section>
   );
 }

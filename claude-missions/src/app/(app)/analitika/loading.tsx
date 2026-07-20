@@ -20,6 +20,9 @@ export default function NedeljaLoading() {
       </div>
 
       <div className="h-48 animate-pulse rounded-2xl bg-muted" />
+
+      {/* F042/F043: weight + trend card */}
+      <div className="h-56 animate-pulse rounded-2xl bg-muted" />
     </main>
   );
 }

@@ -40,7 +40,7 @@ export function MealCard({
   return (
     <li
       data-testid={`meal-card-${log.id}`}
-      className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 shadow-sm"
+      className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">

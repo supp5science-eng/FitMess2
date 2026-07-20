@@ -63,6 +63,18 @@ const LOG_ROWS = [
   },
 ];
 
+// F042: `weigh_ins` is folded into the export via the same extension point.
+const WEIGH_IN_ROWS = [
+  {
+    id: "weigh-1",
+    user_id: "user-1",
+    day: "2026-07-01",
+    weight_kg: 78,
+    created_at: "2026-07-01T06:00:00.000Z",
+    updated_at: "2026-07-01T06:00:00.000Z",
+  },
+];
+
 function makeMockSupabase(options?: {
   profile?: Record<string, unknown> | null;
   profileError?: { message: string };
@@ -70,6 +82,8 @@ function makeMockSupabase(options?: {
   targetsError?: { message: string };
   logs?: Record<string, unknown>[] | null;
   logsError?: { message: string };
+  weighIns?: Record<string, unknown>[] | null;
+  weighInsError?: { message: string };
 }) {
   const profileMaybeSingle = vi
     .fn()
@@ -92,18 +106,26 @@ function makeMockSupabase(options?: {
   });
   const logsSelect = vi.fn(() => ({ eq: logsEq }));
 
+  const weighInsEq = vi.fn().mockResolvedValue({
+    data: options?.weighIns === undefined ? WEIGH_IN_ROWS : options.weighIns,
+    error: options?.weighInsError ?? null,
+  });
+  const weighInsSelect = vi.fn(() => ({ eq: weighInsEq }));
+
   const from = vi.fn((table: string) => {
     if (table === "profiles") return { select: profileSelect };
     if (table === "targets") return { select: targetsSelect };
     if (table === "logs") return { select: logsSelect };
+    if (table === "weigh_ins") return { select: weighInsSelect };
     throw new Error(`unexpected table in test double: ${table}`);
   });
 
-  return { from, profileEq, targetsEq, logsEq } as unknown as {
+  return { from, profileEq, targetsEq, logsEq, weighInsEq } as unknown as {
     from: typeof from;
     profileEq: typeof profileEq;
     targetsEq: typeof targetsEq;
     logsEq: typeof logsEq;
+    weighInsEq: typeof weighInsEq;
   };
 }
 
@@ -123,6 +145,8 @@ describe("collectUserExport: AS-014 -- builds a complete own-data export", () =>
     expect(result.targets).toEqual(TARGET_ROWS);
     // F020: `logs` is now folded into the export via USER_OWNED_TABLES.
     expect(result.logs).toEqual(LOG_ROWS);
+    // F042: `weigh_ins` is folded in the same way.
+    expect(result.weighIns).toEqual(WEIGH_IN_ROWS);
     expect(typeof result.exported_at).toBe("string");
     expect(() => new Date(result.exported_at).toISOString()).not.toThrow();
     expect(typeof result.schema_note).toBe("string");
@@ -143,6 +167,8 @@ describe("collectUserExport: AS-014 -- builds a complete own-data export", () =>
     expect(result.schema_note).toMatch(/ciljevi ishrane/i);
     // F020: the "dnevni unosi hrane" (logs) category is now included.
     expect(result.schema_note).toMatch(/dnevni unosi hrane/i);
+    // F042: the "merenja težine" (weigh-ins) category is now included.
+    expect(result.schema_note).toMatch(/merenja težine/i);
   });
 
   it("test_F020_logs_are_included_in_the_export_scoped_to_the_given_user_id", async () => {
@@ -198,6 +224,7 @@ describe("collectUserExport: AS-014 -- builds a complete own-data export", () =>
     expect(supabase.profileEq).toHaveBeenCalledWith("user_id", "user-1");
     expect(supabase.targetsEq).toHaveBeenCalledWith("user_id", "user-1");
     expect(supabase.logsEq).toHaveBeenCalledWith("user_id", "user-1");
+    expect(supabase.weighInsEq).toHaveBeenCalledWith("user_id", "user-1");
   });
 
   it("test_AS_014_a_user_with_no_profile_row_yet_gets_a_null_profile_and_empty_rules_not_an_error", async () => {

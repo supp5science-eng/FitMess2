@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Card } from "@/components/ui/card";
 import { DayBars } from "@/components/weekly/day-bars";
 import { WeeklyRing } from "@/components/weekly/weekly-ring";
 import type { WeekStatus, WeekSummary } from "@/lib/week/summary";
@@ -42,7 +43,7 @@ function StatCard({
   hint?: string;
 }) {
   return (
-    <div className="flex flex-1 flex-col gap-1 rounded-2xl border border-border bg-card p-4">
+    <Card className="flex flex-1 flex-col gap-1 p-4">
       <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
         {label}
       </span>
@@ -57,15 +58,20 @@ function StatCard({
       {hint ? (
         <span className="text-[11px] text-muted-foreground">{hint}</span>
       ) : null}
-    </div>
+    </Card>
   );
 }
 
 export function WeeklyDashboard({
   summary,
+  weightSection,
   footer,
 }: {
   summary: WeekSummary;
+  /** F042/F043: the "Težina" section, rendered between the per-day chart and
+   * the meal-history footer. Passed as a node (like `footer`) so the page
+   * owns the server data read and this component stays presentational. */
+  weightSection?: ReactNode;
   footer?: ReactNode;
 }) {
   const status = STATUS_META[summary.status];
@@ -80,7 +86,8 @@ export function WeeklyDashboard({
         <p className="text-sm text-muted-foreground">Ova nedelja</p>
       </header>
 
-      {/* Hero: weekly ring + on-track pill */}
+      {/* Hero: weekly ring + on-track pill. Kept as a semantic <section> on
+          the shared `bg-card` surface (no drift to fix here). */}
       <section className="flex flex-col items-center gap-4 rounded-3xl border border-border bg-card p-6">
         <WeeklyRing summary={summary} />
         {hasData ? (
@@ -136,6 +143,9 @@ export function WeeklyDashboard({
         </div>
         <DayBars summary={summary} />
       </section>
+
+      {/* F042/F043: weight + trend */}
+      {weightSection}
 
       {/* "Svi obroci" meal-history log (bottom of the page) */}
       {footer}

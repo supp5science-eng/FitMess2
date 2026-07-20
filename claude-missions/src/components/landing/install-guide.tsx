@@ -184,7 +184,7 @@ function AppTile() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src="/brand/fitmess-black.png" alt="" width={62} height={62} />
       <span className="ig-tile-check">
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="text-white" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="m5 13 4 4L19 7" />
         </svg>
       </span>

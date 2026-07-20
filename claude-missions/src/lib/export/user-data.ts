@@ -89,8 +89,13 @@ const USER_OWNED_TABLES: readonly UserOwnedTableConfig[] = [
     userColumn: "user_id",
     labelSr: "dnevni unosi hrane",
   }, // M3 (F020)
+  {
+    key: "weighIns",
+    table: "weigh_ins",
+    userColumn: "user_id",
+    labelSr: "merenja težine",
+  }, // F042
   // --- Extension point: append future user-owned tables here as they land ---
-  // { key: "weighIns", table: "weigh_ins", userColumn: "user_id", labelSr: "merenja težine" }, // M5
   // { key: "conversations", table: "conversations", userColumn: "user_id", labelSr: "razgovori sa agentom i sažeci" }, // M6
 ];
 

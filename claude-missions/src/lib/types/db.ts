@@ -11,10 +11,11 @@
  * hand-editing types out of sync with a migration -- see the F010 handoff
  * for why this had to be hand-authored instead this time.
  *
- * `public.profiles`, `public.targets`, `public.foods`, and `public.logs`
- * exist so far. Later schema features (F042 weigh_ins, F050 ai_usage, F057
- * conversations, ...) each add their own tables here in their own PR --
- * this file is additive, never replaced wholesale.
+ * `public.profiles`, `public.targets`, `public.foods`, `public.logs`, and
+ * `public.weigh_ins` (F042, see `supabase/migrations/0012_weigh_ins.sql`)
+ * exist so far. Later schema features (F050 ai_usage, F057 conversations,
+ * ...) each add their own tables here in their own PR -- this file is
+ * additive, never replaced wholesale.
  *
  * F017 added `profiles.rules` (a jsonb array, see
  * `supabase/migrations/0003_eating_rules.sql`) -- typed here as
@@ -261,6 +262,42 @@ export interface Database {
           },
         ];
       };
+      weigh_ins: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** Belgrade calendar day, `"YYYY-MM-DD"` (a Postgres `date`). */
+          day: string;
+          weight_kg: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day: string;
+          weight_kg: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          day?: string;
+          weight_kg?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "weigh_ins_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       logs: {
         Row: {
           id: string;
@@ -359,3 +396,7 @@ export type FoodUpdate = Database["public"]["Tables"]["foods"]["Update"];
 export type Log = Database["public"]["Tables"]["logs"]["Row"];
 export type LogInsert = Database["public"]["Tables"]["logs"]["Insert"];
 export type LogUpdate = Database["public"]["Tables"]["logs"]["Update"];
+
+export type WeighIn = Database["public"]["Tables"]["weigh_ins"]["Row"];
+export type WeighInInsert = Database["public"]["Tables"]["weigh_ins"]["Insert"];
+export type WeighInUpdate = Database["public"]["Tables"]["weigh_ins"]["Update"];

@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { MealHistory } from "@/components/analytics/meal-history";
+import { WeightSection } from "@/components/analytics/weight-section";
 import { WeeklyDashboard } from "@/components/weekly/weekly-dashboard";
 import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { groupLogsByDay } from "@/lib/log/group";
@@ -8,6 +9,8 @@ import { getMealHistory } from "@/lib/log/history";
 import { createClient } from "@/lib/supabase/server";
 import { computeWeekSummary } from "@/lib/week/summary";
 import { getWeekData } from "@/lib/week/week";
+import { computeWeightTrend } from "@/lib/weight/trend";
+import { getWeighIns } from "@/lib/weight/weigh-ins";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -36,10 +39,20 @@ export default async function NedeljaPage() {
   }
 
   const now = new Date();
-  const [result, historyResult] = await Promise.all([
-    getWeekData(supabase, user.id, now),
-    getMealHistory(supabase, user.id, now),
-  ]);
+  const [result, historyResult, weighInsResult, profileResult] =
+    await Promise.all([
+      getWeekData(supabase, user.id, now),
+      getMealHistory(supabase, user.id, now),
+      getWeighIns(supabase, user.id, now),
+      // Onboarding weight -- only used to prefill the weigh-in sheet before the
+      // first real weigh-in exists. A failure here is non-fatal (prefill just
+      // falls back to empty), so it never blocks the screen.
+      supabase
+        .from("profiles")
+        .select("weight_kg")
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
 
   if (result.error) {
     console.error(
@@ -51,6 +64,12 @@ export default async function NedeljaPage() {
     console.error(
       "[F041 /analitika] getMealHistory failed:",
       historyResult.error.message
+    );
+  }
+  if (weighInsResult.error) {
+    console.error(
+      "[F042 /analitika] getWeighIns failed:",
+      weighInsResult.error.message
     );
   }
 
@@ -101,7 +120,28 @@ export default async function NedeljaPage() {
       <MealHistory recentGroups={recentGroups} olderGroups={olderGroups} />
     ) : null;
 
-  return <WeeklyDashboard summary={summary} footer={footer} />;
+  // F042/F043: weight trend. Degrades to no section on a read error -- never
+  // breaks the rest of the screen (same posture as the meal-history footer).
+  const weightSection =
+    weighInsResult.error === null ? (
+      <WeightSection
+        trend={computeWeightTrend(
+          weighInsResult.data ?? [],
+          target.goal_weight_kg,
+          now
+        )}
+        profileWeightKg={profileResult.data?.weight_kg ?? null}
+        now={now}
+      />
+    ) : null;
+
+  return (
+    <WeeklyDashboard
+      summary={summary}
+      weightSection={weightSection}
+      footer={footer}
+    />
+  );
 }
 
 function RetryErrorState({

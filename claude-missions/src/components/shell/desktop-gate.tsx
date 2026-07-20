@@ -37,16 +37,29 @@ export async function DesktopGate() {
     <main
       className={`${body.className} relative flex min-h-dvh w-full items-center justify-center overflow-hidden px-6 py-12`}
       style={{
-        backgroundColor: "#f5faf6",
-        // Fine dot-grid pattern in a faint brand green.
+        // Faint brand tint on white -- derived from the brand accent so this
+        // standalone light surface stays on-brand (it renders outside `.dark`,
+        // where `--primary` would be black).
+        backgroundColor: "color-mix(in oklab, var(--brand) 4%, #ffffff)",
+        // Fine dot-grid pattern in a faint brand accent.
         backgroundImage:
-          "radial-gradient(rgba(22,163,74,0.12) 1px, transparent 1.4px)",
+          "radial-gradient(color-mix(in oklab, var(--brand) 12%, transparent) 1px, transparent 1.4px)",
         backgroundSize: "22px 22px",
       }}
     >
-      {/* Soft blurred brand-green glows for depth (decorative). */}
-      <div className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-emerald-300/40 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-28 -right-24 h-80 w-80 rounded-full bg-green-400/30 blur-3xl" />
+      {/* Soft blurred brand-accent glows for depth (decorative). */}
+      <div
+        className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full blur-3xl"
+        style={{
+          backgroundColor: "color-mix(in oklab, var(--brand) 40%, transparent)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-28 -right-24 h-80 w-80 rounded-full blur-3xl"
+        style={{
+          backgroundColor: "color-mix(in oklab, var(--brand) 30%, transparent)",
+        }}
+      />
 
       <div className="relative w-full max-w-md rounded-4xl bg-white p-8 text-center shadow-2xl ring-1 ring-black/5 sm:p-10">
         {/* Brand */}
@@ -54,7 +67,7 @@ export async function DesktopGate() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/fitmess-icon.png" alt="" width={34} height={34} />
           <span className={`${display.className} text-2xl text-neutral-900`}>
-            Fit<span className="text-[#16a34a]">Mess</span>
+            Fit<span className="text-[var(--brand)]">Mess</span>
           </span>
         </div>
 

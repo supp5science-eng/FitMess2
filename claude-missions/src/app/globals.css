@@ -22,6 +22,11 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
+  /* Macro accents (protein/fat/carbs) -- themed, so `bg-macro-*` /
+     `text-macro-*` utilities exist and dark/light each get the right shade. */
+  --color-macro-protein: var(--macro-protein);
+  --color-macro-fat: var(--macro-fat);
+  --color-macro-carbs: var(--macro-carbs);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -82,6 +87,17 @@
   --chart-3: #8a9095;
   --chart-4: #b0b5b9;
   --chart-5: #c9a24b;
+  /* Macro accents, LIGHT theme: darkened from the dark-theme coral/amber/green
+     so they keep enough contrast on white (the dark values wash out there). */
+  --macro-protein: #d95540;
+  --macro-fat: #c98a1b;
+  --macro-carbs: #1f9e69;
+  /* Brand accent -- the app's teal, theme-INDEPENDENT (mirrors the dark
+     theme's --primary). Used by standalone light surfaces outside `.dark`
+     that must still read as "FitMess" (e.g. the desktop gate wordmark),
+     where `--primary` would be black. Defined once in :root so it applies in
+     both themes. */
+  --brand: #17d1a8;
   --radius: 1.25rem;
   --sidebar: #fafafa;
   --sidebar-foreground: #0a0c0b;
@@ -126,6 +142,11 @@
   --chart-3: #a6b0ab;
   --chart-4: #6e7873;
   --chart-5: #c9a24b;
+  /* Macro accents, DARK theme: the original coral/amber/green (unchanged
+     look), now driven by tokens so `macro-bars.tsx` no longer inlines hex. */
+  --macro-protein: #f9745f;
+  --macro-fat: #f2c14e;
+  --macro-carbs: #45c78d;
   --sidebar: #0f1413;
   --sidebar-foreground: #f3f7f5;
   --sidebar-primary: #17d1a8;

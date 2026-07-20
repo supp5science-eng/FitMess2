@@ -28,7 +28,7 @@ const NAV_ITEMS = [
   { href: "/danas", label: "Početna", icon: Home },
   { href: "/analitika", label: "Analitika", icon: ChartColumnBig },
   { href: "/agent", label: "Agent", icon: Bot },
-  { href: "/profil", label: "Podešavanja", icon: Settings },
+  { href: "/profil", label: "Profil", icon: Settings },
 ] as const;
 
 /** True when the user asked for reduced motion (kept live via matchMedia). */
@@ -133,16 +133,17 @@ export function BottomNav() {
             }}
             aria-current={isActive ? "page" : undefined}
             className={cn(
-              "relative z-10 flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-full px-0.5 py-1 font-medium transition-colors",
+              "relative z-10 flex min-w-0 flex-1 flex-col items-center gap-1 rounded-full px-0.5 py-1 font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
               isActive
-                ? "text-foreground"
+                ? "text-primary"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
             <Icon className="size-5" aria-hidden="true" />
-            {/* 10px + tight tracking so even the longest label ("Podešavanja")
-                stays inside its tab — and inside the glass lens — down to 375px. */}
+            {/* Short labels (longest is "Analitika") at 10px + tight tracking
+                stay well inside the rounded glass lens, including near its
+                curved lower edge, down to 375px. */}
             <span className="max-w-full whitespace-nowrap text-[10px] leading-none tracking-tight">
               {label}
             </span>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MealHistory } from "@/components/analytics/meal-history";
 import { WeightSection } from "@/components/analytics/weight-section";
 import { WeeklyDashboard } from "@/components/weekly/weekly-dashboard";
+import { getCurrentUserId } from "@/lib/auth/current-user";
 import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { groupLogsByDay } from "@/lib/log/group";
 import { getMealHistory } from "@/lib/log/history";
@@ -24,11 +25,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // no-target-yet each get their own calm Serbian state.
 export default async function NedeljaPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Identity comes from the locally-verified access token (`getClaims`), not
+  // `auth.getUser()`'s per-navigation network round trip to the Auth server --
+  // the same fast path the API routes and `/profil` already use.
+  const userId = await getCurrentUserId(supabase);
 
-  if (!user) {
+  if (!userId) {
     return (
       <RetryErrorState
         message="Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo."
@@ -41,16 +43,16 @@ export default async function NedeljaPage() {
   const now = new Date();
   const [result, historyResult, weighInsResult, profileResult] =
     await Promise.all([
-      getWeekData(supabase, user.id, now),
-      getMealHistory(supabase, user.id, now),
-      getWeighIns(supabase, user.id, now),
+      getWeekData(supabase, userId, now),
+      getMealHistory(supabase, userId, now),
+      getWeighIns(supabase, userId, now),
       // Onboarding weight -- only used to prefill the weigh-in sheet before the
       // first real weigh-in exists. A failure here is non-fatal (prefill just
       // falls back to empty), so it never blocks the screen.
       supabase
         .from("profiles")
         .select("weight_kg")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle(),
     ]);
 

@@ -80,3 +80,82 @@ export function computeRemaining(
     overshootKcal: Math.round(-remaining),
   };
 }
+
+/**
+ * Ring colour level, driven by how much of the daily budget is LEFT
+ * (2026-07-20 product decision -- the "zero-shame, never red" gauge is
+ * replaced by an at-a-glance traffic-light):
+ *   - green:  more than 50% of the day's kcal budget still remaining
+ *   - yellow: 15%..50% remaining (getting close)
+ *   - red:    under 15% remaining, including at/over the limit
+ */
+export type RingLevel = "green" | "yellow" | "red";
+
+export interface RingState {
+  /** Whole kcal consumed today (>= 0). */
+  consumedKcal: number;
+  /** Whole daily target kcal (>= 0). */
+  targetKcal: number;
+  /**
+   * SIGNED whole kcal remaining (target - consumed) -- NEGATIVE once over the
+   * limit, so the UI can show exactly how far into the minus the user is
+   * (e.g. -500), rather than clamping to 0.
+   */
+  remainingKcal: number;
+  /** True once consumed meets or exceeds the daily target. */
+  isOver: boolean;
+  /** Whole kcal consumed beyond the target; 0 while under budget. */
+  overshootKcal: number;
+  /** Traffic-light colour level for the gauge stroke. */
+  level: RingLevel;
+  /** Consumed / target, clamped to [0, 1] -- fills the first lap of the gauge. */
+  fillFraction: number;
+  /**
+   * Overshoot / target, clamped to [0, 1] -- draws the SECOND lap on top of a
+   * full first lap once over the limit (0 while under budget).
+   */
+  overshootFraction: number;
+}
+
+/**
+ * Derives everything the calorie gauge needs from consumed vs. target kcal:
+ * the signed remaining number, the traffic-light colour level (green >50%
+ * left, yellow 15-50%, red <15%/over), and the two fill fractions (the first
+ * lap fills with consumption; a second lap draws once over the limit). Whole
+ * kcal throughout (same money-math rounding as `computeRemaining`). Never
+ * throws -- a non-positive target degrades to a safe "red, nothing left"
+ * state (callers should still prefer their own "no target set" empty state).
+ */
+export function computeRingState(
+  consumedKcal: number,
+  targetKcal: number
+): RingState {
+  const safeConsumed = Math.max(0, consumedKcal);
+  const safeTarget = Math.max(0, targetKcal);
+  const denom = safeTarget > 0 ? safeTarget : 1;
+
+  const signedRemaining = safeTarget - safeConsumed;
+  const isOver = signedRemaining < 0;
+  const overshoot = isOver ? -signedRemaining : 0;
+  const remainingFraction = signedRemaining / denom;
+
+  let level: RingLevel;
+  if (remainingFraction > 0.5) {
+    level = "green";
+  } else if (remainingFraction > 0.15) {
+    level = "yellow";
+  } else {
+    level = "red";
+  }
+
+  return {
+    consumedKcal: Math.round(safeConsumed),
+    targetKcal: Math.round(safeTarget),
+    remainingKcal: Math.round(signedRemaining),
+    isOver,
+    overshootKcal: Math.round(overshoot),
+    level,
+    fillFraction: Math.min(1, Math.max(0, safeConsumed / denom)),
+    overshootFraction: Math.min(1, Math.max(0, overshoot / denom)),
+  };
+}

@@ -1,24 +1,25 @@
-import { computeRemaining } from "@/lib/home/totals";
+import { computeRingState, type RingLevel } from "@/lib/home/totals";
 import { cn } from "@/lib/utils";
 
-// F027 / AS-047 (remaining ring), AS-050 (neutral overshoot): the calorie
-// gauge, centerpiece of `/danas`. Pure, presentational -- consumed/target
-// come in as props, every number shown is computed by
-// `src/lib/home/totals.ts` (never eyeballed here), matching the "money-math
-// rule" the rest of this codebase follows.
+// F027 (redesign 2026-07-20): the calorie gauge, centerpiece of `/danas`.
+// Pure, presentational -- consumed/target come in as props, every number is
+// computed by `src/lib/home/totals.ts` (`computeRingState`), never eyeballed
+// here (the codebase's "money-math rule").
 //
-// Layout (2026-07-19): a C-shaped gauge (open at the bottom) with the daily
-// target ("Cilj") big in the centre, flanked by "Preostalo" (remaining) on
-// the LEFT and "Potrošeno" (consumed) on the RIGHT. A `view` toggle (owned by
-// `HomeScreen`) flips how the gauge FILLS -- draining as you eat in the
-// "Preostalo" default, or filling up in "Potrošeno" -- while the three
-// numbers stay put.
+// This replaces the earlier deliberately "zero-shame, never red" gauge with an
+// at-a-glance traffic light, per the product owner's 2026-07-20 decision:
 //
-// Accessibility + overshoot (AS-047/AS-050): the accessible name always
-// reports the remaining/overshoot number (the actionable one), and the gauge
-// NEVER turns red/alarming -- it stays the teal accent, drains to empty when
-// over budget, and the centre carries one short, calm, reassuring note.
-// Zero-shame tone: overshooting is shown plainly, never punished visually.
+//   * The gauge ALWAYS fills with consumption (consumed / limit), regardless of
+//     the toggle -- one consistent "how full is my day" metaphor.
+//   * Its colour is a traffic light driven by how much budget is LEFT:
+//     green (>50% left) -> yellow (15-50%) -> red (<15%, including over).
+//   * The `view` toggle (owned by `HomeScreen`) swaps only the CENTRE headline
+//     number between "Preostalo" (remaining) and "Potrošeno" (consumed) -- the
+//     three numbers (Cilj / Potrošeno / Preostalo) are always distinct, fixing
+//     the bug where the same number could read as both consumed and remaining.
+//   * Over the limit: the gauge goes full red, a SECOND lap draws on top to
+//     show how far over, and the remaining number goes NEGATIVE (e.g. -500) so
+//     the user sees exactly how deep into the minus they are.
 
 export type RingView = "remaining" | "consumed";
 
@@ -30,6 +31,16 @@ const STROKE = 14;
 // from the bottom-left (225°) clockwise over the top to the bottom-right.
 const START_ANGLE = 225;
 const SWEEP_DEG = 270;
+
+/** Traffic-light stroke per budget level. */
+const LEVEL_STROKE: Record<RingLevel, string> = {
+  green: "#3fbf87",
+  yellow: "#f2b23e",
+  red: "#ef4444",
+};
+// The second lap (drawn on top of a full red first lap once over the limit) is
+// a darker red, so the overshoot arc reads clearly against the full base.
+const OVERSHOOT_STROKE = "#991b1b";
 
 /** Point on the gauge circle at `angleDeg`, measured clockwise from 12 o'clock. */
 function polar(angleDeg: number): { x: number; y: number } {
@@ -47,6 +58,14 @@ const ARC_PATH = `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${RADIUS} ${RA
   2
 )} ${end.y.toFixed(2)}`;
 
+interface MetricSpec {
+  value: number;
+  label: string;
+  valueTestId?: string;
+  labelTestId?: string;
+  danger?: boolean;
+}
+
 export function Ring({
   consumedKcal,
   targetKcal,
@@ -56,44 +75,51 @@ export function Ring({
   targetKcal: number;
   view?: RingView;
 }) {
-  const { remainingKcal, isOver, overshootKcal } = computeRemaining(
-    consumedKcal,
-    targetKcal
-  );
+  const state = computeRingState(consumedKcal, targetKcal);
 
-  const consumedRounded = Math.round(Math.max(0, consumedKcal));
-  const targetRounded = Math.round(Math.max(0, targetKcal));
-  const safeTarget = targetKcal > 0 ? targetKcal : 1;
+  // The three numbers, each with a stable semantic test id regardless of where
+  // (centre vs. side) it ends up for the current toggle -- so the remaining
+  // number is always `home-ring-value`, consumed always `home-ring-consumed`,
+  // target always `home-ring-target`.
+  const targetSpec: MetricSpec = {
+    value: state.targetKcal,
+    label: "Cilj",
+    valueTestId: "home-ring-target",
+  };
+  const consumedSpec: MetricSpec = {
+    value: state.consumedKcal,
+    label: "Potrošeno",
+    valueTestId: "home-ring-consumed",
+  };
+  const remainingSpec: MetricSpec = {
+    value: state.remainingKcal,
+    label: "Preostalo",
+    valueTestId: "home-ring-value",
+    labelTestId: "home-ring-label",
+    danger: state.isOver,
+  };
 
-  // The left "remaining" column also carries the accessible name + the
-  // overshoot state (AS-050): "Preostalo" normally, "Prekoračeno" once over.
-  const remainingLabel = isOver ? "Prekoračeno" : "Preostalo";
-  const remainingValue = isOver ? overshootKcal : remainingKcal;
+  const isRemainingView = view === "remaining";
+  const centerSpec = isRemainingView ? remainingSpec : consumedSpec;
+  const rightSpec = isRemainingView ? consumedSpec : remainingSpec;
 
-  // How full the gauge is, per the toggle: what's left (drains as you eat) vs.
-  // what's been eaten (fills up).
-  const fillFraction =
-    view === "consumed"
-      ? Math.max(0, consumedKcal) / safeTarget
-      : Math.max(0, remainingKcal) / safeTarget;
-  const percent = Math.min(100, Math.max(0, fillFraction * 100));
-  // pathLength normalises the arc to 100 units so the dash maths is a plain
-  // percentage; the fill is drawn from the start and the rest is dashed out.
-  const dashOffset = 100 - percent;
+  const fillDashOffset = 100 - state.fillFraction * 100;
+  const overshootDashOffset = 100 - state.overshootFraction * 100;
+
+  // The accessible name always reports the actionable number: how much is left,
+  // or how far over.
+  const ariaLabel = state.isOver
+    ? `Prekoračeno ${state.overshootKcal} kcal`
+    : `Preostalo ${state.remainingKcal} kcal`;
 
   return (
     <div
       data-testid="home-ring"
       role="img"
-      aria-label={`${remainingLabel} ${remainingValue} kcal`}
+      aria-label={ariaLabel}
       className="mx-auto flex w-full max-w-sm items-center justify-between gap-1"
     >
-      <SideColumn
-        label={remainingLabel}
-        value={remainingValue}
-        valueTestId="home-ring-value"
-        labelTestId="home-ring-label"
-      />
+      <SideColumn spec={targetSpec} />
 
       <div className="relative shrink-0" style={{ width: 196, height: 196 }}>
         <svg
@@ -108,86 +134,94 @@ export function Ring({
             strokeWidth={STROKE}
             strokeLinecap="round"
           />
+          {/* First lap: fills with consumption, coloured by the budget level. */}
           <path
             data-testid="home-ring-arc"
+            data-level={state.level}
             d={ARC_PATH}
             fill="none"
-            stroke="var(--gauge)"
+            stroke={LEVEL_STROKE[state.level]}
             strokeWidth={STROKE}
             strokeLinecap="round"
             pathLength={100}
             strokeDasharray={100}
-            strokeDashoffset={dashOffset}
+            strokeDashoffset={fillDashOffset}
             style={{ transition: "stroke-dashoffset 0.5s cubic-bezier(0.2,0,0,1)" }}
           />
+          {/* Second lap: only over the limit -- draws on top of the full first
+              lap to show how far past the budget the user has gone. */}
+          {state.isOver ? (
+            <path
+              data-testid="home-ring-overshoot-arc"
+              d={ARC_PATH}
+              fill="none"
+              stroke={OVERSHOOT_STROKE}
+              strokeWidth={STROKE}
+              strokeLinecap="round"
+              pathLength={100}
+              strokeDasharray={100}
+              strokeDashoffset={overshootDashOffset}
+              style={{
+                transition: "stroke-dashoffset 0.5s cubic-bezier(0.2,0,0,1)",
+              }}
+            />
+          ) : null}
         </svg>
 
-        {/* The centre stack must stay inside the gauge's inner circle. With the
-            overshoot note present the stack is taller, so the number sits
-            higher up where the circle narrows -- everything scales down a
-            notch in that state to keep clear of the stroke. */}
+        {/* Centre = the toggle-selected metric (remaining or consumed). */}
         <div className="absolute inset-0 flex flex-col items-center justify-center px-11 text-center">
           <span
-            data-testid="home-ring-target"
+            data-testid={centerSpec.valueTestId}
             className={cn(
-              "font-bold tabular-nums text-foreground",
-              isOver ? "text-4xl" : "text-5xl"
+              "font-bold tabular-nums",
+              state.isOver ? "text-4xl" : "text-5xl",
+              centerSpec.danger ? "text-destructive" : "text-foreground"
             )}
           >
-            {targetRounded}
+            {centerSpec.value}
           </span>
           <span
+            data-testid={centerSpec.labelTestId}
             className={cn(
               "font-medium text-muted-foreground",
-              isOver ? "text-xs" : "text-sm"
+              state.isOver ? "text-xs" : "text-sm"
             )}
           >
-            Cilj
+            {centerSpec.label}
           </span>
-          {isOver ? (
+          {state.isOver ? (
             <p
               data-testid="home-ring-overshoot-note"
-              className="mt-1 max-w-[130px] text-[10px] leading-snug text-muted-foreground"
+              className="mt-0.5 text-[11px] font-semibold text-destructive"
             >
-              Jedan dan više ne menja ništa. Nastavi sutra kao i obično.
+              preko cilja
             </p>
           ) : null}
         </div>
       </div>
 
-      <SideColumn
-        label="Potrošeno"
-        value={consumedRounded}
-        valueTestId="home-ring-consumed"
-      />
+      <SideColumn spec={rightSpec} />
     </div>
   );
 }
 
-function SideColumn({
-  label,
-  value,
-  valueTestId,
-  labelTestId,
-}: {
-  label: string;
-  value: number;
-  valueTestId?: string;
-  labelTestId?: string;
-}) {
+function SideColumn({ spec }: { spec: MetricSpec }) {
   return (
     <div className="flex shrink-0 flex-col items-center gap-0.5">
       <span
-        data-testid={valueTestId}
-        className="text-2xl font-semibold tabular-nums text-foreground"
+        data-testid={spec.valueTestId}
+        className={cn(
+          "text-2xl font-semibold tabular-nums",
+          spec.danger ? "text-destructive" : "text-foreground"
+        )}
       >
-        {value}
+        {spec.value}
       </span>
       <span
-        data-testid={labelTestId}
+        data-testid={spec.labelTestId}
         className="text-xs font-medium text-muted-foreground"
       >
-        {label}
+        {spec.label}
       </span>
     </div>
   );

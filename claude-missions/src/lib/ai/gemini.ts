@@ -19,7 +19,11 @@ import {
 // it reads the secret `GEMINI_API_KEY`.
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const DEFAULT_MODEL = "gemini-3-flash";
+const DEFAULT_MODEL = "gemini-3.5-flash";
+// Meal-photo recognition needs the stronger reasoning-first Pro model -- Flash
+// misses fine ingredients that the Gemini app (which runs Pro) picks up.
+// Overridable via env so switching Pro versions stays a config change.
+const MEAL_MODEL = "gemini-3.1-pro-preview";
 const REQUEST_TIMEOUT_MS = 45_000;
 
 export class GeminiError extends Error {}
@@ -29,38 +33,21 @@ interface GeminiResponse {
 }
 
 /**
- * Sends one image + prompt to Gemini and returns the raw JSON text the model
- * produced (constrained to `responseSchema`). Throws `GeminiError` on any
- * transport/HTTP/empty-body failure. Shared by every vision estimator below.
+ * Low-level transport: POSTs a fully-formed request body to the model's
+ * `generateContent` endpoint and returns the concatenated text of the first
+ * candidate. Owns the API key, model selection (`GEMINI_MODEL` env), timeout,
+ * and the HTTP/empty-body error handling shared by every caller below (the
+ * vision estimators AND the Lofi chat). Throws `GeminiError` on any failure.
  */
-async function generateJsonFromImage(
-  prompt: string,
-  responseSchema: unknown,
-  base64Image: string,
-  mimeType: string
+async function postGenerateContent(
+  body: unknown,
+  modelOverride?: string
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new GeminiError("GEMINI_API_KEY is not set");
 
-  const model = process.env.GEMINI_MODEL || DEFAULT_MODEL;
+  const model = modelOverride || process.env.GEMINI_MODEL || DEFAULT_MODEL;
   const url = `${API_BASE}/${model}:generateContent?key=${apiKey}`;
-
-  const body = {
-    contents: [
-      {
-        role: "user",
-        parts: [
-          { text: prompt },
-          { inline_data: { mime_type: mimeType, data: base64Image } },
-        ],
-      },
-    ],
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema,
-      temperature: 0.2,
-    },
-  };
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -98,6 +85,70 @@ async function generateJsonFromImage(
   return text;
 }
 
+/**
+ * Sends one image + prompt to Gemini and returns the raw JSON text the model
+ * produced (constrained to `responseSchema`). Shared by every vision estimator
+ * below.
+ */
+async function generateJsonFromImage(
+  prompt: string,
+  responseSchema: unknown,
+  base64Image: string,
+  mimeType: string,
+  modelOverride?: string
+): Promise<string> {
+  return postGenerateContent(
+    {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mimeType, data: base64Image } },
+          ],
+        },
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema,
+        temperature: 0.2,
+      },
+    },
+    modelOverride
+  );
+}
+
+/** A single turn in a Lofi conversation, in the shape the chat endpoint wants. */
+export interface ChatTurn {
+  role: "user" | "model";
+  text: string;
+}
+
+/**
+ * Multi-turn text chat (M6 / Lofi agent). Unlike the vision estimators this is
+ * free-form prose, not JSON: a `systemPrompt` (Lofi's persona + the caller's
+ * live daily-budget context) plus the running conversation. Warmer temperature
+ * than extraction, and a capped output so replies stay short and snappy.
+ * NEVER import this from a client component -- it reads `GEMINI_API_KEY`.
+ */
+export async function generateChatText(
+  systemPrompt: string,
+  turns: ChatTurn[]
+): Promise<string> {
+  return postGenerateContent({
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: turns.map((turn) => ({
+      role: turn.role,
+      parts: [{ text: turn.text }],
+    })),
+    generationConfig: {
+      temperature: 0.65,
+      maxOutputTokens: 900,
+      topP: 0.95,
+    },
+  });
+}
+
 function parseJson(text: string): unknown {
   try {
     return JSON.parse(text);
@@ -115,7 +166,8 @@ export async function estimateMealFromImage(
     MEAL_PROMPT,
     MEAL_RESPONSE_SCHEMA,
     base64Image,
-    mimeType
+    mimeType,
+    process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
   );
   const parsed = mealEstimateSchema.safeParse(parseJson(text));
   if (!parsed.success) {

@@ -200,3 +200,73 @@ describe("F027: HomeScreen handles the no-target state gracefully", () => {
     expect(screen.queryByTestId("home-ring")).not.toBeInTheDocument();
   });
 });
+
+describe("Deo 2: adaptive daily target is reflected on today's dashboard", () => {
+  const adjustedPlan = {
+    baseDailyTarget: 2000,
+    adaptiveDailyTarget: 1600,
+    isAdjusted: true,
+    weeklyBudget: 14000,
+    spentBeforeToday: 6000,
+    daysLeftIncludingToday: 5,
+    carryInKcal: 0,
+    trimmedKcal: 400,
+    trainingSuggestionKcal: 0,
+    trainingWalkMinutes: 0,
+  };
+
+  it("test_the_ring_targets_the_adapted_number_and_a_note_explains_why", () => {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        adaptivePlan={adjustedPlan}
+      />
+    );
+
+    // Ring "Cilj" is the adapted 1600, not the base 2000.
+    expect(screen.getByTestId("home-ring-target")).toHaveTextContent("1600");
+    // Remaining = 1600 - 200 = 1400.
+    expect(screen.getByTestId("home-ring-value")).toHaveTextContent("1400");
+    // The explanation note is shown with the adapted number.
+    expect(screen.getByTestId("adaptive-note-target")).toHaveTextContent(
+      "1600 kcal"
+    );
+  });
+
+  it("test_a_training_suggestion_is_shown_when_food_alone_cannot_absorb_the_overshoot", () => {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        adaptivePlan={{
+          ...adjustedPlan,
+          adaptiveDailyTarget: 1400,
+          trainingSuggestionKcal: 800,
+          trainingWalkMinutes: 160,
+        }}
+      />
+    );
+
+    expect(screen.getByTestId("adaptive-note-training")).toHaveTextContent(
+      "~800 kcal"
+    );
+    expect(screen.getByTestId("adaptive-note-training")).toHaveTextContent(
+      "160 min"
+    );
+  });
+
+  it("test_no_note_and_base_target_when_the_week_is_on_track", () => {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        adaptivePlan={null}
+      />
+    );
+
+    expect(screen.queryByTestId("adaptive-note")).not.toBeInTheDocument();
+    // Falls back to the plain daily target.
+    expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
+  });
+});

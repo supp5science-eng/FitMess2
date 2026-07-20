@@ -17,7 +17,7 @@ describe("BottomNav (F005 base shell)", () => {
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Početna/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Analitika/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Agent/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Lofi/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Profil/ })).toBeInTheDocument();
   });
 
@@ -31,7 +31,7 @@ describe("BottomNav (F005 base shell)", () => {
       "href",
       "/analitika"
     );
-    expect(screen.getByRole("link", { name: /Agent/ })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /Lofi/ })).toHaveAttribute(
       "href",
       "/agent"
     );
@@ -58,7 +58,7 @@ describe("BottomNav (F005 base shell)", () => {
 
   it("every nav item is a real anchor element, so it is reachable and activatable via keyboard alone", () => {
     render(<BottomNav />);
-    for (const name of [/Početna/, /Analitika/, /Agent/, /Profil/]) {
+    for (const name of [/Početna/, /Analitika/, /Lofi/, /Profil/]) {
       const link = screen.getByRole("link", { name });
       expect(link.tagName).toBe("A");
       expect(link).not.toHaveAttribute("tabindex", "-1");

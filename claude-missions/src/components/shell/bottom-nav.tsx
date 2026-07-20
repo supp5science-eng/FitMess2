@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Bot, ChartColumnBig, Home, Settings } from "lucide-react";
+import { ChartColumnBig, Home, Settings, Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/danas", label: "Početna", icon: Home },
   { href: "/analitika", label: "Analitika", icon: ChartColumnBig },
-  { href: "/agent", label: "Agent", icon: Bot },
+  { href: "/agent", label: "Lofi", icon: Sparkles },
   { href: "/profil", label: "Profil", icon: Settings },
 ] as const;
 

@@ -13,10 +13,11 @@ import "./landing.css";
  * (`src/components/shell/app-shell.tsx`) deliberately drops its mobile column
  * and bottom navigation for this route.
  *
- * Design: dark, minimal, MacroFactor-inspired. Near-black canvas, a single
- * teal accent, and very little copy — a few strong lines instead of long
- * paragraphs. The page is a Server Component; the only interactive island is
- * `<InstallButton>` (client). The hero chat animation is pure CSS.
+ * Design: light, minimal, MacroFactor-inspired. Clean white canvas, a single
+ * teal accent with black CTAs, and very little copy — a few strong lines
+ * instead of long paragraphs. The page is a Server Component; the only
+ * interactive island is `<InstallButton>` (client). The hero chat animation is
+ * pure CSS.
  */
 
 const AgentIcon = () => (

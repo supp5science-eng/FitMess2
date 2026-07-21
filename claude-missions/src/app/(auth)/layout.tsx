@@ -8,7 +8,7 @@ import "./auth.css";
  *
  * These routes render full-bleed (the app shell drops its centered white
  * column + bottom nav for them — see `src/components/shell/app-shell.tsx`), so
- * this layout owns the whole viewport: a dark, near-black canvas matching the
+ * this layout owns the whole viewport: a clean white canvas matching the
  * marketing landing, the FitMess wordmark up top, and a safe-area-aware
  * centered column. Each page fills in its own card (`.auth-card`).
  */

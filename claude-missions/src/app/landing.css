@@ -6,32 +6,37 @@
  * its own visual world (full-bleed marketing layout) and never leaks
  * generic class names like `.btn`/`.card` into the rest of the app.
  *
- * Design system (MacroFactor-inspired):
- *  - Dark, near-black canvas with a single teal/mint accent. Minimal copy.
+ * Design system (MacroFactor-inspired) — LIGHT (2026-07-21):
+ *  - Clean white canvas with a single teal/mint accent. Minimal copy.
  *  - Teal = brand + recovery ("na dobrom si"); amber = "skrenuo si" (the
- *    slip). The light phone mockup pops against the dark ground.
+ *    slip). The dark-framed phone mockup pops against the white ground.
+ *  - Primary CTAs are BLACK (matching the app's light theme, where buttons
+ *    are near-black); teal stays as accent (links, glows, chips).
  *  - Uses the app's face via --font-sans; big, confident numbers.
  */
 
 .lp {
-  --ground: #0a0c0b;
-  --surface: #14181a;
-  --surface-2: #191e20;
-  --band: #0f1413;
-  --ink: #f3f7f5;
-  --ink-soft: #a6b0ab;
-  --ink-faint: #6e7873;
-  --line: rgba(255, 255, 255, 0.09);
-  --line-soft: rgba(255, 255, 255, 0.06);
+  --ground: #ffffff;
+  --surface: #f5f6f6;
+  --surface-2: #ffffff;
+  --band: #fafbfb;
+  --ink: #0a0c0b;
+  --ink-soft: #5c6560;
+  --ink-faint: #8a938d;
+  --line: rgba(0, 0, 0, 0.10);
+  --line-soft: rgba(0, 0, 0, 0.06);
   --teal: #17d1a8;
   --teal-bright: #2ae3be;
   --teal-deep: #12b492;
+  /* Readable teal for text/links on white (bright teal washes out there). */
+  --teal-ink: #0d9e7f;
   --teal-wash: rgba(23, 209, 168, 0.12);
-  --teal-line: rgba(23, 209, 168, 0.28);
+  --teal-line: rgba(23, 209, 168, 0.30);
   --amber: #f0a83c;
-  --amber-wash: rgba(240, 168, 60, 0.13);
-  --shadow-md: 0 12px 32px -12px rgba(0, 0, 0, 0.6), 0 3px 10px -3px rgba(0, 0, 0, 0.5);
-  --shadow-lg: 0 40px 80px -28px rgba(0, 0, 0, 0.75), 0 16px 32px -14px rgba(0, 0, 0, 0.55);
+  --amber-ink: #9a6410;
+  --amber-wash: rgba(240, 168, 60, 0.16);
+  --shadow-md: 0 12px 32px -12px rgba(0, 0, 0, 0.14), 0 3px 10px -3px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 40px 80px -28px rgba(0, 0, 0, 0.20), 0 16px 32px -14px rgba(0, 0, 0, 0.12);
   --lp-font: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --maxw: 1080px;
 
@@ -90,7 +95,7 @@
   font-weight: 650;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--teal-bright);
+  color: var(--teal-ink);
   background: var(--teal-wash);
   border: 1px solid var(--teal-line);
   padding: 6px 13px;
@@ -108,7 +113,7 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(10, 12, 11, 0.72);
+  background: rgba(255, 255, 255, 0.78);
   backdrop-filter: saturate(1.4) blur(14px);
   -webkit-backdrop-filter: saturate(1.4) blur(14px);
   border-bottom: 1px solid var(--line-soft);
@@ -211,26 +216,26 @@
   opacity: 0.85;
 }
 .lp .btn-primary {
-  background: #ffffff;
-  color: #0a0c0b;
-  box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  background: #0a0c0b;
+  color: #ffffff;
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 .lp .btn-primary:hover {
-  background: #eef1ef;
+  background: #23282a;
   transform: translateY(-1px);
-  box-shadow: 0 12px 28px -10px rgba(0, 0, 0, 0.75);
+  box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.4);
 }
 .lp .btn-primary:active {
   transform: translateY(0);
 }
 .lp .btn-ghost {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.03);
   color: var(--ink);
   border-color: var(--line);
 }
 .lp .btn-ghost:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.05);
   transform: translateY(-1px);
 }
 .lp .btn-sm {
@@ -258,8 +263,8 @@
   inset: -12% -20% auto -20%;
   height: 680px;
   z-index: 0;
-  background: radial-gradient(700px 420px at 74% 2%, rgba(255, 255, 255, 0.08), transparent 62%),
-    radial-gradient(560px 380px at 6% 34%, rgba(255, 255, 255, 0.04), transparent 64%);
+  background: radial-gradient(700px 420px at 74% 2%, rgba(23, 209, 168, 0.10), transparent 62%),
+    radial-gradient(560px 380px at 6% 34%, rgba(23, 209, 168, 0.05), transparent 64%);
   pointer-events: none;
 }
 .lp .hero-grid {
@@ -288,7 +293,7 @@
 }
 .lp .hero-title .ht-hi {
   display: inline-block;
-  color: var(--teal-bright);
+  color: var(--teal-ink);
   background: var(--teal-wash);
   border: 1px solid var(--teal-line);
   border-radius: 15px;
@@ -602,19 +607,19 @@
 }
 .lp .b-user {
   background: var(--amber-wash);
-  color: #f0c88a;
-  border: 1px solid rgba(240, 168, 60, 0.2);
+  color: var(--amber-ink);
+  border: 1px solid rgba(240, 168, 60, 0.3);
   border-bottom-right-radius: 5px;
   margin-left: 34px;
 }
 .lp .b-agent {
   background: var(--teal-wash);
-  color: #9ff0dd;
+  color: var(--teal-ink);
   border: 1px solid var(--teal-line);
   border-bottom-left-radius: 5px;
 }
 .lp .b-agent b {
-  color: #c9f7ec;
+  color: #0b6e5a;
 }
 @keyframes lp-pop {
   to {
@@ -641,12 +646,12 @@
 }
 .lp .val:hover {
   transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.16);
+  border-color: rgba(0, 0, 0, 0.14);
   box-shadow: var(--shadow-md);
 }
 .lp .val.accent {
-  border-color: rgba(255, 255, 255, 0.16);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  border-color: var(--teal-line);
+  background: linear-gradient(180deg, var(--teal-wash), rgba(23, 209, 168, 0.02));
 }
 .lp .val .vi {
   width: 46px;
@@ -655,9 +660,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(0, 0, 0, 0.05);
   color: var(--ink);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   margin-bottom: 16px;
 }
 .lp .val .vi svg {
@@ -681,8 +686,8 @@
   text-align: center;
 }
 .lp .final-card {
-  background: linear-gradient(155deg, #1c2224 0%, #0c0f0e 74%);
-  border: 1px solid var(--line);
+  background: linear-gradient(155deg, #eafaf6 0%, #ffffff 72%);
+  border: 1px solid var(--teal-line);
   border-radius: 30px;
   padding: 64px 34px;
   position: relative;
@@ -693,14 +698,14 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: radial-gradient(520px 320px at 80% -10%, rgba(255, 255, 255, 0.1), transparent 60%);
+  background: radial-gradient(520px 320px at 80% -10%, rgba(23, 209, 168, 0.16), transparent 60%);
 }
 .lp .final-card > * {
   position: relative;
   z-index: 1;
 }
 .lp .final-card h2 {
-  color: #fff;
+  color: var(--ink);
   font-size: clamp(30px, 4.6vw, 48px);
   font-weight: 800;
 }

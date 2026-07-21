@@ -5,28 +5,29 @@
  * app's light Tailwind theme (the auth routes render full-bleed via
  * `src/components/shell/app-shell.tsx`, so they own the whole viewport).
  *
- * Design: the same dark, near-black, teal-accented world as the marketing
- * landing (`src/app/landing.css`) so the jump from "Uđi" into sign-in feels
- * like one product. A single dark surface card holds the form; the primary
- * action is teal, the Google button is the compliant white pill with the
- * 4-color mark.
+ * Design (LIGHT, 2026-07-21): the same clean white, teal-accented world as
+ * the marketing landing (`src/app/landing.css`) so the jump from "Kreni" into
+ * sign-in feels like one product. A white surface card holds the form on a
+ * faint grey ground; the primary action is BLACK (matching the app's light
+ * theme), the Google button is the compliant white pill with the 4-color mark.
  */
 
 .auth {
-  --ground: #0a0c0b;
-  --surface: #14181a;
-  --surface-2: #191e20;
-  --ink: #f3f7f5;
-  --ink-soft: #a6b0ab;
-  --ink-faint: #6e7873;
-  --line: rgba(255, 255, 255, 0.09);
-  --line-strong: rgba(255, 255, 255, 0.16);
+  --ground: #f6f7f7;
+  --surface: #ffffff;
+  --surface-2: #f1f3f3;
+  --ink: #0a0c0b;
+  --ink-soft: #5c6560;
+  --ink-faint: #8a938d;
+  --line: rgba(0, 0, 0, 0.10);
+  --line-strong: rgba(0, 0, 0, 0.18);
   --teal: #17d1a8;
   --teal-bright: #2ae3be;
+  --teal-ink: #0d9e7f;
   --teal-wash: rgba(23, 209, 168, 0.12);
-  --teal-line: rgba(23, 209, 168, 0.28);
-  --danger: #f2726b;
-  --danger-wash: rgba(242, 114, 107, 0.1);
+  --teal-line: rgba(23, 209, 168, 0.30);
+  --danger: #d64545;
+  --danger-wash: rgba(214, 69, 69, 0.10);
   --auth-font: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   position: relative;
@@ -106,7 +107,7 @@
   border: 1px solid var(--line);
   border-radius: 24px;
   padding: 30px 24px 26px;
-  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.75), 0 8px 20px -10px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 30px 70px -30px rgba(0, 0, 0, 0.18), 0 8px 20px -10px rgba(0, 0, 0, 0.10);
   display: flex;
   flex-direction: column;
   gap: 22px;
@@ -170,7 +171,7 @@
 .auth-input:focus {
   outline: none;
   border-color: var(--teal);
-  background: #10201c;
+  background: #ffffff;
   box-shadow: 0 0 0 3px var(--teal-wash);
 }
 .auth-input[aria-invalid="true"] {
@@ -297,28 +298,31 @@
 }
 
 .auth-btn-primary {
-  background: var(--teal);
-  color: #04231c;
-  box-shadow: 0 8px 22px -8px rgba(23, 209, 168, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  background: #0a0c0b;
+  color: #ffffff;
+  box-shadow: 0 10px 24px -10px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 .auth-btn-primary:not(:disabled):hover {
-  background: var(--teal-bright);
+  background: #23282a;
   transform: translateY(-1px);
-  box-shadow: 0 12px 28px -8px rgba(23, 209, 168, 0.62);
+  box-shadow: 0 14px 30px -10px rgba(0, 0, 0, 0.4);
 }
 .auth-btn-primary:not(:disabled):active {
   transform: translateY(0);
 }
 
-/* Compliant Google button: white pill, dark text, 4-color mark */
+/* Compliant Google button: white pill, dark text, 4-color mark. On the white
+   card it needs a visible border to read as a button. */
 .auth-btn-google {
   background: #ffffff;
   color: #1f1f1f;
   font-weight: 650;
-  box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.5);
+  border-color: var(--line-strong);
+  box-shadow: 0 2px 8px -4px rgba(0, 0, 0, 0.14);
 }
 .auth-btn-google:not(:disabled):hover {
   background: #f4f6f5;
+  border-color: rgba(0, 0, 0, 0.24);
   transform: translateY(-1px);
 }
 .auth-btn-google:not(:disabled):active {
@@ -331,13 +335,13 @@
 }
 
 .auth-btn-ghost {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 0, 0, 0.03);
   color: var(--ink);
   border-color: var(--line);
 }
 .auth-btn-ghost:not(:disabled):hover {
   border-color: var(--line-strong);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 /* ---------- Divider ---------- */
@@ -375,7 +379,7 @@
   border-radius: 13px;
   padding: 12px 14px;
   font-size: 13.5px;
-  color: #9ff0dd;
+  color: var(--teal-ink);
   line-height: 1.45;
 }
 
@@ -405,7 +409,7 @@
   line-height: 1.45;
 }
 .auth-hint a {
-  color: var(--teal-bright);
+  color: var(--teal-ink);
   font-weight: 600;
   text-decoration: none;
 }
@@ -421,7 +425,7 @@
   color: var(--ink-soft);
 }
 .auth-alt a {
-  color: var(--teal-bright);
+  color: var(--teal-ink);
   font-weight: 650;
   text-decoration: none;
 }

@@ -36,10 +36,49 @@ export interface TodayDataResult {
   error: { message: string } | null;
 }
 
+/** Attempts (1 initial + retries) for the cold-start-resilient read below. */
+const MAX_READ_ATTEMPTS = 3;
+/** Backoff before the Nth retry (index 0 = before the 1st retry). */
+const RETRY_BACKOFF_MS = [150, 400];
+
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/**
+ * F027 read with cold-start resilience. On a PWA cold launch (the app resumed
+ * after a pause), the FIRST server-side request often runs on a cold Vercel
+ * function against a cold Supabase connection, so this read can fail
+ * transiently -- the user saw a full "Nismo uspeli da učitamo tvoj dan" screen
+ * and a manual "Pokušaj ponovo" (a fresh, now-warm request) always fixed it.
+ * Retrying the read a couple of times with a short backoff turns that manual
+ * retry into an automatic one, so the error screen effectively never shows for
+ * a transient failure. A genuinely persistent error still surfaces after the
+ * attempts are exhausted (just delayed by ~0.5s), and empty results are NOT an
+ * error so they never trigger a retry.
+ */
 export async function getTodayData(
   supabase: SupabaseClient<Database>,
   userId: string,
   range: DayRange = getTodayRange()
+): Promise<TodayDataResult> {
+  let last: TodayDataResult = { data: null, error: { message: "unread" } };
+  for (let attempt = 0; attempt < MAX_READ_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await sleep(RETRY_BACKOFF_MS[attempt - 1] ?? 400);
+    }
+    last = await readTodayDataOnce(supabase, userId, range);
+    if (!last.error) return last;
+    console.warn(
+      `[F027 getTodayData] read attempt ${attempt + 1}/${MAX_READ_ATTEMPTS} failed:`,
+      last.error.message
+    );
+  }
+  return last;
+}
+
+async function readTodayDataOnce(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  range: DayRange
 ): Promise<TodayDataResult> {
   const [targetResult, logsResult] = await Promise.all([
     supabase

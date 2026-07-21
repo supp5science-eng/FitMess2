@@ -146,15 +146,17 @@ export function HomeScreen({
     >
       <header className="home-body flex flex-col gap-5">
         {/* FitMess wordmark in the display face (Archivo Black); "Mess" in the
-            teal accent the primary buttons use (--primary). No greeting, no
-            mark -- just the brand lockup. */}
+            brand teal (--brand) so the lockup keeps its identity in BOTH themes
+            -- in light the accent `--primary` is black, which would flatten the
+            wordmark, so we pin it to the theme-independent brand teal instead.
+            No greeting, no mark -- just the brand lockup. */}
         <h1
           className="text-4xl tracking-tight text-foreground"
           style={{
             fontFamily: "var(--font-display), var(--font-sans), sans-serif",
           }}
         >
-          Fit<span className="text-primary">Mess</span>
+          Fit<span className="text-[color:var(--brand)]">Mess</span>
         </h1>
         {days.length > 0 ? <DateStrip days={days} /> : null}
       </header>

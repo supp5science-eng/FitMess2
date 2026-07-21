@@ -78,7 +78,8 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   // The chosen theme is server-rendered onto <html> so there is no flash of
-  // the wrong theme on first paint. Existing users (no cookie) stay dark.
+  // the wrong theme on first paint. Anyone without a cookie gets the default
+  // (light).
   const cookieStore = await cookies();
   const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
 

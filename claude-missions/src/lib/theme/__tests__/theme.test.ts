@@ -8,12 +8,12 @@ describe("resolveTheme: narrows an untrusted cookie value to a Theme", () => {
     expect(resolveTheme("dark")).toBe("dark");
   });
 
-  it("falls back to the default (dark) for anything else", () => {
+  it("falls back to the default (light) for anything else", () => {
     expect(resolveTheme(undefined)).toBe(DEFAULT_THEME);
     expect(resolveTheme(null)).toBe(DEFAULT_THEME);
     expect(resolveTheme("")).toBe(DEFAULT_THEME);
     expect(resolveTheme("LIGHT")).toBe(DEFAULT_THEME);
     expect(resolveTheme("system")).toBe(DEFAULT_THEME);
-    expect(DEFAULT_THEME).toBe("dark");
+    expect(DEFAULT_THEME).toBe("light");
   });
 });

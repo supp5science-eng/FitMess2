@@ -13,8 +13,12 @@ export type Theme = "light" | "dark";
 /** Cookie carrying the chosen theme. Read server-side in the root layout. */
 export const THEME_COOKIE = "fm_theme";
 
-/** The app shipped dark-only, so existing users (no cookie) stay dark. */
-export const DEFAULT_THEME: Theme = "dark";
+/**
+ * Default theme for anyone without a cookie: LIGHT (the app's default look as
+ * of 2026-07-21). Users can still switch to dark in onboarding or Settings;
+ * the choice is remembered per-device in `fm_theme`.
+ */
+export const DEFAULT_THEME: Theme = "light";
 
 /** ~1 year -- the theme choice should stick across sessions on this device. */
 export const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;

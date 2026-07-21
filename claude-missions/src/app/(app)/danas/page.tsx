@@ -138,13 +138,37 @@ export default async function DanasPage({
     signupKey && signupKey < fiveBefore ? signupKey : fiveBefore;
   const endKey = addDaysKey(todayKey, 30);
 
-  // "Logged" rings only need the past window (start..today) -- future is empty.
-  const loggedDays = await getLoggedDays(
-    supabase,
-    userId,
-    new Date(`${startKey}T12:00:00.000Z`),
-    now
-  );
+  // Stage 2 of the read. These three are independent of one another -- they
+  // only depend on stage 1's getTodayData + profiles -- so fetch them
+  // concurrently rather than in a serial waterfall (which is what made the
+  // authenticated render feel slow): one round-trip stage instead of three.
+  //  - loggedDays: the date strip's "logged" rings (past window start..today;
+  //    the future is empty).
+  //  - adaptivePlan ("Deo 2"): today's adaptive daily target -- only for the
+  //    today view and only when a target exists. Redistributes any
+  //    earlier-in-week overshoot across the rest of the week (carrying last
+  //    week's debt in). A failed read falls back to no adjustment.
+  //  - fm_intro cookie: the one-time onboarding "ring hand-off" (plan-reveal
+  //    drops it just before navigating here, see `plan-reveal.tsx`); only ever
+  //    plays for today.
+  const [loggedDays, adaptivePlan, cookieStore] = await Promise.all([
+    getLoggedDays(
+      supabase,
+      userId,
+      new Date(`${startKey}T12:00:00.000Z`),
+      now
+    ),
+    isToday && result.data.target
+      ? getAdaptivePlan(
+          supabase,
+          userId,
+          result.data.target.daily_kcal,
+          profileResult.data?.sex ?? "male",
+          now
+        )
+      : Promise.resolve(null),
+    cookies(),
+  ]);
 
   const days = buildDateStrip({
     now,
@@ -155,27 +179,7 @@ export default async function DanasPage({
     minKey: signupKey,
   });
 
-  // One-time "ring hand-off" from onboarding: the plan-reveal drops the
-  // `fm_intro` cookie just before its hard navigation here (see
-  // `plan-reveal.tsx`). Only ever plays for today, never a past day.
-  const cookieStore = await cookies();
   const intro = isToday && cookieStore.get("fm_intro") != null;
-
-  // "Deo 2": today's adaptive daily target. Only for the today view and only
-  // when a target exists -- redistributes any earlier-in-week overshoot across
-  // the rest of the week (carrying last week's debt in). Computed from this
-  // week's logs; a failed read just falls back to no adjustment (never breaks
-  // the dashboard).
-  const adaptivePlan =
-    isToday && result.data.target
-      ? await getAdaptivePlan(
-          supabase,
-          userId,
-          result.data.target.daily_kcal,
-          profileResult.data?.sex ?? "male",
-          now
-        )
-      : null;
 
   return (
     <HomeScreen

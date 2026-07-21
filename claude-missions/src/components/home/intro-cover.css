@@ -140,6 +140,23 @@
     transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* ---------- Hide the floating nav during the hand-off ---------- */
+/* While the onboarding ring hand-off runs (cover -> glide -> land), the
+ * floating bottom nav must stay hidden: during glide/land the cover turns
+ * transparent to reveal the dashboard, and the nav (z-40) would otherwise peek
+ * in under it while the plan is still landing. `HomeScreen` toggles
+ * `.intro-lock-nav` on <html> for the intro's duration; the bar (the tab pill +
+ * the "+" trigger) fades back in when the dashboard has fully landed. Targets
+ * the nav via its stable aria-label / testid, so no nav component is touched. */
+nav[aria-label="Glavna navigacija"] {
+  transition: opacity 320ms ease;
+}
+html.intro-lock-nav nav[aria-label="Glavna navigacija"],
+html.intro-lock-nav button[data-testid="add-sheet-open-button"] {
+  opacity: 0;
+  pointer-events: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .di,
   .di::before,

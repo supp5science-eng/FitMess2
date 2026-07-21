@@ -121,6 +121,20 @@ export function HomeScreen({
     introStage === "cover" ||
     introStage === "glide" ||
     introStage === "land";
+
+  // Keep the floating bottom nav (Početna/Analitika/Lofi/Profil) hidden for the
+  // whole onboarding ring hand-off. During "glide"/"land" the intro cover turns
+  // transparent to reveal the dashboard, and the fixed nav (z-40) would
+  // otherwise peek in underneath while the plan is still landing -- which reads
+  // as "the questionnaire is showing the app tabs". We flag <html> for the
+  // intro's duration; `intro-cover.css` hides the bar and fades it back in only
+  // once the dashboard has fully landed ("done").
+  useEffect(() => {
+    if (!introActive) return;
+    const root = document.documentElement;
+    root.classList.add("intro-lock-nav");
+    return () => root.classList.remove("intro-lock-nav");
+  }, [introActive]);
   const dataIntro =
     introStage === "idle" || introStage === "done" ? undefined : introStage;
 

@@ -10,6 +10,12 @@ import {
   mealEstimateSchema,
   type MealEstimate,
 } from "@/lib/ai/meal-estimate";
+import {
+  VOICE_PROMPT,
+  VOICE_RESPONSE_SCHEMA,
+  voiceMealSchema,
+  type VoiceMealEstimate,
+} from "@/lib/ai/voice-estimate";
 
 // Server-only Gemini client. We call the REST `generateContent` endpoint
 // directly (no SDK dependency -> no version churn, predictable on first
@@ -24,6 +30,10 @@ const DEFAULT_MODEL = "gemini-3.5-flash";
 // misses fine ingredients that the Gemini app (which runs Pro) picks up.
 // Overridable via env so switching Pro versions stays a config change.
 const MEAL_MODEL = "gemini-3.1-pro-preview";
+// Voice logging is mostly transcription + light estimation, so the fast/cheap
+// Flash default is enough and keeps the record->result wait short. Overridable
+// via `GEMINI_VOICE_MODEL` if we want to trade latency for estimation quality.
+const VOICE_MODEL = "gemini-3.5-flash";
 const REQUEST_TIMEOUT_MS = 45_000;
 
 export class GeminiError extends Error {}
@@ -118,6 +128,39 @@ async function generateJsonFromImage(
   );
 }
 
+/**
+ * Sends one audio clip + prompt to Gemini and returns the raw JSON text
+ * (constrained to `responseSchema`). Mirror of `generateJsonFromImage` for the
+ * voice flow -- the only difference is the inline part carries audio bytes.
+ */
+async function generateJsonFromAudio(
+  prompt: string,
+  responseSchema: unknown,
+  base64Audio: string,
+  mimeType: string,
+  modelOverride?: string
+): Promise<string> {
+  return postGenerateContent(
+    {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            { text: prompt },
+            { inline_data: { mime_type: mimeType, data: base64Audio } },
+          ],
+        },
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema,
+        temperature: 0.2,
+      },
+    },
+    modelOverride
+  );
+}
+
 /** A single turn in a Lofi conversation, in the shape the chat endpoint wants. */
 export interface ChatTurn {
   role: "user" | "model";
@@ -170,6 +213,25 @@ export async function estimateMealFromImage(
     process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
   );
   const parsed = mealEstimateSchema.safeParse(parseJson(text));
+  if (!parsed.success) {
+    throw new GeminiError("Gemini output did not match the expected shape");
+  }
+  return parsed.data;
+}
+
+/** Spoken meal description/dictation -> validated meal estimate. */
+export async function estimateMealFromAudio(
+  base64Audio: string,
+  mimeType: string
+): Promise<VoiceMealEstimate> {
+  const text = await generateJsonFromAudio(
+    VOICE_PROMPT,
+    VOICE_RESPONSE_SCHEMA,
+    base64Audio,
+    mimeType,
+    process.env.GEMINI_VOICE_MODEL || VOICE_MODEL
+  );
+  const parsed = voiceMealSchema.safeParse(parseJson(text));
   if (!parsed.success) {
     throw new GeminiError("Gemini output did not match the expected shape");
   }

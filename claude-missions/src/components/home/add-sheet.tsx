@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   Barcode,
   Camera,
+  Mic,
   PackagePlus,
   Plus,
   Search,
@@ -59,11 +60,19 @@ const OPTIONS: AddSheetOption[] = [
     available: true,
   },
   {
-    key: "barkod",
-    label: "Skeniraj barkod",
-    icon: Barcode,
-    href: "/dodaj/skener",
+    key: "obrok",
+    label: "Slikaj obrok",
+    icon: UtensilsCrossed,
+    href: "/dodaj/obrok",
     available: true,
+  },
+  {
+    key: "glas",
+    label: "Reci obrok",
+    icon: Mic,
+    href: "/dodaj/glas",
+    available: true,
+    description: "Izgovori vrednosti ili samo opiši obrok",
   },
   {
     key: "deklaracija",
@@ -73,19 +82,24 @@ const OPTIONS: AddSheetOption[] = [
     available: true,
   },
   {
-    key: "obrok",
-    label: "Slikaj obrok",
-    icon: UtensilsCrossed,
-    href: "/dodaj/obrok",
-    available: true,
-  },
-  {
     key: "proizvod",
     label: "Dodaj proizvod",
     icon: PackagePlus,
     href: "/dodaj/proizvod",
     available: true,
     description: "Samo proizvodi sa deklaracijom i barkodom",
+  },
+  // Barcode scanning is de-prioritised for now (a barcode only yields
+  // per-100g label data the user is already photographing) -- kept last and
+  // routed to the "uskoro" placeholder instead of the live `/dodaj/skener`
+  // scanner. The scanner code stays in place; flip this row back when it
+  // returns.
+  {
+    key: "barkod",
+    label: "Skeniraj barkod",
+    icon: Barcode,
+    href: "/dodaj/uskoro/barkod",
+    available: false,
   },
 ];
 

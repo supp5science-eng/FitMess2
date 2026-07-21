@@ -27,15 +27,18 @@ describe("AS-051: the '+' button is closed by default and opens the sheet on tap
 });
 
 describe("AS-051: every logging method is a real, single-tap-reachable link once the sheet is open", () => {
-  it("test_AS_051_all_four_logging_methods_are_listed_as_real_navigable_links", () => {
+  it("test_AS_051_all_logging_methods_are_listed_as_real_navigable_links", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
     const expectedHrefs: Record<string, string> = {
       pretrazi: "/dodaj/pretraga",
-      barkod: "/dodaj/skener",
-      deklaracija: "/dodaj/deklaracija",
       obrok: "/dodaj/obrok",
+      glas: "/dodaj/glas",
+      deklaracija: "/dodaj/deklaracija",
+      // Barcode is de-prioritised -- routed to the "uskoro" placeholder, not
+      // the live scanner (which still exists at /dodaj/skener).
+      barkod: "/dodaj/uskoro/barkod",
     };
 
     for (const [key, href] of Object.entries(expectedHrefs)) {
@@ -48,18 +51,44 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     }
   });
 
-  it("test_AS_051_all_methods_are_built_so_none_show_an_uskoro_badge", () => {
+  it("test_the_active_methods_show_no_uskoro_badge_but_barcode_does", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    // Search (F024), barcode (F030), meal photos (F064) and label photos
-    // (F063) are all built now -- no method is stubbed, so none carries the
-    // "Uskoro" badge.
-    for (const key of ["pretrazi", "barkod", "obrok", "deklaracija"]) {
+    // Search, meal photo, voice, label photo and add-product are all live.
+    for (const key of ["pretrazi", "obrok", "glas", "deklaracija", "proizvod"]) {
       expect(
         screen.queryByTestId(`add-sheet-soon-badge-${key}`)
       ).not.toBeInTheDocument();
     }
+
+    // Barcode is intentionally deferred and carries the "Uskoro" badge.
+    expect(
+      screen.getByTestId("add-sheet-soon-badge-barkod")
+    ).toBeInTheDocument();
+  });
+
+  it("test_the_voice_option_links_to_the_reci_obrok_flow_with_its_note", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    const option = screen.getByTestId("add-sheet-option-glas");
+    expect(option.tagName).toBe("A");
+    expect(option).toHaveAttribute("href", "/dodaj/glas");
+    expect(screen.getByTestId("add-sheet-desc-glas")).toHaveTextContent(
+      "Izgovori vrednosti ili samo opiši obrok"
+    );
+  });
+
+  it("test_barcode_is_the_last_option_in_the_sheet", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    const options = screen
+      .getByTestId("add-sheet")
+      .querySelectorAll('[data-testid^="add-sheet-option-"]');
+    const lastOption = options[options.length - 1];
+    expect(lastOption).toHaveAttribute("data-testid", "add-sheet-option-barkod");
   });
 
   it("test_AS_051_the_photo_links_point_to_the_real_meal_and_label_flows", () => {
@@ -86,13 +115,13 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     );
   });
 
-  it("test_AS_051_the_barkod_link_points_to_the_real_scanner_screen", () => {
+  it("test_the_barkod_link_points_to_the_uskoro_placeholder_while_deferred", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
     expect(screen.getByTestId("add-sheet-option-barkod")).toHaveAttribute(
       "href",
-      "/dodaj/skener"
+      "/dodaj/uskoro/barkod"
     );
   });
 

@@ -1,7 +1,9 @@
 import type { ReactNode } from "react";
 
 import { BmiCard } from "@/components/analytics/bmi-card";
+import { IntakeTrendCard } from "@/components/analytics/intake-trend-card";
 import { MacroAverageCard } from "@/components/analytics/macro-average-card";
+import type { IntakeTrend } from "@/lib/weight/intake-trend";
 import type { MacroWeek } from "@/lib/week/macro-weeks";
 
 // F041: the Analitika dashboard body. Presentational: the page owns every
@@ -10,6 +12,7 @@ import type { MacroWeek } from "@/lib/week/macro-weeks";
 export function WeeklyDashboard({
   bmi,
   macroWeeks,
+  intakeTrend,
   weightSection,
   footer,
 }: {
@@ -20,6 +23,10 @@ export function WeeklyDashboard({
   /** Per-week macro-stacked summaries (index 0 = this week) for the "Dnevni
    * prosek kalorija" card, computed server-side by `computeMacroWeeks`. */
   macroWeeks: MacroWeek[];
+  /** Estimated 7-day weight trend from calorie intake (`computeIntakeTrend`).
+   * `null` when TDEE or current weight can't be derived -- the card then shows
+   * a calm "dopuni profil" state. */
+  intakeTrend: IntakeTrend | null;
   /** F042/F043: the "Težina" section, rendered between the chart and the
    * meal-history footer. Passed as a node (like `footer`) so the page owns the
    * server data read and this component stays presentational. */
@@ -41,7 +48,10 @@ export function WeeklyDashboard({
       {/* Daily average calories + macro-stacked per-day chart + week selector. */}
       <MacroAverageCard weeks={macroWeeks} />
 
-      {/* F042/F043: weight + trend */}
+      {/* Estimated weight trend from calorie intake (energy balance + macros). */}
+      <IntakeTrendCard trend={intakeTrend} />
+
+      {/* F042/F043: weight + trend (real weigh-ins) */}
       {weightSection}
 
       {/* "Svi obroci" meal-history log (bottom of the page) */}

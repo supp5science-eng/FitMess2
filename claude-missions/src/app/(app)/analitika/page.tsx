@@ -4,12 +4,14 @@ import { MealHistory } from "@/components/analytics/meal-history";
 import { WeightSection } from "@/components/analytics/weight-section";
 import { WeeklyDashboard } from "@/components/weekly/weekly-dashboard";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { bmr, tdee } from "@/lib/budget/engine";
 import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { groupLogsByDay } from "@/lib/log/group";
 import { getMealHistory } from "@/lib/log/history";
 import { createClient } from "@/lib/supabase/server";
 import { computeMacroWeeks } from "@/lib/week/macro-weeks";
 import { getWeekData } from "@/lib/week/week";
+import { computeIntakeTrend } from "@/lib/weight/intake-trend";
 import { computeWeightTrend } from "@/lib/weight/trend";
 import { getWeighIns } from "@/lib/weight/weigh-ins";
 
@@ -46,14 +48,14 @@ export default async function NedeljaPage() {
       getWeekData(supabase, userId, now),
       getMealHistory(supabase, userId, now),
       getWeighIns(supabase, userId, now),
-      // Profile questionnaire data. `weight_kg` prefills the weigh-in sheet
-      // before the first real weigh-in exists; height + weight feed the BMI
-      // card at the top of the dashboard. A failure here is non-fatal (the
-      // prefill falls back to empty and the BMI card shows its "dopuni profil"
+      // Profile questionnaire data. `weight_kg` prefills the weigh-in sheet;
+      // height + weight feed the BMI card; sex/height/weight/birth_year +
+      // activity_level feed the TDEE behind the intake-trend card. A failure
+      // here is non-fatal (each card degrades to its own "dopuni profil"
       // state), so it never blocks the screen.
       supabase
         .from("profiles")
-        .select("weight_kg, height_cm")
+        .select("sex, weight_kg, height_cm, birth_year, activity_level")
         .eq("user_id", userId)
         .maybeSingle(),
     ]);
@@ -122,6 +124,44 @@ export default async function NedeljaPage() {
       ? profile.weight_kg / (profile.height_cm / 100) ** 2
       : null;
 
+  // "Procena težine" card: estimate a 7-day weight trend from intake. Needs the
+  // maintenance calories (TDEE = BMR × activity, via the budget engine) and the
+  // best-known current weight (latest weigh-in, else the profile weight). When
+  // either is missing the card degrades to its own "dopuni profil" state.
+  const tdeeKcal =
+    profile?.sex &&
+    profile.weight_kg != null &&
+    profile.height_cm != null &&
+    profile.birth_year != null &&
+    profile.activity_level
+      ? tdee(
+          bmr(
+            profile.sex,
+            profile.weight_kg,
+            profile.height_cm,
+            now.getFullYear() - profile.birth_year
+          ),
+          profile.activity_level
+        )
+      : null;
+
+  const latestWeighInKg =
+    (weighInsResult.data ?? [])
+      .slice()
+      .sort((a, b) => a.day.localeCompare(b.day))
+      .at(-1)?.weight_kg ?? null;
+  const currentWeightKg = latestWeighInKg ?? profile?.weight_kg ?? null;
+
+  const intakeTrend =
+    tdeeKcal != null && currentWeightKg != null
+      ? computeIntakeTrend(historyResult.data ?? [], now, {
+          tdeeKcal,
+          currentWeightKg,
+          targetFatG: target.fat_g,
+          targetProteinG: target.protein_g,
+        })
+      : null;
+
   // "Svi obroci" meal-history log: group the 30-day window by day, then split
   // into the last 7 calendar days (shown immediately) and older days (behind
   // "Prikaži više"). Degrades to no footer if the history read failed --
@@ -157,6 +197,7 @@ export default async function NedeljaPage() {
     <WeeklyDashboard
       bmi={bmi}
       macroWeeks={macroWeeks}
+      intakeTrend={intakeTrend}
       weightSection={weightSection}
       footer={footer}
     />

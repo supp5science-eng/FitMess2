@@ -1,24 +1,10 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import Home from "./page";
 
-// The landing page's <InstallButton> island probes `window.matchMedia` in a
-// mount effect to detect an already-installed (standalone) PWA. jsdom has no
-// matchMedia, so stub a benign "not standalone" response before rendering.
-beforeAll(() => {
-  if (!window.matchMedia) {
-    window.matchMedia = ((query: string) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: () => {},
-      removeListener: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false,
-    })) as unknown as typeof window.matchMedia;
-  }
-});
+// The landing is a minimal, Cal-AI-style single screen: an animated scan
+// phone, one Serbian headline, and a single primary CTA (+ sign-in link).
+// There is no install CTA here anymore — onboarding runs on the web first.
 
 describe("root landing page (F001 scaffold smoke test + FitMess landing)", () => {
   it("test_AS_001_root_page_renders_without_throwing", () => {
@@ -29,12 +15,22 @@ describe("root landing page (F001 scaffold smoke test + FitMess landing)", () =>
   });
 
   it("test_AS_002_root_page_serves_serbian_text", () => {
-    // AS-002: Root URL serves a page with Serbian (sr-Latn) text. The
-    // marketing landing leads with its Serbian headline and install CTA.
+    // AS-002: Root URL serves a page with Serbian (sr-Latn) text.
     render(<Home />);
     expect(
-      screen.getByRole("heading", { name: /puca kad ti pukne/i })
+      screen.getByRole("heading", { name: /Prati kalorije bez muke/i })
     ).toBeInTheDocument();
-    expect(screen.getAllByText(/Instaliraj FitMess/i).length).toBeGreaterThan(0);
+  });
+
+  it("test_landing_leads_with_get_started_to_the_questionnaire", () => {
+    render(<Home />);
+    const start = screen.getByRole("link", { name: /Započni/i });
+    expect(start).toHaveAttribute("href", "/upitnik");
+  });
+
+  it("test_landing_offers_sign_in_for_returning_users", () => {
+    render(<Home />);
+    const signIn = screen.getByRole("link", { name: /Prijavi se/i });
+    expect(signIn).toHaveAttribute("href", "/prijava");
   });
 });

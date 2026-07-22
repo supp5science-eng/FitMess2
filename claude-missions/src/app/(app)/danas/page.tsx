@@ -13,7 +13,7 @@ import {
   type AdaptivePlan,
 } from "@/lib/home/adaptive";
 import { buildDateStrip } from "@/lib/home/date-strip";
-import { getLoggedDays } from "@/lib/home/logged-days";
+import { getLoggedDayKcals } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
 import { createClient } from "@/lib/supabase/server";
 
@@ -142,8 +142,8 @@ export default async function DanasPage({
   // only depend on stage 1's getTodayData + profiles -- so fetch them
   // concurrently rather than in a serial waterfall (which is what made the
   // authenticated render feel slow): one round-trip stage instead of three.
-  //  - loggedDays: the date strip's "logged" rings (past window start..today;
-  //    the future is empty).
+  //  - dayKcals: per-day summed kcal for the date strip's mini day-rings
+  //    (past window start..today; the future is empty).
   //  - adaptivePlan ("Deo 2"): today's adaptive daily target -- only for the
   //    today view and only when a target exists. Redistributes any
   //    earlier-in-week overshoot across the rest of the week (carrying last
@@ -151,8 +151,8 @@ export default async function DanasPage({
   //  - fm_intro cookie: the one-time onboarding "ring hand-off" (plan-reveal
   //    drops it just before navigating here, see `plan-reveal.tsx`); only ever
   //    plays for today.
-  const [loggedDays, adaptivePlan, cookieStore] = await Promise.all([
-    getLoggedDays(
+  const [dayKcals, adaptivePlan, cookieStore] = await Promise.all([
+    getLoggedDayKcals(
       supabase,
       userId,
       new Date(`${startKey}T12:00:00.000Z`),
@@ -173,10 +173,12 @@ export default async function DanasPage({
   const days = buildDateStrip({
     now,
     selectedKey,
-    loggedDays,
+    loggedDays: new Set(dayKcals.keys()),
     startKey,
     endKey,
     minKey: signupKey,
+    dayKcals,
+    targetKcal: result.data.target?.daily_kcal ?? 0,
   });
 
   const intro = isToday && cookieStore.get("fm_intro") != null;

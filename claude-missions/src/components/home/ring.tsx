@@ -1,62 +1,48 @@
 import { computeRingState, type RingLevel } from "@/lib/home/totals";
 import { cn } from "@/lib/utils";
 
-// F027 (redesign 2026-07-20): the calorie gauge, centerpiece of `/danas`.
+// F027 (redesign 2026-07-22): the calorie gauge, centerpiece of `/danas`.
 // Pure, presentational -- consumed/target come in as props, every number is
 // computed by `src/lib/home/totals.ts` (`computeRingState`), never eyeballed
 // here (the codebase's "money-math rule").
 //
-// This replaces the earlier deliberately "zero-shame, never red" gauge with an
-// at-a-glance traffic light, per the product owner's 2026-07-20 decision:
+// Visual redesign per the product owner's 2026-07-22 decision: an
+// Apple-Fitness-style FULL ring (360°, thick rounded stroke, fills clockwise
+// from 12 o'clock) instead of the earlier 270° gauge, coloured with the
+// brand-logo gradient (the pear's teal→mint→blue sheen) so it reads as
+// "FitMess" in BOTH themes -- the traffic-light stroke washed out on the
+// white theme. The traffic-light LEVEL is still computed and exposed as
+// `data-level` (tests + potential future accents key off it); what changed is
+// only the stroke itself.
 //
-//   * The gauge ALWAYS fills with consumption (consumed / limit), regardless of
+//   * The ring ALWAYS fills with consumption (consumed / limit), regardless of
 //     the toggle -- one consistent "how full is my day" metaphor.
-//   * Its colour is a traffic light driven by how much budget is LEFT:
-//     green (>50% left) -> yellow (15-50%) -> red (<15%, including over).
 //   * The `view` toggle (owned by `HomeScreen`) swaps only the CENTRE headline
 //     number between "Preostalo" (remaining) and "Potrošeno" (consumed) -- the
-//     three numbers (Cilj / Potrošeno / Preostalo) are always distinct, fixing
-//     the bug where the same number could read as both consumed and remaining.
-//   * Over the limit: the gauge goes full red, a SECOND lap draws on top to
-//     show how far over, and the remaining number goes NEGATIVE (e.g. -500) so
-//     the user sees exactly how deep into the minus they are.
+//     three numbers (Cilj / Potrošeno / Preostalo) are always distinct.
+//   * Over the limit: the ring closes fully, a SECOND lap in the deep
+//     "overshoot" red draws on top to show how far over, and the remaining
+//     number goes NEGATIVE (e.g. -500).
 
 export type RingView = "remaining" | "consumed";
 
+// The brand-logo ring gradient (sampled from the pear logo's teal→mint→blue
+// iridescence; the middle stop is the canonical `--brand` teal #17d1a8).
+// Shared with the date strip's mini day-rings so both read as one system.
+export const RING_GRADIENT_STOPS = ["#3ee6bf", "#17d1a8", "#2a9fd1"] as const;
+// Faint track behind the fill -- a transparent tint of the brand teal, which
+// stays visible on white and on the near-black dark theme alike.
+export const RING_TRACK_STROKE =
+  "color-mix(in srgb, #17d1a8 18%, transparent)";
+
 const VIEW_BOX = 200;
 const CENTER = VIEW_BOX / 2;
-const RADIUS = 84;
-const STROKE = 14;
-// The gauge is a 270° arc with a 90° opening centred at the bottom: it runs
-// from the bottom-left (225°) clockwise over the top to the bottom-right.
-const START_ANGLE = 225;
-const SWEEP_DEG = 270;
+const RADIUS = 82;
+const STROKE = 18;
 
-/** Traffic-light stroke per budget level. */
-const LEVEL_STROKE: Record<RingLevel, string> = {
-  green: "#3fbf87",
-  yellow: "#f2b23e",
-  red: "#ef4444",
-};
-// The second lap (drawn on top of a full red first lap once over the limit) is
-// a darker red, so the overshoot arc reads clearly against the full base.
+// The second lap (drawn on top of the closed first lap once over the limit) is
+// a dark red, so the overshoot arc reads clearly against the brand gradient.
 const OVERSHOOT_STROKE = "#991b1b";
-
-/** Point on the gauge circle at `angleDeg`, measured clockwise from 12 o'clock. */
-function polar(angleDeg: number): { x: number; y: number } {
-  const a = (angleDeg * Math.PI) / 180;
-  return {
-    x: CENTER + RADIUS * Math.sin(a),
-    y: CENTER - RADIUS * Math.cos(a),
-  };
-}
-
-/** SVG path for the full 270° gauge track (start -> clockwise -> end). */
-const start = polar(START_ANGLE);
-const end = polar(START_ANGLE + SWEEP_DEG);
-const ARC_PATH = `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${RADIUS} ${RADIUS} 0 1 1 ${end.x.toFixed(
-  2
-)} ${end.y.toFixed(2)}`;
 
 interface MetricSpec {
   value: number;
@@ -76,6 +62,9 @@ export function Ring({
   view?: RingView;
 }) {
   const state = computeRingState(consumedKcal, targetKcal);
+  // Kept for `data-level` (tests / future accents); the stroke itself is
+  // always the brand gradient now.
+  const level: RingLevel = state.level;
 
   // The three numbers, each with a stable semantic test id regardless of where
   // (centre vs. side) it ends up for the current toggle -- so the remaining
@@ -127,33 +116,55 @@ export function Ring({
           className="h-full w-full"
           aria-hidden="true"
         >
-          <path
-            d={ARC_PATH}
+          <defs>
+            <linearGradient
+              id="fm-ring-gradient"
+              x1="0"
+              y1="0"
+              x2="1"
+              y2="1"
+            >
+              <stop offset="0%" stopColor={RING_GRADIENT_STOPS[0]} />
+              <stop offset="55%" stopColor={RING_GRADIENT_STOPS[1]} />
+              <stop offset="100%" stopColor={RING_GRADIENT_STOPS[2]} />
+            </linearGradient>
+          </defs>
+
+          {/* Faint full-circle track in the brand tint. */}
+          <circle
+            cx={CENTER}
+            cy={CENTER}
+            r={RADIUS}
             fill="none"
-            stroke="var(--muted)"
+            stroke={RING_TRACK_STROKE}
             strokeWidth={STROKE}
-            strokeLinecap="round"
           />
-          {/* First lap: fills with consumption, coloured by the budget level. */}
-          <path
+          {/* First lap: fills clockwise from 12 o'clock with consumption,
+              stroked with the brand-logo gradient. */}
+          <circle
             data-testid="home-ring-arc"
-            data-level={state.level}
-            d={ARC_PATH}
+            data-level={level}
+            cx={CENTER}
+            cy={CENTER}
+            r={RADIUS}
             fill="none"
-            stroke={LEVEL_STROKE[state.level]}
+            stroke="url(#fm-ring-gradient)"
             strokeWidth={STROKE}
             strokeLinecap="round"
             pathLength={100}
             strokeDasharray={100}
             strokeDashoffset={fillDashOffset}
+            transform={`rotate(-90 ${CENTER} ${CENTER})`}
             style={{ transition: "stroke-dashoffset 0.5s cubic-bezier(0.2,0,0,1)" }}
           />
-          {/* Second lap: only over the limit -- draws on top of the full first
-              lap to show how far past the budget the user has gone. */}
+          {/* Second lap: only over the limit -- draws on top of the closed
+              first lap to show how far past the budget the user has gone. */}
           {state.isOver ? (
-            <path
+            <circle
               data-testid="home-ring-overshoot-arc"
-              d={ARC_PATH}
+              cx={CENTER}
+              cy={CENTER}
+              r={RADIUS}
               fill="none"
               stroke={OVERSHOOT_STROKE}
               strokeWidth={STROKE}
@@ -161,6 +172,7 @@ export function Ring({
               pathLength={100}
               strokeDasharray={100}
               strokeDashoffset={overshootDashOffset}
+              transform={`rotate(-90 ${CENTER} ${CENTER})`}
               style={{
                 transition: "stroke-dashoffset 0.5s cubic-bezier(0.2,0,0,1)",
               }}

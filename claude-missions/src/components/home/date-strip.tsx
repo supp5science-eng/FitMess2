@@ -6,13 +6,17 @@ import Link from "next/link";
 import type { DayCell } from "@/lib/home/date-strip";
 import { cn } from "@/lib/utils";
 
-// Cal-AI-style date strip under the wordmark: a horizontally scrollable row of
-// days, each a circled date number under its Serbian weekday. A day the user
-// logged a meal gets a solid teal ring; an empty past day gets a dashed ring;
-// future days (up to +30) are faint and not tappable -- they exist only so you
-// can scroll forward "through time." The day currently being viewed sits on a
-// raised card and is auto-centered on load. Tapping a past/today cell
-// navigates to `/danas?dan=YYYY-MM-DD` (today links to bare `/danas`).
+// Apple-Fitness-style date strip under the wordmark (2026-07-22 redesign): a
+// horizontally scrollable row of days, each a MINI PROGRESS RING (filled by
+// that day's logged kcal over the daily target, stroked with the brand-logo
+// teal→mint→blue gradient) with the date number inside, under its Serbian
+// weekday. An empty past day shows just the faint track; future days (up to
+// +30) are faint and not tappable -- they exist only so you can scroll
+// forward "through time." Today's weekday label sits in a brand-teal chip
+// (like the reference design's highlighted weekday). The day currently being
+// viewed sits on a raised card and is auto-centered on load. Tapping a
+// past/today cell navigates to `/danas?dan=YYYY-MM-DD` (today links to bare
+// `/danas`).
 
 // useLayoutEffect on the client (position the scroll before paint -> no
 // left-to-center jump), a no-op useEffect on the server.
@@ -41,25 +45,73 @@ function accessibleLabel(cell: DayCell): string {
   return cell.isLogged ? `${date} — uneo si obrok` : date;
 }
 
+// Mini-ring geometry: a 40px box, ring radius/stroke sized so the day number
+// stays readable inside. Same pathLength=100 dash technique as the big ring.
+const MINI_BOX = 40;
+const MINI_CENTER = MINI_BOX / 2;
+const MINI_RADIUS = 17;
+const MINI_STROKE = 3.5;
+
 function DayCircle({ cell }: { cell: DayCell }) {
   const disabled = cell.isFuture || cell.isBeforeStart;
+  const fraction = disabled ? 0 : cell.fillFraction;
   return (
-    <span
-      className={cn(
-        "flex size-10 items-center justify-center rounded-full border text-sm font-semibold tabular-nums transition-colors",
-        cell.isToday
-          ? // Today is ALWAYS green (full teal), even before anything is logged.
-            "border-2 border-primary text-foreground"
-          : cell.isLogged
-            ? // A past day with a meal logged -- a FADED teal ring, so it reads
-              // as "done, but not today".
-              "border-2 border-primary/40 text-foreground"
-            : disabled
-              ? "border border-dashed border-foreground/15 text-foreground/30"
-              : "border border-dashed border-foreground/30 text-muted-foreground"
-      )}
-    >
-      {cell.dayNum}
+    <span className="relative flex size-10 items-center justify-center">
+      <svg
+        viewBox={`0 0 ${MINI_BOX} ${MINI_BOX}`}
+        className="absolute inset-0 h-full w-full"
+        aria-hidden="true"
+      >
+        <defs>
+          {/* Same brand-logo gradient as the big daily ring (`ring.tsx`),
+              duplicated per-cell -- identical stops, so whichever instance
+              the id resolves to renders the same. */}
+          <linearGradient id="fm-day-ring-gradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#3ee6bf" />
+            <stop offset="55%" stopColor="#17d1a8" />
+            <stop offset="100%" stopColor="#2a9fd1" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx={MINI_CENTER}
+          cy={MINI_CENTER}
+          r={MINI_RADIUS}
+          fill="none"
+          strokeWidth={MINI_STROKE}
+          style={{
+            stroke: disabled
+              ? "color-mix(in srgb, var(--foreground) 8%, transparent)"
+              : "color-mix(in srgb, #17d1a8 18%, transparent)",
+          }}
+        />
+        {fraction > 0 ? (
+          <circle
+            cx={MINI_CENTER}
+            cy={MINI_CENTER}
+            r={MINI_RADIUS}
+            fill="none"
+            stroke="url(#fm-day-ring-gradient)"
+            strokeWidth={MINI_STROKE}
+            strokeLinecap="round"
+            pathLength={100}
+            strokeDasharray={100}
+            strokeDashoffset={100 - fraction * 100}
+            transform={`rotate(-90 ${MINI_CENTER} ${MINI_CENTER})`}
+          />
+        ) : null}
+      </svg>
+      <span
+        className={cn(
+          "relative text-sm font-semibold tabular-nums",
+          disabled
+            ? "text-foreground/30"
+            : cell.isToday || cell.isLogged
+              ? "text-foreground"
+              : "text-muted-foreground"
+        )}
+      >
+        {cell.dayNum}
+      </span>
     </span>
   );
 }
@@ -75,11 +127,15 @@ function DayCellInner({ cell }: { cell: DayCell }) {
       <span
         className={cn(
           "text-xs font-medium",
-          cell.isFuture || cell.isBeforeStart
-            ? "text-foreground/30"
-            : cell.isToday || cell.isSelected
-              ? "text-foreground"
-              : "text-muted-foreground"
+          cell.isToday
+            ? // Today's weekday sits in a brand-teal chip, like the
+              // highlighted weekday in the reference design.
+              "rounded-full bg-[color:var(--brand)] px-2 py-0.5 font-semibold text-[#04231c]"
+            : cell.isFuture || cell.isBeforeStart
+              ? "text-foreground/30"
+              : cell.isSelected
+                ? "text-foreground"
+                : "text-muted-foreground"
         )}
       >
         {cell.dayLabel}

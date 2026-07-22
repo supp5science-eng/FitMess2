@@ -25,15 +25,23 @@ import {
 // it reads the secret `GEMINI_API_KEY`.
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
-const DEFAULT_MODEL = "gemini-3.5-flash";
-// Meal-photo recognition needs the stronger reasoning-first Pro model -- Flash
-// misses fine ingredients that the Gemini app (which runs Pro) picks up.
-// Overridable via env so switching Pro versions stays a config change.
-const MEAL_MODEL = "gemini-3.1-pro-preview";
+// gemini-3.6-flash is the current, reliable Flash: newest generation (better
+// vision than the older 3.5-flash), fast (~3s), and -- crucially -- it has real
+// quota on our plan. We measured 3.5-flash timing out and the Pro-preview model
+// (see MEAL_MODEL note) returning hard 429s, so both are avoided as defaults.
+const DEFAULT_MODEL = "gemini-3.6-flash";
+// Meal-photo recognition ("Slikaj obrok"). This briefly used
+// `gemini-3.1-pro-preview` for finer ingredient detection (commit 124ff78), but
+// that preview model has a tiny quota tier and returned constant HTTP 429
+// ("quota exceeded") on our key while Flash worked fine -- which is exactly why
+// the feature "worked poorly." Back on Flash (newest 3.6), which both the
+// feature originally shipped on happily and recognizes better than the old 3.5.
+// Overridable via `GEMINI_MEAL_MODEL` so a future model swap stays config-only.
+const MEAL_MODEL = "gemini-3.6-flash";
 // Voice logging is mostly transcription + light estimation, so the fast/cheap
 // Flash default is enough and keeps the record->result wait short. Overridable
 // via `GEMINI_VOICE_MODEL` if we want to trade latency for estimation quality.
-const VOICE_MODEL = "gemini-3.5-flash";
+const VOICE_MODEL = "gemini-3.6-flash";
 const REQUEST_TIMEOUT_MS = 45_000;
 
 export class GeminiError extends Error {}

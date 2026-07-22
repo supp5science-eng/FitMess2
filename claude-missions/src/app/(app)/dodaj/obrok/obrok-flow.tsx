@@ -1,9 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { type ChangeEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Camera, Loader2, Sparkles } from "lucide-react";
+import { Camera, ImageUp, Loader2, Sparkles } from "lucide-react";
 
 import type { MealEstimate } from "@/lib/ai/meal-estimate";
 import { downscaleImage } from "@/lib/image/downscale";
@@ -26,9 +26,44 @@ const CONFIDENCE_LABEL: Record<MealEstimate["sigurnost"], string> = {
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
+/** Read a Blob as base64 (no `data:` prefix) for upload. Client-only. */
+function blobToBase64(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = String(reader.result);
+      const comma = result.indexOf(",");
+      resolve(comma >= 0 ? result.slice(comma + 1) : result);
+    };
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+}
+
 export function ObrokFlow() {
   const router = useRouter();
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Two separate inputs so each intent is unambiguous:
+  //  - cameraInputRef has `capture="environment"`, so a tap opens the phone's
+  //    native rear camera DIRECTLY (with its own 0.5x/1x lens + zoom controls),
+  //    never the "take photo or choose file" chooser.
+  //  - uploadInputRef has NO `capture`, so it opens the photo library / files
+  //    for a picture taken earlier.
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
+  // The captured photo, kept so we can store a small display thumbnail with the
+  // log on save (the full image goes to Gemini for the estimate, separately).
+  const capturedFileRef = useRef<File | null>(null);
+  // Best-effort: try to open the camera the moment we land here, so "Slikaj
+  // obrok" feels like it goes straight to the camera. Browsers that require a
+  // fresh user gesture (notably iOS Safari) will ignore this no-op and the user
+  // taps the big camera button instead -- so it enhances where allowed and
+  // degrades to one tap everywhere else. Fires once per mount.
+  const autoOpenedRef = useRef(false);
+  useEffect(() => {
+    if (autoOpenedRef.current) return;
+    autoOpenedRef.current = true;
+    cameraInputRef.current?.click();
+  }, []);
 
   const [phase, setPhase] = useState<Phase>("capture");
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +84,7 @@ export function ObrokFlow() {
 
   async function handlePhoto(file: File) {
     setError(null);
+    capturedFileRef.current = file;
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
       return URL.createObjectURL(file);
@@ -89,6 +125,13 @@ export function ObrokFlow() {
     setPhase("confirm");
   }
 
+  function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (file) void handlePhoto(file);
+    // Reset so picking the same file again still fires onChange.
+    event.target.value = "";
+  }
+
   // Changing grams recomputes every macro from the AI's per-100g ratio.
   function handleGramsChange(value: number) {
     setGrams(value);
@@ -104,14 +147,31 @@ export function ObrokFlow() {
   async function handleSave() {
     setError(null);
     setPhase("saving");
-    const result = await logMealAction({
-      name,
-      grams,
-      kcal: nutrition.kcal,
-      protein: nutrition.protein,
-      carbs: nutrition.carbs,
-      fat: nutrition.fat,
-    });
+
+    // A small display thumbnail (separate, smaller than the estimate image) to
+    // store with the log. Best-effort: if it fails we still save the meal.
+    let photo: { base64: string; mimeType?: string } | undefined;
+    const file = capturedFileRef.current;
+    if (file) {
+      try {
+        const thumb = await downscaleImage(file, 720, 0.72);
+        photo = { base64: await blobToBase64(thumb), mimeType: "image/jpeg" };
+      } catch {
+        photo = undefined;
+      }
+    }
+
+    const result = await logMealAction(
+      {
+        name,
+        grams,
+        kcal: nutrition.kcal,
+        protein: nutrition.protein,
+        carbs: nutrition.carbs,
+        fat: nutrition.fat,
+      },
+      photo
+    );
     if (!result.ok) {
       setError(result.error_sr);
       setPhase("confirm");
@@ -134,17 +194,24 @@ export function ObrokFlow() {
         </Link>
       </header>
 
+      {/* Camera: opens the native rear camera directly (with 0.5x/1x lens +
+          zoom controls) thanks to `capture`. */}
       <input
-        ref={fileInputRef}
+        ref={cameraInputRef}
         type="file"
         accept="image/*"
         capture="environment"
         className="sr-only"
-        onChange={(event) => {
-          const file = event.target.files?.[0];
-          if (file) void handlePhoto(file);
-          event.target.value = "";
-        }}
+        onChange={handleInputChange}
+      />
+      {/* Upload: no `capture`, so it opens the photo library / files for a
+          picture the user took earlier. */}
+      <input
+        ref={uploadInputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={handleInputChange}
       />
 
       {error ? (
@@ -166,19 +233,29 @@ export function ObrokFlow() {
       ) : null}
 
       {phase === "capture" ? (
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-background px-6 py-12 text-center transition-colors hover:bg-muted"
-        >
-          <Camera className="size-9 text-primary" aria-hidden="true" />
-          <span className="text-base font-medium text-foreground">
-            Slikaj ili izaberi fotografiju obroka
-          </span>
-          <span className="text-sm text-muted-foreground">
-            AI će proceniti kalorije i makronutrijente
-          </span>
-        </button>
+        <div className="flex flex-col gap-3">
+          <button
+            type="button"
+            onClick={() => cameraInputRef.current?.click()}
+            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-background px-6 py-12 text-center transition-colors hover:bg-muted"
+          >
+            <Camera className="size-9 text-primary" aria-hidden="true" />
+            <span className="text-base font-medium text-foreground">
+              Otvori kameru
+            </span>
+            <span className="text-sm text-muted-foreground">
+              AI će proceniti kalorije i makronutrijente
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => uploadInputRef.current?.click()}
+            className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <ImageUp className="size-4" aria-hidden="true" />
+            Otpremi postojeću sliku
+          </button>
+        </div>
       ) : null}
 
       {phase === "estimating" ? (
@@ -274,14 +351,26 @@ export function ObrokFlow() {
               ) : null}
               Dodaj u dan
             </button>
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={phase === "saving"}
-              className="rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
-            >
-              Slikaj ponovo
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={phase === "saving"}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
+              >
+                <Camera className="size-4" aria-hidden="true" />
+                Slikaj ponovo
+              </button>
+              <button
+                type="button"
+                onClick={() => uploadInputRef.current?.click()}
+                disabled={phase === "saving"}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
+              >
+                <ImageUp className="size-4" aria-hidden="true" />
+                Otpremi drugu
+              </button>
+            </div>
           </div>
 
           <p className="text-center text-xs text-muted-foreground">

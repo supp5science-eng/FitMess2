@@ -363,6 +363,43 @@ export interface Database {
           },
         ];
       };
+      water_intake: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** Belgrade calendar day, `"YYYY-MM-DD"` (a Postgres `date`). */
+          day: string;
+          /** Total water for the day in millilitres (0..20000). */
+          ml: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day: string;
+          ml?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          day?: string;
+          ml?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "water_intake_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       meal_photos: {
         Row: {
           /** PK + FK to public.logs(id); one photo per log, ON DELETE CASCADE. */
@@ -450,3 +487,9 @@ export type WeighInUpdate = Database["public"]["Tables"]["weigh_ins"]["Update"];
 export type MealPhoto = Database["public"]["Tables"]["meal_photos"]["Row"];
 export type MealPhotoInsert =
   Database["public"]["Tables"]["meal_photos"]["Insert"];
+
+export type WaterIntake = Database["public"]["Tables"]["water_intake"]["Row"];
+export type WaterIntakeInsert =
+  Database["public"]["Tables"]["water_intake"]["Insert"];
+export type WaterIntakeUpdate =
+  Database["public"]["Tables"]["water_intake"]["Update"];

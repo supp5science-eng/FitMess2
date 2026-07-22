@@ -15,6 +15,7 @@ import {
 import { buildDateStrip } from "@/lib/home/date-strip";
 import { getLoggedDayKcals } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
+import { getWaterMl } from "@/lib/water/water";
 import { createClient } from "@/lib/supabase/server";
 
 const SR_MONTHS_SHORT = [
@@ -151,7 +152,7 @@ export default async function DanasPage({
   //  - fm_intro cookie: the one-time onboarding "ring hand-off" (plan-reveal
   //    drops it just before navigating here, see `plan-reveal.tsx`); only ever
   //    plays for today.
-  const [dayKcals, adaptivePlan, cookieStore] = await Promise.all([
+  const [dayKcals, adaptivePlan, cookieStore, water] = await Promise.all([
     getLoggedDayKcals(
       supabase,
       userId,
@@ -168,6 +169,9 @@ export default async function DanasPage({
         )
       : Promise.resolve(null),
     cookies(),
+    // Voda: the selected day's water total. A failed read degrades to 0 (the
+    // button still works), never failing the day render.
+    getWaterMl(supabase, userId, selectedKey),
   ]);
 
   const days = buildDateStrip({
@@ -191,6 +195,8 @@ export default async function DanasPage({
       days={days}
       mealsHeading={isToday ? "Obroci danas" : `Obroci · ${shortDate(selectedKey)}`}
       adaptivePlan={adaptivePlan}
+      dayKey={selectedKey}
+      initialWaterMl={water.ml}
     />
   );
 }

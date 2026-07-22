@@ -7,6 +7,7 @@ import { IntroCover } from "@/components/home/intro-cover";
 import { MacroBars } from "@/components/home/macro-bars";
 import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
+import { WaterButton } from "@/components/home/water-button";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import type { DayCell } from "@/lib/home/date-strip";
@@ -50,6 +51,8 @@ export function HomeScreen({
   days = [],
   mealsHeading = "Obroci danas",
   adaptivePlan = null,
+  dayKey,
+  initialWaterMl = 0,
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
@@ -66,6 +69,11 @@ export function HomeScreen({
   // why. Null/absent (past days, or a week that's on track) => the ring uses
   // the plain daily target, exactly as before.
   adaptivePlan?: AdaptivePlan | null;
+  // Voda: the Belgrade day this screen shows + that day's already-logged water
+  // (ml). When `dayKey` is provided the compact "Voda" button renders below the
+  // daily-intake block. Omitted in unit tests that don't exercise water.
+  dayKey?: string;
+  initialWaterMl?: number;
 }) {
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
 
@@ -233,6 +241,12 @@ export function HomeScreen({
           Cilj još nije podešen, pa ne možemo da prikažemo tvoj dnevni budžet.
         </div>
       )}
+
+      {dayKey ? (
+        <div className="home-body">
+          <WaterButton dayKey={dayKey} initialMl={initialWaterMl} />
+        </div>
+      ) : null}
 
       <section className="home-body flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-foreground">

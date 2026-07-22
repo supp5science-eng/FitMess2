@@ -36,10 +36,27 @@ export interface TodayDataResult {
   error: { message: string } | null;
 }
 
-/** Attempts (1 initial + retries) for the cold-start-resilient read below. */
-const MAX_READ_ATTEMPTS = 3;
+/**
+ * Total wall-clock budget for the cold-start retry loop. The failing case is a
+ * COLD connection (Vercel serverless -> Supabase pooler) that fast-fails at the
+ * network layer for the first ~second or two, then succeeds once warm -- which
+ * is exactly why a manual "Pokušaj ponovo" a couple seconds later always works.
+ * The automatic retry has to span that same warm-up window to replace the
+ * manual one, so ~4s is deliberately longer than the old ~0.55s (which was too
+ * short to outlast the cold window). This whole time is spent under
+ * `danas/loading.tsx`'s skeleton, so it reads as a slightly longer load, never
+ * a blank/error screen.
+ */
+const READ_DEADLINE_MS = 4000;
+/**
+ * Per-attempt timeout. A cold connection can also HANG (rather than fast-fail);
+ * without a bound a single hung attempt would eat the whole function budget and
+ * never leave room to retry. Aborting after this long turns a hang into a
+ * fast-failed attempt that the loop can retry within the deadline.
+ */
+const PER_ATTEMPT_TIMEOUT_MS = 1500;
 /** Backoff before the Nth retry (index 0 = before the 1st retry). */
-const RETRY_BACKOFF_MS = [150, 400];
+const RETRY_BACKOFF_MS = [150, 350, 700, 1000];
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
@@ -49,10 +66,12 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
  * function against a cold Supabase connection, so this read can fail
  * transiently -- the user saw a full "Nismo uspeli da učitamo tvoj dan" screen
  * and a manual "Pokušaj ponovo" (a fresh, now-warm request) always fixed it.
- * Retrying the read a couple of times with a short backoff turns that manual
- * retry into an automatic one, so the error screen effectively never shows for
- * a transient failure. A genuinely persistent error still surfaces after the
- * attempts are exhausted (just delayed by ~0.5s), and empty results are NOT an
+ *
+ * We retry the read until it succeeds or a total time budget
+ * (`READ_DEADLINE_MS`) elapses, with progressive backoff and a per-attempt
+ * timeout, so the automatic retry outlasts the connection warm-up window that
+ * the manual retry was implicitly waiting out. A genuinely persistent error
+ * still surfaces once the budget is exhausted, and empty results are NOT an
  * error so they never trigger a retry.
  */
 export async function getTodayData(
@@ -60,17 +79,20 @@ export async function getTodayData(
   userId: string,
   range: DayRange = getTodayRange()
 ): Promise<TodayDataResult> {
+  const deadline = Date.now() + READ_DEADLINE_MS;
   let last: TodayDataResult = { data: null, error: { message: "unread" } };
-  for (let attempt = 0; attempt < MAX_READ_ATTEMPTS; attempt++) {
+  for (let attempt = 0; ; attempt++) {
     if (attempt > 0) {
-      await sleep(RETRY_BACKOFF_MS[attempt - 1] ?? 400);
+      await sleep(RETRY_BACKOFF_MS[attempt - 1] ?? 1000);
+      if (Date.now() >= deadline) break;
     }
     last = await readTodayDataOnce(supabase, userId, range);
     if (!last.error) return last;
     console.warn(
-      `[F027 getTodayData] read attempt ${attempt + 1}/${MAX_READ_ATTEMPTS} failed:`,
+      `[F027 getTodayData] read attempt ${attempt + 1} failed:`,
       last.error.message
     );
+    if (Date.now() >= deadline) break;
   }
   return last;
 }
@@ -80,56 +102,71 @@ async function readTodayDataOnce(
   userId: string,
   range: DayRange
 ): Promise<TodayDataResult> {
-  const [targetResult, logsResult] = await Promise.all([
-    supabase
-      .from("targets")
-      .select("*")
-      .eq("user_id", userId)
-      .order("effective_from", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("logs")
-      .select("*")
-      .eq("user_id", userId)
-      .gte("logged_at", range.startIso)
-      .lt("logged_at", range.endIsoExclusive)
-      .order("logged_at", { ascending: false }),
-  ]);
+  // Bound every attempt: a hung cold connection is aborted so the loop keeps
+  // its time budget to retry, instead of one attempt swallowing all of it.
+  const signal = AbortSignal.timeout(PER_ATTEMPT_TIMEOUT_MS);
+  try {
+    const [targetResult, logsResult] = await Promise.all([
+      supabase
+        .from("targets")
+        .select("*")
+        .eq("user_id", userId)
+        .order("effective_from", { ascending: false })
+        .limit(1)
+        .abortSignal(signal)
+        .maybeSingle(),
+      supabase
+        .from("logs")
+        .select("*")
+        .eq("user_id", userId)
+        .gte("logged_at", range.startIso)
+        .lt("logged_at", range.endIsoExclusive)
+        .order("logged_at", { ascending: false })
+        .abortSignal(signal),
+    ]);
 
-  if (targetResult.error) {
-    return { data: null, error: { message: targetResult.error.message } };
-  }
-  if (logsResult.error) {
-    return { data: null, error: { message: logsResult.error.message } };
-  }
-
-  const logs = logsResult.data ?? [];
-  const foodIds = Array.from(
-    new Set(
-      logs
-        .map((log) => log.food_id)
-        .filter((id): id is string => Boolean(id))
-    )
-  );
-
-  let foods: Database["public"]["Tables"]["foods"]["Row"][] = [];
-  if (foodIds.length > 0) {
-    const foodsResult = await supabase
-      .from("foods")
-      .select("*")
-      .in("id", foodIds);
-    if (foodsResult.error) {
-      return { data: null, error: { message: foodsResult.error.message } };
+    if (targetResult.error) {
+      return { data: null, error: { message: targetResult.error.message } };
     }
-    foods = foodsResult.data ?? [];
-  }
+    if (logsResult.error) {
+      return { data: null, error: { message: logsResult.error.message } };
+    }
 
-  return {
-    data: {
-      target: targetResult.data ?? null,
-      logs: attachFoodToLogs(logs, foods),
-    },
-    error: null,
-  };
+    const logs = logsResult.data ?? [];
+    const foodIds = Array.from(
+      new Set(
+        logs
+          .map((log) => log.food_id)
+          .filter((id): id is string => Boolean(id))
+      )
+    );
+
+    let foods: Database["public"]["Tables"]["foods"]["Row"][] = [];
+    if (foodIds.length > 0) {
+      const foodsResult = await supabase
+        .from("foods")
+        .select("*")
+        .in("id", foodIds)
+        .abortSignal(signal);
+      if (foodsResult.error) {
+        return { data: null, error: { message: foodsResult.error.message } };
+      }
+      foods = foodsResult.data ?? [];
+    }
+
+    return {
+      data: {
+        target: targetResult.data ?? null,
+        logs: attachFoodToLogs(logs, foods),
+      },
+      error: null,
+    };
+  } catch (err) {
+    // A thrown network/abort error (rather than a returned `.error`) must not
+    // escape the retry loop -- convert it so the caller can retry it.
+    return {
+      data: null,
+      error: { message: err instanceof Error ? err.message : String(err) },
+    };
+  }
 }

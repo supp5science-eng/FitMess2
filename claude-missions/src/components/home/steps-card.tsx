@@ -1,7 +1,7 @@
 "use client";
 
 import { Footprints, Minus, Plus, X } from "lucide-react";
-import { useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 
@@ -29,11 +29,11 @@ const MAX_STEPS = 200000;
 /** Fine-tune step for the − / + steppers. */
 const STEP = 500;
 
-/** Quick-add presets: walk / brisk walk / run, rough step counts with emoji. */
+/** Quick-add presets: short walk / walk / long walk, rough step counts. */
 const PRESETS: { steps: number; label: string; sub: string; emoji: string }[] = [
-  { steps: 1000, label: "Kratka", sub: "1.000", emoji: "🚶" },
-  { steps: 3000, label: "Šetnja", sub: "3.000", emoji: "🚶‍♂️" },
-  { steps: 6000, label: "Duga", sub: "6.000", emoji: "🏃" },
+  { steps: 500, label: "Kratka", sub: "500", emoji: "🚶" },
+  { steps: 1000, label: "Šetnja", sub: "1.000", emoji: "🚶‍♂️" },
+  { steps: 3000, label: "Duga", sub: "3.000", emoji: "🏃" },
 ];
 
 interface KoraciResponseBody {
@@ -45,6 +45,100 @@ interface KoraciResponseBody {
 /** `7240` -> `"7.240"` (Serbian thousands separator). */
 function formatSteps(steps: number): string {
   return String(steps).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/**
+ * A ± stepper that fires once on a tap/click (keyboard-friendly) and, while
+ * held down, AUTO-REPEATS with acceleration — so "I walked way fewer steps"
+ * is one long press instead of a dozen taps. The single tap still comes from
+ * the click (identical feel to a normal button); pointer-hold adds the repeat,
+ * and the click is suppressed only when the hold actually fired a repeat, so a
+ * hold never double-counts.
+ */
+function StepperButton({
+  onStep,
+  disabled,
+  ariaLabel,
+  testId,
+  children,
+}: {
+  onStep: () => void;
+  disabled: boolean;
+  ariaLabel: string;
+  testId: string;
+  children: React.ReactNode;
+}) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // True once a hold has fired at least one repeat — so the trailing click is
+  // suppressed (the repeats already covered it).
+  const repeatedRef = useRef(false);
+  // Mirror `disabled` in a ref so an in-flight repeat loop can stop the moment
+  // the value hits its floor/ceiling (the tick closure would otherwise be stale).
+  const disabledRef = useRef(disabled);
+  useEffect(() => {
+    disabledRef.current = disabled;
+  }, [disabled]);
+
+  function stop() {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }
+
+  // Clear any pending timer if the button unmounts mid-hold (e.g. sheet closes).
+  useEffect(() => stop, []);
+
+  function startHold() {
+    repeatedRef.current = false;
+    // Accelerating repeat: a beat before the first repeat (so a normal tap
+    // doesn't repeat), then faster and faster down to a floor.
+    let delay = 280;
+    const tick = () => {
+      if (disabledRef.current) {
+        stop();
+        return;
+      }
+      onStep();
+      repeatedRef.current = true;
+      delay = Math.max(28, delay * 0.8);
+      timerRef.current = setTimeout(tick, delay);
+    };
+    timerRef.current = setTimeout(tick, delay);
+
+    // Stop on release ANYWHERE (even if the button disabled itself mid-hold and
+    // no longer receives the pointerup).
+    const onUp = () => {
+      stop();
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+  }
+
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      aria-label={ariaLabel}
+      data-testid={testId}
+      onPointerDown={startHold}
+      onPointerLeave={stop}
+      onContextMenu={(event) => event.preventDefault()}
+      onClick={() => {
+        if (repeatedRef.current) {
+          repeatedRef.current = false;
+          return;
+        }
+        onStep();
+      }}
+      style={{ WebkitTouchCallout: "none" }}
+      className="flex size-11 shrink-0 touch-none select-none items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:opacity-40 active:translate-y-px"
+    >
+      {children}
+    </button>
+  );
 }
 
 /** A circular progress ring with an iridescent violet gradient stroke. The
@@ -308,16 +402,14 @@ export function StepsCard({
             {/* − / + steppers around the pending delta, editable for an exact
                 figure. */}
             <div className="flex items-center justify-center gap-4">
-              <button
-                type="button"
-                onClick={() => bump(-STEP)}
+              <StepperButton
+                onStep={() => bump(-STEP)}
                 disabled={addSteps <= -totalSteps}
-                aria-label="Skini 500 koraka"
-                data-testid="steps-minus-button"
-                className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:opacity-40 active:translate-y-px"
+                ariaLabel="Skini 500 koraka (drži za brže)"
+                testId="steps-minus-button"
               >
                 <Minus className="size-5" aria-hidden="true" />
-              </button>
+              </StepperButton>
 
               <div className="flex items-baseline justify-center gap-1.5">
                 <span
@@ -341,16 +433,14 @@ export function StepsCard({
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => bump(STEP)}
+              <StepperButton
+                onStep={() => bump(STEP)}
                 disabled={addSteps >= MAX_STEPS}
-                aria-label="Dodaj 500 koraka"
-                data-testid="steps-plus-button"
-                className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:opacity-40 active:translate-y-px"
+                ariaLabel="Dodaj 500 koraka (drži za brže)"
+                testId="steps-plus-button"
               >
                 <Plus className="size-5" aria-hidden="true" />
-              </button>
+              </StepperButton>
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">

@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  act,
+} from "@testing-library/react";
 
 import { StepsCard } from "@/components/home/steps-card";
 
@@ -62,10 +68,10 @@ describe("StepsCard", () => {
     render(<StepsCard dayKey="2026-07-22" initialSteps={2000} />);
 
     fireEvent.click(screen.getByTestId("steps-open-button"));
-    fireEvent.click(screen.getByTestId("steps-preset-6000"));
+    fireEvent.click(screen.getByTestId("steps-preset-3000"));
 
     (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
-      jsonResponse({ ok: true, data: { day: "2026-07-22", steps: 8000 } })
+      jsonResponse({ ok: true, data: { day: "2026-07-22", steps: 5000 } })
     );
 
     fireEvent.click(screen.getByTestId("steps-save-button"));
@@ -78,10 +84,44 @@ describe("StepsCard", () => {
       "/api/koraci",
       expect.objectContaining({
         method: "POST",
-        body: JSON.stringify({ day: "2026-07-22", deltaSteps: 6000 }),
+        body: JSON.stringify({ day: "2026-07-22", deltaSteps: 3000 }),
       })
     );
-    expect(screen.getByTestId("steps-total")).toHaveTextContent("8.000");
+    expect(screen.getByTestId("steps-total")).toHaveTextContent("5.000");
+  });
+
+  it("holding the − stepper auto-repeats (accelerating) and stops on release", () => {
+    vi.useFakeTimers();
+    try {
+      render(<StepsCard dayKey="2026-07-22" initialSteps={9000} />);
+      fireEvent.click(screen.getByTestId("steps-open-button"));
+      // Build up a big pending amount so − has plenty of room to run.
+      fireEvent.click(screen.getByTestId("steps-preset-3000"));
+      const value = () =>
+        (screen.getByTestId("steps-amount-input") as HTMLInputElement).value;
+      expect(value()).toBe("3000");
+
+      // Press and hold the minus stepper: many −500 repeats should fire.
+      fireEvent.pointerDown(screen.getByTestId("steps-minus-button"));
+      act(() => {
+        vi.advanceTimersByTime(1200);
+      });
+      // Well past the single-tap result (2500) — the hold repeated.
+      const afterHold = Number(value());
+      expect(afterHold).toBeLessThan(2000);
+
+      // Release stops it: further time doesn't change the amount.
+      act(() => {
+        window.dispatchEvent(new Event("pointerup"));
+      });
+      const settled = value();
+      act(() => {
+        vi.advanceTimersByTime(2000);
+      });
+      expect(value()).toBe(settled);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("surfaces a Serbian error and keeps the sheet open when the save fails", async () => {

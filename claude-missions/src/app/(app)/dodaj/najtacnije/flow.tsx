@@ -205,43 +205,50 @@ export function NajtacnijeFlow() {
     setError(null);
     setPhase("estimating");
 
-    // Sharper image than default: food loses fine ingredients at low quality.
-    const blob = await downscaleImage(file, 1568, 0.9);
-    const formData = new FormData();
-    formData.append("slika", blob, "obrok.jpg");
-    formData.append("tip", mode);
-    if (wavBlobRef.current) {
-      formData.append("audio", wavBlobRef.current, "opis.wav");
-    }
-    if (note.trim()) {
-      formData.append("opis", note.trim());
-    }
+    try {
+      // Sharper image than default: food loses fine ingredients at low quality.
+      const blob = await downscaleImage(file, 1568, 0.9);
+      const formData = new FormData();
+      formData.append("slika", blob, "obrok.jpg");
+      formData.append("tip", mode);
+      if (wavBlobRef.current) {
+        formData.append("audio", wavBlobRef.current, "opis.wav");
+      }
+      if (note.trim()) {
+        formData.append("opis", note.trim());
+      }
 
-    const result = await estimateCombinedAction(formData);
-    if (!result.ok) {
-      setError(result.error_sr);
+      const result = await estimateCombinedAction(formData);
+      if (!result.ok) {
+        setError(result.error_sr);
+        setPhase("describe");
+        return;
+      }
+
+      const est = result.data;
+      const g = est.procenjeni_grami;
+      setEstimate(est);
+      setPer100({
+        kcal: (est.kcal / g) * 100,
+        protein: (est.protein_g / g) * 100,
+        carbs: (est.uh_g / g) * 100,
+        fat: (est.mast_g / g) * 100,
+      });
+      setName(est.naziv);
+      setGrams(Math.round(g));
+      setNutrition({
+        kcal: est.kcal,
+        protein: est.protein_g,
+        carbs: est.uh_g,
+        fat: est.mast_g,
+      });
+      setPhase("confirm");
+    } catch {
+      // Any failure (e.g. a rejected/oversized request) must surface, never
+      // leave the spinner hanging forever.
+      setError("Nismo uspeli da analiziramo. Pokušaj ponovo.");
       setPhase("describe");
-      return;
     }
-
-    const est = result.data;
-    const g = est.procenjeni_grami;
-    setEstimate(est);
-    setPer100({
-      kcal: (est.kcal / g) * 100,
-      protein: (est.protein_g / g) * 100,
-      carbs: (est.uh_g / g) * 100,
-      fat: (est.mast_g / g) * 100,
-    });
-    setName(est.naziv);
-    setGrams(Math.round(g));
-    setNutrition({
-      kcal: est.kcal,
-      protein: est.protein_g,
-      carbs: est.uh_g,
-      fat: est.mast_g,
-    });
-    setPhase("confirm");
   }
 
   // Changing grams recomputes every macro from the AI's per-100g ratio.

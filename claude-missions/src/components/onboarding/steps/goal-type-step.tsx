@@ -2,30 +2,83 @@
 
 import type { GoalType } from "@/lib/types/db";
 import { FieldError } from "@/components/onboarding/field-error";
-import { OptionGroup } from "@/components/onboarding/option-group";
+import {
+  IconOptionGroup,
+  type IconOptionItem,
+} from "@/components/onboarding/icon-option-group";
 
-const GOAL_OPTIONS: { value: GoalType; label: string; description: string }[] = [
+/** Hand-rolled goal glyphs (no icon-lib dependency): trend-down for a deficit,
+ *  a spark for toning, trend-up for a surplus, an "equals" for maintenance.
+ *  `aria-hidden` -- the accessible name is the option's label + description. */
+function GoalIcon({ goal }: { goal: GoalType }) {
+  const common = {
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 2,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    className: "size-5",
+    "aria-hidden": true,
+  };
+  switch (goal) {
+    case "lose":
+      return (
+        <svg {...common}>
+          <path d="M16 17h6v-6" />
+          <path d="m22 17-8.5-8.5-5 5L2 7" />
+        </svg>
+      );
+    case "gain":
+      return (
+        <svg {...common}>
+          <path d="M16 7h6v6" />
+          <path d="m22 7-8.5 8.5-5-5L2 17" />
+        </svg>
+      );
+    case "maintain":
+      return (
+        <svg {...common}>
+          <path d="M5 9h14" />
+          <path d="M5 15h14" />
+        </svg>
+      );
+    case "tone":
+    default:
+      return (
+        <svg {...common}>
+          <path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z" />
+        </svg>
+      );
+  }
+}
+
+const GOAL_OPTIONS: IconOptionItem<GoalType>[] = [
   {
     value: "lose",
     label: "Smršaj",
     description: "Skini kilograme uz kontrolisan kalorijski deficit.",
+    icon: <GoalIcon goal="lose" />,
   },
   {
     value: "tone",
     label: "Zategni se",
     description:
       "Blagi deficit da izgubiš salo i dobiješ čvrstu, zategnutu liniju.",
+    icon: <GoalIcon goal="tone" />,
   },
   {
     value: "gain",
     label: "Nabaci mišiće",
     description:
       "Kalorijski višak da izgradiš čistu mišićnu masu i postaneš jači.",
+    icon: <GoalIcon goal="gain" />,
   },
   {
     value: "maintain",
     label: "Održavanje",
     description: "Zadrži trenutnu težinu i navike.",
+    icon: <GoalIcon goal="maintain" />,
   },
 ];
 
@@ -50,11 +103,12 @@ export function GoalTypeStep({
           Po ovome računamo tvoj dnevni unos i prilagođavamo plan.
         </p>
       </div>
-      <OptionGroup
+      <IconOptionGroup
         legend="Cilj"
         options={GOAL_OPTIONS}
         value={value}
         onChange={onChange}
+        size="compact"
       />
       <FieldError message={error} />
       <div className="rounded-lg border border-border bg-card p-3">

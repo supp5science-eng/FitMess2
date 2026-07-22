@@ -60,6 +60,7 @@ export function ActivityStep({
         options={ACTIVITY_OPTIONS}
         value={value}
         onChange={onChange}
+        size="compact"
       />
       <FieldError message={error} />
     </div>

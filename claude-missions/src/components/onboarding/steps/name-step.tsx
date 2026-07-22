@@ -32,12 +32,15 @@ export function NameStep({
           Koristimo tvoje ime da ti se obraćamo u aplikaciji.
         </p>
       </div>
-      <div className="flex flex-col gap-1.5">
-        <Label htmlFor="ime">Ime</Label>
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="ime" className="sr-only">
+          Ime
+        </Label>
         <Input
           id="ime"
           name="ime"
           type="text"
+          placeholder="Tvoje ime"
           autoComplete="given-name"
           autoCapitalize="words"
           enterKeyHint="next"
@@ -47,6 +50,7 @@ export function NameStep({
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           onChange={(event) => onChange(event.target.value)}
+          className="h-16 rounded-2xl border-2 px-5 text-center text-2xl font-semibold md:text-2xl"
         />
         <FieldError message={error} id={errorId} />
       </div>

@@ -220,27 +220,36 @@ describe("cilj step: target weight via the ruler", () => {
   });
 });
 
-describe("tempo step: pace slider (last step for weight-change goals)", () => {
-  it("renders the three paces and a slider, defaulting to recommended", () => {
+describe("tempo step: pace cards (last step for weight-change goals)", () => {
+  it("renders the three pace options, recommended selected by default, with a daily-kcal preview", () => {
     advanceToStep("tempo");
-    expect(screen.getByRole("slider")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Sporo/ })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Sporo/ })).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Preporučeno/ })
+      screen.getByRole("radio", { name: /Preporučeno/ })
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Brzo/ })).toBeInTheDocument();
-    // Recommended default: 0,5 kg/week readout.
-    expect(screen.getByText(/0,5 kg/)).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: /Brzo/ })).toBeInTheDocument();
+    // Recommended is the default selection.
+    expect(screen.getByRole("radio", { name: /Preporučeno/ })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+    // Each card shows its weekly rate.
+    expect(screen.getByText(/0,5 kg nedeljno/)).toBeInTheDocument();
     // Live daily-calorie preview is shown.
     expect(screen.getByTestId("tempo-daily-kcal")).toBeInTheDocument();
   });
 
-  it("changing the pace updates the weekly-change readout", () => {
+  it("selecting a different pace marks it and clears the previous one", () => {
     advanceToStep("tempo");
-    fireEvent.click(screen.getByRole("button", { name: /Sporo/ }));
-    expect(screen.getByText(/0,25 kg/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Brzo/ }));
-    expect(screen.getByText(/0,75 kg/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("radio", { name: /Sporo/ }));
+    expect(screen.getByRole("radio", { name: /Sporo/ })).toHaveAttribute(
+      "aria-checked",
+      "true"
+    );
+    expect(screen.getByRole("radio", { name: /Preporučeno/ })).toHaveAttribute(
+      "aria-checked",
+      "false"
+    );
   });
 
   it("finishing hands off target weight + a timeframe derived from the pace", () => {
@@ -264,7 +273,7 @@ describe("tempo step: pace slider (last step for weight-change goals)", () => {
 
   it("a slower pace yields a longer derived timeframe", () => {
     advanceToStep("tempo");
-    fireEvent.click(screen.getByRole("button", { name: /Sporo/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /Sporo/ }));
     fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
 
     const data = completeMock.mock.calls[0][0] as OnboardingData;

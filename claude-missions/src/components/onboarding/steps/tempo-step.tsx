@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -10,35 +10,63 @@ import {
   PACE_ORDER,
   PACE_WEEKLY_KG,
   formatTimeToGoal,
-  paceColorAt,
-  paceToPosition,
   timeframeWeeksForPace,
   type WeightChangePace,
 } from "@/lib/onboarding/pace";
-import { PaceSlider } from "@/components/onboarding/pace-slider";
 import { computeBudgetSummary } from "@/lib/onboarding/summary";
 import type { OnboardingData } from "@/lib/onboarding/types";
 
-/** Emoji marker per pace (sloth → rabbit → cheetah), matching the reference. */
+/** Emoji marker per pace (sloth → rabbit → cheetah). */
 const PACE_ICON: Record<WeightChangePace, string> = {
   slow: "🦥",
   recommended: "🐇",
   fast: "🐆",
 };
 
+/** Accent color per pace — amber (gentle), green (the recommended sweet spot),
+ * red (aggressive). Used only on the selected card so the choice reads at a
+ * glance. */
+const PACE_ACCENT: Record<WeightChangePace, string> = {
+  slow: "#C79328",
+  recommended: "#16A34A",
+  fast: "#E1493F",
+};
+
+/** One-line tagline per pace, shown on its card. */
+const PACE_TAGLINE: Record<WeightChangePace, string> = {
+  slow: "Najlakše se održava",
+  recommended: "Idealno za većinu",
+  fast: "Najbrži rezultat",
+};
+
 function kgReadout(kg: number): string {
-  // 0.5 -> "0,5" (Serbian decimal comma), 1 -> "1".
   return kg.toLocaleString("sr-RS", { maximumFractionDigits: 2 });
+}
+
+function CheckIcon({ color }: { color: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className="size-6" aria-hidden>
+      <circle cx="12" cy="12" r="11" fill={color} />
+      <path
+        d="M7 12.5l3.2 3.2L17 9"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="2.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
 }
 
 /**
  * The `tempo` step — the questionnaire's last question for weight-change
- * goals: "how fast do you want to reach your goal?" An interactive slider
- * over slow / recommended / fast. The pace is a target weekly weight change;
- * from it + the target delta we DERIVE the timeframe in weeks (pushed up via
+ * goals: "how fast do you want to reach your goal?" Three selectable cards
+ * (slow / recommended / fast) instead of a slider. Each card shows its weekly
+ * rate and the resulting timeframe; the recommended one is badged. From the
+ * chosen pace we DERIVE the timeframe in weeks (pushed up via
  * `onChangeTimeframe`, so the budget engine + DB consume it unchanged) and
- * show a live "reach your goal in ~N" + daily-calorie preview that updates as
- * the user drags. A short explanation of the selected pace is always shown.
+ * show a live daily-calorie preview below.
  */
 export function TempoStep({
   data,
@@ -50,10 +78,6 @@ export function TempoStep({
   onChangeTimeframe: (weeks: number | null) => void;
 }) {
   const pace: WeightChangePace = data.pace ?? DEFAULT_PACE;
-  // The recommended default reads neutral; only slow/fast take on their
-  // (yellow/red) warning color for the readout, labels and info card.
-  const accent =
-    pace === "recommended" ? null : paceColorAt(paceToPosition(pace));
 
   const deltaKg =
     data.weightKg !== null &&
@@ -68,17 +92,16 @@ export function TempoStep({
 
   // Keep the derived timeframe in the collected data so everything downstream
   // (completion check, budget engine, persist → `targets.timeframe_weeks`)
-  // sees the pace's effect. Runs whenever the pace or the delta changes.
+  // sees the chosen pace's effect.
   useEffect(() => {
     if (timeframeWeeks !== null && timeframeWeeks !== data.timeframeWeeks) {
       onChangeTimeframe(timeframeWeeks);
     }
   }, [timeframeWeeks, data.timeframeWeeks, onChangeTimeframe]);
 
-  // Live daily-calorie target for the currently-selected pace. Recomputed
-  // through the same budget engine the plan reveal uses, so the number the
-  // user sees here is exactly what they'll get.
-  const dailyKcal = useMemo(() => {
+  // Live daily-calorie target for the selected pace, through the same engine
+  // the plan reveal uses. Pure arithmetic, so no memoization needed.
+  const dailyKcal = ((): number | null => {
     if (
       timeframeWeeks === null ||
       data.sex === null ||
@@ -103,124 +126,114 @@ export function TempoStep({
       pace,
       timeframeWeeks,
     }).dailyKcal;
-  }, [
-    pace,
-    timeframeWeeks,
-    data.name,
-    data.sex,
-    data.ageYears,
-    data.heightCm,
-    data.weightKg,
-    data.activityLevel,
-    data.goal,
-    data.targetWeightKg,
-  ]);
+  })();
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       <div>
         <h2 className="text-xl font-semibold text-foreground">
           Koliko brzo želiš da stigneš do cilja?
         </h2>
         <p className="text-sm text-muted-foreground">
-          Od ovoga zavisi tvoj dnevni unos kalorija.
+          Izaberi tempo — od njega zavisi tvoj dnevni unos kalorija.
         </p>
       </div>
 
-      {/* Big readout: weekly rate for the selected pace, tinted by pace */}
-      <div className="flex flex-col items-center gap-1">
-        <span className="text-sm text-muted-foreground">
-          Promena težine nedeljno
-        </span>
-        <span
-          className="text-5xl font-bold tracking-tight text-foreground transition-colors duration-200"
-          style={{ color: accent ?? undefined }}
-        >
-          {kgReadout(PACE_WEEKLY_KG[pace])} kg
-        </span>
-      </div>
-
-      {/* Tappable pace markers */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Pace cards */}
+      <div role="radiogroup" aria-label="Tempo dostizanja cilja" className="flex flex-col gap-3">
         {PACE_ORDER.map((p) => {
-          const active = p === pace;
+          const selected = p === pace;
+          const accent = PACE_ACCENT[p];
+          const weeks =
+            deltaKg !== null ? timeframeWeeksForPace(deltaKg, p) : null;
+          const isRec = p === "recommended";
           return (
             <button
               key={p}
               type="button"
+              role="radio"
+              aria-checked={selected}
+              aria-label={PACE_LABELS[p]}
               onClick={() => onChangePace(p)}
-              aria-pressed={active}
-              className="flex flex-col items-center gap-1 rounded-xl py-1 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              className={cn(
+                "relative flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all duration-150 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40",
+                selected ? "shadow-sm" : "border-border bg-card hover:border-foreground/20"
+              )}
+              style={
+                selected
+                  ? {
+                      borderColor: accent,
+                      background: `color-mix(in srgb, ${accent} 8%, var(--card))`,
+                    }
+                  : undefined
+              }
             >
+              {/* Icon tile */}
               <span
-                className={cn(
-                  "text-2xl leading-none transition-all duration-200",
-                  active ? "scale-110" : "opacity-45 grayscale"
-                )}
+                className="grid size-12 shrink-0 place-items-center rounded-xl text-2xl transition-colors"
+                style={{
+                  background: selected
+                    ? `color-mix(in srgb, ${accent} 16%, transparent)`
+                    : "var(--muted)",
+                }}
                 aria-hidden
               >
                 {PACE_ICON[p]}
               </span>
-              <span
-                className={cn(
-                  "text-sm font-semibold transition-colors duration-200",
-                  active ? "text-foreground" : "text-muted-foreground"
+
+              {/* Text */}
+              <span className="flex min-w-0 flex-1 flex-col">
+                <span className="flex items-center gap-2">
+                  <b className="text-[15px] font-bold text-foreground">
+                    {PACE_LABELS[p]}
+                  </b>
+                  {isRec ? (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white"
+                      style={{ background: accent }}
+                    >
+                      Preporučeno
+                    </span>
+                  ) : null}
+                </span>
+                <span className="mt-0.5 text-[13px] text-muted-foreground">
+                  {kgReadout(PACE_WEEKLY_KG[p])} kg nedeljno
+                  {weeks !== null ? ` · za ~${formatTimeToGoal(weeks)}` : ""}
+                </span>
+                <span className="text-[12px] text-muted-foreground/80">
+                  {PACE_TAGLINE[p]}
+                </span>
+              </span>
+
+              {/* Selected check */}
+              <span className="shrink-0">
+                {selected ? (
+                  <CheckIcon color={accent} />
+                ) : (
+                  <span className="block size-6 rounded-full border-2 border-border" />
                 )}
-                style={{
-                  color:
-                    active && p !== "recommended"
-                      ? paceColorAt(paceToPosition(p))
-                      : undefined,
-                }}
-              >
-                {PACE_LABELS[p]}
               </span>
             </button>
           );
         })}
       </div>
 
-      {/* The smooth, colorful slider */}
-      <PaceSlider value={pace} onChange={onChangePace} />
-
-      {/* Live plan preview for the selected pace */}
-      <div
-        className={cn(
-          "rounded-2xl border p-4 transition-colors duration-200",
-          accent ? "" : "border-transparent bg-muted/60"
-        )}
-        style={
-          accent
-            ? {
-                borderColor: `color-mix(in srgb, ${accent} 32%, transparent)`,
-                background: `color-mix(in srgb, ${accent} 9%, transparent)`,
-              }
-            : undefined
-        }
-      >
-        {timeframeWeeks !== null ? (
-          <p className="text-base font-semibold text-foreground">
-            Cilj dostižeš za{" "}
-            <span style={{ color: accent ?? undefined }}>
-              ~{formatTimeToGoal(timeframeWeeks)}
-            </span>
-          </p>
-        ) : null}
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-          {PACE_DESCRIPTIONS[pace]}
-        </p>
-        {dailyKcal !== null ? (
-          <p
-            className="mt-2 text-sm text-muted-foreground"
+      {/* Live daily-calorie summary for the selected pace */}
+      {dailyKcal !== null ? (
+        <div className="rounded-2xl bg-muted/60 px-4 py-3 text-center">
+          <span className="text-sm text-muted-foreground">Tvoj dnevni cilj</span>
+          <div
+            className="text-2xl font-bold"
             data-testid="tempo-daily-kcal"
+            style={{ color: PACE_ACCENT[pace] }}
           >
-            Dnevni unos:{" "}
-            <b className="text-foreground">
-              {dailyKcal.toLocaleString("sr-RS")} kcal
-            </b>
+            {dailyKcal.toLocaleString("sr-RS")} kcal
+          </div>
+          <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+            {PACE_DESCRIPTIONS[pace]}
           </p>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
     </div>
   );
 }

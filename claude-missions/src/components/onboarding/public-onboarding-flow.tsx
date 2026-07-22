@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { CommitScreen } from "@/components/onboarding/commit-screen";
 import { PlanReveal } from "@/components/onboarding/plan-reveal";
 import { isOnboardingDataComplete } from "@/lib/onboarding/summary";
 import type { CompleteOnboardingData } from "@/lib/onboarding/summary";
@@ -24,6 +25,7 @@ import { savePendingOnboarding } from "@/lib/onboarding/storage";
  */
 type Stage =
   | { kind: "wizard" }
+  | { kind: "commit"; data: CompleteOnboardingData }
   | { kind: "plan"; data: CompleteOnboardingData };
 
 export function PublicOnboardingFlow() {
@@ -32,10 +34,10 @@ export function PublicOnboardingFlow() {
 
   function handleWizardComplete(data: OnboardingData) {
     if (!isOnboardingDataComplete(data)) return;
-    // Stash immediately so the answers can't be lost between the plan preview
-    // and finishing registration.
+    // Stash immediately so the answers can't be lost between the commitment
+    // moment, the plan preview and finishing registration.
     savePendingOnboarding(data);
-    setStage({ kind: "plan", data });
+    setStage({ kind: "commit", data });
   }
 
   function goToRegistration() {
@@ -44,6 +46,15 @@ export function PublicOnboardingFlow() {
       savePendingOnboarding(stage.data);
     }
     router.push("/registracija");
+  }
+
+  if (stage.kind === "commit") {
+    return (
+      <CommitScreen
+        data={stage.data}
+        onCommitted={() => setStage({ kind: "plan", data: stage.data })}
+      />
+    );
   }
 
   if (stage.kind === "plan") {

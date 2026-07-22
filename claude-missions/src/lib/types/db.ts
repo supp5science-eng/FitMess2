@@ -400,6 +400,43 @@ export interface Database {
           },
         ];
       };
+      step_counts: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** Belgrade calendar day, `"YYYY-MM-DD"` (a Postgres `date`). */
+          day: string;
+          /** Total (manually entered) steps for the day (0..200000). */
+          steps: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day: string;
+          steps?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          day?: string;
+          steps?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "step_counts_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       meal_photos: {
         Row: {
           /** PK + FK to public.logs(id); one photo per log, ON DELETE CASCADE. */
@@ -493,3 +530,9 @@ export type WaterIntakeInsert =
   Database["public"]["Tables"]["water_intake"]["Insert"];
 export type WaterIntakeUpdate =
   Database["public"]["Tables"]["water_intake"]["Update"];
+
+export type StepCount = Database["public"]["Tables"]["step_counts"]["Row"];
+export type StepCountInsert =
+  Database["public"]["Tables"]["step_counts"]["Insert"];
+export type StepCountUpdate =
+  Database["public"]["Tables"]["step_counts"]["Update"];

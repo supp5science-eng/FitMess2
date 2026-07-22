@@ -7,6 +7,7 @@ import { IntroCover } from "@/components/home/intro-cover";
 import { MacroBars } from "@/components/home/macro-bars";
 import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
+import { StepsCard } from "@/components/home/steps-card";
 import { WaterButton } from "@/components/home/water-button";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
 import type { LogWithFood } from "@/lib/home/attach-food";
@@ -53,6 +54,7 @@ export function HomeScreen({
   adaptivePlan = null,
   dayKey,
   initialWaterMl = 0,
+  initialSteps = 0,
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
@@ -69,11 +71,13 @@ export function HomeScreen({
   // why. Null/absent (past days, or a week that's on track) => the ring uses
   // the plain daily target, exactly as before.
   adaptivePlan?: AdaptivePlan | null;
-  // Voda: the Belgrade day this screen shows + that day's already-logged water
-  // (ml). When `dayKey` is provided the compact "Voda" button renders below the
-  // daily-intake block. Omitted in unit tests that don't exercise water.
+  // Voda + Koraci: the Belgrade day this screen shows + that day's already-
+  // logged water (ml) and steps. When `dayKey` is provided the "Koraci" card
+  // and "Voda" button render below the daily-intake block. Omitted in unit
+  // tests that don't exercise them.
   dayKey?: string;
   initialWaterMl?: number;
+  initialSteps?: number;
 }) {
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
 
@@ -243,7 +247,8 @@ export function HomeScreen({
       )}
 
       {dayKey ? (
-        <div className="home-body">
+        <div className="home-body flex flex-col gap-3">
+          <StepsCard dayKey={dayKey} initialSteps={initialSteps} />
           <WaterButton dayKey={dayKey} initialMl={initialWaterMl} />
         </div>
       ) : null}

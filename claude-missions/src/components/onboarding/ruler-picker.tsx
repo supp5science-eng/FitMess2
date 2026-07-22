@@ -26,7 +26,6 @@ export function RulerPicker({
   options,
   error,
   renderReadout,
-  autoFocus,
 }: {
   id: string;
   label: string;
@@ -36,7 +35,6 @@ export function RulerPicker({
   options: number[];
   error?: string;
   renderReadout?: (value: number) => string;
-  autoFocus?: boolean;
 }) {
   const errorId = `${id}-error`;
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -81,10 +79,11 @@ export function RulerPicker({
       </Label>
 
       {/* Source of truth: accessible + test-driven, visually hidden. */}
-      <select
+      <input
         id={id}
         name={id}
-        autoFocus={autoFocus}
+        type="text"
+        inputMode="none"
         value={value === null ? "" : String(value)}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? errorId : undefined}
@@ -98,16 +97,7 @@ export function RulerPicker({
           onChange(Number.isNaN(parsed) ? null : parsed);
         }}
         className="sr-only"
-      >
-        <option value="" disabled>
-          Izaberi
-        </option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {readout(option)}
-          </option>
-        ))}
-      </select>
+      />
 
       {/* Big live readout */}
       <div className="mb-2 flex flex-col items-center gap-1" aria-hidden>

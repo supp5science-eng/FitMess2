@@ -99,7 +99,7 @@ describe("Onboarding step 2 (ime) collects the user's name", () => {
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(
-      screen.getByRole("heading", { name: /Koliko imaš godina\?/ })
+      screen.getByRole("heading", { name: /Kada si rođen/ })
     ).toBeInTheDocument();
     expect(screen.getByText(/Korak 3 od 7/)).toBeInTheDocument();
   });
@@ -148,7 +148,7 @@ describe("AS-019: step 2 (godine) collects age", () => {
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /Koliko imaš godina\?/ })
+      screen.getByRole("heading", { name: /Kada si rođen/ })
     ).toBeInTheDocument();
   });
 

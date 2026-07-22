@@ -8,7 +8,7 @@ import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { groupLogsByDay } from "@/lib/log/group";
 import { getMealHistory } from "@/lib/log/history";
 import { createClient } from "@/lib/supabase/server";
-import { computeWeekSummary } from "@/lib/week/summary";
+import { computeMacroWeeks } from "@/lib/week/macro-weeks";
 import { getWeekData } from "@/lib/week/week";
 import { computeWeightTrend } from "@/lib/weight/trend";
 import { getWeighIns } from "@/lib/weight/weigh-ins";
@@ -17,12 +17,12 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 // F041 / AS-068..AS-071: `/analitika` -- the analytics dashboard ("Analitika").
 // The bottom nav (F005) has pointed here since it shipped. Server Component:
-// reads the newest target + this Belgrade week's logs via `getWeekData`
-// (session-scoped RLS client), derives the whole view with the pure
-// `computeWeekSummary`, and hands a fully-computed summary to the
-// presentational `WeeklyDashboard`. Same defensive "never a blank/broken
-// screen" posture as `/danas`: expired session, read failure, and
-// no-target-yet each get their own calm Serbian state.
+// reads the newest target (for the no-plan gate), the 30-day meal history, the
+// weigh-ins, and the profile on the session-scoped RLS client, then derives
+// every card's props with pure functions (`computeMacroWeeks`, BMI, weight
+// trend) and hands them to the presentational `WeeklyDashboard`. Same defensive
+// "never a blank/broken screen" posture as `/danas`: expired session, read
+// failure, and no-target-yet each get their own calm Serbian state.
 export default async function NedeljaPage() {
   const supabase = await createClient();
   // Identity comes from the locally-verified access token (`getClaims`), not
@@ -87,7 +87,7 @@ export default async function NedeljaPage() {
     );
   }
 
-  const { target, logs } = result.data;
+  const { target } = result.data;
 
   if (!target) {
     return (
@@ -106,7 +106,10 @@ export default async function NedeljaPage() {
     );
   }
 
-  const summary = computeWeekSummary(logs, target.daily_kcal, now);
+  // "Dnevni prosek kalorija" card: build this + the 3 prior weeks (macro-stacked
+  // per day, average over logged days) from the same 30-day meal-history window
+  // already read above -- no extra query. Empty on a history read failure.
+  const macroWeeks = computeMacroWeeks(historyResult.data ?? [], now, 4);
 
   // BMI (kg / m²) from the questionnaire's height + weight. Only computed when
   // both inputs are present and valid; otherwise null, and the card shows a
@@ -152,8 +155,8 @@ export default async function NedeljaPage() {
 
   return (
     <WeeklyDashboard
-      summary={summary}
       bmi={bmi}
+      macroWeeks={macroWeeks}
       weightSection={weightSection}
       footer={footer}
     />

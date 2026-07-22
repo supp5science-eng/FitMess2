@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { tickFeedback } from "@/lib/onboarding/tick";
 import { cn } from "@/lib/utils";
 
 export const WHEEL_ITEM_H = 44; // px per row
@@ -34,6 +35,9 @@ export function WheelColumn({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Only tick once the USER drives the wheel — never on mount / programmatic
+  // scroll-to-value (which would buzz on every step entry / Back navigation).
+  const interactedRef = useRef(false);
   const selectedIndex = selectedKey === null
     ? -1
     : options.findIndex((o) => o.key === selectedKey);
@@ -59,7 +63,10 @@ export function WheelColumn({
       options.length - 1,
       Math.max(0, Math.round(el.scrollTop / WHEEL_ITEM_H))
     );
-    if (idx !== centerIndex) setCenterIndex(idx);
+    if (idx !== centerIndex) {
+      if (interactedRef.current) tickFeedback();
+      setCenterIndex(idx);
+    }
     if (commitTimer.current) clearTimeout(commitTimer.current);
     commitTimer.current = setTimeout(() => {
       const picked = options[idx];
@@ -78,6 +85,12 @@ export function WheelColumn({
     <div
       ref={scrollRef}
       onScroll={handleScroll}
+      onPointerDown={() => {
+        interactedRef.current = true;
+      }}
+      onWheel={() => {
+        interactedRef.current = true;
+      }}
       className={cn(
         "h-full snap-y snap-mandatory overflow-y-auto scroll-smooth [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
         className

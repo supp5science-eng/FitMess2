@@ -1,9 +1,10 @@
 "use client";
 
-import { Droplet, Minus, Plus, X } from "lucide-react";
+import { GlassWater, Milk, Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // Voda: a compact water button on `/danas` that opens the "Unesi vodu" sheet.
 // The button itself stays a single slim row (it must not crowd the dashboard);
@@ -29,13 +30,11 @@ const MAX_ML = 20000;
 /** Fine-tune step for the − / + steppers. */
 const STEP_ML = 250;
 
-/** Quick-add presets: three clearly-different containers (glass, bottle,
- * pitcher) rendered as emoji — colourful and instantly recognizable on iOS,
- * unlike the earlier monochrome line icons. */
-const PRESETS: { ml: number; label: string; sub: string; emoji: string }[] = [
-  { ml: 250, label: "Čaša", sub: "250 mL", emoji: "🥛" },
-  { ml: 500, label: "Flaša", sub: "500 mL", emoji: "🍶" },
-  { ml: 750, label: "Bokal", sub: "750 mL", emoji: "🪣" },
+/** Quick-add presets, in the reference's order (glass → bottle → large). */
+const PRESETS: { ml: number; label: string; sub: string; icon: typeof GlassWater }[] = [
+  { ml: 250, label: "+1 čaša", sub: "250 mL", icon: GlassWater },
+  { ml: 500, label: "+1 flaša", sub: "500 mL", icon: Milk },
+  { ml: 750, label: "+1 velika flaša", sub: "750 mL", icon: Milk },
 ];
 
 interface VodaResponseBody {
@@ -148,7 +147,7 @@ export function WaterButton({
       >
         <span className="flex items-center gap-2.5">
           <span className="flex size-9 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
-            <Droplet className="size-5" aria-hidden="true" />
+            <Milk className="size-5" aria-hidden="true" />
           </span>
           <span className="text-base font-semibold text-foreground">Voda</span>
         </span>
@@ -242,18 +241,19 @@ export function WaterButton({
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
-              {PRESETS.map(({ ml, label, sub, emoji }) => (
+              {PRESETS.map(({ ml, label, sub, icon: Icon }, index) => (
                 <button
                   key={label}
                   type="button"
                   onClick={() => bump(ml)}
                   data-testid={`water-preset-${ml}`}
-                  className="flex flex-col items-center gap-1 rounded-2xl border border-border bg-background px-2 py-3 text-center transition-colors hover:bg-muted/50 active:translate-y-px"
+                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-background px-2 py-3 text-center transition-colors hover:bg-muted/50 active:translate-y-px"
                 >
-                  <span className="text-2xl leading-none" aria-hidden="true">
-                    {emoji}
-                  </span>
-                  <span className="mt-0.5 text-sm font-semibold leading-tight text-foreground">
+                  <Icon
+                    className={cn("text-sky-400", index === 2 ? "size-7" : "size-6")}
+                    aria-hidden="true"
+                  />
+                  <span className="text-xs font-semibold leading-tight text-foreground">
                     {label}
                   </span>
                   <span className="text-[0.7rem] text-muted-foreground">

@@ -1,12 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import type { GoalType } from "@/lib/types/db";
 import { RulerPicker } from "@/components/onboarding/ruler-picker";
-import { UnitToggle } from "@/components/onboarding/unit-toggle";
 import { rangeInclusive } from "@/components/onboarding/select-field";
-import { kgToLbs } from "@/lib/onboarding/units";
 import { MAX_WEIGHT_KG, MIN_WEIGHT_KG } from "@/lib/onboarding/validation";
 
 /**
@@ -46,14 +44,11 @@ function defaultTarget(
   );
 }
 
-type WeightUnit = "kg" | "lbs";
-
 /**
  * The `cilj` step — AS-019: collects the TARGET weight (kg) via an inline
  * ruler picker (Cal-AI look, same component as the current-weight step). The
  * timeframe is no longer picked here; a later `tempo`/pace step derives it.
- * A display-only kg/lbs toggle can change the readout; the stored value stays
- * metric.
+ * Metric-only (kg), matching the rest of the questionnaire.
  */
 export function GoalStep({
   goal,
@@ -69,7 +64,6 @@ export function GoalStep({
   error?: string;
 }) {
   const isGain = goal === "gain";
-  const [unit, setUnit] = useState<WeightUnit>("kg");
 
   const targetOptions = useMemo(
     () => targetWeightOptions(isGain, currentWeightKg),
@@ -111,15 +105,6 @@ export function GoalStep({
           Ovo je težina koju želiš da dostigneš.
         </p>
       </div>
-      <UnitToggle
-        ariaLabel="Jedinica za ciljnu težinu"
-        options={[
-          { value: "lbs", label: "lbs" },
-          { value: "kg", label: "kg" },
-        ]}
-        value={unit}
-        onChange={setUnit}
-      />
       <RulerPicker
         id="ciljna-tezina"
         label="Ciljna težina"
@@ -127,9 +112,8 @@ export function GoalStep({
         value={targetWeightKg}
         onChange={onChangeTargetWeight}
         options={targetOptions}
-        renderReadout={(v) => (unit === "kg" ? `${v} kg` : `${kgToLbs(v)} lbs`)}
+        renderReadout={(v) => `${v} kg`}
         error={error}
-        autoFocus
       />
       {showDelta ? (
         <p

@@ -204,12 +204,16 @@ export function OnboardingWizard({
             type="button"
             variant="outline"
             onClick={handleBack}
-            className="flex-1"
+            className="h-14 flex-1 rounded-full text-base font-semibold"
           >
             Nazad
           </Button>
         ) : null}
-        <Button type="button" onClick={handleNext} className="flex-1">
+        <Button
+          type="button"
+          onClick={handleNext}
+          className="h-14 flex-1 rounded-full text-base font-semibold"
+        >
           {isLastStep ? "Završi" : "Dalje"}
         </Button>
       </div>

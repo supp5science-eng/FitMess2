@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { BmiCard } from "@/components/analytics/bmi-card";
 import { Card } from "@/components/ui/card";
 import { DayBars } from "@/components/weekly/day-bars";
 import type { WeekStatus, WeekSummary } from "@/lib/week/summary";
@@ -63,16 +64,15 @@ function StatCard({
 
 export function WeeklyDashboard({
   summary,
-  bmrKcal,
+  bmi,
   weightSection,
   footer,
 }: {
   summary: WeekSummary;
-  /** The user's basal metabolic rate (Mifflin-St Jeor), computed from their
-   * questionnaire data by the page. `null` when the profile is missing any
-   * input (sex/height/weight/birth year) -- the card then shows a calm
-   * "dopuni profil" state instead of a number built on defaults. */
-  bmrKcal: number | null;
+  /** The user's body-mass index (kg/m²), computed from their questionnaire
+   * height + weight by the page. `null` when either is missing -- the card
+   * then shows a calm "dopuni profil" state instead of a number. */
+  bmi: number | null;
   /** F042/F043: the "Težina" section, rendered between the per-day chart and
    * the meal-history footer. Passed as a node (like `footer`) so the page
    * owns the server data read and this component stays presentational. */
@@ -91,39 +91,9 @@ export function WeeklyDashboard({
         <p className="text-sm text-muted-foreground">Ova nedelja</p>
       </header>
 
-      {/* Hero: the user's basal metabolic rate (BMR) from their questionnaire
-          data -- how many kcal the body burns at complete rest over 24h. Calm,
-          single-number card; no red alarms. */}
-      <section className="flex flex-col items-center gap-2 rounded-3xl border border-border bg-card p-6 text-center">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Bazalni metabolizam (BMR)
-        </span>
-        {bmrKcal != null ? (
-          <>
-            <span
-              data-testid="bmr-value"
-              className="text-4xl font-bold tabular-nums text-foreground"
-            >
-              {bmrKcal.toLocaleString("sr-RS")}
-              <span className="ml-1.5 text-base font-medium text-muted-foreground">
-                kcal
-              </span>
-            </span>
-            <p className="max-w-[34ch] text-sm text-muted-foreground">
-              Toliko kalorija tvoje telo potroši u mirovanju za 24h — samo za
-              osnovni rad organizma, bez ikakve aktivnosti.
-            </p>
-          </>
-        ) : (
-          <p
-            data-testid="bmr-empty"
-            className="max-w-[34ch] text-sm text-muted-foreground"
-          >
-            Dopuni pol, godine, visinu i težinu u upitniku pa ćemo ti ovde
-            izračunati bazalni metabolizam.
-          </p>
-        )}
-      </section>
+      {/* Hero: the user's BMI from their questionnaire height + weight --
+          value, category, a four-zone scale, and the standard thresholds. */}
+      <BmiCard bmi={bmi} />
 
       {/* Weekly on-track signal (kept from the old hero -- this is the average
           vs target status, not a "remaining calories" number). */}

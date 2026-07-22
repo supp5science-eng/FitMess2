@@ -16,7 +16,9 @@ import { buildDateStrip } from "@/lib/home/date-strip";
 import { getLoggedDayKcals } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
 import { getStepsForDay } from "@/lib/steps/steps";
+import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
 import { getWaterMl } from "@/lib/water/water";
+import { waterGoalMl } from "@/lib/water/water-week";
 import { createClient } from "@/lib/supabase/server";
 
 const SR_MONTHS_SHORT = [
@@ -107,7 +109,7 @@ export default async function DanasPage({
     getTodayData(supabase, userId, range),
     supabase
       .from("profiles")
-      .select("created_at, sex")
+      .select("created_at, sex, weight_kg")
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
@@ -201,6 +203,8 @@ export default async function DanasPage({
       dayKey={selectedKey}
       initialWaterMl={water.ml}
       initialSteps={steps.steps}
+      stepsGoal={DEFAULT_STEP_GOAL}
+      waterGoal={waterGoalMl(profileResult.data?.weight_kg ?? null)}
     />
   );
 }

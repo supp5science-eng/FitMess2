@@ -57,11 +57,16 @@ function formatWaterSr(ml: number): string {
 export function WaterButton({
   dayKey,
   initialMl = 0,
+  goalMl,
 }: {
   /** Belgrade calendar day (`"YYYY-MM-DD"`) this button logs water for. */
   dayKey: string;
   /** The day's already-logged water total (ml), read server-side. */
   initialMl?: number;
+  /** Recommended daily water goal (ml), from bodyweight — the SAME
+   * `waterGoalMl` the Analitika card uses. When set, the row shows progress
+   * toward it (total / goal + a slim bar); omitted => just the total. */
+  goalMl?: number;
 }) {
   const [totalMl, setTotalMl] = useState(initialMl);
   const [isOpen, setIsOpen] = useState(false);
@@ -143,25 +148,54 @@ export function WaterButton({
         type="button"
         onClick={openSheet}
         data-testid="water-open-button"
-        className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40 active:translate-y-px"
+        className="flex w-full flex-col gap-2.5 rounded-2xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40 active:translate-y-px"
       >
-        <span className="flex items-center gap-2.5">
-          <span className="flex size-9 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
-            <Milk className="size-5" aria-hidden="true" />
+        <span className="flex w-full items-center justify-between">
+          <span className="flex items-center gap-2.5">
+            <span className="flex size-9 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
+              <Milk className="size-5" aria-hidden="true" />
+            </span>
+            <span className="text-base font-semibold text-foreground">Voda</span>
+            {goalMl && totalMl >= goalMl ? (
+              <span
+                data-testid="water-goal-reached"
+                className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[0.7rem] font-semibold text-sky-400"
+              >
+                Cilj 🎉
+              </span>
+            ) : null}
           </span>
-          <span className="text-base font-semibold text-foreground">Voda</span>
+          <span className="flex items-center gap-2.5">
+            <span
+              data-testid="water-total"
+              className="text-sm font-medium text-muted-foreground tabular-nums"
+            >
+              {formatWaterSr(totalMl)}
+              {goalMl ? (
+                <span className="text-muted-foreground/60">
+                  {" / "}
+                  {formatWaterSr(goalMl)}
+                </span>
+              ) : null}
+            </span>
+            <span className="flex size-7 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
+              <Plus className="size-4" aria-hidden="true" />
+            </span>
+          </span>
         </span>
-        <span className="flex items-center gap-2.5">
+        {goalMl ? (
           <span
-            data-testid="water-total"
-            className="text-sm font-medium text-muted-foreground tabular-nums"
+            className="h-1.5 w-full overflow-hidden rounded-full bg-sky-500/10"
+            aria-hidden="true"
           >
-            {formatWaterSr(totalMl)}
+            <span
+              className="block h-full rounded-full bg-sky-400 transition-[width] duration-500"
+              style={{
+                width: `${Math.min(100, (totalMl / goalMl) * 100)}%`,
+              }}
+            />
           </span>
-          <span className="flex size-7 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
-            <Plus className="size-4" aria-hidden="true" />
-          </span>
-        </span>
+        ) : null}
       </button>
 
       {isOpen ? (

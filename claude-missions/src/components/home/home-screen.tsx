@@ -1,5 +1,6 @@
 "use client";
 
+import { Droplet, Flame, Footprints } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { DateStrip } from "@/components/home/date-strip";
@@ -13,8 +14,15 @@ import type { AdaptivePlan } from "@/lib/home/adaptive";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import type { DayCell } from "@/lib/home/date-strip";
 import { computeDayTotals } from "@/lib/home/totals";
+import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
+import { formatWaterSr, waterGoalMl } from "@/lib/water/water-week";
 import type { Log, Target } from "@/lib/types/db";
 import { cn } from "@/lib/utils";
+
+/** `10000` -> `"10.000"` (Serbian thousands separator). */
+function formatSteps(steps: number): string {
+  return String(steps).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
 
 // useLayoutEffect on the client (measure + cover before first paint), a no-op
 // useEffect on the server (avoids the SSR warning).
@@ -55,6 +63,8 @@ export function HomeScreen({
   dayKey,
   initialWaterMl = 0,
   initialSteps = 0,
+  stepsGoal = DEFAULT_STEP_GOAL,
+  waterGoal = waterGoalMl(null),
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
@@ -78,6 +88,11 @@ export function HomeScreen({
   dayKey?: string;
   initialWaterMl?: number;
   initialSteps?: number;
+  // Recommended daily goals shown alongside the kcal target and used by the
+  // steps/water cards. Steps defaults to the classic 10k; water is derived from
+  // bodyweight (the same `waterGoalMl` the Analitika card uses).
+  stepsGoal?: number;
+  waterGoal?: number;
 }) {
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
 
@@ -236,6 +251,15 @@ export function HomeScreen({
             />
           </div>
           <ViewToggle view={view} onChange={setView} />
+          <DailyTargets
+            kcal={
+              adaptivePlan?.isAdjusted
+                ? adaptivePlan.adaptiveDailyTarget
+                : target.daily_kcal
+            }
+            stepsGoal={stepsGoal}
+            waterGoalMl={waterGoal}
+          />
         </div>
       ) : (
         <div
@@ -248,8 +272,16 @@ export function HomeScreen({
 
       {dayKey ? (
         <div className="home-body flex flex-col gap-3">
-          <StepsCard dayKey={dayKey} initialSteps={initialSteps} />
-          <WaterButton dayKey={dayKey} initialMl={initialWaterMl} />
+          <StepsCard
+            dayKey={dayKey}
+            initialSteps={initialSteps}
+            goal={stepsGoal}
+          />
+          <WaterButton
+            dayKey={dayKey}
+            initialMl={initialWaterMl}
+            goalMl={waterGoal}
+          />
         </div>
       ) : null}
 
@@ -268,6 +300,88 @@ export function HomeScreen({
         />
       ) : null}
     </main>
+  );
+}
+
+/**
+ * "Preporučeni dnevni ciljevi": the day's recommended targets shown together
+ * with the calorie result — kcal (the ring's number), a step goal, and a water
+ * goal — so the three read as one plan. Steps use the classic 10k; water is
+ * derived from bodyweight (the SAME `waterGoalMl` the Analitika card uses), so
+ * the home recommendation and the analytics goal always agree.
+ */
+function DailyTargets({
+  kcal,
+  stepsGoal,
+  waterGoalMl,
+}: {
+  kcal: number;
+  stepsGoal: number;
+  waterGoalMl: number;
+}) {
+  return (
+    <div className="home-body flex flex-col gap-2">
+      <h3 className="text-sm font-semibold text-muted-foreground">
+        Preporučeni dnevni ciljevi
+      </h3>
+      <div data-testid="daily-targets" className="grid grid-cols-3 gap-2.5">
+        <TargetTile
+          icon={<Flame className="size-4" aria-hidden="true" />}
+          tone="text-amber-500"
+          chip="bg-amber-500/15"
+          label="Kalorije"
+          value={`${kcal}`}
+        />
+        <TargetTile
+          icon={<Footprints className="size-4" aria-hidden="true" />}
+          tone="text-violet-500"
+          chip="bg-violet-500/15"
+          label="Koraci"
+          value={formatSteps(stepsGoal)}
+        />
+        <TargetTile
+          icon={<Droplet className="size-4" aria-hidden="true" />}
+          tone="text-sky-400"
+          chip="bg-sky-500/15"
+          label="Voda"
+          value={formatWaterSr(waterGoalMl)}
+        />
+      </div>
+    </div>
+  );
+}
+
+function TargetTile({
+  icon,
+  tone,
+  chip,
+  label,
+  value,
+}: {
+  icon: React.ReactNode;
+  tone: string;
+  chip: string;
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-2xl border border-border bg-card px-2 py-3 text-center">
+      <span
+        className={cn(
+          "flex size-8 items-center justify-center rounded-full",
+          chip,
+          tone
+        )}
+      >
+        {icon}
+      </span>
+      <span className="text-[0.7rem] font-medium text-muted-foreground">
+        {label}
+      </span>
+      <span className="text-sm font-bold text-foreground tabular-nums">
+        {value}
+      </span>
+    </div>
   );
 }
 

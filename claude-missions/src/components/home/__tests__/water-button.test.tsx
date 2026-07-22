@@ -24,6 +24,25 @@ describe("WaterButton", () => {
     expect(screen.getByTestId("water-total")).toHaveTextContent("250 mL");
   });
 
+  it("shows the daily goal (total / goal) and a reached badge once met", () => {
+    render(<WaterButton dayKey="2026-07-22" initialMl={2500} goalMl={2500} />);
+    expect(screen.getByTestId("water-total")).toHaveTextContent("2,5 L / 2,5 L");
+    expect(screen.getByTestId("water-goal-reached")).toBeInTheDocument();
+  });
+
+  it("shows the goal but no reached badge below it", () => {
+    render(<WaterButton dayKey="2026-07-22" initialMl={1000} goalMl={2500} />);
+    expect(screen.getByTestId("water-total")).toHaveTextContent("1 L / 2,5 L");
+    expect(
+      screen.queryByTestId("water-goal-reached")
+    ).not.toBeInTheDocument();
+  });
+
+  it("omits the goal entirely when none is provided", () => {
+    render(<WaterButton dayKey="2026-07-22" initialMl={1250} />);
+    expect(screen.getByTestId("water-total")).not.toHaveTextContent("/");
+  });
+
   it("opens the sheet and quick-add presets accumulate into the amount", () => {
     render(<WaterButton dayKey="2026-07-22" initialMl={0} />);
 

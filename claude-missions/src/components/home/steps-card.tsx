@@ -4,6 +4,7 @@ import { Footprints, Minus, Plus, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
 
 // Koraci: an interactive step card on `/danas`. Steps are self-reported (a PWA
 // can't read a pedometer/HealthKit), so this is a manual "roughly how much did
@@ -19,9 +20,6 @@ import { Button } from "@/components/ui/button";
 // component then reflects.
 
 const SAVE_FAILED_ERROR_SR = "Nismo uspeli da sačuvamo korake. Pokušaj ponovo.";
-
-/** Daily step goal the ring fills toward (a widely-used 10k default). */
-const DAILY_STEP_GOAL = 10000;
 
 /** Cap a single confirm can add (matches the DB/route bound). */
 const MAX_STEPS = 200000;
@@ -208,11 +206,15 @@ function ProgressRing({
 export function StepsCard({
   dayKey,
   initialSteps = 0,
+  goal = DEFAULT_STEP_GOAL,
 }: {
   /** Belgrade calendar day (`"YYYY-MM-DD"`) this card logs steps for. */
   dayKey: string;
   /** The day's already-logged step total, read server-side. */
   initialSteps?: number;
+  /** Recommended daily step goal the ring fills toward (defaults to the classic
+   * 10k target `Analitika` uses, so home and analytics agree). */
+  goal?: number;
 }) {
   const [totalSteps, setTotalSteps] = useState(initialSteps);
   const [isOpen, setIsOpen] = useState(false);
@@ -285,9 +287,9 @@ export function StepsCard({
   }
 
   const resultSteps = Math.max(0, Math.min(MAX_STEPS, totalSteps + addSteps));
-  const cardFraction = totalSteps / DAILY_STEP_GOAL;
-  const sheetFraction = resultSteps / DAILY_STEP_GOAL;
-  const goalReached = totalSteps >= DAILY_STEP_GOAL;
+  const cardFraction = totalSteps / goal;
+  const sheetFraction = resultSteps / goal;
+  const goalReached = totalSteps >= goal;
   const confirmLabel =
     status === "saving" ? "Čuvanje..." : addSteps < 0 ? "Ukloni" : "Dodaj";
 
@@ -297,7 +299,7 @@ export function StepsCard({
         type="button"
         onClick={openSheet}
         data-testid="steps-open-button"
-        aria-label={`Koraci: ${totalSteps} od ${DAILY_STEP_GOAL}. Dodaj korake.`}
+        aria-label={`Koraci: ${totalSteps} od ${goal}. Dodaj korake.`}
         className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card px-4 py-3.5 text-left transition-colors hover:bg-muted/40 active:translate-y-px"
       >
         <ProgressRing fraction={cardFraction} size={56} stroke={6}>
@@ -319,7 +321,7 @@ export function StepsCard({
             ) : null}
           </span>
           <span className="text-sm text-muted-foreground">
-            cilj {formatSteps(DAILY_STEP_GOAL)}
+            cilj {formatSteps(goal)}
           </span>
         </span>
 
@@ -383,7 +385,7 @@ export function StepsCard({
                     {formatSteps(resultSteps)}
                   </span>
                   <span className="text-xs font-medium text-muted-foreground">
-                    / {formatSteps(DAILY_STEP_GOAL)}
+                    / {formatSteps(goal)}
                   </span>
                   {sheetFraction >= 1 ? (
                     <span className="mt-1 text-lg leading-none" aria-hidden="true">

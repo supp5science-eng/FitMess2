@@ -104,6 +104,22 @@ describe("AS-047/AS-048/AS-049: HomeScreen renders the ring, bars, and meal list
     // AS-049: the one seeded log is listed.
     expect(screen.getByTestId("meal-card-log-1")).toBeInTheDocument();
   });
+
+  it("shows recommended daily targets (kcal, steps, water) alongside the calorie result", () => {
+    render(
+      <HomeScreen
+        initialLogs={[]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        stepsGoal={10000}
+        waterGoal={2500}
+      />
+    );
+
+    const targets = screen.getByTestId("daily-targets");
+    expect(targets).toHaveTextContent("2000");
+    expect(targets).toHaveTextContent("10.000");
+    expect(targets).toHaveTextContent("2,5 L");
+  });
 });
 
 describe("AS-043: editing a log updates the ring/bars/list immediately, without navigation", () => {

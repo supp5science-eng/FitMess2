@@ -18,11 +18,16 @@ import type { Food, Log } from "@/lib/types/db";
 export function MealCard({
   log,
   food,
+  hasPhoto = false,
   onSaved,
   onDeleted,
 }: {
   log: Log;
   food: Food | null;
+  // True for a "Slikaj obrok" log that has a stored photo (served from
+  // `/api/obrok-slika/[logId]`, pruned after ~1 day). When set, the card leads
+  // with the photo and shows the macro breakdown under the name.
+  hasPhoto?: boolean;
   onSaved: (updatedLog: Log) => void;
   onDeleted: (logId: string) => void;
 }) {
@@ -42,6 +47,16 @@ export function MealCard({
       data-testid={`meal-card-${log.id}`}
       className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm"
     >
+      {hasPhoto ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`/api/obrok-slika/${log.id}`}
+          alt={log.name}
+          data-testid={`meal-card-photo-${log.id}`}
+          loading="lazy"
+          className="h-44 w-full rounded-xl object-cover"
+        />
+      ) : null}
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span
@@ -64,6 +79,16 @@ export function MealCard({
           {Math.round(log.kcal)} kcal
         </span>
       </div>
+      {hasPhoto ? (
+        <div
+          data-testid={`meal-card-macros-${log.id}`}
+          className="flex flex-wrap gap-x-4 gap-y-1 text-sm"
+        >
+          <MacroStat label="Proteini" grams={log.protein} tone="text-macro-protein" />
+          <MacroStat label="UH" grams={log.carbs} tone="text-macro-carbs" />
+          <MacroStat label="Masti" grams={log.fat} tone="text-macro-fat" />
+        </div>
+      ) : null}
       <div className="flex items-center gap-2">
         {food ? (
           <LogEditSheet log={log} food={food} onSaved={onSaved} />
@@ -75,5 +100,25 @@ export function MealCard({
         />
       </div>
     </li>
+  );
+}
+
+/** One macro figure (grams + label) in the photo-meal card's breakdown row. */
+function MacroStat({
+  label,
+  grams,
+  tone,
+}: {
+  label: string;
+  grams: number;
+  tone: string;
+}) {
+  return (
+    <span className="inline-flex items-baseline gap-1">
+      <span className={`font-semibold tabular-nums ${tone}`}>
+        {Math.round(grams)} g
+      </span>
+      <span className="text-muted-foreground">{label}</span>
+    </span>
   );
 }

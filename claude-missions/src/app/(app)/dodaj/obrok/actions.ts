@@ -69,7 +69,27 @@ export type LogMealResult =
   | { ok: true }
   | { ok: false; error_sr: string };
 
-export async function logMealAction(input: LogMealInput): Promise<LogMealResult> {
+/**
+ * Optional display photo for the "Slikaj obrok" flow: a small client-downscaled
+ * JPEG thumbnail, base64-encoded (no `data:` prefix). Stored in `meal_photos`
+ * so it can be shown on today's meal list, then pruned after ~1 day (the log's
+ * macros survive). The voice flow (`glas-flow.tsx`) calls `logMealAction`
+ * WITHOUT this, so it stays optional and backward-compatible.
+ */
+export interface MealPhotoInput {
+  base64: string;
+  mimeType?: string;
+}
+
+// ~900 KB decoded ceiling for the stored thumbnail (base64 is ~4/3 the bytes).
+// The client downscales to ~720px/q0.72 (tens of KB); anything wildly larger is
+// dropped rather than stored, and the meal still saves without a photo.
+const MAX_PHOTO_BASE64_LEN = 1_200_000;
+
+export async function logMealAction(
+  input: LogMealInput,
+  photo?: MealPhotoInput
+): Promise<LogMealResult> {
   const parsed = logMealSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error_sr: "Neispravan unos. Proveri vrednosti." };
@@ -87,21 +107,40 @@ export async function logMealAction(input: LogMealInput): Promise<LogMealResult>
   const round1 = (n: number) => Math.round(n * 10) / 10;
   const { name, grams, kcal, protein, carbs, fat } = parsed.data;
 
-  const { error } = await supabase.from("logs").insert({
-    user_id: userId,
-    food_id: null,
-    name,
-    grams: round1(grams),
-    kcal: Math.round(kcal),
-    protein: round1(protein),
-    carbs: round1(carbs),
-    fat: round1(fat),
-    method: "meal",
-  });
+  const { data: inserted, error } = await supabase
+    .from("logs")
+    .insert({
+      user_id: userId,
+      food_id: null,
+      name,
+      grams: round1(grams),
+      kcal: Math.round(kcal),
+      protein: round1(protein),
+      carbs: round1(carbs),
+      fat: round1(fat),
+      method: "meal",
+    })
+    .select("id")
+    .single();
 
-  if (error) {
-    console.error("[F064 obrok] log insert failed:", error.message);
+  if (error || !inserted) {
+    console.error("[F064 obrok] log insert failed:", error?.message);
     return { ok: false, error_sr: "Nismo uspeli da sačuvamo unos. Pokušaj ponovo." };
+  }
+
+  // Store the photo BEST-EFFORT: it's an enhancement, never a reason to fail a
+  // successfully-logged meal. A missing `meal_photos` table, an oversized blob,
+  // or an insert error all just mean "meal saved, no photo."
+  if (photo && photo.base64 && photo.base64.length <= MAX_PHOTO_BASE64_LEN) {
+    const { error: photoError } = await supabase.from("meal_photos").insert({
+      log_id: inserted.id,
+      user_id: userId,
+      image_base64: photo.base64,
+      mime_type: photo.mimeType ?? "image/jpeg",
+    });
+    if (photoError) {
+      console.warn("[F064 obrok] meal photo insert skipped:", photoError.message);
+    }
   }
 
   return { ok: true };

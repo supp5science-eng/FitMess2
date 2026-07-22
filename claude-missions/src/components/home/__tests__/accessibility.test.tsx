@@ -115,7 +115,9 @@ describe("AS-128: MealList's empty-state action is a real, keyboard-reachable li
   it("test_AS_128_dodaj_obrok_is_a_native_anchor_not_a_div_with_a_click_handler", () => {
     render(<MealList logs={[]} onSaved={vi.fn()} onDeleted={vi.fn()} />);
 
-    const link = screen.getByRole("link", { name: "Dodaj obrok" });
+    // Photo/voice-first: the empty-state CTA is "Slikaj obrok" (catalog search
+    // was removed from the add menu), still a real keyboard-reachable anchor.
+    const link = screen.getByRole("link", { name: "Slikaj obrok" });
     expect(link.tagName).toBe("A");
     expect(link).not.toHaveAttribute("tabindex", "-1");
   });
@@ -135,29 +137,35 @@ describe("AS-128: MealCard's edit/delete triggers are real, keyboard-reachable b
   });
 });
 
-describe("AS-128: the full HomeScreen renders only the decorative brand mark, never an unlabeled content image", () => {
-  // The one <img> the home screen renders is the FitMess pear logo in the
-  // header lockup -- purely decorative, so it MUST be hidden from assistive
-  // tech (empty alt + aria-hidden), with the <h1> "FitMess" carrying the
-  // accessible name. Any OTHER (content) image, or a mark that leaks to the
-  // a11y tree, would be an AS-128 violation.
-  function expectOnlyDecorativeImages(container: HTMLElement) {
+describe("AS-128: every <img> in the HomeScreen is accessible (decorative brand mark or labeled meal photo), never bare", () => {
+  // The header's FitMess pear logo is decorative (empty alt + aria-hidden, with
+  // the <h1> "FitMess" carrying the name); a "Slikaj obrok" meal photo is a
+  // real content image labeled with the meal name. Both are fine; a bare,
+  // unlabeled image would be the AS-128 violation.
+  // Every <img> must be accessible: either decorative (empty alt AND
+  // aria-hidden -- the brand mark) or a genuine content image with a non-empty
+  // alt (a "Slikaj obrok" meal photo, alt = the meal name). What AS-128 forbids
+  // is a bare, unlabeled image.
+  function expectAllImagesAccessible(container: HTMLElement) {
     const imgs = container.querySelectorAll("img");
     for (const img of imgs) {
-      expect(img).toHaveAttribute("alt", "");
-      expect(img).toHaveAttribute("aria-hidden", "true");
+      expect(img).toHaveAttribute("alt");
+      const alt = img.getAttribute("alt") ?? "";
+      if (alt === "") {
+        expect(img).toHaveAttribute("aria-hidden", "true");
+      }
     }
   }
 
-  it("test_AS_128_home_screen_with_data_renders_only_decorative_images", () => {
+  it("test_AS_128_home_screen_with_data_renders_only_accessible_images", () => {
     render(
       <HomeScreen initialLogs={[makeLog()]} target={makeTarget()} />
     );
-    expectOnlyDecorativeImages(screen.getByTestId("home-screen"));
+    expectAllImagesAccessible(screen.getByTestId("home-screen"));
   });
 
-  it("test_AS_128_home_screen_empty_and_no_target_states_render_only_decorative_images", () => {
+  it("test_AS_128_home_screen_empty_and_no_target_states_render_only_accessible_images", () => {
     render(<HomeScreen initialLogs={[]} target={null} />);
-    expectOnlyDecorativeImages(screen.getByTestId("home-screen"));
+    expectAllImagesAccessible(screen.getByTestId("home-screen"));
   });
 });

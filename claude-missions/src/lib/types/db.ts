@@ -363,6 +363,47 @@ export interface Database {
           },
         ];
       };
+      meal_photos: {
+        Row: {
+          /** PK + FK to public.logs(id); one photo per log, ON DELETE CASCADE. */
+          log_id: string;
+          user_id: string;
+          /** Small display thumbnail, base64 (no `data:` prefix). */
+          image_base64: string;
+          mime_type: string;
+          created_at: string;
+        };
+        Insert: {
+          log_id: string;
+          user_id: string;
+          image_base64: string;
+          mime_type?: string;
+          created_at?: string;
+        };
+        Update: {
+          log_id?: string;
+          user_id?: string;
+          image_base64?: string;
+          mime_type?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "meal_photos_log_id_fkey";
+            columns: ["log_id"];
+            isOneToOne: true;
+            referencedRelation: "logs";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "meal_photos_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -405,3 +446,7 @@ export type LogUpdate = Database["public"]["Tables"]["logs"]["Update"];
 export type WeighIn = Database["public"]["Tables"]["weigh_ins"]["Row"];
 export type WeighInInsert = Database["public"]["Tables"]["weigh_ins"]["Insert"];
 export type WeighInUpdate = Database["public"]["Tables"]["weigh_ins"]["Update"];
+
+export type MealPhoto = Database["public"]["Tables"]["meal_photos"]["Row"];
+export type MealPhotoInsert =
+  Database["public"]["Tables"]["meal_photos"]["Insert"];

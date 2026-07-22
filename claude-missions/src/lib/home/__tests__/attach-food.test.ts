@@ -87,4 +87,21 @@ describe("F027: attachFoodToLogs -- AS-049 today's-meals join", () => {
     expect(result.map((l) => l.id)).toEqual(["log-a", "log-b", "log-c"]);
     expect(result[1]?.food).toBeNull();
   });
+
+  it("flags hasPhoto for exactly the logs whose id is in photoLogIds", () => {
+    const logs = [
+      makeLog({ id: "log-a", food_id: null }),
+      makeLog({ id: "log-b", food_id: null }),
+    ];
+
+    const result = attachFoodToLogs(logs, [], new Set(["log-b"]));
+
+    expect(result[0]?.hasPhoto).toBe(false);
+    expect(result[1]?.hasPhoto).toBe(true);
+  });
+
+  it("defaults hasPhoto to false when no photoLogIds set is given", () => {
+    const result = attachFoodToLogs([makeLog({ id: "log-x" })], []);
+    expect(result[0]?.hasPhoto).toBe(false);
+  });
 });

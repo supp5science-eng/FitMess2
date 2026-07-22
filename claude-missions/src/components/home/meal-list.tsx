@@ -43,6 +43,7 @@ export function MealList({
           key={log.id}
           log={log}
           food={log.food}
+          hasPhoto={log.hasPhoto}
           onSaved={onSaved}
           onDeleted={onDeleted}
         />

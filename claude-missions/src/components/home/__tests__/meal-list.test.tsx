@@ -129,3 +129,45 @@ describe("AS-049: MealList lists today's logged meals", () => {
     expect(link).toHaveAttribute("href", "/dodaj/obrok");
   });
 });
+
+describe("Slikaj obrok: a meal log with a stored photo shows the photo + macros", () => {
+  it("renders the meal photo (served from the API route, alt = meal name) and the macro breakdown", () => {
+    const logs = [
+      makeLog({
+        id: "log-photo",
+        name: "Ćevapi",
+        protein: 32,
+        carbs: 40,
+        fat: 18,
+        food_id: null,
+        food: null,
+        hasPhoto: true,
+      }),
+    ];
+
+    render(<MealList logs={logs} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+
+    const photo = screen.getByTestId("meal-card-photo-log-photo");
+    expect(photo).toHaveAttribute("src", "/api/obrok-slika/log-photo");
+    expect(photo).toHaveAttribute("alt", "Ćevapi");
+
+    const macros = screen.getByTestId("meal-card-macros-log-photo");
+    expect(macros).toHaveTextContent("32 g");
+    expect(macros).toHaveTextContent("Proteini");
+    expect(macros).toHaveTextContent("UH");
+    expect(macros).toHaveTextContent("Masti");
+  });
+
+  it("shows no photo or macro row for a log without a stored photo", () => {
+    const logs = [makeLog({ id: "log-1", hasPhoto: false })];
+
+    render(<MealList logs={logs} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+
+    expect(
+      screen.queryByTestId("meal-card-photo-log-1")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("meal-card-macros-log-1")
+    ).not.toBeInTheDocument();
+  });
+});

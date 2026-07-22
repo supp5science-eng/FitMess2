@@ -18,13 +18,26 @@ import type { Food, Log } from "@/lib/types/db";
  */
 export interface LogWithFood extends Log {
   food: Food | null;
+  /**
+   * True when this log has a stored meal photo (the "Slikaj obrok" flow). The
+   * photo itself is served on demand from `/api/obrok-slika/[logId]` -- this is
+   * just the "is there one" flag so the meal card knows to render it. Optional
+   * so plain `Log` fixtures (which never go through the photo lookup) don't have
+   * to set it; absent === no photo.
+   */
+  hasPhoto?: boolean;
 }
 
-export function attachFoodToLogs(logs: Log[], foods: Food[]): LogWithFood[] {
+export function attachFoodToLogs(
+  logs: Log[],
+  foods: Food[],
+  photoLogIds: ReadonlySet<string> = new Set()
+): LogWithFood[] {
   const foodsById = new Map(foods.map((food) => [food.id, food] as const));
 
   return logs.map((log) => ({
     ...log,
     food: log.food_id ? (foodsById.get(log.food_id) ?? null) : null,
+    hasPhoto: photoLogIds.has(log.id),
   }));
 }

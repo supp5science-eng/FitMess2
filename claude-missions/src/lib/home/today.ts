@@ -154,10 +154,33 @@ async function readTodayDataOnce(
       foods = foodsResult.data ?? [];
     }
 
+    // Which of today's logs have a stored meal photo ("Slikaj obrok"). Read
+    // only the ids (never the base64 bytes -- those are served on demand from
+    // `/api/obrok-slika/[logId]`, keeping this page light). BEST-EFFORT: the
+    // photo is a non-critical enhancement, so any failure here (including the
+    // `meal_photos` table not existing yet) degrades to "no photos" and never
+    // fails the core day read.
+    let photoLogIds = new Set<string>();
+    const logIds = logs.map((log) => log.id);
+    if (logIds.length > 0) {
+      try {
+        const photosResult = await supabase
+          .from("meal_photos")
+          .select("log_id")
+          .in("log_id", logIds)
+          .abortSignal(signal);
+        if (!photosResult.error && photosResult.data) {
+          photoLogIds = new Set(photosResult.data.map((row) => row.log_id));
+        }
+      } catch {
+        // ignore -- photos are optional, keep the day read healthy
+      }
+    }
+
     return {
       data: {
         target: targetResult.data ?? null,
-        logs: attachFoodToLogs(logs, foods),
+        logs: attachFoodToLogs(logs, foods, photoLogIds),
       },
       error: null,
     };

@@ -106,21 +106,24 @@ export function BmiCard({ bmi }: { bmi: number | null }) {
         />
       </div>
 
-      {/* Legend: zone name + threshold range */}
-      <ul className="grid grid-cols-4 gap-x-2 gap-y-1">
+      {/* Legend: zone name + threshold range. Two columns (2×2) so even the
+          longest Serbian labels ("Pothranjenost") get room and never collide. */}
+      <ul className="grid grid-cols-2 gap-x-4 gap-y-3">
         {ZONES.map((z) => (
-          <li key={z.key} className="flex flex-col gap-0.5">
-            <span className="flex items-center gap-1.5 text-xs font-medium leading-tight text-foreground">
-              <span
-                aria-hidden="true"
-                className="size-2 shrink-0 rounded-full"
-                style={{ backgroundColor: z.color }}
-              />
-              {z.legend}
-            </span>
-            <span className="pl-3.5 text-[11px] text-muted-foreground">
-              {z.range}
-            </span>
+          <li key={z.key} className="flex items-start gap-2">
+            <span
+              aria-hidden="true"
+              className="mt-1 size-2 shrink-0 rounded-full"
+              style={{ backgroundColor: z.color }}
+            />
+            <div className="flex min-w-0 flex-col leading-tight">
+              <span className="text-xs font-medium text-foreground">
+                {z.legend}
+              </span>
+              <span className="text-[11px] text-muted-foreground">
+                {z.range}
+              </span>
+            </div>
           </li>
         ))}
       </ul>

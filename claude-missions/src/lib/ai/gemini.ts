@@ -5,6 +5,12 @@ import {
   type LabelEstimate,
 } from "@/lib/ai/label-estimate";
 import {
+  COMBINED_PROMPT,
+  COMBINED_RESPONSE_SCHEMA,
+  combinedMealSchema,
+  type CombinedMealEstimate,
+} from "@/lib/ai/combined-estimate";
+import {
   MEAL_PROMPT,
   MEAL_RESPONSE_SCHEMA,
   mealEstimateSchema,
@@ -218,6 +224,46 @@ export async function estimateMealFromImage(
     process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
   );
   const parsed = mealEstimateSchema.safeParse(parseJson(text));
+  if (!parsed.success) {
+    throw new GeminiError("Gemini output did not match the expected shape");
+  }
+  return parsed.data;
+}
+
+/**
+ * "Najtačniji unos": photo + the user's spoken and/or typed description (with a
+ * rough portion) -> validated meal estimate, fused in ONE multimodal request.
+ * `audio` and `note` are each optional but the caller guarantees at least one is
+ * present (the description is required for this flow). Uses the meal model.
+ */
+export async function estimateMealFromImageAndVoice(
+  image: { base64: string; mimeType: string },
+  audio: { base64: string; mimeType: string } | null,
+  note: string | null
+): Promise<CombinedMealEstimate> {
+  const parts: Array<Record<string, unknown>> = [
+    { text: COMBINED_PROMPT },
+    { inline_data: { mime_type: image.mimeType, data: image.base64 } },
+  ];
+  if (audio) {
+    parts.push({ inline_data: { mime_type: audio.mimeType, data: audio.base64 } });
+  }
+  if (note && note.trim()) {
+    parts.push({ text: `Korisnikov opis (tekst): ${note.trim()}` });
+  }
+
+  const text = await postGenerateContent(
+    {
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: COMBINED_RESPONSE_SCHEMA,
+        temperature: 0.2,
+      },
+    },
+    process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
+  );
+  const parsed = combinedMealSchema.safeParse(parseJson(text));
   if (!parsed.success) {
     throw new GeminiError("Gemini output did not match the expected shape");
   }

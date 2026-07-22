@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Barcode, Camera, Mic, Plus, UtensilsCrossed, X } from "lucide-react";
+import {
+  Barcode,
+  Camera,
+  Mic,
+  Plus,
+  Target,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -39,6 +47,9 @@ interface AddSheetOption {
   available: boolean;
   /** Optional muted helper line under the label. */
   description?: string;
+  /** Optional teal highlight badge (e.g. "NAJTAČNIJE") -- also tints the row to
+   * gently pull the eye toward the recommended method. */
+  badge?: string;
 }
 
 // "Pretraži" (catalog search) and "Dodaj proizvod" (manual product create) were
@@ -47,6 +58,17 @@ interface AddSheetOption {
 // hidden fallbacks (the barcode scanner's "manual search" escape hatch, the
 // portion flow, etc.), so nothing breaks; they're just no longer advertised.
 const OPTIONS: AddSheetOption[] = [
+  // The highest-accuracy path (photo + spoken/typed portion) leads the menu and
+  // carries a teal "NAJTAČNIJE" badge to draw people to try it.
+  {
+    key: "najtacnije",
+    label: "Najtačniji unos",
+    icon: Target,
+    href: "/dodaj/najtacnije",
+    available: true,
+    description: "Slikaj + reci šta si pojeo",
+    badge: "NAJTAČNIJE",
+  },
   {
     key: "obrok",
     label: "Slikaj obrok",
@@ -149,7 +171,15 @@ export function AddSheet() {
 
                 <div className="flex flex-col gap-2">
                   {OPTIONS.map(
-                    ({ key, label, icon: Icon, href, available, description }) => (
+                    ({
+                      key,
+                      label,
+                      icon: Icon,
+                      href,
+                      available,
+                      description,
+                      badge,
+                    }) => (
                       <Link
                         key={key}
                         href={href}
@@ -159,9 +189,16 @@ export function AddSheet() {
                           "flex items-center gap-3 rounded-xl border border-border px-4 py-3.5 text-left text-sm font-medium text-foreground transition-colors",
                           "hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
                           !available && "text-muted-foreground",
+                          badge && "border-primary/40 bg-primary/5",
                         )}
                       >
-                        <Icon className="size-5 shrink-0" aria-hidden="true" />
+                        <Icon
+                          className={cn(
+                            "size-5 shrink-0",
+                            badge && "text-primary",
+                          )}
+                          aria-hidden="true"
+                        />
                         <span className="flex flex-1 flex-col">
                           <span>{label}</span>
                           {description ? (
@@ -173,7 +210,14 @@ export function AddSheet() {
                             </span>
                           ) : null}
                         </span>
-                        {!available ? (
+                        {badge ? (
+                          <span
+                            data-testid={`add-sheet-badge-${key}`}
+                            className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary"
+                          >
+                            {badge}
+                          </span>
+                        ) : !available ? (
                           <Badge
                             variant="secondary"
                             data-testid={`add-sheet-soon-badge-${key}`}

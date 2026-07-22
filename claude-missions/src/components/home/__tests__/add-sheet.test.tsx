@@ -32,6 +32,8 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
     const expectedHrefs: Record<string, string> = {
+      // Highest-accuracy combined flow leads the menu.
+      najtacnije: "/dodaj/najtacnije",
       // "Pretraži" and "Dodaj proizvod" were removed from this menu (the app is
       // photo/voice-first); their routes still exist but are no longer offered.
       obrok: "/dodaj/obrok",
@@ -67,6 +69,28 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     expect(
       screen.getByTestId("add-sheet-soon-badge-barkod")
     ).toBeInTheDocument();
+  });
+
+  it("test_najtacnije_leads_the_menu_with_a_teal_highlight_badge", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    // First option in the sheet.
+    const options = screen
+      .getByTestId("add-sheet")
+      .querySelectorAll('[data-testid^="add-sheet-option-"]');
+    expect(options[0]).toHaveAttribute(
+      "data-testid",
+      "add-sheet-option-najtacnije"
+    );
+
+    // Carries the highlight badge (not the gray "Uskoro" one).
+    expect(screen.getByTestId("add-sheet-badge-najtacnije")).toHaveTextContent(
+      "NAJTAČNIJE"
+    );
+    expect(
+      screen.queryByTestId("add-sheet-soon-badge-najtacnije")
+    ).not.toBeInTheDocument();
   });
 
   it("test_the_voice_option_links_to_the_reci_obrok_flow_with_its_note", () => {

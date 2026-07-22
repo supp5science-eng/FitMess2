@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { toBelgradeCalendarDay } from "@/lib/dates";
+import type { StepsDayInput } from "@/lib/steps/steps-week";
 import type { Database } from "@/lib/types/db";
 
 /**
@@ -33,4 +35,41 @@ export async function getStepsForDay(
   }
 
   return { steps: data?.steps ?? 0, error: null };
+}
+
+/**
+ * Koraci: the Analitika card's read of the last 7 Belgrade days of step totals.
+ * Same session-bound (RLS) posture as `getStepsForDay`; `step_counts_select_own`
+ * enforces "own data only". Days with no row simply don't appear (the pure
+ * `computeStepsWeek` fills them in as 0). Never throws.
+ */
+export interface StepsWeekResult {
+  rows: StepsDayInput[];
+  error: { message: string } | null;
+}
+
+export async function getStepsWeek(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  now: Date = new Date()
+): Promise<StepsWeekResult> {
+  const todayKey = toBelgradeCalendarDay(now);
+  const [year, month, day] = todayKey.split("-").map(Number);
+  const firstKey = toBelgradeCalendarDay(
+    new Date(Date.UTC(year!, month! - 1, day! - 6))
+  );
+
+  const { data, error } = await supabase
+    .from("step_counts")
+    .select("day, steps")
+    .eq("user_id", userId)
+    .gte("day", firstKey)
+    .lte("day", todayKey)
+    .order("day", { ascending: true });
+
+  if (error) {
+    return { rows: [], error: { message: error.message } };
+  }
+
+  return { rows: data ?? [], error: null };
 }

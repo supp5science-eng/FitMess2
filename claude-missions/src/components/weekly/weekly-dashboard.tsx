@@ -3,7 +3,9 @@ import type { ReactNode } from "react";
 import { BmiCard } from "@/components/analytics/bmi-card";
 import { IntakeTrendCard } from "@/components/analytics/intake-trend-card";
 import { MacroAverageCard } from "@/components/analytics/macro-average-card";
+import { StepsCard } from "@/components/analytics/steps-card";
 import { WaterCard } from "@/components/analytics/water-card";
+import type { StepsWeek } from "@/lib/steps/steps-week";
 import type { IntakeTrend } from "@/lib/weight/intake-trend";
 import type { WaterWeek } from "@/lib/water/water-week";
 import type { MacroWeek } from "@/lib/week/macro-weeks";
@@ -16,6 +18,7 @@ export function WeeklyDashboard({
   macroWeeks,
   intakeTrend,
   waterWeek,
+  stepsWeek,
   footer,
 }: {
   /** The user's body-mass index (kg/m²), computed from their questionnaire
@@ -32,6 +35,9 @@ export function WeeklyDashboard({
   /** Today's hydration vs goal + a 7-day series (`computeWaterWeek`). `null`
    * when the read failed. */
   waterWeek: WaterWeek | null;
+  /** Interactive 7-day step series (`computeStepsWeek`). `null` when the read
+   * failed. */
+  stepsWeek: StepsWeek | null;
   footer?: ReactNode;
 }) {
   return (
@@ -54,6 +60,9 @@ export function WeeklyDashboard({
 
       {/* Hydration: today vs goal + a 7-day series. */}
       <WaterCard week={waterWeek} />
+
+      {/* Steps: interactive 7-day chart + today's goal progress. */}
+      <StepsCard week={stepsWeek} />
 
       {/* "Svi obroci" meal-history log (bottom of the page) */}
       {footer}

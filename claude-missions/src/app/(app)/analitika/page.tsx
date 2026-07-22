@@ -7,6 +7,8 @@ import { bmr, tdee } from "@/lib/budget/engine";
 import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { groupLogsByDay } from "@/lib/log/group";
 import { getMealHistory } from "@/lib/log/history";
+import { getStepsWeek } from "@/lib/steps/steps";
+import { computeStepsWeek } from "@/lib/steps/steps-week";
 import { createClient } from "@/lib/supabase/server";
 import { getWaterWeek } from "@/lib/water/water";
 import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
@@ -43,11 +45,12 @@ export default async function NedeljaPage() {
   }
 
   const now = new Date();
-  const [result, historyResult, waterResult, profileResult] =
+  const [result, historyResult, waterResult, stepsResult, profileResult] =
     await Promise.all([
       getWeekData(supabase, userId, now),
       getMealHistory(supabase, userId, now),
       getWaterWeek(supabase, userId, now),
+      getStepsWeek(supabase, userId, now),
       // Profile questionnaire data. `weight_kg` + height feed the BMI card;
       // sex/height/weight/birth_year + activity_level feed the TDEE behind the
       // intake-trend card; weight also sets the water goal. A failure here is
@@ -76,6 +79,12 @@ export default async function NedeljaPage() {
     console.error(
       "[Voda /analitika] getWaterWeek failed:",
       waterResult.error.message
+    );
+  }
+  if (stepsResult.error) {
+    console.error(
+      "[Koraci /analitika] getStepsWeek failed:",
+      stepsResult.error.message
     );
   }
 
@@ -168,6 +177,13 @@ export default async function NedeljaPage() {
         )
       : null;
 
+  // "Koraci" card: interactive 7-day step series. Degrades to null on a read
+  // error (the card then shows a calm retry message).
+  const stepsWeek =
+    stepsResult.error === null
+      ? computeStepsWeek(stepsResult.rows, now)
+      : null;
+
   // "Svi obroci" meal-history log: group the 30-day window by day, then split
   // into the last 7 calendar days (shown immediately) and older days (behind
   // "Prikaži više"). Degrades to no footer if the history read failed --
@@ -190,6 +206,7 @@ export default async function NedeljaPage() {
       macroWeeks={macroWeeks}
       intakeTrend={intakeTrend}
       waterWeek={waterWeek}
+      stepsWeek={stepsWeek}
       footer={footer}
     />
   );

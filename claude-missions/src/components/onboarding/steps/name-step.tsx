@@ -38,6 +38,7 @@ export function NameStep({
           id="ime"
           name="ime"
           type="text"
+          placeholder="Tvoje ime"
           autoComplete="given-name"
           autoCapitalize="words"
           enterKeyHint="next"
@@ -47,6 +48,7 @@ export function NameStep({
           aria-invalid={Boolean(error)}
           aria-describedby={error ? errorId : undefined}
           onChange={(event) => onChange(event.target.value)}
+          className="h-12 rounded-xl px-4 text-lg md:text-lg"
         />
         <FieldError message={error} id={errorId} />
       </div>

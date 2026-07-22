@@ -1,3 +1,4 @@
+import { AnimatedNumber } from "@/components/home/animated-number";
 import type { RingView } from "@/components/home/ring";
 
 // F027 / AS-048: the three macros (Proteini / Masti / UH) shown below the
@@ -57,15 +58,19 @@ function MacroBar({
       >
         <div
           data-testid={`${testId}-fill`}
-          className="h-full rounded-full transition-[width]"
-          style={{ width: `${percent}%`, backgroundColor: color }}
+          className="h-full rounded-full"
+          style={{
+            width: `${percent}%`,
+            backgroundColor: color,
+            transition: "width 0.5s cubic-bezier(0.2,0,0,1)",
+          }}
         />
       </div>
       <span
         data-testid={`${testId}-values`}
         className="text-sm tabular-nums text-foreground"
       >
-        {Math.round(shown)} / {Math.round(targetG)} g
+        <AnimatedNumber value={shown} animateKey={view} /> / {Math.round(targetG)} g
       </span>
     </div>
   );

@@ -1,3 +1,4 @@
+import { AnimatedNumber } from "@/components/home/animated-number";
 import { computeRingState, type RingLevel } from "@/lib/home/totals";
 import { cn } from "@/lib/utils";
 
@@ -182,16 +183,16 @@ export function Ring({
 
         {/* Centre = the toggle-selected metric (remaining or consumed). */}
         <div className="absolute inset-0 flex flex-col items-center justify-center px-11 text-center">
-          <span
+          <AnimatedNumber
+            value={centerSpec.value}
+            animateKey={view}
             data-testid={centerSpec.valueTestId}
             className={cn(
               "font-bold tabular-nums",
               state.isOver ? "text-4xl" : "text-5xl",
               centerSpec.danger ? "text-destructive" : "text-foreground"
             )}
-          >
-            {centerSpec.value}
-          </span>
+          />
           <span
             data-testid={centerSpec.labelTestId}
             className={cn(

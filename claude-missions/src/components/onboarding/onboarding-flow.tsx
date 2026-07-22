@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
+import { CommitScreen } from "@/components/onboarding/commit-screen";
 import { PlanReveal } from "@/components/onboarding/plan-reveal";
 import { isOnboardingDataComplete } from "@/lib/onboarding/summary";
 import type { CompleteOnboardingData } from "@/lib/onboarding/summary";
@@ -32,6 +33,7 @@ import { readCompletePendingOnboarding } from "@/lib/onboarding/storage";
 type Stage =
   | { kind: "loading" }
   | { kind: "wizard" }
+  | { kind: "commit"; data: CompleteOnboardingData }
   | { kind: "plan"; data: CompleteOnboardingData };
 
 export function OnboardingFlow() {
@@ -51,8 +53,17 @@ export function OnboardingFlow() {
 
   function handleWizardComplete(data: OnboardingData) {
     if (isOnboardingDataComplete(data)) {
-      setStage({ kind: "plan", data });
+      setStage({ kind: "commit", data });
     }
+  }
+
+  if (stage.kind === "commit") {
+    return (
+      <CommitScreen
+        data={stage.data}
+        onCommitted={() => setStage({ kind: "plan", data: stage.data })}
+      />
+    );
   }
 
   if (stage.kind === "loading") {

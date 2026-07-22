@@ -30,30 +30,30 @@ export interface CommitmentInput {
 }
 
 export interface Commitment {
-  /** Muted lead-in, e.g. "Posvećen sam svom cilju da". */
+  /** Muted lead-in, e.g. "Obećavam sebi da ću". */
   intro: string;
-  /** Bold focus, e.g. "smršam 6 kg do 14. oktobra". */
+  /** Bold focus, e.g. "smršati 6 kg do 14. oktobra". */
   emphasis: string;
-  /** Muted second line (the pledge). */
+  /** Warm, first-person pledge (the "opening up to yourself" line). */
   pledge: string;
 }
 
 /**
- * Builds the end-of-questionnaire commitment sentence from the collected data.
- * Weight delta and target date are derived from what the user already entered
- * (current vs target weight, today + timeframe). Serbian, informal, gendered by
- * `sex`; weight-change goals get the "X kg do <datum>" phrasing, maintain/tone
- * get a number-free goal-specific line.
+ * Builds the end-of-questionnaire commitment from the collected data. Weight
+ * delta and target date are derived from what the user already entered (current
+ * vs target weight, today + timeframe). Serbian, informal, gendered by `sex`,
+ * and deliberately warm/first-person ("choosing myself"): weight-change goals
+ * get the "X kg do <datum>" phrasing, maintain/tone a number-free goal line.
  */
 export function buildCommitment(
   input: CommitmentInput,
   now: Date = new Date()
 ): Commitment {
   const female = input.sex === "female";
-  const intro = `${female ? "Posvećena" : "Posvećen"} sam svom cilju da`;
-  const pledge = `Pratiću obroke, hraniću telo sa namerom i držaću sebe ${
-    female ? "odgovornom" : "odgovornim"
-  }.`;
+  const intro = "Obećavam sebi da ću";
+  const pledge = `Biram sebe — ovog puta do kraja. Ješću sa namerom, biću ${
+    female ? "iskrena" : "iskren"
+  } prema sebi i neću odustati kad bude teško.`;
 
   const emphasis = buildEmphasis(input, now);
   return { intro, emphasis, pledge };
@@ -72,13 +72,13 @@ function buildEmphasis(input: CommitmentInput, now: Date): string {
       const targetDate = new Date(
         now.getTime() + timeframeWeeks * 7 * 24 * 60 * 60 * 1000
       );
-      const verb = goal === "lose" ? "smršam" : "nabacim";
+      const verb = goal === "lose" ? "smršati" : "nabaciti";
       return `${verb} ${delta} kg do ${formatSerbianDate(targetDate)}`;
     }
   }
 
-  if (goal === "gain") return "izgradim čistu mišićnu masu";
-  if (goal === "tone") return "se izvajam i zategnem";
-  if (goal === "lose") return "dođem do svoje forme";
-  return "zadržim svoju težinu i navike";
+  if (goal === "gain") return "izgraditi jaču verziju sebe";
+  if (goal === "tone") return "izvajati i zategnuti svoje telo";
+  if (goal === "lose") return "doći do svoje najbolje forme";
+  return "ostati veran svojim navikama i formi";
 }

@@ -13,23 +13,24 @@ describe("formatSerbianDate", () => {
 });
 
 describe("buildCommitment", () => {
-  it("weight-loss goal: kg delta + target date, genders the copy (male)", () => {
+  it("weight-loss goal: kg delta + target date, first-person male copy", () => {
     const c = buildCommitment(
       {
         goal: "lose",
         sex: "male",
         weightKg: 80,
         targetWeightKg: 74,
-        timeframeWeeks: 8, // ~ +56 days from Aug 14 -> Oct 9
+        timeframeWeeks: 8,
       },
       NOW
     );
-    expect(c.intro).toBe("Posvećen sam svom cilju da");
-    expect(c.emphasis).toMatch(/^smršam 6 kg do \d+\. \p{L}+$/u);
-    expect(c.pledge).toContain("odgovornim");
+    expect(c.intro).toBe("Obećavam sebi da ću");
+    expect(c.emphasis).toMatch(/^smršati 6 kg do \d+\. \p{L}+$/u);
+    expect(c.pledge).toContain("iskren");
+    expect(c.pledge).not.toContain("iskrena");
   });
 
-  it("weight-gain goal: uses 'nabacim' and the female forms", () => {
+  it("weight-gain goal: 'nabaciti' + female pledge form", () => {
     const c = buildCommitment(
       {
         goal: "gain",
@@ -40,9 +41,8 @@ describe("buildCommitment", () => {
       },
       NOW
     );
-    expect(c.intro).toBe("Posvećena sam svom cilju da");
-    expect(c.emphasis).toMatch(/^nabacim 5 kg do /);
-    expect(c.pledge).toContain("odgovornom");
+    expect(c.emphasis).toMatch(/^nabaciti 5 kg do /);
+    expect(c.pledge).toContain("iskrena");
   });
 
   it("maintain goal: number-free, goal-specific emphasis", () => {
@@ -56,7 +56,7 @@ describe("buildCommitment", () => {
       },
       NOW
     );
-    expect(c.emphasis).toBe("zadržim svoju težinu i navike");
+    expect(c.emphasis).toBe("ostati veran svojim navikama i formi");
     expect(c.emphasis).not.toMatch(/kg/);
   });
 
@@ -71,6 +71,6 @@ describe("buildCommitment", () => {
       },
       NOW
     );
-    expect(c.emphasis).toBe("se izvajam i zategnem");
+    expect(c.emphasis).toBe("izvajati i zategnuti svoje telo");
   });
 });

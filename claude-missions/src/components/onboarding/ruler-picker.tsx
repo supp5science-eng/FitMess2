@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { FieldError } from "@/components/onboarding/field-error";
 import { Label } from "@/components/ui/label";
+import { tickFeedback } from "@/lib/onboarding/tick";
 import { cn } from "@/lib/utils";
 
 const TICK_GAP = 12; // px between adjacent ticks
@@ -39,6 +40,8 @@ export function RulerPicker({
   const errorId = `${id}-error`;
   const scrollRef = useRef<HTMLDivElement>(null);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Only tick on user-driven scrolls, never on mount / programmatic snapping.
+  const interactedRef = useRef(false);
   const selectedIndex = value === null ? -1 : options.indexOf(value);
   const [centerIndex, setCenterIndex] = useState(
     selectedIndex >= 0 ? selectedIndex : Math.floor(options.length / 2)
@@ -65,7 +68,10 @@ export function RulerPicker({
       options.length - 1,
       Math.max(0, Math.round(el.scrollLeft / TICK_GAP))
     );
-    if (idx !== centerIndex) setCenterIndex(idx);
+    if (idx !== centerIndex) {
+      if (interactedRef.current) tickFeedback();
+      setCenterIndex(idx);
+    }
     if (commitTimer.current) clearTimeout(commitTimer.current);
     commitTimer.current = setTimeout(() => {
       if (options[idx] !== value) onChange(options[idx]);
@@ -116,6 +122,12 @@ export function RulerPicker({
         <div
           ref={scrollRef}
           onScroll={handleScroll}
+          onPointerDown={() => {
+            interactedRef.current = true;
+          }}
+          onWheel={() => {
+            interactedRef.current = true;
+          }}
           className="flex snap-x snap-mandatory items-start overflow-x-auto scroll-smooth px-[50%] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           style={{
             maskImage:

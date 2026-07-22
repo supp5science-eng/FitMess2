@@ -8,8 +8,10 @@ import {
   ImageUp,
   Loader2,
   Mic,
+  ScanText,
   Sparkles,
   Square,
+  UtensilsCrossed,
 } from "lucide-react";
 
 import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
@@ -18,7 +20,14 @@ import { downscaleImage } from "@/lib/image/downscale";
 import { logMealAction } from "../obrok/actions";
 import { estimateCombinedAction } from "./actions";
 
-type Phase = "capture" | "describe" | "estimating" | "confirm" | "saving";
+type Phase =
+  | "mode"
+  | "capture"
+  | "describe"
+  | "estimating"
+  | "confirm"
+  | "saving";
+type Mode = "obrok" | "deklaracija";
 
 interface Nutrition {
   kcal: number;
@@ -66,7 +75,8 @@ export function NajtacnijeFlow() {
   const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wavBlobRef = useRef<Blob | null>(null);
 
-  const [phase, setPhase] = useState<Phase>("capture");
+  const [phase, setPhase] = useState<Phase>("mode");
+  const [mode, setMode] = useState<Mode>("obrok");
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -156,6 +166,32 @@ export function NajtacnijeFlow() {
 
   const hasDescription = wavBlobRef.current != null || note.trim().length > 0;
 
+  // Per-mode copy: same flow, different guidance (a plate vs a nutrition label).
+  const guide =
+    mode === "deklaracija"
+      ? {
+          step1: "Slikaj deklaraciju (nutritivnu tabelu)",
+          step2: "Reci koliko proizvod ukupno ima i koliko si pojeo",
+          example: "npr. „ceo paket je 250 g, pojeo sam pola” ili „dve velike kašike”",
+          cameraSub: "Zatim ćeš reći koliko si pojeo za tačnu porciju",
+          describeTitle: "Reci koliko ukupno ima i koliko si pojeo",
+          describeSub:
+            "Sa deklaracije čitamo vrednosti; tvoja količina daje tačnu porciju — npr. „ceo paket 250 g, pojeo sam pola”, „dve velike kašike”.",
+          placeholder: "npr. ceo paket je 250 g, pojeo sam pola",
+        }
+      : {
+          step1: "Slikaj obrok",
+          step2: "Reci ili napiši šta je i koliko si pojeo",
+          example:
+            "npr. „pire sa junećim mesom, jedan pun tanjir, pojeo sam skoro sve”",
+          cameraSub: "Zatim ćeš opisati obrok za precizniju procenu",
+          describeTitle: "Reci ili napiši šta si pojeo i koliko",
+          describeSub:
+            "Tvoja procena količine najviše diže tačnost — npr. „jedan tanjir”, „pojeo sam pola”, „dve velike kašike”.",
+          placeholder:
+            "npr. pire sa junećim mesom, jedan pun tanjir, pojeo sam skoro sve",
+        };
+
   async function handleAnalyze() {
     const file = capturedFileRef.current;
     if (!file) {
@@ -173,6 +209,7 @@ export function NajtacnijeFlow() {
     const blob = await downscaleImage(file, 1568, 0.9);
     const formData = new FormData();
     formData.append("slika", blob, "obrok.jpg");
+    formData.append("tip", mode);
     if (wavBlobRef.current) {
       formData.append("audio", wavBlobRef.current, "opis.wav");
     }
@@ -258,7 +295,7 @@ export function NajtacnijeFlow() {
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Najtačniji unos
+          iPeach mtd
         </h1>
         <Link
           href="/danas"
@@ -295,6 +332,49 @@ export function NajtacnijeFlow() {
         </p>
       ) : null}
 
+      {phase === "mode" ? (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-muted-foreground">
+            Šta slikaš? Oba puta uz sliku kažeš i količinu — zato je procena
+            najtačnija.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("obrok");
+              setPhase("capture");
+            }}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-background px-4 py-4 text-left transition-colors hover:bg-muted"
+          >
+            <UtensilsCrossed className="size-6 shrink-0 text-primary" aria-hidden="true" />
+            <span className="flex flex-col">
+              <span className="text-base font-medium text-foreground">Obrok</span>
+              <span className="text-sm text-muted-foreground">
+                Slikaj jelo pa reci koliko si pojeo
+              </span>
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("deklaracija");
+              setPhase("capture");
+            }}
+            className="flex items-center gap-3 rounded-2xl border border-border bg-background px-4 py-4 text-left transition-colors hover:bg-muted"
+          >
+            <ScanText className="size-6 shrink-0 text-primary" aria-hidden="true" />
+            <span className="flex flex-col">
+              <span className="text-base font-medium text-foreground">
+                Deklaracija
+              </span>
+              <span className="text-sm text-muted-foreground">
+                Slikaj nutritivnu tabelu pa reci koliko si pojeo
+              </span>
+            </span>
+          </button>
+        </div>
+      ) : null}
+
       {phase === "capture" ? (
         <div className="flex flex-col gap-4">
           <div className="rounded-2xl border border-primary/30 bg-primary/5 px-4 py-4">
@@ -303,17 +383,14 @@ export function NajtacnijeFlow() {
             </p>
             <ol className="mt-2 flex flex-col gap-1 text-sm text-muted-foreground">
               <li>
-                <span className="font-semibold text-primary">1.</span> Slikaj
-                obrok
+                <span className="font-semibold text-primary">1.</span>{" "}
+                {guide.step1}
               </li>
               <li>
-                <span className="font-semibold text-primary">2.</span> Reci ili
-                napiši šta je i koliko si pojeo
+                <span className="font-semibold text-primary">2.</span>{" "}
+                {guide.step2}
                 <br />
-                <span className="text-xs">
-                  npr. „pire sa junećim mesom, jedan pun tanjir, pojeo sam skoro
-                  sve”
-                </span>
+                <span className="text-xs">{guide.example}</span>
               </li>
             </ol>
           </div>
@@ -328,7 +405,7 @@ export function NajtacnijeFlow() {
               Otvori kameru
             </span>
             <span className="text-sm text-muted-foreground">
-              Zatim ćeš opisati obrok za precizniju procenu
+              {guide.cameraSub}
             </span>
           </button>
           <button
@@ -355,11 +432,10 @@ export function NajtacnijeFlow() {
 
           <div className="flex flex-col gap-1">
             <span className="text-base font-medium text-foreground">
-              Reci ili napiši šta si pojeo i koliko
+              {guide.describeTitle}
             </span>
             <span className="text-sm text-muted-foreground">
-              Tvoja procena količine najviše diže tačnost — npr. „jedan tanjir”,
-              „pojeo sam pola”, „dve velike kašike”.
+              {guide.describeSub}
             </span>
           </div>
 
@@ -399,7 +475,7 @@ export function NajtacnijeFlow() {
               value={note}
               onChange={(event) => setNote(event.target.value)}
               rows={3}
-              placeholder="npr. pire sa junećim mesom, jedan pun tanjir, pojeo sam skoro sve"
+              placeholder={guide.placeholder}
               className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />
           </label>

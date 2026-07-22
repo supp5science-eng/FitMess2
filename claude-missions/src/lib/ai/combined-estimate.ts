@@ -32,3 +32,28 @@ Pravila:
 - "sigurnost": "visoka" kad se slika i jasan opis slažu; "srednja"/"niska" kad je nešto nejasno ili se izvori kose.
 - "napomena": kratko objasni ključne pretpostavke ili neslaganje slike i opisa.
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;
+
+// V2 variant: the photo is a NUTRITION LABEL (deklaracija), and the user says
+// how much the product weighs in total AND how much they ate ("ceo paket 250 g,
+// pojeo sam pola" / "dve velike kašike"). We read per-100g off the label and
+// scale it to the consumed mass the user describes. Same response schema.
+export const COMBINED_LABEL_PROMPT = `Dobijaš FOTOGRAFIJU nutritivne deklaracije (tabele) proizvoda i korisnikov OPIS (glas i/ili tekst) u kome kaže KOLIKO UKUPNO ima proizvod i KOLIKO je pojeo (npr. "ceo paket je 250 grama, pojeo sam pola" ili "uzeo sam dve velike kašike").
+
+Zadatak: izračunaj nutritivne vrednosti ZA KOLIČINU KOJU JE KORISNIK POJEO.
+
+Kako:
+- Sa deklaracije pročitaj vrednosti NA 100 g (kcal, proteini, ugljeni hidrati, masti). Ako su date po porciji, preračunaj na 100 g. Ako je energija u kJ, pretvori u kcal (kcal = kJ / 4.184).
+- Iz opisa odredi POJEDENU masu u gramima:
+  - ukupna masa + udeo ("250 g, pojeo pola") → pojedeno = 250 × 0,5 = 125 g;
+  - kućna mera ("dve velike kašike") → proceni realno (velika kašika ≈ 15–20 g, šolja ≈ 240 g);
+  - direktno grami → koristi tačno tu vrednost.
+- Pomnoži vrednosti na 100 g sa (pojedeni_grami / 100) da dobiješ UKUPNO za pojedenu porciju.
+
+Pravila:
+- "naziv": naziv proizvoda ako se vidi/čuje, inače kratko opisno (srpski, latinica).
+- "sastojci": prazan niz [] osim ako se jasno vide.
+- "procenjeni_grami": POJEDENA masa u gramima.
+- "kcal", "protein_g", "uh_g", "mast_g": UKUPNO za pojedenu porciju (skalirano sa 100 g).
+- "sigurnost": "visoka" kad su i deklaracija i količina jasni; "srednja"/"niska" kad procenjuješ.
+- "napomena": kratko (npr. "125 g od 250 g paketa").
+- Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;

@@ -5,6 +5,7 @@ import {
   type LabelEstimate,
 } from "@/lib/ai/label-estimate";
 import {
+  COMBINED_LABEL_PROMPT,
   COMBINED_PROMPT,
   COMBINED_RESPONSE_SCHEMA,
   combinedMealSchema,
@@ -230,19 +231,28 @@ export async function estimateMealFromImage(
   return parsed.data;
 }
 
+/** iPeach input variant: a plate of food ("obrok") or a nutrition label
+ * ("deklaracija") -- selects which fusion prompt Gemini gets. */
+export type CombinedVariant = "obrok" | "deklaracija";
+
 /**
- * "Najtačniji unos": photo + the user's spoken and/or typed description (with a
- * rough portion) -> validated meal estimate, fused in ONE multimodal request.
+ * "iPeach": photo + the user's spoken and/or typed description (with a rough
+ * portion) -> validated estimate, fused in ONE multimodal request. `variant`
+ * picks the prompt: "obrok" reads a plate + the eaten amount; "deklaracija"
+ * reads a nutrition label per-100g + the total/eaten amount the user states.
  * `audio` and `note` are each optional but the caller guarantees at least one is
  * present (the description is required for this flow). Uses the meal model.
  */
 export async function estimateMealFromImageAndVoice(
   image: { base64: string; mimeType: string },
   audio: { base64: string; mimeType: string } | null,
-  note: string | null
+  note: string | null,
+  variant: CombinedVariant = "obrok"
 ): Promise<CombinedMealEstimate> {
+  const prompt =
+    variant === "deklaracija" ? COMBINED_LABEL_PROMPT : COMBINED_PROMPT;
   const parts: Array<Record<string, unknown>> = [
-    { text: COMBINED_PROMPT },
+    { text: prompt },
     { inline_data: { mime_type: image.mimeType, data: image.base64 } },
   ];
   if (audio) {

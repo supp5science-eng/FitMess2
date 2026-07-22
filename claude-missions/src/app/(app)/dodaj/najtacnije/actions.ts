@@ -1,7 +1,10 @@
 "use server";
 
 import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
-import { estimateMealFromImageAndVoice } from "@/lib/ai/gemini";
+import {
+  estimateMealFromImageAndVoice,
+  type CombinedVariant,
+} from "@/lib/ai/gemini";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -50,6 +53,10 @@ export async function estimateCombinedAction(
   const note =
     typeof noteRaw === "string" ? noteRaw.trim().slice(0, MAX_NOTE_LEN) : "";
 
+  const tipRaw = formData.get("tip");
+  const variant: CombinedVariant =
+    tipRaw === "deklaracija" ? "deklaracija" : "obrok";
+
   // The description (voice or text) is required -- it's the whole point of this
   // higher-accuracy path.
   if (!audioFile && !note) {
@@ -74,7 +81,8 @@ export async function estimateCombinedAction(
     const data = await estimateMealFromImageAndVoice(
       { base64: imageBase64, mimeType: imageMime },
       audioPart,
-      note || null
+      note || null,
+      variant
     );
     return { ok: true, data };
   } catch (err) {

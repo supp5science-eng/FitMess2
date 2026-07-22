@@ -62,11 +62,11 @@ const OPTIONS: AddSheetOption[] = [
   // carries a teal "NAJTAČNIJE" badge to draw people to try it.
   {
     key: "najtacnije",
-    label: "Najtačniji unos",
+    label: "iPeach mtd",
     icon: Target,
     href: "/dodaj/najtacnije",
     available: true,
-    description: "Slikaj + reci šta si pojeo",
+    description: "Najtačnije: slikaj + reci",
     badge: "NAJTAČNIJE",
   },
   {

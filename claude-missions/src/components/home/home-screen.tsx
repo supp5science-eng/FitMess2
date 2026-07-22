@@ -122,7 +122,7 @@ export function HomeScreen({
     introStage === "glide" ||
     introStage === "land";
 
-  // Keep the floating bottom nav (Početna/Analitika/Lofi/Profil) hidden for the
+  // Keep the floating bottom nav (Početna/Analitika/Profil) hidden for the
   // whole onboarding ring hand-off. During "glide"/"land" the intro cover turns
   // transparent to reveal the dashboard, and the fixed nav (z-40) would
   // otherwise peek in underneath while the plan is still landing -- which reads

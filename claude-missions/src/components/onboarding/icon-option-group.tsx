@@ -13,6 +13,18 @@ export interface IconOptionItem<T extends string> {
   icon: ReactNode;
 }
 
+/** `comfortable` (default) is roomy for short lists (pol); `compact` tightens
+ *  padding + badge so longer lists (aktivnost, cilj) fit one screen unscrolled. */
+type IconOptionSize = "comfortable" | "compact";
+
+const SIZE_STYLES: Record<
+  IconOptionSize,
+  { list: string; button: string; badge: string }
+> = {
+  comfortable: { list: "gap-3", button: "px-4 py-4", badge: "size-10" },
+  compact: { list: "gap-2", button: "px-4 py-3", badge: "size-9" },
+};
+
 /**
  * F015: single-select "radio group made of big icon cards" -- a round icon
  * badge, a title (+ optional description), and a radio dot on the right; the
@@ -27,14 +39,21 @@ export function IconOptionGroup<T extends string>({
   options,
   value,
   onChange,
+  size = "comfortable",
 }: {
   legend: string;
   options: IconOptionItem<T>[];
   value: T | null;
   onChange: (value: T) => void;
+  size?: IconOptionSize;
 }) {
+  const styles = SIZE_STYLES[size];
   return (
-    <div role="radiogroup" aria-label={legend} className="flex flex-col gap-3">
+    <div
+      role="radiogroup"
+      aria-label={legend}
+      className={cn("flex flex-col", styles.list)}
+    >
       {options.map((option) => {
         const selected = value === option.value;
         return (
@@ -45,14 +64,20 @@ export function IconOptionGroup<T extends string>({
             aria-checked={selected}
             onClick={() => onChange(option.value)}
             className={cn(
-              "flex w-full items-center gap-4 rounded-2xl border-2 px-4 py-4 text-left transition-colors",
+              "flex w-full items-center gap-4 rounded-2xl border-2 text-left transition-colors",
+              styles.button,
               "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
               selected
                 ? "border-foreground bg-card"
                 : "border-border bg-background hover:bg-muted"
             )}
           >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
+            <span
+              className={cn(
+                "flex shrink-0 items-center justify-center rounded-full bg-muted text-foreground",
+                styles.badge
+              )}
+            >
               {option.icon}
             </span>
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">

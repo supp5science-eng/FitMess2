@@ -4,6 +4,7 @@ import { MealHistory } from "@/components/analytics/meal-history";
 import { WeightSection } from "@/components/analytics/weight-section";
 import { WeeklyDashboard } from "@/components/weekly/weekly-dashboard";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { bmr } from "@/lib/budget/engine";
 import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { groupLogsByDay } from "@/lib/log/group";
 import { getMealHistory } from "@/lib/log/history";
@@ -46,12 +47,14 @@ export default async function NedeljaPage() {
       getWeekData(supabase, userId, now),
       getMealHistory(supabase, userId, now),
       getWeighIns(supabase, userId, now),
-      // Onboarding weight -- only used to prefill the weigh-in sheet before the
-      // first real weigh-in exists. A failure here is non-fatal (prefill just
-      // falls back to empty), so it never blocks the screen.
+      // Profile questionnaire data. `weight_kg` prefills the weigh-in sheet
+      // before the first real weigh-in exists; sex/height/birth_year feed the
+      // BMR card at the top of the dashboard. A failure here is non-fatal (the
+      // prefill falls back to empty and the BMR card shows its "dopuni profil"
+      // state), so it never blocks the screen.
       supabase
         .from("profiles")
-        .select("weight_kg")
+        .select("sex, weight_kg, height_cm, birth_year")
         .eq("user_id", userId)
         .maybeSingle(),
     ]);
@@ -106,6 +109,26 @@ export default async function NedeljaPage() {
 
   const summary = computeWeekSummary(logs, target.daily_kcal, now);
 
+  // BMR (Mifflin-St Jeor, via the shared budget engine) from the user's
+  // questionnaire data. Only computed when every input is present; if the
+  // profile is incomplete (e.g. a Google user who skipped fields) we pass
+  // null and the card shows a calm "dopuni profil" state instead of a number
+  // built on defaults. Age is `currentYear - birth_year`, the inverse of the
+  // onboarding `ageYearsToBirthYear` conversion.
+  const profile = profileResult.data;
+  const bmrKcal =
+    profile?.sex &&
+    profile.weight_kg != null &&
+    profile.height_cm != null &&
+    profile.birth_year != null
+      ? bmr(
+          profile.sex,
+          profile.weight_kg,
+          profile.height_cm,
+          now.getFullYear() - profile.birth_year
+        )
+      : null;
+
   // "Svi obroci" meal-history log: group the 30-day window by day, then split
   // into the last 7 calendar days (shown immediately) and older days (behind
   // "Prikaži više"). Degrades to no footer if the history read failed --
@@ -140,6 +163,7 @@ export default async function NedeljaPage() {
   return (
     <WeeklyDashboard
       summary={summary}
+      bmrKcal={bmrKcal}
       weightSection={weightSection}
       footer={footer}
     />

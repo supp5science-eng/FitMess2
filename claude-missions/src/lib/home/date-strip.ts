@@ -24,6 +24,14 @@ export interface DayCell {
   isLogged: boolean;
   /** This is the day currently being viewed. */
   isSelected: boolean;
+  /**
+   * How full this day's mini progress ring is, `0..1` -- that day's logged
+   * kcal over the daily target (Apple-Fitness-style weekly rings, 2026-07-22
+   * redesign). Disabled (future / pre-sign-up) days are always 0. When no
+   * per-day kcal data or no positive target is supplied, a logged day
+   * degrades to a FULL ring (1) so it still reads as "done".
+   */
+  fillFraction: number;
 }
 
 // EU/Serbian convention: week starts Monday. `belgradeWeekdayIndex` returns
@@ -46,6 +54,8 @@ export function buildDateStrip({
   startKey,
   endKey,
   minKey,
+  dayKcals,
+  targetKcal,
 }: {
   now?: Date;
   selectedKey: string;
@@ -55,6 +65,12 @@ export function buildDateStrip({
   /** The user's sign-up day (`"YYYY-MM-DD"`). Days before it are "imaginary"
    * filler (disabled). Omitted -> every in-range day is real. */
   minKey?: string;
+  /** Summed logged kcal per Belgrade day -- drives each day's mini-ring fill
+   * together with `targetKcal`. Omitted -> logged days show a full ring. */
+  dayKcals?: Map<string, number>;
+  /** The daily kcal target the mini rings fill against (today's target is
+   * used for every day -- close enough for an at-a-glance weekly row). */
+  targetKcal?: number;
 }): DayCell[] {
   const todayKey = toBelgradeCalendarDay(now);
   const [year, month, day] = startKey.split("-").map(Number);
@@ -70,6 +86,16 @@ export function buildDateStrip({
     const isFuture = key > todayKey;
     const isBeforeStart = minKey !== undefined && key < minKey;
     const disabled = isFuture || isBeforeStart;
+    const kcal = dayKcals?.get(key) ?? 0;
+    const isLogged = !disabled && (loggedDays.has(key) || kcal > 0);
+    let fillFraction = 0;
+    if (!disabled) {
+      if (targetKcal !== undefined && targetKcal > 0) {
+        fillFraction = Math.min(1, Math.max(0, kcal / targetKcal));
+      } else if (isLogged) {
+        fillFraction = 1;
+      }
+    }
     cells.push({
       key,
       dayLabel: SR_WEEKDAYS_SHORT[belgradeWeekdayIndex(instant)]!,
@@ -77,7 +103,8 @@ export function buildDateStrip({
       isToday: key === todayKey,
       isFuture,
       isBeforeStart,
-      isLogged: !disabled && loggedDays.has(key),
+      isLogged,
+      fillFraction,
       // A disabled (future / pre-signup) day is never shown as selected.
       isSelected: key === selectedKey && !disabled,
     });

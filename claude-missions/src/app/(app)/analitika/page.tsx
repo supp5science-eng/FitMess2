@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { MealHistory } from "@/components/analytics/meal-history";
-import { WeightSection } from "@/components/analytics/weight-section";
 import { WeeklyDashboard } from "@/components/weekly/weekly-dashboard";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { bmr, tdee } from "@/lib/budget/engine";
@@ -9,22 +8,23 @@ import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { groupLogsByDay } from "@/lib/log/group";
 import { getMealHistory } from "@/lib/log/history";
 import { createClient } from "@/lib/supabase/server";
+import { getWaterWeek } from "@/lib/water/water";
+import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
 import { computeMacroWeeks } from "@/lib/week/macro-weeks";
 import { getWeekData } from "@/lib/week/week";
 import { computeIntakeTrend } from "@/lib/weight/intake-trend";
-import { computeWeightTrend } from "@/lib/weight/trend";
-import { getWeighIns } from "@/lib/weight/weigh-ins";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 // F041 / AS-068..AS-071: `/analitika` -- the analytics dashboard ("Analitika").
 // The bottom nav (F005) has pointed here since it shipped. Server Component:
 // reads the newest target (for the no-plan gate), the 30-day meal history, the
-// weigh-ins, and the profile on the session-scoped RLS client, then derives
-// every card's props with pure functions (`computeMacroWeeks`, BMI, weight
-// trend) and hands them to the presentational `WeeklyDashboard`. Same defensive
-// "never a blank/broken screen" posture as `/danas`: expired session, read
-// failure, and no-target-yet each get their own calm Serbian state.
+// last 7 days of water, and the profile on the session-scoped RLS client, then
+// derives every card's props with pure functions (`computeMacroWeeks`, BMI,
+// `computeIntakeTrend`, `computeWaterWeek`) and hands them to the presentational
+// `WeeklyDashboard`. Same defensive "never a blank/broken screen" posture as
+// `/danas`: expired session, read failure, and no-target-yet each get their own
+// calm Serbian state.
 export default async function NedeljaPage() {
   const supabase = await createClient();
   // Identity comes from the locally-verified access token (`getClaims`), not
@@ -43,16 +43,16 @@ export default async function NedeljaPage() {
   }
 
   const now = new Date();
-  const [result, historyResult, weighInsResult, profileResult] =
+  const [result, historyResult, waterResult, profileResult] =
     await Promise.all([
       getWeekData(supabase, userId, now),
       getMealHistory(supabase, userId, now),
-      getWeighIns(supabase, userId, now),
-      // Profile questionnaire data. `weight_kg` prefills the weigh-in sheet;
-      // height + weight feed the BMI card; sex/height/weight/birth_year +
-      // activity_level feed the TDEE behind the intake-trend card. A failure
-      // here is non-fatal (each card degrades to its own "dopuni profil"
-      // state), so it never blocks the screen.
+      getWaterWeek(supabase, userId, now),
+      // Profile questionnaire data. `weight_kg` + height feed the BMI card;
+      // sex/height/weight/birth_year + activity_level feed the TDEE behind the
+      // intake-trend card; weight also sets the water goal. A failure here is
+      // non-fatal (each card degrades to its own "dopuni profil" state), so it
+      // never blocks the screen.
       supabase
         .from("profiles")
         .select("sex, weight_kg, height_cm, birth_year, activity_level")
@@ -72,10 +72,10 @@ export default async function NedeljaPage() {
       historyResult.error.message
     );
   }
-  if (weighInsResult.error) {
+  if (waterResult.error) {
     console.error(
-      "[F042 /analitika] getWeighIns failed:",
-      weighInsResult.error.message
+      "[Voda /analitika] getWaterWeek failed:",
+      waterResult.error.message
     );
   }
 
@@ -145,12 +145,7 @@ export default async function NedeljaPage() {
         )
       : null;
 
-  const latestWeighInKg =
-    (weighInsResult.data ?? [])
-      .slice()
-      .sort((a, b) => a.day.localeCompare(b.day))
-      .at(-1)?.weight_kg ?? null;
-  const currentWeightKg = latestWeighInKg ?? profile?.weight_kg ?? null;
+  const currentWeightKg = profile?.weight_kg ?? null;
 
   const intakeTrend =
     tdeeKcal != null && currentWeightKg != null
@@ -160,6 +155,17 @@ export default async function NedeljaPage() {
           targetFatG: target.fat_g,
           targetProteinG: target.protein_g,
         })
+      : null;
+
+  // "Voda" card: today's hydration vs a bodyweight-based goal + a 7-day series.
+  // Degrades to null (a calm empty state) on a read error.
+  const waterWeek =
+    waterResult.error === null
+      ? computeWaterWeek(
+          waterResult.rows,
+          now,
+          waterGoalMl(profile?.weight_kg ?? null)
+        )
       : null;
 
   // "Svi obroci" meal-history log: group the 30-day window by day, then split
@@ -178,27 +184,12 @@ export default async function NedeljaPage() {
       <MealHistory recentGroups={recentGroups} olderGroups={olderGroups} />
     ) : null;
 
-  // F042/F043: weight trend. Degrades to no section on a read error -- never
-  // breaks the rest of the screen (same posture as the meal-history footer).
-  const weightSection =
-    weighInsResult.error === null ? (
-      <WeightSection
-        trend={computeWeightTrend(
-          weighInsResult.data ?? [],
-          target.goal_weight_kg,
-          now
-        )}
-        profileWeightKg={profileResult.data?.weight_kg ?? null}
-        now={now}
-      />
-    ) : null;
-
   return (
     <WeeklyDashboard
       bmi={bmi}
       macroWeeks={macroWeeks}
       intakeTrend={intakeTrend}
-      weightSection={weightSection}
+      waterWeek={waterWeek}
       footer={footer}
     />
   );

@@ -3,7 +3,9 @@ import type { ReactNode } from "react";
 import { BmiCard } from "@/components/analytics/bmi-card";
 import { IntakeTrendCard } from "@/components/analytics/intake-trend-card";
 import { MacroAverageCard } from "@/components/analytics/macro-average-card";
+import { WaterCard } from "@/components/analytics/water-card";
 import type { IntakeTrend } from "@/lib/weight/intake-trend";
+import type { WaterWeek } from "@/lib/water/water-week";
 import type { MacroWeek } from "@/lib/week/macro-weeks";
 
 // F041: the Analitika dashboard body. Presentational: the page owns every
@@ -13,7 +15,7 @@ export function WeeklyDashboard({
   bmi,
   macroWeeks,
   intakeTrend,
-  weightSection,
+  waterWeek,
   footer,
 }: {
   /** The user's body-mass index (kg/m²), computed from their questionnaire
@@ -27,10 +29,9 @@ export function WeeklyDashboard({
    * `null` when TDEE or current weight can't be derived -- the card then shows
    * a calm "dopuni profil" state. */
   intakeTrend: IntakeTrend | null;
-  /** F042/F043: the "Težina" section, rendered between the chart and the
-   * meal-history footer. Passed as a node (like `footer`) so the page owns the
-   * server data read and this component stays presentational. */
-  weightSection?: ReactNode;
+  /** Today's hydration vs goal + a 7-day series (`computeWaterWeek`). `null`
+   * when the read failed. */
+  waterWeek: WaterWeek | null;
   footer?: ReactNode;
 }) {
   return (
@@ -51,8 +52,8 @@ export function WeeklyDashboard({
       {/* Estimated weight trend from calorie intake (energy balance + macros). */}
       <IntakeTrendCard trend={intakeTrend} />
 
-      {/* F042/F043: weight + trend (real weigh-ins) */}
-      {weightSection}
+      {/* Hydration: today vs goal + a 7-day series. */}
+      <WaterCard week={waterWeek} />
 
       {/* "Svi obroci" meal-history log (bottom of the page) */}
       {footer}

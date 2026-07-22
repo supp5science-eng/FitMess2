@@ -10,7 +10,8 @@ import {
   PACE_ORDER,
   PACE_WEEKLY_KG,
   formatTimeToGoal,
-  paceColor,
+  paceColorAt,
+  paceToPosition,
   timeframeWeeksForPace,
   type WeightChangePace,
 } from "@/lib/onboarding/pace";
@@ -49,7 +50,10 @@ export function TempoStep({
   onChangeTimeframe: (weeks: number | null) => void;
 }) {
   const pace: WeightChangePace = data.pace ?? DEFAULT_PACE;
-  const color = paceColor(pace);
+  // The recommended default reads neutral; only slow/fast take on their
+  // (yellow/red) warning color for the readout, labels and info card.
+  const accent =
+    pace === "recommended" ? null : paceColorAt(paceToPosition(pace));
 
   const deltaKg =
     data.weightKg !== null &&
@@ -129,8 +133,8 @@ export function TempoStep({
           Promena težine nedeljno
         </span>
         <span
-          className="text-5xl font-bold tracking-tight transition-colors duration-200"
-          style={{ color }}
+          className="text-5xl font-bold tracking-tight text-foreground transition-colors duration-200"
+          style={{ color: accent ?? undefined }}
         >
           {kgReadout(PACE_WEEKLY_KG[pace])} kg
         </span>
@@ -158,8 +162,16 @@ export function TempoStep({
                 {PACE_ICON[p]}
               </span>
               <span
-                className="text-sm font-semibold transition-colors duration-200"
-                style={{ color: active ? paceColor(p) : undefined }}
+                className={cn(
+                  "text-sm font-semibold transition-colors duration-200",
+                  active ? "text-foreground" : "text-muted-foreground"
+                )}
+                style={{
+                  color:
+                    active && p !== "recommended"
+                      ? paceColorAt(paceToPosition(p))
+                      : undefined,
+                }}
               >
                 {PACE_LABELS[p]}
               </span>
@@ -173,16 +185,25 @@ export function TempoStep({
 
       {/* Live plan preview for the selected pace */}
       <div
-        className="rounded-2xl border p-4 transition-colors duration-200"
-        style={{
-          borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
-          background: `color-mix(in srgb, ${color} 8%, transparent)`,
-        }}
+        className={cn(
+          "rounded-2xl border p-4 transition-colors duration-200",
+          accent ? "" : "border-transparent bg-muted/60"
+        )}
+        style={
+          accent
+            ? {
+                borderColor: `color-mix(in srgb, ${accent} 32%, transparent)`,
+                background: `color-mix(in srgb, ${accent} 9%, transparent)`,
+              }
+            : undefined
+        }
       >
         {timeframeWeeks !== null ? (
           <p className="text-base font-semibold text-foreground">
             Cilj dostižeš za{" "}
-            <span style={{ color }}>~{formatTimeToGoal(timeframeWeeks)}</span>
+            <span style={{ color: accent ?? undefined }}>
+              ~{formatTimeToGoal(timeframeWeeks)}
+            </span>
           </p>
         ) : null}
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">

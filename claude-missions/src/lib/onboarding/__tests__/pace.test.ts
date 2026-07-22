@@ -43,16 +43,13 @@ describe("timeframeWeeksForPace", () => {
 });
 
 describe("formatTimeToGoal", () => {
-  it("shows short spans in weeks", () => {
+  it("always expresses the time in weeks", () => {
     expect(formatTimeToGoal(1)).toBe("1 nedelja");
     expect(formatTimeToGoal(3)).toBe("3 nedelje");
     expect(formatTimeToGoal(7)).toBe("7 nedelja");
-  });
-
-  it("switches to whole months from ~8 weeks up", () => {
-    expect(formatTimeToGoal(13)).toBe("3 meseca"); // 13/4.345 ≈ 3
-    expect(formatTimeToGoal(26)).toBe("6 meseci");
-    expect(formatTimeToGoal(52)).toBe("12 meseci");
+    expect(formatTimeToGoal(13)).toBe("13 nedelja");
+    expect(formatTimeToGoal(26)).toBe("26 nedelja");
+    expect(formatTimeToGoal(52)).toBe("52 nedelje");
   });
 });
 

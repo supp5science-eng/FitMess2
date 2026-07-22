@@ -86,9 +86,12 @@ export function PaceSlider({
     }
   }
 
-  const trackGradient = `linear-gradient(90deg, ${paceColorAt(0)} 0%, ${paceColorAt(
-    0.5
-  )} 50%, ${paceColorAt(1)} 100%)`;
+  // Track spectrum: dull-yellow (slow) → light neutral (recommended) → red
+  // (fast). A light grey centre (not pure white) keeps it visible on the page
+  // and lets the white default thumb read against it.
+  const trackGradient = `linear-gradient(90deg, ${paceColorAt(
+    0
+  )} 0%, #e6e6ea 50%, ${paceColorAt(1)} 100%)`;
 
   return (
     <div
@@ -124,21 +127,24 @@ export function PaceSlider({
         aria-valuenow={PACE_ORDER.indexOf(value)}
         aria-valuetext={PACE_LABELS[value]}
         onKeyDown={handleKeyDown}
-        className="absolute top-1/2 grid size-8 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-[3px] border-white bg-[var(--pace-c)] shadow-[0_2px_10px_-1px_rgba(0,0,0,0.25)] outline-none ring-0 focus-visible:ring-3 focus-visible:ring-ring/50"
+        className="absolute top-1/2 size-8 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--pace-c)] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         style={
           {
             left: `${t * 100}%`,
             "--pace-c": color,
-            boxShadow: `0 0 0 ${dragging ? 10 : 6}px color-mix(in srgb, ${color} 22%, transparent), 0 3px 12px -2px rgba(0,0,0,0.3)`,
+            // A crisp neutral outline + drop shadow keep the (white by default)
+            // thumb readable, plus a soft colored halo once it's off-centre.
+            boxShadow: `inset 0 0 0 1px rgba(0,0,0,0.08), 0 0 0 ${
+              dragging ? 9 : 5
+            }px color-mix(in srgb, ${color} 24%, transparent), 0 3px 12px -2px rgba(0,0,0,0.28)`,
             transform: `translate(-50%, -50%) scale(${dragging ? 1.12 : 1})`,
             transition: dragging
               ? "box-shadow .15s ease"
               : "left .35s cubic-bezier(0.22,1,0.36,1), background-color .2s ease, box-shadow .2s ease, transform .15s ease",
           } as CSSProperties
         }
-      >
-        <span className="size-2 rounded-full bg-white/90" aria-hidden />
-      </div>
+      />
+
     </div>
   );
 }

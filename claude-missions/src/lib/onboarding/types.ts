@@ -13,6 +13,8 @@
  */
 
 import type { ActivityLevel, GoalType, Sex } from "@/lib/types/db";
+import type { WeightChangePace } from "@/lib/onboarding/pace";
+import { DEFAULT_PACE } from "@/lib/onboarding/pace";
 
 export type { ActivityLevel, GoalType, Sex };
 
@@ -25,6 +27,12 @@ export interface OnboardingData {
   activityLevel: ActivityLevel | null;
   goal: GoalType | null;
   targetWeightKg: number | null;
+  /** Chosen weight-change pace (slow/recommended/fast). Drives `timeframeWeeks`
+   * — the `tempo` step derives the timeframe from this + the target delta, and
+   * the timeframe is what the budget engine + DB consume. Optional/null for
+   * maintain/tone goals (no target to pace toward) and for older callers that
+   * predate the pace step; readers fall back to `DEFAULT_PACE`. */
+  pace?: WeightChangePace | null;
   timeframeWeeks: number | null;
 }
 
@@ -37,6 +45,7 @@ export const EMPTY_ONBOARDING_DATA: OnboardingData = {
   activityLevel: null,
   goal: null,
   targetWeightKg: null,
+  pace: null,
   timeframeWeeks: null,
 };
 
@@ -53,38 +62,48 @@ export const DEFAULT_ONBOARDING_DATA: OnboardingData = {
   ageYears: 25,
   heightCm: 175,
   weightKg: 75,
+  // The `tempo` step opens on the recommended pace so a plan is always
+  // computable even if the user never touches the slider.
+  pace: DEFAULT_PACE,
 };
 
-/** Every possible step, in order. The `cilj` (target weight + timeframe) step
- * is conditional -- see `visibleStepIds` -- since maintain/tone goals have no
- * target weight to collect. */
+/** Every possible step, in order. The name (`ime`) comes late — after the
+ * demographics + goal type — and the two goal-only steps (`cilj` = target
+ * weight, `tempo` = pace) are conditional (see `visibleStepIds`), since
+ * maintain/tone goals have no target to collect. */
 export const ONBOARDING_STEP_IDS = [
   "pol",
-  "ime",
   "godine",
   "visina",
   "tezina",
   "aktivnost",
   "cilj-tip",
+  "ime",
   "cilj",
+  "tempo",
 ] as const;
 
 export type OnboardingStepId = (typeof ONBOARDING_STEP_IDS)[number];
 
-/** Goals that need a concrete target weight + timeframe (and therefore the
- * `cilj` step); maintain/tone skip it. */
+/** Goals that need a concrete target weight (and therefore the `cilj` +
+ * `tempo` steps); maintain/tone skip both. */
 const WEIGHT_CHANGE_GOALS: GoalType[] = ["lose", "gain"];
 
+/** The two steps that only make sense once the user is changing weight toward
+ * a target: the target-weight ruler (`cilj`) and the pace slider (`tempo`). */
+const WEIGHT_CHANGE_STEPS: OnboardingStepId[] = ["cilj", "tempo"];
+
 /**
- * The steps actually shown for the current goal selection. `cilj` (target
- * weight + timeframe) only appears for the weight-change goals; for
- * maintain/tone the wizard finishes right after the goal-type step. Before a
- * goal is picked (`null`), `cilj` is omitted so the progress count matches the
+ * The steps actually shown for the current goal selection. The target-weight
+ * (`cilj`) and pace (`tempo`) steps only appear for the weight-change goals;
+ * for maintain/tone the wizard finishes right after the name step. Before a
+ * goal is picked (`null`), both are omitted so the progress count matches the
  * shortest path until the user commits to a weight-change goal.
  */
 export function visibleStepIds(goal: GoalType | null): OnboardingStepId[] {
+  const includesGoalSteps = goal !== null && WEIGHT_CHANGE_GOALS.includes(goal);
   return ONBOARDING_STEP_IDS.filter(
-    (id) => id !== "cilj" || (goal !== null && WEIGHT_CHANGE_GOALS.includes(goal))
+    (id) => !WEIGHT_CHANGE_STEPS.includes(id) || includesGoalSteps
   );
 }
 

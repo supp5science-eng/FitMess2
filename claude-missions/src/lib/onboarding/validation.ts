@@ -128,6 +128,38 @@ export function validateGoalType(goal: GoalType | null): ValidationResult {
 }
 
 /**
+ * The target-weight (`cilj`) step, validated on its own now that the
+ * timeframe is no longer picked here (a later `tempo`/pace step derives it).
+ * `currentWeightKg` (from the weight step) sets the direction rule: a `lose`
+ * target must sit below the current weight, a `gain` target above it. Only
+ * called for the weight-change goals — maintain/tone skip this step.
+ */
+export function validateTargetWeight(
+  targetWeightKg: number | null,
+  currentWeightKg: number | null,
+  goal: GoalType = "lose"
+): ValidationResult {
+  if (targetWeightKg === null || Number.isNaN(targetWeightKg)) {
+    return invalid("Izaberi svoju ciljnu težinu.");
+  }
+  if (targetWeightKg < MIN_WEIGHT_KG || targetWeightKg > MAX_WEIGHT_KG) {
+    return invalid(
+      `Unesi ciljnu težinu između ${MIN_WEIGHT_KG} i ${MAX_WEIGHT_KG} kg.`
+    );
+  }
+  if (currentWeightKg !== null && !Number.isNaN(currentWeightKg)) {
+    if (goal === "gain") {
+      if (targetWeightKg <= currentWeightKg) {
+        return invalid("Ciljna težina treba da bude veća od trenutne.");
+      }
+    } else if (targetWeightKg >= currentWeightKg) {
+      return invalid("Ciljna težina treba da bude manja od trenutne.");
+    }
+  }
+  return VALID;
+}
+
+/**
  * AS-019 step 6 (cilj): target weight + timeframe together, validated as
  * one step (per the clarified spec's "cilj (target kg + weeks)" step).
  * `currentWeightKg` is the value collected in step 4, used for the

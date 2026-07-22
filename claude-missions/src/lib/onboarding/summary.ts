@@ -36,6 +36,7 @@ import type {
   MacroTargets,
 } from "@/lib/budget/engine";
 import { ONBOARDING_QUERY_KEYS } from "@/lib/onboarding/types";
+import type { WeightChangePace } from "@/lib/onboarding/pace";
 import type {
   ActivityLevel,
   GoalType,
@@ -120,6 +121,10 @@ export function parseOnboardingSearchParams(
     targetWeightKg: parseNumber(
       readParam(params, ONBOARDING_QUERY_KEYS.targetWeightKg)
     ),
+    // Pace isn't carried in the (legacy) query-string hand-off; the timeframe
+    // it derives IS. Left null here — nothing downstream of this parse reads
+    // it (the budget engine consumes `timeframeWeeks`).
+    pace: null,
     timeframeWeeks: parseNumber(
       readParam(params, ONBOARDING_QUERY_KEYS.timeframeWeeks)
     ),
@@ -138,6 +143,10 @@ export interface CompleteOnboardingData {
   activityLevel: ActivityLevel;
   goal: GoalType;
   targetWeightKg: number | null;
+  /** Optional; carried through so a `CompleteOnboardingData` is still a
+   * structural `OnboardingData` (persist/save accept it). Not used by the
+   * budget engine, which reads `timeframeWeeks`. */
+  pace?: WeightChangePace | null;
   timeframeWeeks: number | null;
 }
 

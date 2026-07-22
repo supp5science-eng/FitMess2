@@ -12,6 +12,7 @@ import { WeightStep } from "@/components/onboarding/steps/weight-step";
 import { ActivityStep } from "@/components/onboarding/steps/activity-step";
 import { GoalTypeStep } from "@/components/onboarding/steps/goal-type-step";
 import { GoalStep } from "@/components/onboarding/steps/goal-step";
+import { TempoStep } from "@/components/onboarding/steps/tempo-step";
 import {
   DEFAULT_ONBOARDING_DATA,
   visibleStepIds,
@@ -23,11 +24,11 @@ import type {
 import {
   validateActivityLevel,
   validateAge,
-  validateGoal,
   validateGoalType,
   validateHeight,
   validateName,
   validateSex,
+  validateTargetWeight,
   validateWeight,
 } from "@/lib/onboarding/validation";
 import type { ValidationResult } from "@/lib/onboarding/validation";
@@ -57,12 +58,15 @@ function validateStep(
     case "cilj-tip":
       return validateGoalType(data.goal);
     case "cilj":
-      return validateGoal(
+      return validateTargetWeight(
         data.targetWeightKg,
-        data.timeframeWeeks,
         data.weightKg,
         data.goal ?? "lose"
       );
+    case "tempo":
+      // The pace always has a valid default and the timeframe is derived from
+      // it, so this step is never blocking.
+      return { valid: true };
     default:
       return { valid: true };
   }
@@ -191,10 +195,15 @@ export function OnboardingWizard({
           goal={data.goal ?? "lose"}
           currentWeightKg={data.weightKg}
           targetWeightKg={data.targetWeightKg}
-          timeframeWeeks={data.timeframeWeeks}
           onChangeTargetWeight={(value) => update("targetWeightKg", value)}
-          onChangeTimeframe={(value) => update("timeframeWeeks", value)}
           error={error}
+        />
+      )}
+      {stepId === "tempo" && (
+        <TempoStep
+          data={data}
+          onChangePace={(value) => update("pace", value)}
+          onChangeTimeframe={(value) => update("timeframeWeeks", value)}
         />
       )}
 

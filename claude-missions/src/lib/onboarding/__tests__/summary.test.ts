@@ -35,6 +35,9 @@ describe("parseOnboardingSearchParams: reads the F015 -> F016 hand-off query str
       activityLevel: "moderate",
       goal: null,
       targetWeightKg: 74,
+      // Pace isn't carried in the query string; the parse defaults it to null
+      // (the timeframe it would derive IS carried).
+      pace: null,
       timeframeWeeks: 12,
     });
   });

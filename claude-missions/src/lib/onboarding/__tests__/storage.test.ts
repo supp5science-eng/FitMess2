@@ -23,6 +23,7 @@ const COMPLETE: OnboardingData = {
   activityLevel: "moderate",
   goal: "lose",
   targetWeightKg: 62,
+  pace: "recommended",
   timeframeWeeks: 12,
 };
 

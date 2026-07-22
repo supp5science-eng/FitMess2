@@ -135,20 +135,29 @@ describe("AS-128: MealCard's edit/delete triggers are real, keyboard-reachable b
   });
 });
 
-describe("AS-128: the full HomeScreen renders no bare <img> elements anywhere", () => {
-  it("test_AS_128_home_screen_with_data_renders_zero_img_elements", () => {
+describe("AS-128: the full HomeScreen renders only the decorative brand mark, never an unlabeled content image", () => {
+  // The one <img> the home screen renders is the FitMess pear logo in the
+  // header lockup -- purely decorative, so it MUST be hidden from assistive
+  // tech (empty alt + aria-hidden), with the <h1> "FitMess" carrying the
+  // accessible name. Any OTHER (content) image, or a mark that leaks to the
+  // a11y tree, would be an AS-128 violation.
+  function expectOnlyDecorativeImages(container: HTMLElement) {
+    const imgs = container.querySelectorAll("img");
+    for (const img of imgs) {
+      expect(img).toHaveAttribute("alt", "");
+      expect(img).toHaveAttribute("aria-hidden", "true");
+    }
+  }
+
+  it("test_AS_128_home_screen_with_data_renders_only_decorative_images", () => {
     render(
       <HomeScreen initialLogs={[makeLog()]} target={makeTarget()} />
     );
-    expect(
-      screen.getByTestId("home-screen").querySelectorAll("img").length
-    ).toBe(0);
+    expectOnlyDecorativeImages(screen.getByTestId("home-screen"));
   });
 
-  it("test_AS_128_home_screen_empty_and_no_target_states_also_render_zero_img_elements", () => {
+  it("test_AS_128_home_screen_empty_and_no_target_states_render_only_decorative_images", () => {
     render(<HomeScreen initialLogs={[]} target={null} />);
-    expect(
-      screen.getByTestId("home-screen").querySelectorAll("img").length
-    ).toBe(0);
+    expectOnlyDecorativeImages(screen.getByTestId("home-screen"));
   });
 });

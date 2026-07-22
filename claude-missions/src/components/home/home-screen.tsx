@@ -159,19 +159,31 @@ export function HomeScreen({
       className="home-main flex flex-1 flex-col gap-8 px-6 py-8"
     >
       <header className="home-body flex flex-col gap-5">
-        {/* FitMess wordmark in the display face (Archivo Black); "Mess" in the
-            brand teal (--brand) so the lockup keeps its identity in BOTH themes
-            -- in light the accent `--primary` is black, which would flatten the
-            wordmark, so we pin it to the theme-independent brand teal instead.
-            No greeting, no mark -- just the brand lockup. */}
-        <h1
-          className="text-4xl tracking-tight text-foreground"
-          style={{
-            fontFamily: "var(--font-display), var(--font-sans), sans-serif",
-          }}
-        >
-          Fit<span className="text-[color:var(--brand)]">Mess</span>
-        </h1>
+        {/* Brand lockup: the sedef (paua-shell) pear mark + the FitMess
+            wordmark in the display face (Archivo Black). "Mess" is painted with
+            the logo's own iridescent gradient (`.fm-wordmark-accent`, defined in
+            globals.css, theme-aware) so the word literally wears the pear's
+            colours; the mark is decorative (`aria-hidden`) since the <h1> text
+            already names the app. */}
+        <div className="flex items-center gap-2.5">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/brand/fitmess-icon.png"
+            alt=""
+            width={36}
+            height={36}
+            aria-hidden="true"
+            className="size-9 shrink-0 select-none"
+          />
+          <h1
+            className="text-4xl tracking-tight text-foreground"
+            style={{
+              fontFamily: "var(--font-display), var(--font-sans), sans-serif",
+            }}
+          >
+            Fit<span className="fm-wordmark-accent">Mess</span>
+          </h1>
+        </div>
         {days.length > 0 ? <DateStrip days={days} /> : null}
       </header>
 

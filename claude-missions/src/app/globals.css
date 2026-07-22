@@ -98,6 +98,19 @@
      where `--primary` would be black. Defined once in :root so it applies in
      both themes. */
   --brand: #17d1a8;
+  /* Sedef (paua-shell) wordmark gradient for "Mess" -- the logo's own
+     iridescent teal/gold/blue/green. LIGHT theme uses deeper, more saturated
+     tones so it stays legible on white (it's large display type, so a touch of
+     the shell's low-contrast shimmer is fine). */
+  --wordmark-grad: linear-gradient(
+    112deg,
+    #0e9c82 0%,
+    #1b9ca0 22%,
+    #b9862c 40%,
+    #2c7cbe 62%,
+    #18915f 83%,
+    #2f9a50 100%
+  );
   --radius: 1.25rem;
   --sidebar: #fafafa;
   --sidebar-foreground: #0a0c0b;
@@ -135,6 +148,17 @@
   --border: rgba(255, 255, 255, 0.1);
   --input: rgba(255, 255, 255, 0.14);
   --ring: #17d1a8;
+  /* Sedef wordmark gradient, DARK theme -- brighter shell tones so the
+     iridescence pops against the near-black ground. */
+  --wordmark-grad: linear-gradient(
+    112deg,
+    #26ddb6 0%,
+    #35d3cc 22%,
+    #ecc766 40%,
+    #57a8ee 62%,
+    #40d98c 83%,
+    #63dd76 100%
+  );
   /* Dark theme keeps the teal accent on the gauge (same as the + button). */
   --gauge: #17d1a8;
   --chart-1: #17d1a8;
@@ -155,6 +179,25 @@
   --sidebar-accent-foreground: #f3f7f5;
   --sidebar-border: rgba(255, 255, 255, 0.1);
   --sidebar-ring: #17d1a8;
+}
+
+/* ---------------------------------------------------------------------
+   Sedef wordmark accent -- paints "Mess" in the FitMess lockup with the
+   logo's iridescent pear gradient (`--wordmark-grad`, themed above). Falls
+   back to the flat brand teal where `background-clip: text` isn't supported,
+   so the word is never invisible. -------------------------------------- */
+.fm-wordmark-accent {
+  color: var(--brand);
+}
+@supports ((-webkit-background-clip: text) or (background-clip: text)) {
+  .fm-wordmark-accent {
+    background-image: var(--wordmark-grad);
+    background-size: 100% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+  }
 }
 
 @layer base {

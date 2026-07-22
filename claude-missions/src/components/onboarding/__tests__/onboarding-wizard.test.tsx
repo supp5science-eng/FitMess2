@@ -1,13 +1,14 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 
-const pushMock = vi.fn();
-
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: pushMock }),
-}));
+// The wizard is now navigation-agnostic: on the final step it calls the
+// `onComplete` prop with the collected `OnboardingData` instead of pushing a
+// route. The parent flow (`/upitnik` pre-auth, `/onboarding` post-auth) owns
+// what happens next, so these tests assert the hand-off payload directly.
+const completeMock = vi.fn();
 
 import { OnboardingWizard } from "../onboarding-wizard";
+import type { OnboardingData } from "@/lib/onboarding/types";
 
 // F015: component-level coverage for the onboarding wizard (AS-018, AS-019).
 //
@@ -24,12 +25,17 @@ import { OnboardingWizard } from "../onboarding-wizard";
 // seven values survive to the final hand-off URL.
 
 beforeEach(() => {
-  pushMock.mockClear();
+  completeMock.mockClear();
 });
+
+/** Renders the wizard wired to the shared `completeMock` hand-off spy. */
+function renderWizard() {
+  return render(<OnboardingWizard onComplete={completeMock} />);
+}
 
 describe("AS-018: the wizard's first render is step 1 (pol) -- reachable, not blank", () => {
   it("test_AS_018_onboarding_wizard_renders_step_1_pol_by_default", () => {
-    render(<OnboardingWizard />);
+    renderWizard();
     expect(
       screen.getByRole("heading", { name: /Koji je tvoj pol\?/ })
     ).toBeInTheDocument();
@@ -37,7 +43,7 @@ describe("AS-018: the wizard's first render is step 1 (pol) -- reachable, not bl
   });
 
   it("test_AS_018_step_1_offers_a_clear_next_action_button", () => {
-    render(<OnboardingWizard />);
+    renderWizard();
     expect(
       screen.getByRole("button", { name: /Dalje/ })
     ).toBeInTheDocument();
@@ -46,7 +52,7 @@ describe("AS-018: the wizard's first render is step 1 (pol) -- reachable, not bl
 
 describe("AS-019: step 1 (pol) collects sex", () => {
   it("test_AS_019_pol_step_blocks_next_with_a_serbian_error_when_nothing_is_selected", () => {
-    render(<OnboardingWizard />);
+    renderWizard();
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
     expect(screen.getByRole("alert")).toHaveTextContent(/pol/i);
@@ -57,7 +63,7 @@ describe("AS-019: step 1 (pol) collects sex", () => {
   });
 
   it("test_AS_019_pol_step_accepts_a_selection_and_advances_to_ime", () => {
-    render(<OnboardingWizard />);
+    renderWizard();
     fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
@@ -70,7 +76,7 @@ describe("AS-019: step 1 (pol) collects sex", () => {
 
 describe("Onboarding step 2 (ime) collects the user's name", () => {
   it("test_ime_step_blocks_next_with_a_serbian_error_when_empty", () => {
-    render(<OnboardingWizard />);
+    renderWizard();
     fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
@@ -83,7 +89,7 @@ describe("Onboarding step 2 (ime) collects the user's name", () => {
   });
 
   it("test_ime_step_accepts_a_name_and_advances_to_godine", () => {
-    render(<OnboardingWizard />);
+    renderWizard();
     fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
 
@@ -102,7 +108,7 @@ describe("Onboarding step 2 (ime) collects the user's name", () => {
 function advanceToStep(
   step: "ime" | "godine" | "visina" | "tezina" | "aktivnost" | "cilj-tip" | "cilj"
 ) {
-  render(<OnboardingWizard />);
+  renderWizard();
   fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
   fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
   if (step === "ime") return;
@@ -270,12 +276,11 @@ describe("goal type (cilj-tip) step drives the flow", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Održavanje/ }));
     fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
 
-    expect(pushMock).toHaveBeenCalledTimes(1);
-    const url = pushMock.mock.calls[0][0] as string;
-    const params = new URLSearchParams(url.split("?")[1]);
-    expect(params.get("cilj")).toBe("maintain");
-    expect(params.get("ciljnaTezina")).toBeNull();
-    expect(params.get("nedelje")).toBeNull();
+    expect(completeMock).toHaveBeenCalledTimes(1);
+    const data = completeMock.mock.calls[0][0] as OnboardingData;
+    expect(data.goal).toBe("maintain");
+    expect(data.targetWeightKg).toBeNull();
+    expect(data.timeframeWeeks).toBeNull();
   });
 });
 
@@ -299,7 +304,7 @@ describe("AS-019: step 6 (cilj) collects target weight + timeframe", () => {
     // Same current weight (80 kg), but a Nabaci mišiće (gain) goal: now the wheel
     // must offer only weights ABOVE 80 and never 80 or below, so a target
     // lighter than the current weight can't be entered for a gain goal.
-    render(<OnboardingWizard />);
+    renderWizard();
     fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
     fireEvent.change(screen.getByLabelText(/Ime/), { target: { value: "Ana" } });
@@ -333,7 +338,7 @@ describe("AS-019: step 6 (cilj) collects target weight + timeframe", () => {
     fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
 
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(pushMock).not.toHaveBeenCalled();
+    expect(completeMock).not.toHaveBeenCalled();
   });
 
   it("test_AS_019_cilj_step_shows_a_big_friendly_preview_once_both_fields_are_sane", () => {
@@ -360,25 +365,22 @@ describe("AS-019: step 6 (cilj) collects target weight + timeframe", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
 
-    expect(pushMock).toHaveBeenCalledTimes(1);
-    const url = pushMock.mock.calls[0][0] as string;
-    expect(url.startsWith("/onboarding/pregled?")).toBe(true);
-
-    const params = new URLSearchParams(url.split("?")[1]);
-    expect(params.get("ime")).toBe("Ana");
-    expect(params.get("pol")).toBe("female");
-    expect(params.get("godine")).toBe("30");
-    expect(params.get("visina")).toBe("175");
-    expect(params.get("tezina")).toBe("80");
-    expect(params.get("aktivnost")).toBe("moderate");
-    expect(params.get("ciljnaTezina")).toBe("74");
-    expect(params.get("nedelje")).toBe("12");
+    expect(completeMock).toHaveBeenCalledTimes(1);
+    const data = completeMock.mock.calls[0][0] as OnboardingData;
+    expect(data.name).toBe("Ana");
+    expect(data.sex).toBe("female");
+    expect(data.ageYears).toBe(30);
+    expect(data.heightCm).toBe(175);
+    expect(data.weightKg).toBe(80);
+    expect(data.activityLevel).toBe("moderate");
+    expect(data.targetWeightKg).toBe(74);
+    expect(data.timeframeWeeks).toBe(12);
   });
 });
 
 describe("AS-019: Back navigation preserves previously entered data (nothing lost between screens)", () => {
   it("test_AS_019_going_back_and_forward_keeps_the_previously_selected_sex", () => {
-    render(<OnboardingWizard />);
+    renderWizard();
     fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
     expect(
@@ -396,7 +398,7 @@ describe("AS-019: Back navigation preserves previously entered data (nothing los
   });
 
   it("test_AS_019_back_button_is_not_shown_on_the_first_step", () => {
-    render(<OnboardingWizard />);
+    renderWizard();
     expect(
       screen.queryByRole("button", { name: /Nazad/ })
     ).not.toBeInTheDocument();
@@ -405,7 +407,7 @@ describe("AS-019: Back navigation preserves previously entered data (nothing los
 
 describe("F015 definition-of-done: forced-failure render test (inline Serbian error + retry, never blank)", () => {
   it("test_AS_019_an_invalid_step_never_blanks_the_screen_and_offers_a_working_retry_via_the_same_dalje_button", () => {
-    render(<OnboardingWizard />);
+    renderWizard();
 
     // Force a failure: click Dalje with nothing selected.
     fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));

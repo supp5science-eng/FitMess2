@@ -27,10 +27,10 @@ export function MealList({
           Još ništa nisi uneo/unela danas.
         </p>
         <Link
-          href="/dodaj/pretraga"
+          href="/dodaj/obrok"
           className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
         >
-          Dodaj obrok
+          Slikaj obrok
         </Link>
       </div>
     );

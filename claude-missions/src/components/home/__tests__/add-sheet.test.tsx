@@ -32,7 +32,8 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
     const expectedHrefs: Record<string, string> = {
-      pretrazi: "/dodaj/pretraga",
+      // "Pretraži" and "Dodaj proizvod" were removed from this menu (the app is
+      // photo/voice-first); their routes still exist but are no longer offered.
       obrok: "/dodaj/obrok",
       glas: "/dodaj/glas",
       deklaracija: "/dodaj/deklaracija",
@@ -55,8 +56,8 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    // Search, meal photo, voice, label photo and add-product are all live.
-    for (const key of ["pretrazi", "obrok", "glas", "deklaracija", "proizvod"]) {
+    // Meal photo, voice and label photo are all live (no "Uskoro" badge).
+    for (const key of ["obrok", "glas", "deklaracija"]) {
       expect(
         screen.queryByTestId(`add-sheet-soon-badge-${key}`)
       ).not.toBeInTheDocument();
@@ -105,14 +106,18 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     );
   });
 
-  it("test_AS_051_the_pretrazi_link_points_to_the_real_active_search_screen", () => {
+  it("test_pretrazi_and_proizvod_are_no_longer_offered_in_the_add_menu", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    expect(screen.getByTestId("add-sheet-option-pretrazi")).toHaveAttribute(
-      "href",
-      "/dodaj/pretraga"
-    );
+    // Removed on purpose (photo/voice-first). The routes still exist as hidden
+    // fallbacks, but the "+" menu no longer advertises them.
+    expect(
+      screen.queryByTestId("add-sheet-option-pretrazi")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("add-sheet-option-proizvod")
+    ).not.toBeInTheDocument();
   });
 
   it("test_the_barkod_link_points_to_the_uskoro_placeholder_while_deferred", () => {
@@ -122,19 +127,6 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     expect(screen.getByTestId("add-sheet-option-barkod")).toHaveAttribute(
       "href",
       "/dodaj/uskoro/barkod"
-    );
-  });
-
-  it("test_the_dodaj_proizvod_option_links_to_the_add_product_flow_with_its_note", () => {
-    render(<AddSheet />);
-    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
-
-    const option = screen.getByTestId("add-sheet-option-proizvod");
-    expect(option.tagName).toBe("A");
-    expect(option).toHaveAttribute("href", "/dodaj/proizvod");
-    // The "only products with a declaration + barcode" note is shown inline.
-    expect(screen.getByTestId("add-sheet-desc-proizvod")).toHaveTextContent(
-      "Samo proizvodi sa deklaracijom i barkodom"
     );
   });
 

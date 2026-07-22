@@ -118,12 +118,14 @@ describe("AS-049: MealList lists today's logged meals", () => {
     expect(screen.getByTestId("log-delete-open-button")).toBeInTheDocument();
   });
 
-  it("test_AS_049_empty_state_shows_encouraging_serbian_copy_and_a_dodaj_obrok_action_when_no_logs_today", () => {
+  it("test_AS_049_empty_state_shows_encouraging_serbian_copy_and_a_slikaj_obrok_action_when_no_logs_today", () => {
     render(<MealList logs={[]} onSaved={vi.fn()} onDeleted={vi.fn()} />);
 
     expect(screen.getByTestId("home-meals-empty")).toBeInTheDocument();
     expect(screen.queryByTestId("home-meals-list")).not.toBeInTheDocument();
-    const link = screen.getByRole("link", { name: "Dodaj obrok" });
-    expect(link).toHaveAttribute("href", "/dodaj/pretraga");
+    // Photo/voice-first: the empty-state CTA points at the meal-photo flow now
+    // that catalog search was removed from the add menu.
+    const link = screen.getByRole("link", { name: "Slikaj obrok" });
+    expect(link).toHaveAttribute("href", "/dodaj/obrok");
   });
 });

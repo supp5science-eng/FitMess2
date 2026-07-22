@@ -3,16 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import {
-  Barcode,
-  Camera,
-  Mic,
-  PackagePlus,
-  Plus,
-  Search,
-  UtensilsCrossed,
-  X,
-} from "lucide-react";
+import { Barcode, Camera, Mic, Plus, UtensilsCrossed, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -43,22 +34,19 @@ import { cn } from "@/lib/utils";
 interface AddSheetOption {
   key: string;
   label: string;
-  icon: typeof Search;
+  icon: typeof Camera;
   href: string;
   available: boolean;
-  /** Optional muted helper line under the label (e.g. the "Dodaj proizvod"
-   * note that this method is for products with a declaration + barcode). */
+  /** Optional muted helper line under the label. */
   description?: string;
 }
 
+// "Pretraži" (catalog search) and "Dodaj proizvod" (manual product create) were
+// intentionally removed from this menu -- the app is photo/voice-first, so those
+// two entry points are no longer offered here. Their routes still EXIST as
+// hidden fallbacks (the barcode scanner's "manual search" escape hatch, the
+// portion flow, etc.), so nothing breaks; they're just no longer advertised.
 const OPTIONS: AddSheetOption[] = [
-  {
-    key: "pretrazi",
-    label: "Pretraži",
-    icon: Search,
-    href: "/dodaj/pretraga",
-    available: true,
-  },
   {
     key: "obrok",
     label: "Slikaj obrok",
@@ -80,14 +68,6 @@ const OPTIONS: AddSheetOption[] = [
     icon: Camera,
     href: "/dodaj/deklaracija",
     available: true,
-  },
-  {
-    key: "proizvod",
-    label: "Dodaj proizvod",
-    icon: PackagePlus,
-    href: "/dodaj/proizvod",
-    available: true,
-    description: "Samo proizvodi sa deklaracijom i barkodom",
   },
   // Barcode scanning is de-prioritised for now (a barcode only yields
   // per-100g label data the user is already photographing) -- kept last and

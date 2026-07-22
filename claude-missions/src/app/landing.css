@@ -931,6 +931,222 @@
     padding: 46px 22px;
   }
 }
+/* ============================================================
+   Animated app demo — the hero phone cycles through the app the
+   way a user actually uses it: scan a plate → food recognized →
+   the Danas dashboard fills in. One 12s loop, pure CSS.
+
+   Base (no-animation) state of every element is its FINAL/home
+   state, so the shared `prefers-reduced-motion` block below (which
+   kills all `.lp` animation) leaves a clean, static dashboard.
+   ============================================================ */
+.lp .phone.demo .screen {
+  position: relative;
+  background: #0a0f0d;
+}
+.lp .demo-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lp .ds-scan {
+  opacity: 0;
+  animation: ds-scan-vis 12s ease-in-out infinite;
+}
+.lp .ds-detect {
+  opacity: 0;
+  animation: ds-detect-vis 12s ease-in-out infinite;
+}
+.lp .ds-home {
+  opacity: 1;
+  background: #ffffff;
+  animation: ds-home-vis 12s ease-in-out infinite;
+}
+.lp .phone.demo .fab {
+  opacity: 0;
+  animation: ds-home-vis 12s ease-in-out infinite;
+}
+
+@keyframes ds-scan-vis {
+  0% { opacity: 0; }
+  3% { opacity: 1; }
+  28% { opacity: 1; }
+  32% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes ds-detect-vis {
+  0%, 32% { opacity: 0; }
+  35% { opacity: 1; }
+  47% { opacity: 1; }
+  51% { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes ds-home-vis {
+  0%, 49% { opacity: 0; }
+  53% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+/* --- Screen 1: camera viewfinder --- */
+.lp .ds-cam {
+  position: relative;
+  flex: 1;
+  margin: 16px;
+  border-radius: 26px;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 38%, #2b3a34 0%, #0c1512 72%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lp .ds-plate {
+  font-size: 128px;
+  line-height: 1;
+  filter: drop-shadow(0 12px 22px rgba(0, 0, 0, 0.45));
+}
+.lp .ds-food {
+  position: absolute;
+  font-size: 38px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+}
+.lp .ds-food-a { top: 40%; left: 30%; }
+.lp .ds-food-b { top: 52%; left: 50%; }
+.lp .ds-food-c { top: 37%; left: 55%; }
+.lp .ds-bracket {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+}
+.lp .ds-bracket.tl { top: 22px; left: 22px; border-right: 0; border-bottom: 0; border-radius: 9px 0 0 0; }
+.lp .ds-bracket.tr { top: 22px; right: 22px; border-left: 0; border-bottom: 0; border-radius: 0 9px 0 0; }
+.lp .ds-bracket.bl { bottom: 22px; left: 22px; border-right: 0; border-top: 0; border-radius: 0 0 0 9px; }
+.lp .ds-bracket.br { bottom: 22px; right: 22px; border-left: 0; border-top: 0; border-radius: 0 0 9px 0; }
+.lp .ds-scanline {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 16%;
+  height: 3px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, transparent, var(--teal-bright), transparent);
+  box-shadow: 0 0 18px 3px rgba(42, 227, 190, 0.7);
+  animation: ds-sweep 2s ease-in-out infinite alternate;
+}
+@keyframes ds-sweep {
+  from { top: 16%; }
+  to { top: 80%; }
+}
+.lp .ds-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 0 24px;
+  color: #eafaf5;
+  font-size: 13px;
+  font-weight: 650;
+}
+.lp .ds-rec {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #ff5a5a;
+  box-shadow: 0 0 10px #ff5a5a;
+  animation: ds-blink 1s steps(1) infinite;
+}
+@keyframes ds-blink {
+  0%, 50% { opacity: 1; }
+  51%, 100% { opacity: 0.25; }
+}
+
+/* --- Screen 2: recognized + logged --- */
+.lp .ds-detect {
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 24px;
+  text-align: center;
+  color: #fff;
+  background: linear-gradient(170deg, #10201b, #06100d);
+}
+.lp .ds-check {
+  width: 78px;
+  height: 78px;
+}
+.lp .ds-check svg { width: 100%; height: 100%; }
+.lp .ds-check circle {
+  stroke: var(--teal-bright);
+  stroke-width: 3;
+  opacity: 0.35;
+}
+.lp .ds-check path {
+  stroke: var(--teal-bright);
+  stroke-width: 4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.lp .ds-detected b {
+  display: block;
+  font-size: 19px;
+  font-weight: 760;
+}
+.lp .ds-detected span {
+  font-size: 14px;
+  color: #9fb1a9;
+}
+.lp .ds-added {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--teal-bright);
+  background: rgba(23, 209, 168, 0.14);
+  border: 1px solid var(--teal-line);
+  border-radius: 100px;
+  padding: 7px 16px;
+}
+
+/* --- Screen 3: dashboard fills in --- */
+.lp .ds-home .sc-ring-fill {
+  animation: ds-ring 12s ease-in-out infinite;
+}
+@keyframes ds-ring {
+  0%, 52% { stroke-dashoffset: 540.4; }
+  70%, 100% { stroke-dashoffset: 205; }
+}
+.lp .ds-home .bar i {
+  width: var(--tw);
+  animation: ds-bar 12s ease-in-out infinite;
+}
+@keyframes ds-bar {
+  0%, 53% { width: 0; }
+  72%, 100% { width: var(--tw); }
+}
+.lp .ds-home .meal {
+  animation: ds-meal 12s ease-in-out infinite;
+}
+@keyframes ds-meal {
+  0%, 58% { opacity: 0; transform: translateY(10px); }
+  70%, 100% { opacity: 1; transform: none; }
+}
+
+/* Small sign-in nudge under the hero / final CTAs. */
+.lp .hero-signin {
+  margin-top: 16px;
+  font-size: 14px;
+  color: var(--ink-faint);
+  font-weight: 550;
+}
+.lp .hero-signin a {
+  color: var(--teal-ink);
+  font-weight: 700;
+  text-decoration: none;
+}
+.lp .hero-signin a:hover {
+  text-decoration: underline;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lp *,
   .lp-modal,
@@ -941,5 +1157,14 @@
   .lp .bubble {
     opacity: 1;
     transform: none;
+  }
+  /* With animations off, show the finished dashboard only. */
+  .lp .ds-scan,
+  .lp .ds-detect {
+    opacity: 0;
+  }
+  .lp .ds-home,
+  .lp .phone.demo .fab {
+    opacity: 1;
   }
 }

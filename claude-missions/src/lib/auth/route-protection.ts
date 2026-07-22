@@ -62,6 +62,10 @@ export const SIGNED_IN_HOME_PATH = "/danas";
 const LOGIN_SIGNUP_PREFIXES = ["/prijava", "/registracija"];
 const AUTH_CALLBACK_PREFIX = "/auth";
 const MARKETING_HOME_PATH = "/";
+/** The public, pre-auth onboarding questionnaire the landing "Kreni" CTA sends
+ * new visitors to. Answered logged-out (answers stashed client-side), so it
+ * must be reachable without a session — see `isPublicPath`. */
+const QUESTIONNAIRE_PATH = "/upitnik";
 
 /** The self-service password-recovery pages: the "forgot password" request
  * form and the "set a new password" form the recovery email lands on. Both are
@@ -85,6 +89,12 @@ export function isLoginOrSignupPath(pathname: string): boolean {
   return LOGIN_SIGNUP_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
 }
 
+/** `/upitnik` -- the public, pre-auth onboarding questionnaire. Never gated:
+ * a logged-out visitor answers it before creating an account. */
+export function isQuestionnairePath(pathname: string): boolean {
+  return matchesPrefix(pathname, QUESTIONNAIRE_PATH);
+}
+
 /** The `/auth/*` code-exchange callback -- never gated, and (unlike
  * `/prijava`/`/registracija`) never bounced away from once signed in either,
  * since a fully set-up user can still legitimately land here (e.g. an
@@ -106,10 +116,12 @@ export function isPhoneCapturePath(pathname: string): boolean {
 }
 
 /** Never gated regardless of auth/verification/onboarding state: the public
- * marketing landing page, the login/signup pages, and the auth callback. */
+ * marketing landing page, the pre-auth `/upitnik` questionnaire, the
+ * login/signup pages, the auth callback, and the password-reset flow. */
 export function isPublicPath(pathname: string): boolean {
   return (
     pathname === MARKETING_HOME_PATH ||
+    isQuestionnairePath(pathname) ||
     isLoginOrSignupPath(pathname) ||
     isAuthCallbackPath(pathname) ||
     isPasswordResetPath(pathname)

@@ -39,13 +39,16 @@ const FULL_BLEED_ROUTES = new Set(["/", "/samo-za-telefon"]);
 
 /** Full-bleed route prefixes, covering nested steps by prefix match:
  * - auth (`/prijava`, `/registracija/proveri-email`, ...)
- * - onboarding (`/onboarding`, `/onboarding/pregled`): the post-login welcome
- *   + questionnaire own the whole viewport and must NOT expose the bottom
+ * - questionnaire (`/upitnik`): the public, pre-auth onboarding questionnaire
+ *   + plan preview own the whole viewport, same as post-auth onboarding.
+ * - onboarding (`/onboarding`, `/onboarding/pregled`): the questionnaire /
+ *   plan reveal own the whole viewport and must NOT expose the bottom
  *   navigation — its tabs (Danas / Nedelja / Agent / Profil) only become
  *   available once onboarding is finished (`profiles.onboarded_at` set). */
 const FULL_BLEED_PREFIXES = [
   "/prijava",
   "/registracija",
+  "/upitnik",
   "/onboarding",
   "/telefon",
 ] as const;

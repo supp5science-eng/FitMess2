@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import Link from "next/link";
 
 import { InstallButton } from "@/components/landing/install-button";
@@ -56,8 +57,8 @@ export default function LandingPage() {
             <b>Fit<span className="g">Mess</span></b>
           </div>
           <div className="top-cta">
-            <Link className="link-quiet" href="/prijava">Kreni</Link>
-            <a className="btn btn-primary btn-sm" href="#instaliraj">Instaliraj</a>
+            <Link className="link-quiet" href="/prijava">Prijavi se</Link>
+            <Link className="btn btn-primary btn-sm" href="/upitnik">Kreni</Link>
           </div>
         </div>
       </header>
@@ -68,60 +69,100 @@ export default function LandingPage() {
           <div className="wrap hero-grid">
             <div className="hero-copy">
               <h1 className="hero-title">
-                <span className="ht-hi">Bez stresa</span> isprati sve što pojedeš
+                <span className="ht-hi">Bez muke</span> isprati sve što pojedeš
               </h1>
               <p className="lede">
-                Najveća baza svih srpskih namirnica.
+                Uslikaj tanjir — prepoznamo hranu i sračunamo kalorije. Najveća
+                baza domaćih namirnica.
               </p>
-              <p className="lede-sub"><b>90% tačnost skeniranja hrane</b> — samo uslikaj tanjir.</p>
+              <p className="lede-sub"><b>90% tačnost skeniranja hrane</b> — bez ručnog kucanja.</p>
               <div className="hero-actions" id="instaliraj">
-                <InstallButton className="btn-primary btn-lg" />
-                <Link className="btn btn-ghost btn-lg" href="/prijava">Kreni</Link>
+                <Link className="btn btn-primary btn-lg" href="/upitnik">Kreni</Link>
+                <InstallButton className="btn-ghost btn-lg" />
               </div>
+              <p className="hero-signin">
+                Već imaš nalog? <Link href="/prijava">Prijavi se</Link>
+              </p>
             </div>
 
             <div className="stage">
-              <div className="phone">
+              <div className="phone demo" aria-hidden="true">
                 <div className="screen">
-                  <div className="sc-top">
-                    <div className="h">Danas</div>
-                    <div className="d">pon, 18. jul</div>
+                  {/* Screen 1 — camera scanning a plate of food */}
+                  <div className="demo-screen ds-scan">
+                    <div className="ds-cam">
+                      <div className="ds-plate">🍽️</div>
+                      <div className="ds-food ds-food-a">🍖</div>
+                      <div className="ds-food ds-food-b">🥔</div>
+                      <div className="ds-food ds-food-c">🥗</div>
+                      <span className="ds-bracket tl" />
+                      <span className="ds-bracket tr" />
+                      <span className="ds-bracket bl" />
+                      <span className="ds-bracket br" />
+                      <div className="ds-scanline" />
+                    </div>
+                    <div className="ds-hint">
+                      <span className="ds-rec" /> Skeniram tanjir…
+                    </div>
                   </div>
-                  <div className="ring-wrap">
-                    <div className="ring">
-                      <svg viewBox="0 0 200 200" width="186" height="186" aria-hidden="true">
-                        <circle cx="100" cy="100" r="86" fill="none" stroke="#EAF1EF" strokeWidth="16" />
-                        <circle cx="100" cy="100" r="86" fill="none" stroke="url(#lpRing)" strokeWidth="16" strokeLinecap="round" strokeDasharray="540.4" strokeDashoffset="205" transform="rotate(-90 100 100)" />
-                        <defs>
-                          <linearGradient id="lpRing" x1="0" y1="0" x2="1" y2="1">
-                            <stop offset="0" stopColor="#2AE3BE" />
-                            <stop offset="1" stopColor="#12B492" />
-                          </linearGradient>
-                        </defs>
+
+                  {/* Screen 2 — food recognized, logged */}
+                  <div className="demo-screen ds-detect">
+                    <div className="ds-check">
+                      <svg viewBox="0 0 52 52" aria-hidden="true">
+                        <circle cx="26" cy="26" r="24" fill="none" />
+                        <path d="M15 27l7 7 15-15" fill="none" />
                       </svg>
-                      <div className="cx">
-                        <div className="big num">1.240</div>
-                        <div className="lab">kcal preostalo</div>
+                    </div>
+                    <div className="ds-detected">
+                      <b>Pljeskavica u lepinji</b>
+                      <span>1 komad · 620 kcal</span>
+                    </div>
+                    <div className="ds-added">Dodato u ručak ✓</div>
+                  </div>
+
+                  {/* Screen 3 — the Danas dashboard filling in */}
+                  <div className="demo-screen ds-home">
+                    <div className="sc-top">
+                      <div className="h">Danas</div>
+                      <div className="d">pon, 18. jul</div>
+                    </div>
+                    <div className="ring-wrap">
+                      <div className="ring">
+                        <svg viewBox="0 0 200 200" width="186" height="186" aria-hidden="true">
+                          <circle cx="100" cy="100" r="86" fill="none" stroke="#EAF1EF" strokeWidth="16" />
+                          <circle className="sc-ring-fill" cx="100" cy="100" r="86" fill="none" stroke="url(#lpRing)" strokeWidth="16" strokeLinecap="round" strokeDasharray="540.4" strokeDashoffset="205" transform="rotate(-90 100 100)" />
+                          <defs>
+                            <linearGradient id="lpRing" x1="0" y1="0" x2="1" y2="1">
+                              <stop offset="0" stopColor="#2AE3BE" />
+                              <stop offset="1" stopColor="#12B492" />
+                            </linearGradient>
+                          </defs>
+                        </svg>
+                        <div className="cx">
+                          <div className="big num">1.240</div>
+                          <div className="lab">kcal preostalo</div>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <div className="macros">
-                    <div className="macro">
-                      <div className="mrow"><b>Proteini</b><span className="num">92 / 140 g</span></div>
-                      <div className="bar"><i style={{ width: "66%", background: "linear-gradient(90deg,#2AE3BE,#12B492)" }} /></div>
+                    <div className="macros">
+                      <div className="macro">
+                        <div className="mrow"><b>Proteini</b><span className="num">92 / 140 g</span></div>
+                        <div className="bar"><i style={{ "--tw": "66%", background: "linear-gradient(90deg,#2AE3BE,#12B492)" } as CSSProperties} /></div>
+                      </div>
+                      <div className="macro">
+                        <div className="mrow"><b>Ugljeni hidrati</b><span className="num">118 / 190 g</span></div>
+                        <div className="bar"><i style={{ "--tw": "62%", background: "#6FD9C4" } as CSSProperties} /></div>
+                      </div>
+                      <div className="macro">
+                        <div className="mrow"><b>Masti</b><span className="num">41 / 60 g</span></div>
+                        <div className="bar"><i style={{ "--tw": "68%", background: "#C9A24B" } as CSSProperties} /></div>
+                      </div>
                     </div>
-                    <div className="macro">
-                      <div className="mrow"><b>Ugljeni hidrati</b><span className="num">118 / 190 g</span></div>
-                      <div className="bar"><i style={{ width: "62%", background: "#6FD9C4" }} /></div>
+                    <div className="meals">
+                      <div className="meal"><div className="ic">🥪</div><div className="mt"><b>Pljeskavica u lepinji</b><span>Ručak · 1 komad</span></div><div className="kc num">620</div></div>
+                      <div className="meal"><div className="ic">🍳</div><div className="mt"><b>Kajgana + 2 kifle</b><span>Doručak · 320 g</span></div><div className="kc num">540</div></div>
                     </div>
-                    <div className="macro">
-                      <div className="mrow"><b>Masti</b><span className="num">41 / 60 g</span></div>
-                      <div className="bar"><i style={{ width: "68%", background: "#C9A24B" }} /></div>
-                    </div>
-                  </div>
-                  <div className="meals">
-                    <div className="meal"><div className="ic">🍳</div><div className="mt"><b>Kajgana + 2 kifle</b><span>Doručak · 320 g</span></div><div className="kc num">540</div></div>
-                    <div className="meal"><div className="ic">🍗</div><div className="mt"><b>Piletina i pirinač</b><span>Ručak · 400 g</span></div><div className="kc num">620</div></div>
                   </div>
                 </div>
                 <div className="fab">+</div>
@@ -170,9 +211,12 @@ export default function LandingPage() {
               <h2>Probaj dijetu koja ti oprašta.</h2>
               <p>Bez gladovanja u znak kazne. Bez odustajanja posle jednog obroka.</p>
               <div className="hero-actions">
-                <InstallButton className="btn-primary btn-lg" />
-                <Link className="btn btn-ghost btn-lg" href="/prijava">Kreni</Link>
+                <Link className="btn btn-primary btn-lg" href="/upitnik">Kreni besplatno</Link>
+                <InstallButton className="btn-ghost btn-lg" />
               </div>
+              <p className="hero-signin">
+                Već imaš nalog? <Link href="/prijava">Prijavi se</Link>
+              </p>
             </div>
           </div>
         </section>

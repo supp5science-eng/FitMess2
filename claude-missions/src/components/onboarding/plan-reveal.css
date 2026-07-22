@@ -386,12 +386,43 @@
   cursor: pointer;
 }
 
+/* Preview-mode save CTA (pre-auth /upitnik): fades up once the reveal has
+   settled, sitting below the macro chips. */
+.pr-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 340px;
+  margin-top: 8px;
+  animation: pr-cta-in 560ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pr-cta-copy {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  text-wrap: pretty;
+}
+
+@keyframes pr-cta-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pr::before,
   .pr-orb svg,
   .pr-orb-core,
   .pr-reveal,
   .pr-macro,
+  .pr-cta,
   .pr-leaving .pr-reveal-label,
   .pr-leaving .pr-macros,
   .pr-leaving .pr-ring,

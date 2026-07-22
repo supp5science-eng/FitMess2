@@ -54,7 +54,7 @@ describe("AS-011: a signed-out visitor requesting any in-app page is redirected 
     expect(decision).toEqual({ action: "redirect", to: SIGNED_OUT_REDIRECT_PATH });
   });
 
-  it.each(["/", "/prijava", "/registracija", "/registracija/proveri-email", "/auth/callback"])(
+  it.each(["/", "/upitnik", "/prijava", "/registracija", "/registracija/proveri-email", "/auth/callback"])(
     "test_AS_011_signed_out_visitor_requesting_the_public_path_%s_is_allowed_through",
     (pathname) => {
       const decision = decideRouteAccess({
@@ -347,6 +347,8 @@ describe("verified users with no phone on file are routed to /telefon once (Goog
 describe("path classifier helpers", () => {
   it("test_isPublicPath_covers_marketing_home_login_signup_auth_callback_and_password_reset", () => {
     expect(isPublicPath("/")).toBe(true);
+    expect(isPublicPath("/upitnik")).toBe(true);
+    expect(isPublicPath("/upitnik/bilo-sta")).toBe(true);
     expect(isPublicPath("/prijava")).toBe(true);
     expect(isPublicPath("/registracija")).toBe(true);
     expect(isPublicPath("/registracija/proveri-email")).toBe(true);

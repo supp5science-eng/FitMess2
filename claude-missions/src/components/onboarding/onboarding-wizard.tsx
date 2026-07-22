@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { ProgressIndicator } from "@/components/onboarding/progress-indicator";
@@ -14,7 +13,6 @@ import { ActivityStep } from "@/components/onboarding/steps/activity-step";
 import { GoalTypeStep } from "@/components/onboarding/steps/goal-type-step";
 import { GoalStep } from "@/components/onboarding/steps/goal-step";
 import {
-  buildOnboardingSummaryUrl,
   DEFAULT_ONBOARDING_DATA,
   visibleStepIds,
 } from "@/lib/onboarding/types";
@@ -80,11 +78,18 @@ function validateStep(
  * maintain/tone finish one step earlier (`visibleStepIds`). All collected
  * state lives here in client state; nothing is lost moving Back/Dalje.
  *
- * On the final step, hands the fully-collected data off to the plan-reveal
- * screen via the query string (`buildOnboardingSummaryUrl`).
+ * On the final step, hands the fully-collected data back to the parent flow
+ * via `onComplete`. The parent decides what happens next — the pre-auth
+ * `/upitnik` flow shows an anonymous plan preview then routes to
+ * registration; the post-auth `/onboarding` flow persists and continues to
+ * the dashboard. Keeping the wizard navigation-agnostic lets both reuse it
+ * unchanged.
  */
-export function OnboardingWizard() {
-  const router = useRouter();
+export function OnboardingWizard({
+  onComplete,
+}: {
+  onComplete: (data: OnboardingData) => void;
+}) {
   const [stepIndex, setStepIndex] = useState(0);
   const [data, setData] = useState<OnboardingData>(DEFAULT_ONBOARDING_DATA);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -119,7 +124,7 @@ export function OnboardingWizard() {
     setError(undefined);
 
     if (isLastStep) {
-      router.push(buildOnboardingSummaryUrl(data));
+      onComplete(data);
       return;
     }
     setStepIndex(currentIndex + 1);

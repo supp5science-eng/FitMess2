@@ -3,22 +3,31 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
+import { Button } from "@/components/ui/button";
 import { finishOnboardingAction } from "@/app/(app)/onboarding/pregled/actions";
 import { computeBudgetSummary } from "@/lib/onboarding/summary";
 import type { CompleteOnboardingData } from "@/lib/onboarding/summary";
+import { clearPendingOnboarding } from "@/lib/onboarding/storage";
 import "./plan-reveal.css";
 
 /**
- * The onboarding finale (replaces the old editable summary): after the last
- * wizard question we don't drop the user on a form -- we play a short,
- * premium "računamo tvoj plan" animation, reveal the daily kcal target with
- * a counting ring, then continue straight to `/danas`.
+ * The onboarding plan reveal: after the last wizard question we don't drop the
+ * user on a form -- we play a short, premium "računamo tvoj plan" animation,
+ * then reveal the daily kcal target with a counting ring.
  *
- * The write happens in the background here (`finishOnboardingAction`, which
- * deliberately does NOT redirect) so the animation is never cut short; we
- * navigate ourselves only once BOTH the animation has finished and the write
- * has landed. If the write fails, we surface a friendly Serbian retry instead
- * of navigating.
+ * Two modes, because onboarding now spans the auth boundary (Cal-AI-style):
+ *
+ *  - `mode="preview"` (pre-auth, on `/upitnik`): the visitor has no account
+ *    yet, so we ONLY compute + show the plan (no DB write), then surface a
+ *    "napravi nalog i sačuvaj" CTA that hands control back to the parent flow
+ *    (`onContinue`), which stashes the answers and routes to registration.
+ *
+ *  - `mode="persist"` (post-auth, on `/onboarding`): a session now exists, so
+ *    the write happens in the background here (`finishOnboardingAction`, which
+ *    deliberately does NOT redirect) while the animation plays; once BOTH the
+ *    animation has finished and the write has landed we clear the stashed
+ *    answers and hard-navigate to `/danas`. If the write fails, we surface a
+ *    friendly Serbian retry instead of navigating.
  */
 
 const CALC_MS = 2500;
@@ -45,8 +54,20 @@ function formatKcal(n: number) {
 
 type Phase = "calc" | "reveal";
 type SaveState = "saving" | "done" | "error";
+type PlanRevealMode = "preview" | "persist";
 
-export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
+export function PlanReveal({
+  data,
+  mode = "persist",
+  onContinue,
+}: {
+  data: CompleteOnboardingData;
+  /** `preview` = pre-auth (compute + CTA only); `persist` = post-auth (write
+   * + navigate). Defaults to `persist` to preserve the original behaviour. */
+  mode?: PlanRevealMode;
+  /** Called in `preview` mode when the visitor taps the save CTA. */
+  onContinue?: () => void;
+}) {
   const summary = useMemo(() => computeBudgetSummary(data), [data]);
   const target = summary.dailyKcal;
 
@@ -70,8 +91,12 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
   const [saveError, setSaveError] = useState<string | undefined>(undefined);
   const [saveNonce, setSaveNonce] = useState(0);
 
-  // Persist in the background (retried by bumping `saveNonce`).
+  const persist = mode === "persist";
+
+  // Persist in the background (retried by bumping `saveNonce`). Preview mode
+  // has no account to write to yet, so it skips this entirely.
   useEffect(() => {
+    if (!persist) return;
     let cancelled = false;
     finishOnboardingAction(data).then(
       (result) => {
@@ -92,7 +117,7 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
     return () => {
       cancelled = true;
     };
-  }, [data, saveNonce]);
+  }, [persist, data, saveNonce]);
 
   // Cycle the reassurance copy during the calc phase.
   useEffect(() => {
@@ -134,10 +159,10 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
     };
   }, [phase, countMs, holdMs, target]);
 
-  // Once the reveal has settled AND the write has landed: play the short
-  // outro (the ring "breathes", a teal halo ripples out, the chrome clears),
-  // then hand off to the dashboard. This is the first half of the
-  // ring-to-dashboard transition that continues on `/danas`.
+  // PERSIST MODE ONLY. Once the reveal has settled AND the write has landed:
+  // play the short outro (the ring "breathes", a teal halo ripples out, the
+  // chrome clears), then hand off to the dashboard. This is the first half of
+  // the ring-to-dashboard transition that continues on `/danas`.
   //
   // A hard navigation (not the client router) is deliberate: the App Router
   // cache could otherwise serve a `/danas` response captured BEFORE
@@ -146,14 +171,13 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
   // fully-onboarded profile, so the user actually lands on the dashboard.
   // Just before leaving we drop a short-lived cookie carrying the target so
   // `/danas` can continue the ring hand-off seamlessly (skipped under reduced
-  // motion -- the dashboard then just appears).
-  //
-  // `setLeaving` runs inside a timer (not synchronously in the effect body)
-  // so a single frame of the settled reveal is committed before the outro.
+  // motion -- the dashboard then just appears), and clear the stashed pre-auth
+  // answers now that they live on the account.
   useEffect(() => {
-    if (!animationDone || saveState !== "done") return;
+    if (!persist || !animationDone || saveState !== "done") return;
     const enter = setTimeout(() => setLeaving(true), 0);
     const leave = setTimeout(() => {
+      clearPendingOnboarding();
       if (!reduced) {
         try {
           document.cookie = `${INTRO_COOKIE}=${target}; path=/; max-age=60; samesite=lax`;
@@ -168,7 +192,7 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
       clearTimeout(enter);
       clearTimeout(leave);
     };
-  }, [animationDone, saveState, outroMs, reduced, target]);
+  }, [persist, animationDone, saveState, outroMs, reduced, target]);
 
   function retry() {
     setSaveError(undefined);
@@ -176,7 +200,7 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
     setSaveNonce((n) => n + 1);
   }
 
-  if (saveState === "error") {
+  if (persist && saveState === "error") {
     return (
       <main className="pr">
         <div className="pr-error" role="alert">
@@ -289,6 +313,25 @@ export function PlanReveal({ data }: { data: CompleteOnboardingData }) {
               <span>UH</span>
             </div>
           </div>
+
+          {/* Preview (pre-auth) mode: once the reveal has settled, invite the
+              visitor to create an account so the plan is saved. Persist mode
+              navigates on its own, so it never shows this. */}
+          {!persist && animationDone ? (
+            <div className="pr-cta">
+              <p className="pr-cta-copy">
+                Napravi nalog da sačuvaš svoj plan i kreneš da pratiš unos.
+              </p>
+              <Button
+                type="button"
+                size="lg"
+                className="w-full"
+                onClick={onContinue}
+              >
+                Napravi nalog i sačuvaj
+              </Button>
+            </div>
+          ) : null}
         </div>
       )}
     </main>

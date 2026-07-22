@@ -10,7 +10,7 @@ import { buildCommitment } from "@/lib/onboarding/commitment";
 import type { CommitmentInput } from "@/lib/onboarding/commitment";
 import { cn } from "@/lib/utils";
 
-const HOLD_MS = 1400; // press-and-hold duration to fully commit
+const HOLD_MS = 2800; // press-and-hold duration to fully commit (time to read the pledge)
 const CELEBRATE_MS = 2300; // celebration before auto-advancing
 const FLOOD_D = 2400; // diameter of the screen-flood circle (covers any phone)
 const RING_R = 50;
@@ -103,7 +103,8 @@ function FingerprintSeal({
           alt=""
           width={size}
           height={size}
-          className="rounded-xl"
+          draggable={false}
+          className="pointer-events-none rounded-xl select-none [-webkit-touch-callout:none]"
           priority
         />
       </div>
@@ -212,7 +213,8 @@ export function CommitScreen({
               alt=""
               width={96}
               height={96}
-              className="size-full"
+              draggable={false}
+              className="pointer-events-none size-full select-none [-webkit-touch-callout:none]"
               priority
             />
           </div>
@@ -276,8 +278,10 @@ export function CommitScreen({
             if (e.detail === 0 && !pointerUsedRef.current) complete();
             pointerUsedRef.current = false;
           }}
+          // Stop iOS's long-press "Save Image / Copy" callout on the held seal.
+          onContextMenu={(e) => e.preventDefault()}
           className={cn(
-            "relative z-10 size-40 touch-none rounded-full outline-none transition-transform focus-visible:ring-3 focus-visible:ring-ring/50",
+            "relative z-10 size-40 touch-none rounded-full outline-none select-none transition-transform [-webkit-touch-callout:none] focus-visible:ring-3 focus-visible:ring-ring/50",
             holding ? "scale-95" : "scale-100"
           )}
         >

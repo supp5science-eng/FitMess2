@@ -62,6 +62,47 @@ describe("WaterButton", () => {
     expect(screen.getByTestId("water-total")).toHaveTextContent("1,25 L");
   });
 
+  it("the − stepper composes a negative delta (undo) and posts it, flooring at empty-the-day", async () => {
+    render(<WaterButton dayKey="2026-07-22" initialMl={1500} />);
+
+    fireEvent.click(screen.getByTestId("water-open-button"));
+    const input = screen.getByTestId("water-amount-input") as HTMLInputElement;
+
+    fireEvent.click(screen.getByTestId("water-minus-button"));
+    fireEvent.click(screen.getByTestId("water-minus-button"));
+    expect(input.value).toBe("-500");
+    // Resulting day total previewed as 1500 - 500 = 1000 ("1 L").
+    expect(screen.getByTestId("water-result-preview")).toHaveTextContent("1 L");
+
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      jsonResponse({ ok: true, data: { day: "2026-07-22", ml: 1000 } })
+    );
+    fireEvent.click(screen.getByTestId("water-save-button"));
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("water-sheet")).not.toBeInTheDocument()
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/voda",
+      expect.objectContaining({
+        body: JSON.stringify({ day: "2026-07-22", deltaMl: -500 }),
+      })
+    );
+    expect(screen.getByTestId("water-total")).toHaveTextContent("1 L");
+  });
+
+  it("cannot remove more than the day holds (− stepper floors at −total, then disables)", () => {
+    render(<WaterButton dayKey="2026-07-22" initialMl={250} />);
+
+    fireEvent.click(screen.getByTestId("water-open-button"));
+    const input = screen.getByTestId("water-amount-input") as HTMLInputElement;
+
+    fireEvent.click(screen.getByTestId("water-minus-button"));
+    expect(input.value).toBe("-250");
+    // Already at empty-the-day floor -> further removal is blocked.
+    expect(screen.getByTestId("water-minus-button")).toBeDisabled();
+  });
+
   it("does nothing when the amount is 0 (Unesi disabled)", () => {
     render(<WaterButton dayKey="2026-07-22" initialMl={0} />);
     fireEvent.click(screen.getByTestId("water-open-button"));

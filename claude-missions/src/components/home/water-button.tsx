@@ -1,35 +1,41 @@
 "use client";
 
-import { Droplet, GlassWater, Milk, Plus, X } from "lucide-react";
+import { Droplet, Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 // Voda: a compact water button on `/danas` that opens the "Unesi vodu" sheet.
 // The button itself stays a single slim row (it must not crowd the dashboard);
-// tapping it opens a bottom sheet where the user taps a glass/bottle preset (or
-// types an amount) and confirms with "Unesi".
+// tapping it opens a bottom sheet where the user taps a glass/bottle/pitcher
+// preset (or fine-tunes with ±250 steppers, or types an amount) and confirms.
 //
 // Same dependency-free overlay pattern as `WeighInSheet`
 // (`src/components/analytics/weigh-in-sheet.tsx`): a fixed `bg-black/50`
 // overlay, `role="dialog"`, and a small `idle | saving | error` status machine.
 //
-// The sheet composes a DELTA (the presets ADD to the shown amount, exactly like
-// the reference), then POSTs that delta to `/api/voda`, which adds it to the
-// day's running total server-side and returns the new total — the source of
-// truth that this component then reflects.
+// The sheet composes a DELTA that can be NEGATIVE: the presets/+ add to the
+// shown amount, the − stepper removes (floored at "empty the day"), so an
+// accidental double-tap can be undone. On confirm it POSTs that delta to
+// `/api/voda`, which applies it to the day's running total server-side (clamped
+// to >= 0) and returns the new total — the source of truth this component then
+// reflects.
 
 const SAVE_FAILED_ERROR_SR = "Nismo uspeli da sačuvamo vodu. Pokušaj ponovo.";
 
-/** Cap the amount a single "Unesi" can add (matches the DB/route bound). */
+/** Cap the amount a single confirm can add (matches the DB/route bound). */
 const MAX_ML = 20000;
 
-/** Quick-add presets, in the reference's order (glass → bottle → large). */
-const PRESETS: { ml: number; label: string; sub: string; icon: typeof GlassWater }[] = [
-  { ml: 250, label: "+1 čaša", sub: "250 mL", icon: GlassWater },
-  { ml: 500, label: "+1 flaša", sub: "500 mL", icon: Milk },
-  { ml: 750, label: "+1 velika flaša", sub: "750 mL", icon: Milk },
+/** Fine-tune step for the − / + steppers. */
+const STEP_ML = 250;
+
+/** Quick-add presets: three clearly-different containers (glass, bottle,
+ * pitcher) rendered as emoji — colourful and instantly recognizable on iOS,
+ * unlike the earlier monochrome line icons. */
+const PRESETS: { ml: number; label: string; sub: string; emoji: string }[] = [
+  { ml: 250, label: "Čaša", sub: "250 mL", emoji: "🥛" },
+  { ml: 500, label: "Flaša", sub: "500 mL", emoji: "🍶" },
+  { ml: 750, label: "Bokal", sub: "750 mL", emoji: "🪣" },
 ];
 
 interface VodaResponseBody {
@@ -60,6 +66,8 @@ export function WaterButton({
 }) {
   const [totalMl, setTotalMl] = useState(initialMl);
   const [isOpen, setIsOpen] = useState(false);
+  // The pending delta. Can be negative (remove water), floored so it can never
+  // take the day below empty.
   const [addMl, setAddMl] = useState(0);
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
@@ -78,21 +86,28 @@ export function WaterButton({
     setIsOpen(false);
   }
 
+  /** Clamp a candidate delta to [−totalMl (empty the day), +MAX_ML]. */
+  function clampDelta(next: number): number {
+    return Math.max(-totalMl, Math.min(MAX_ML, next));
+  }
+
   function bump(ml: number) {
     setStatus("idle");
     setErrorMessage(undefined);
-    setAddMl((current) => Math.min(MAX_ML, current + ml));
+    setAddMl((current) => clampDelta(current + ml));
   }
 
   function onAmountChange(value: string) {
     setStatus("idle");
     setErrorMessage(undefined);
+    // Manual entry composes a positive amount; removal is done with the −
+    // stepper (a numeric keypad has no clean minus key).
     const digits = value.replace(/\D/g, "").slice(0, 5);
-    setAddMl(digits === "" ? 0 : Math.min(MAX_ML, Number(digits)));
+    setAddMl(digits === "" ? 0 : clampDelta(Number(digits)));
   }
 
   async function onConfirm() {
-    if (addMl <= 0) return;
+    if (addMl === 0) return;
 
     setStatus("saving");
     setErrorMessage(undefined);
@@ -118,6 +133,10 @@ export function WaterButton({
       setErrorMessage(SAVE_FAILED_ERROR_SR);
     }
   }
+
+  const resultMl = Math.max(0, Math.min(MAX_ML, totalMl + addMl));
+  const confirmLabel =
+    status === "saving" ? "Čuvanje..." : addMl < 0 ? "Ukloni" : "Dodaj";
 
   return (
     <div>
@@ -158,7 +177,7 @@ export function WaterButton({
             aria-labelledby="water-sheet-title"
             data-testid="water-sheet"
             onClick={(event) => event.stopPropagation()}
-            className="flex w-full max-w-sm flex-col gap-7 rounded-t-3xl border border-border bg-card px-6 pb-8 pt-6 shadow-lg sm:rounded-3xl"
+            className="flex w-full max-w-sm flex-col gap-6 rounded-t-3xl border border-border bg-card px-6 pb-8 pt-6 shadow-lg sm:rounded-3xl"
             style={{ paddingBottom: "max(env(safe-area-inset-bottom), 2rem)" }}
           >
             <div className="flex items-center justify-between">
@@ -180,37 +199,61 @@ export function WaterButton({
               </button>
             </div>
 
-            {/* Big editable amount, like the reference: the presets add to it. */}
-            <div className="flex items-baseline justify-center gap-1.5 py-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                aria-label="Količina vode u mililitrima"
-                data-testid="water-amount-input"
-                value={String(addMl)}
-                onChange={(event) => onAmountChange(event.target.value)}
-                size={Math.max(1, String(addMl).length)}
-                className="min-w-0 border-0 bg-transparent p-0 text-center text-6xl font-bold text-foreground tabular-nums outline-none focus:outline-none"
-              />
-              <span className="text-2xl font-medium text-muted-foreground">
-                mL
-              </span>
+            {/* Amount to apply, with − / + steppers so a mistaken tap can be
+                walked back. The number is editable for an exact figure. */}
+            <div className="flex items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => bump(-STEP_ML)}
+                disabled={addMl <= -totalMl}
+                aria-label="Skini 250 mL"
+                data-testid="water-minus-button"
+                className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:opacity-40 active:translate-y-px"
+              >
+                <Minus className="size-5" aria-hidden="true" />
+              </button>
+
+              <div className="flex items-baseline justify-center gap-1.5">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  aria-label="Količina vode u mililitrima"
+                  data-testid="water-amount-input"
+                  value={String(addMl)}
+                  onChange={(event) => onAmountChange(event.target.value)}
+                  size={Math.max(1, String(addMl).length)}
+                  className="min-w-0 border-0 bg-transparent p-0 text-center text-5xl font-bold text-foreground tabular-nums outline-none focus:outline-none"
+                />
+                <span className="text-xl font-medium text-muted-foreground">
+                  mL
+                </span>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => bump(STEP_ML)}
+                disabled={addMl >= MAX_ML}
+                aria-label="Dodaj 250 mL"
+                data-testid="water-plus-button"
+                className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:opacity-40 active:translate-y-px"
+              >
+                <Plus className="size-5" aria-hidden="true" />
+              </button>
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
-              {PRESETS.map(({ ml, label, sub, icon: Icon }, index) => (
+              {PRESETS.map(({ ml, label, sub, emoji }) => (
                 <button
                   key={label}
                   type="button"
                   onClick={() => bump(ml)}
                   data-testid={`water-preset-${ml}`}
-                  className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-background px-2 py-3 text-center transition-colors hover:bg-muted/50 active:translate-y-px"
+                  className="flex flex-col items-center gap-1 rounded-2xl border border-border bg-background px-2 py-3 text-center transition-colors hover:bg-muted/50 active:translate-y-px"
                 >
-                  <Icon
-                    className={cn("text-sky-400", index === 2 ? "size-7" : "size-6")}
-                    aria-hidden="true"
-                  />
-                  <span className="text-xs font-semibold leading-tight text-foreground">
+                  <span className="text-2xl leading-none" aria-hidden="true">
+                    {emoji}
+                  </span>
+                  <span className="mt-0.5 text-sm font-semibold leading-tight text-foreground">
                     {label}
                   </span>
                   <span className="text-[0.7rem] text-muted-foreground">
@@ -234,14 +277,19 @@ export function WaterButton({
               <Button
                 type="button"
                 onClick={onConfirm}
-                disabled={status === "saving" || addMl <= 0}
+                disabled={status === "saving" || addMl === 0}
                 data-testid="water-save-button"
                 className="h-12 w-full text-base"
               >
-                {status === "saving" ? "Čuvanje..." : "Unesi"}
+                {confirmLabel}
               </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                Uneseno: {formatWaterSr(totalMl)}
+              <p
+                data-testid="water-result-preview"
+                className="text-center text-xs text-muted-foreground"
+              >
+                {addMl === 0
+                  ? `Uneseno: ${formatWaterSr(totalMl)}`
+                  : `Ukupno danas: ${formatWaterSr(resultMl)}`}
               </p>
             </div>
           </div>

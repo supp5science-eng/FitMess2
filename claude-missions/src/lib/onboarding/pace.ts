@@ -47,6 +47,53 @@ export const PACE_DESCRIPTIONS: Record<WeightChangePace, string> = {
 /** The default pace a fresh questionnaire starts on. */
 export const DEFAULT_PACE: WeightChangePace = "recommended";
 
+function lerp(a: number, b: number, k: number): number {
+  return a + (b - a) * k;
+}
+
+/**
+ * The accent color for a slider position `t` in [0, 1] (0 = slow, 0.5 =
+ * recommended, 1 = fast). A calm, meaningful ramp: a dull olive-yellow at the
+ * "too slow" end, the nicest vivid green in the recommended middle ("this is
+ * good"), and an alarming red at the "too fast" end. Interpolated in HSL so
+ * the hue glides smoothly instead of muddying through grey.
+ */
+export function paceColorAt(t: number): string {
+  const c = Math.min(1, Math.max(0, t));
+  let h: number;
+  let s: number;
+  let l: number;
+  if (c <= 0.5) {
+    const k = c / 0.5; // dull olive-yellow -> emerald green
+    h = lerp(48, 146, k);
+    s = lerp(44, 66, k);
+    l = lerp(50, 44, k);
+  } else {
+    const k = (c - 0.5) / 0.5; // emerald green -> red (through a warm ramp)
+    h = lerp(146, 4, k);
+    s = lerp(66, 82, k);
+    l = lerp(44, 56, k);
+  }
+  return `hsl(${h.toFixed(1)} ${s.toFixed(1)}% ${l.toFixed(1)}%)`;
+}
+
+/** Normalized slider position [0,1] for a discrete pace. */
+export function paceToPosition(pace: WeightChangePace): number {
+  const i = PACE_ORDER.indexOf(pace);
+  return i < 0 ? 0.5 : i / (PACE_ORDER.length - 1);
+}
+
+/** Nearest discrete pace for a normalized slider position [0,1]. */
+export function positionToPace(t: number): WeightChangePace {
+  const idx = Math.round(Math.min(1, Math.max(0, t)) * (PACE_ORDER.length - 1));
+  return PACE_ORDER[idx];
+}
+
+/** The accent color for a discrete pace (its settled slider color). */
+export function paceColor(pace: WeightChangePace): string {
+  return paceColorAt(paceToPosition(pace));
+}
+
 /** Approximate weeks in a month, for the "reach your goal in ~N months"
  * readout. */
 const WEEKS_PER_MONTH = 4.345;

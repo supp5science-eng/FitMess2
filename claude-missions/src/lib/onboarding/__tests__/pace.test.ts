@@ -5,6 +5,8 @@ import {
   PACE_WEEKLY_KG,
   formatTimeToGoal,
   monthsWord,
+  paceToPosition,
+  positionToPace,
   timeframeWeeksForPace,
   weeksWord,
 } from "@/lib/onboarding/pace";
@@ -51,6 +53,28 @@ describe("formatTimeToGoal", () => {
     expect(formatTimeToGoal(13)).toBe("3 meseca"); // 13/4.345 ≈ 3
     expect(formatTimeToGoal(26)).toBe("6 meseci");
     expect(formatTimeToGoal(52)).toBe("12 meseci");
+  });
+});
+
+describe("slider position <-> pace", () => {
+  it("maps each pace to an evenly-spaced position", () => {
+    expect(paceToPosition("slow")).toBe(0);
+    expect(paceToPosition("recommended")).toBe(0.5);
+    expect(paceToPosition("fast")).toBe(1);
+  });
+
+  it("snaps a continuous position to the nearest pace", () => {
+    expect(positionToPace(0)).toBe("slow");
+    expect(positionToPace(0.2)).toBe("slow");
+    expect(positionToPace(0.4)).toBe("recommended");
+    expect(positionToPace(0.6)).toBe("recommended");
+    expect(positionToPace(0.8)).toBe("fast");
+    expect(positionToPace(1)).toBe("fast");
+  });
+
+  it("clamps out-of-range positions", () => {
+    expect(positionToPace(-1)).toBe("slow");
+    expect(positionToPace(2)).toBe("fast");
   });
 });
 

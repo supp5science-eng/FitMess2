@@ -10,9 +10,11 @@ import {
   PACE_ORDER,
   PACE_WEEKLY_KG,
   formatTimeToGoal,
+  paceColor,
   timeframeWeeksForPace,
   type WeightChangePace,
 } from "@/lib/onboarding/pace";
+import { PaceSlider } from "@/components/onboarding/pace-slider";
 import { computeBudgetSummary } from "@/lib/onboarding/summary";
 import type { OnboardingData } from "@/lib/onboarding/types";
 
@@ -47,7 +49,7 @@ export function TempoStep({
   onChangeTimeframe: (weeks: number | null) => void;
 }) {
   const pace: WeightChangePace = data.pace ?? DEFAULT_PACE;
-  const paceIndex = Math.max(0, PACE_ORDER.indexOf(pace));
+  const color = paceColor(pace);
 
   const deltaKg =
     data.weightKg !== null &&
@@ -121,12 +123,15 @@ export function TempoStep({
         </p>
       </div>
 
-      {/* Big readout: weekly rate for the selected pace */}
+      {/* Big readout: weekly rate for the selected pace, tinted by pace */}
       <div className="flex flex-col items-center gap-1">
         <span className="text-sm text-muted-foreground">
           Promena težine nedeljno
         </span>
-        <span className="text-4xl font-bold tracking-tight text-foreground">
+        <span
+          className="text-5xl font-bold tracking-tight transition-colors duration-200"
+          style={{ color }}
+        >
           {kgReadout(PACE_WEEKLY_KG[pace])} kg
         </span>
       </div>
@@ -143,14 +148,18 @@ export function TempoStep({
               aria-pressed={active}
               className="flex flex-col items-center gap-1 rounded-xl py-1 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
             >
-              <span className="text-2xl leading-none" aria-hidden>
+              <span
+                className={cn(
+                  "text-2xl leading-none transition-all duration-200",
+                  active ? "scale-110" : "opacity-45 grayscale"
+                )}
+                aria-hidden
+              >
                 {PACE_ICON[p]}
               </span>
               <span
-                className={cn(
-                  "text-sm font-semibold",
-                  active ? "text-primary" : "text-muted-foreground"
-                )}
+                className="text-sm font-semibold transition-colors duration-200"
+                style={{ color: active ? paceColor(p) : undefined }}
               >
                 {PACE_LABELS[p]}
               </span>
@@ -159,27 +168,21 @@ export function TempoStep({
         })}
       </div>
 
-      {/* The slider itself */}
-      <input
-        type="range"
-        min={0}
-        max={PACE_ORDER.length - 1}
-        step={1}
-        value={paceIndex}
-        aria-label="Tempo dostizanja cilja"
-        aria-valuetext={PACE_LABELS[pace]}
-        onChange={(e) => onChangePace(PACE_ORDER[Number(e.target.value)])}
-        className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6"
-      />
+      {/* The smooth, colorful slider */}
+      <PaceSlider value={pace} onChange={onChangePace} />
 
       {/* Live plan preview for the selected pace */}
-      <div className="rounded-2xl bg-muted/60 p-4">
+      <div
+        className="rounded-2xl border p-4 transition-colors duration-200"
+        style={{
+          borderColor: `color-mix(in srgb, ${color} 30%, transparent)`,
+          background: `color-mix(in srgb, ${color} 8%, transparent)`,
+        }}
+      >
         {timeframeWeeks !== null ? (
           <p className="text-base font-semibold text-foreground">
             Cilj dostižeš za{" "}
-            <span className="text-primary">
-              ~{formatTimeToGoal(timeframeWeeks)}
-            </span>
+            <span style={{ color }}>~{formatTimeToGoal(timeframeWeeks)}</span>
           </p>
         ) : null}
         <p className="mt-1 text-sm leading-relaxed text-muted-foreground">

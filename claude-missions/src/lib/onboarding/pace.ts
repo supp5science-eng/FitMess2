@@ -88,6 +88,86 @@ export function paceColor(pace: WeightChangePace): string {
   return paceColorAt(paceToPosition(pace));
 }
 
+// ---------------------------------------------------------------------
+// Continuous dial (rotary "prsten") — the `tempo` step lets the user pick
+// ANY weekly rate between the slow and fast bounds, not just the three
+// discrete stops. The dial's position `t` ∈ [0,1] maps linearly onto the
+// weekly-kg range, and from that + the target delta we derive the whole-week
+// timeframe the rest of the pipeline already speaks (budget engine + DB).
+// Nothing downstream changes: only the mapping from a chosen rate → weeks.
+// ---------------------------------------------------------------------
+
+/** The continuous weekly-rate bounds the dial sweeps between: the slow rate
+ * (0.25 kg/week) at t=0 and the fast rate (0.75 kg/week) at t=1, with the
+ * recommended 0.5 kg/week landing exactly at the t=0.5 midpoint. */
+export const PACE_MIN_WEEKLY_KG = PACE_WEEKLY_KG.slow;
+export const PACE_MAX_WEEKLY_KG = PACE_WEEKLY_KG.fast;
+
+/** Weekly kg for a continuous dial position `t` ∈ [0,1] (0 = slow … 1 = fast).
+ * Linear, so the recommended rate sits at the exact center of the sweep. */
+export function weeklyKgForPosition(t: number): number {
+  const c = Math.min(1, Math.max(0, t));
+  return PACE_MIN_WEEKLY_KG + (PACE_MAX_WEEKLY_KG - PACE_MIN_WEEKLY_KG) * c;
+}
+
+/** Inverse of `weeklyKgForPosition`: the dial position that yields a given
+ * weekly rate, clamped to [0,1]. */
+export function positionForWeeklyKg(kg: number): number {
+  const span = PACE_MAX_WEEKLY_KG - PACE_MIN_WEEKLY_KG;
+  if (span <= 0) return 0.5;
+  return Math.min(1, Math.max(0, (kg - PACE_MIN_WEEKLY_KG) / span));
+}
+
+/** Whole weeks (≥ 1) to move `deltaKg` of bodyweight at a continuous weekly
+ * rate — the continuous sibling of `timeframeWeeksForPace`. */
+export function timeframeWeeksForWeeklyKg(
+  deltaKg: number,
+  weeklyKg: number
+): number {
+  if (!Number.isFinite(deltaKg) || deltaKg <= 0 || weeklyKg <= 0) return 1;
+  return Math.max(1, Math.round(deltaKg / weeklyKg));
+}
+
+/**
+ * The dial position implied by an already-derived timeframe + delta — used to
+ * RESTORE the dial when the user navigates back to the tempo step (the wizard
+ * only keeps `timeframeWeeks`, not the raw position). Returns `null` when there
+ * isn't enough to reconstruct it, so the caller can fall back to the default.
+ */
+export function positionForTimeframe(
+  deltaKg: number | null,
+  timeframeWeeks: number | null
+): number | null {
+  if (deltaKg === null || timeframeWeeks === null) return null;
+  if (!Number.isFinite(deltaKg) || deltaKg <= 0 || timeframeWeeks <= 0) {
+    return null;
+  }
+  return positionForWeeklyKg(deltaKg / timeframeWeeks);
+}
+
+/** RGB anchors for the DIAL ramp (distinct from the neutral-white slider ramp
+ * above): dull olive-yellow ("trula žuta", too slow) → green (the recommended
+ * sweet spot) → red (too aggressive). So the color itself tells the story as
+ * the user rotates: yellow = meh, green = ideal, red = punishing. */
+const RING_SLOW_RGB = [193, 155, 42]; // "trula žuta"
+const RING_REC_RGB = [22, 163, 74]; // green (#16A34A)
+const RING_FAST_RGB = [225, 73, 63]; // red (#E1493F)
+
+/**
+ * The dial color for a continuous position `t` ∈ [0,1]: olive-yellow at the
+ * slow end, green through the recommended middle, red at the fast end. Used on
+ * the active arc, the handle ring and the center readout so the whole control
+ * shifts color as the user drags toward a faster/slower goal.
+ */
+export function paceRingColorAt(t: number): string {
+  const c = Math.min(1, Math.max(0, t));
+  const rgb =
+    c <= 0.5
+      ? mixRgb(RING_SLOW_RGB, RING_REC_RGB, c / 0.5)
+      : mixRgb(RING_REC_RGB, RING_FAST_RGB, (c - 0.5) / 0.5);
+  return `rgb(${rgb[0]} ${rgb[1]} ${rgb[2]})`;
+}
+
 
 /**
  * Derive the timeframe (whole weeks, ≥ 1) needed to move `deltaKg` of

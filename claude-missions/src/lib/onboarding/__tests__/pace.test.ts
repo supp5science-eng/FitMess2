@@ -1,13 +1,19 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  PACE_MAX_WEEKLY_KG,
+  PACE_MIN_WEEKLY_KG,
   PACE_ORDER,
   PACE_WEEKLY_KG,
   formatTimeToGoal,
   monthsWord,
   paceToPosition,
+  positionForTimeframe,
+  positionForWeeklyKg,
   positionToPace,
   timeframeWeeksForPace,
+  timeframeWeeksForWeeklyKg,
+  weeklyKgForPosition,
   weeksWord,
 } from "@/lib/onboarding/pace";
 
@@ -72,6 +78,49 @@ describe("slider position <-> pace", () => {
   it("clamps out-of-range positions", () => {
     expect(positionToPace(-1)).toBe("slow");
     expect(positionToPace(2)).toBe("fast");
+  });
+});
+
+describe("continuous dial position <-> weekly rate", () => {
+  it("maps the sweep endpoints to the slow/fast bounds, midpoint to recommended", () => {
+    expect(weeklyKgForPosition(0)).toBe(PACE_MIN_WEEKLY_KG);
+    expect(weeklyKgForPosition(1)).toBe(PACE_MAX_WEEKLY_KG);
+    expect(weeklyKgForPosition(0.5)).toBeCloseTo(PACE_WEEKLY_KG.recommended, 10);
+  });
+
+  it("clamps out-of-range positions to the bounds", () => {
+    expect(weeklyKgForPosition(-1)).toBe(PACE_MIN_WEEKLY_KG);
+    expect(weeklyKgForPosition(2)).toBe(PACE_MAX_WEEKLY_KG);
+  });
+
+  it("positionForWeeklyKg is the inverse of weeklyKgForPosition", () => {
+    for (const t of [0, 0.25, 0.5, 0.75, 1]) {
+      expect(positionForWeeklyKg(weeklyKgForPosition(t))).toBeCloseTo(t, 10);
+    }
+  });
+
+  it("derives whole weeks from a continuous weekly rate", () => {
+    // 6 kg at 0.5 kg/week -> 12 weeks; at 0.25 -> 24; at 0.75 -> 8.
+    expect(timeframeWeeksForWeeklyKg(6, 0.5)).toBe(12);
+    expect(timeframeWeeksForWeeklyKg(6, 0.25)).toBe(24);
+    expect(timeframeWeeksForWeeklyKg(6, 0.75)).toBe(8);
+  });
+
+  it("clamps the derived timeframe to at least 1 week for tiny/invalid input", () => {
+    expect(timeframeWeeksForWeeklyKg(0, 0.5)).toBe(1);
+    expect(timeframeWeeksForWeeklyKg(6, 0)).toBe(1);
+    expect(timeframeWeeksForWeeklyKg(Number.NaN, 0.5)).toBe(1);
+  });
+
+  it("reconstructs the dial position from a stored timeframe + delta", () => {
+    // 6 kg over 12 weeks == 0.5 kg/week == recommended midpoint.
+    expect(positionForTimeframe(6, 12)).toBeCloseTo(0.5, 10);
+    // 6 kg over 24 weeks == 0.25 kg/week == slow end.
+    expect(positionForTimeframe(6, 24)).toBeCloseTo(0, 10);
+    // Missing inputs -> null so the caller can fall back to the default.
+    expect(positionForTimeframe(null, 12)).toBeNull();
+    expect(positionForTimeframe(6, null)).toBeNull();
+    expect(positionForTimeframe(0, 12)).toBeNull();
   });
 });
 

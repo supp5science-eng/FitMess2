@@ -205,41 +205,34 @@ describe("cilj step: target weight via the ruler", () => {
   });
 });
 
-describe("tempo step: pace cards (last step for weight-change goals)", () => {
-  it("renders the three pace options, recommended selected by default, with a daily-kcal preview", () => {
+describe("tempo step: continuous pace dial (last step for weight-change goals)", () => {
+  it("opens on the recommended pace by default, with a daily-kcal preview", () => {
     advanceToStep("tempo");
-    expect(screen.getByRole("radio", { name: /Sporo/ })).toBeInTheDocument();
-    expect(
-      screen.getByRole("radio", { name: /Preporučeno/ })
-    ).toBeInTheDocument();
-    expect(screen.getByRole("radio", { name: /Brzo/ })).toBeInTheDocument();
-    // Recommended is the default selection.
-    expect(screen.getByRole("radio", { name: /Preporučeno/ })).toHaveAttribute(
-      "aria-checked",
-      "true"
-    );
-    // Each card shows its weekly rate.
+    // The dial is driven by a hidden, labeled range slider (source of truth).
+    const slider = screen.getByLabelText(
+      /Tempo dostizanja cilja/
+    ) as HTMLInputElement;
+    expect(slider).toBeInTheDocument();
+    // Default sits at the midpoint (recommended, 0.5 kg/week).
+    expect(slider.value).toBe("500");
+    expect(screen.getByText(/Preporučeno/)).toBeInTheDocument();
     expect(screen.getByText(/0,5 kg nedeljno/)).toBeInTheDocument();
     // Live daily-calorie preview is shown.
     expect(screen.getByTestId("tempo-daily-kcal")).toBeInTheDocument();
   });
 
-  it("selecting a different pace marks it and clears the previous one", () => {
+  it("dragging the dial toward slow relabels it and slows the rate", () => {
     advanceToStep("tempo");
-    fireEvent.click(screen.getByRole("radio", { name: /Sporo/ }));
-    expect(screen.getByRole("radio", { name: /Sporo/ })).toHaveAttribute(
-      "aria-checked",
-      "true"
-    );
-    expect(screen.getByRole("radio", { name: /Preporučeno/ })).toHaveAttribute(
-      "aria-checked",
-      "false"
-    );
+    fireEvent.change(screen.getByLabelText(/Tempo dostizanja cilja/), {
+      target: { value: "0" },
+    });
+    expect(screen.getByText(/Sporo/)).toBeInTheDocument();
+    expect(screen.getByText(/0,25 kg nedeljno/)).toBeInTheDocument();
   });
 
-  it("finishing hands off target weight + a timeframe derived from the pace", () => {
+  it("finishing hands off target weight + a timeframe derived from the dial", () => {
     advanceToStep("tempo");
-    // Default pace = recommended (0.5 kg/week); delta 80 -> 74 = 6 kg -> 12 weeks.
+    // Default position = recommended (0.5 kg/week); delta 80 -> 74 = 6 kg -> 12 weeks.
     fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
 
     expect(completeMock).toHaveBeenCalledTimes(1);
@@ -256,9 +249,11 @@ describe("tempo step: pace cards (last step for weight-change goals)", () => {
     expect(data.timeframeWeeks).toBe(12);
   });
 
-  it("a slower pace yields a longer derived timeframe", () => {
+  it("a slower dial position yields a longer derived timeframe", () => {
     advanceToStep("tempo");
-    fireEvent.click(screen.getByRole("radio", { name: /Sporo/ }));
+    fireEvent.change(screen.getByLabelText(/Tempo dostizanja cilja/), {
+      target: { value: "0" },
+    });
     fireEvent.click(screen.getByRole("button", { name: /Završi/ }));
 
     const data = completeMock.mock.calls[0][0] as OnboardingData;

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { CommitScreen } from "@/components/onboarding/commit-screen";
 import { NameScreen } from "@/components/onboarding/name-screen";
+import { ThemeChoiceScreen } from "@/components/onboarding/theme-choice-screen";
 import { FinishAndRedirect } from "@/components/onboarding/finish-and-redirect";
 import { PlanReveal } from "@/components/onboarding/plan-reveal";
 import { isOnboardingDataComplete } from "@/lib/onboarding/summary";
@@ -49,6 +50,7 @@ type Stage =
   | { kind: "wizard" }
   | { kind: "commit"; data: CompleteOnboardingData; alreadyRevealed: boolean }
   | { kind: "name"; data: CompleteOnboardingData; alreadyRevealed: boolean }
+  | { kind: "theme"; data: CompleteOnboardingData; alreadyRevealed: boolean }
   | { kind: "plan"; data: CompleteOnboardingData; alreadyRevealed: boolean };
 
 export function OnboardingFlow() {
@@ -93,7 +95,9 @@ export function OnboardingFlow() {
     // Re-stash with the name so a reload between here and a landed persist
     // resumes at the plan instead of asking for the name again.
     savePendingOnboarding(merged);
-    setStage({ kind: "plan", data: merged, alreadyRevealed });
+    // Right after the name, let the user pick dark/light (dark default) before
+    // the plan reveal.
+    setStage({ kind: "theme", data: merged, alreadyRevealed });
   }
 
   if (stage.kind === "commit") {
@@ -116,6 +120,20 @@ export function OnboardingFlow() {
       <NameScreen
         onSubmit={(name) =>
           handleNameSubmit(stage.data, name, stage.alreadyRevealed)
+        }
+      />
+    );
+  }
+
+  if (stage.kind === "theme") {
+    return (
+      <ThemeChoiceScreen
+        onSubmit={() =>
+          setStage({
+            kind: "plan",
+            data: stage.data,
+            alreadyRevealed: stage.alreadyRevealed,
+          })
         }
       />
     );

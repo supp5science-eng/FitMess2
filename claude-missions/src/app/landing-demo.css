@@ -1,0 +1,894 @@
+/*
+ * Landing hero demo — choreography for `components/landing/hero-demo.tsx`.
+ *
+ * One master timeline, `--lpd-t` (15s), drives EVERY animation below via
+ * percentage keyframes, so the five scenes stay perfectly in sync and the
+ * whole thing loops forever:
+ *
+ *   %  0 – 17    scene 1: početna (pre obroka), tap na "+" @ ~15%
+ *   % 18 – 42    scene 2: kamera, okidanje @ ~36%, blic
+ *   % 40 – 55    scene 3: "Analiziram obrok…" + scan linija
+ *   % 54 – 81    scene 4: AI procena (stagger redova), "Dodaj u dan" @ ~76%
+ *   % 80 – 100   scene 5: početna posle — ring/brojevi/barovi se popune,
+ *                nova kartica uklizi; kratki dip u crno na šavu petlje.
+ *
+ * Base (non-animated) styles are the REDUCED-MOTION POSTER: `landing.css`
+ * kills all animation under `.lp` for `prefers-reduced-motion`, and what
+ * remains is scene 1 (the only scene with base opacity 1) as a static
+ * screenshot of the home screen.
+ *
+ * Colors are the app's DARK theme values (globals.css `.dark`), hardcoded
+ * here on purpose: the marketing page never carries the `.dark` class, so
+ * the app tokens would resolve to the LIGHT theme. This block must look
+ * like the product's one true dark UI regardless of visitor theme.
+ */
+
+.lpd {
+  --lpd-t: 15s;
+
+  /* app dark theme (globals.css `.dark`) */
+  --lpd-bg: #0a0c0b;
+  --lpd-fg: #f3f7f5;
+  --lpd-card: #14181a;
+  --lpd-muted: #a6b0ab;
+  --lpd-border: rgba(255, 255, 255, 0.1);
+  --lpd-teal: #17d1a8;
+  --lpd-teal-ink: #04231c;
+  --lpd-mp: #f9745f; /* --macro-protein */
+  --lpd-mf: #f2c14e; /* --macro-fat */
+  --lpd-mc: #45c78d; /* --macro-carbs */
+
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--lpd-bg);
+  color: var(--lpd-fg);
+  font-family: var(--font-sans), -apple-system, sans-serif;
+  user-select: none;
+}
+
+/* ---------- status bar (above every scene) ---------- */
+.lpd-status {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 22px 0 26px;
+  pointer-events: none;
+}
+.lpd-status-time {
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+.lpd-status-icons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.lpd-status-svg {
+  width: 13px;
+  height: 9px;
+  display: block;
+}
+.lpd-status-batt {
+  width: 19px;
+}
+
+/* ---------- scenes ---------- */
+.lpd-sc {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+}
+/* reduced-motion poster: scene 1 is the static screenshot */
+.lpd-sc-home1 {
+  opacity: 1;
+}
+
+.lpd-sc-home1 { animation: lpd-sc-home1 var(--lpd-t) linear infinite; }
+.lpd-sc-cam   { animation: lpd-sc-cam   var(--lpd-t) linear infinite; }
+.lpd-sc-scan  { animation: lpd-sc-scan  var(--lpd-t) linear infinite; }
+.lpd-sc-res   { animation: lpd-sc-res   var(--lpd-t) linear infinite; }
+.lpd-sc-home2 { animation: lpd-sc-home2 var(--lpd-t) linear infinite; }
+
+@keyframes lpd-sc-home1 {
+  0% { opacity: 0; }
+  1.5%, 17% { opacity: 1; }
+  19.5%, 100% { opacity: 0; }
+}
+@keyframes lpd-sc-cam {
+  0%, 18% { opacity: 0; }
+  20.5%, 40% { opacity: 1; }
+  42%, 100% { opacity: 0; }
+}
+@keyframes lpd-sc-scan {
+  0%, 40.5% { opacity: 0; }
+  42.5%, 53.5% { opacity: 1; }
+  55.5%, 100% { opacity: 0; }
+}
+@keyframes lpd-sc-res {
+  0%, 54.5% { opacity: 0; }
+  56.5%, 79% { opacity: 1; }
+  81.5%, 100% { opacity: 0; }
+}
+@keyframes lpd-sc-home2 {
+  0%, 80.5% { opacity: 0; }
+  82.5%, 96.5% { opacity: 1; }
+  99.7%, 100% { opacity: 0; }
+}
+
+/* =========================================================================
+   HOME (scenes 1 & 5) — mirrors /danas
+   ========================================================================= */
+.lpd-sc-home1,
+.lpd-sc-home2 {
+  padding: 30px 16px 0;
+  gap: 10px;
+}
+
+.lpd-home-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.lpd-pear {
+  width: 22px;
+  height: 22px;
+}
+.lpd-wordmark {
+  font-family: var(--font-display), var(--font-sans), sans-serif;
+  font-size: 20px;
+  letter-spacing: -0.01em;
+}
+/* sedef gradient for "Mess" — dark-theme --wordmark-grad from globals.css */
+.lpd-wordmark-mess {
+  background: linear-gradient(
+    112deg,
+    #26ddb6 0%,
+    #35d3cc 22%,
+    #ecc766 40%,
+    #57a8ee 62%,
+    #40d98c 83%,
+    #63dd76 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* date strip */
+.lpd-strip {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 6px 0;
+}
+.lpd-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+.lpd-day-future {
+  opacity: 0.38;
+}
+.lpd-day-wd {
+  font-size: 8px;
+  font-weight: 550;
+  color: var(--lpd-muted);
+  padding: 1px 5px;
+  border-radius: 999px;
+}
+.lpd-day-wd-today {
+  background: var(--lpd-teal);
+  color: var(--lpd-teal-ink);
+  font-weight: 700;
+}
+.lpd-day-ring {
+  position: relative;
+  width: 28px;
+  height: 28px;
+}
+.lpd-day-ring svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.lpd-ring-track {
+  stroke: color-mix(in srgb, #17d1a8 18%, transparent);
+}
+.lpd-day-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.lpd-h2 {
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* calorie ring row */
+.lpd-ring-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  padding: 0 2px;
+}
+.lpd-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 44px;
+}
+.lpd-side-num {
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.lpd-side-label {
+  font-size: 8.5px;
+  font-weight: 550;
+  color: var(--lpd-muted);
+}
+.lpd-ring {
+  position: relative;
+  width: 128px;
+  height: 128px;
+  flex-shrink: 0;
+}
+.lpd-ring svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.lpd-ring-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+}
+.lpd-ring-big {
+  font-size: 27px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.lpd-ring-label {
+  font-size: 9px;
+  font-weight: 550;
+  color: var(--lpd-muted);
+}
+/* scene 5: the ring fills 1250 → 1770 of 2200 (dashoffset 43.2 → 19.5) */
+.lpd-ring-arc-anim {
+  animation: lpd-ring-fill var(--lpd-t) linear infinite;
+}
+@keyframes lpd-ring-fill {
+  0%, 83% {
+    stroke-dashoffset: 43.2;
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  91%, 100% { stroke-dashoffset: 19.5; }
+}
+
+/* number crossfade (old → new) on the same timeline */
+.lpd-swap {
+  display: inline-grid;
+}
+.lpd-swap-old,
+.lpd-swap-new {
+  grid-area: 1 / 1;
+}
+.lpd-swap-new {
+  opacity: 0;
+}
+.lpd-swap-old { animation: lpd-swap-out var(--lpd-t) linear infinite; }
+.lpd-swap-new { animation: lpd-swap-in  var(--lpd-t) linear infinite; }
+@keyframes lpd-swap-out {
+  0%, 84.5% { opacity: 1; }
+  87.5%, 100% { opacity: 0; }
+}
+@keyframes lpd-swap-in {
+  0%, 85.5% { opacity: 0; }
+  88.5%, 100% { opacity: 1; }
+}
+
+/* macro bars */
+.lpd-macros {
+  display: flex;
+  gap: 12px;
+  padding: 0 2px;
+}
+.lpd-macro {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.lpd-macro-label {
+  font-size: 9px;
+  font-weight: 550;
+  color: var(--lpd-muted);
+}
+.lpd-macro-track {
+  width: 100%;
+  height: 4px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.lpd-macro-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+}
+.lpd-macro-fill-anim {
+  animation: lpd-bar-grow var(--lpd-t) linear infinite;
+}
+@keyframes lpd-bar-grow {
+  0%, 84% {
+    width: var(--w0);
+    animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  91%, 100% { width: var(--w1); }
+}
+.lpd-macro-vals {
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* meal cards */
+.lpd-meals-h {
+  margin-top: 2px;
+}
+.lpd-meals {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.lpd-card {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border: 1px solid var(--lpd-border);
+  background: var(--lpd-card);
+  border-radius: 14px;
+  padding: 10px 12px;
+}
+.lpd-card-photo {
+  width: 100%;
+  height: 74px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+.lpd-card-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lpd-card-names {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.lpd-card-name {
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+.lpd-card-portion {
+  font-size: 9px;
+  color: var(--lpd-muted);
+}
+.lpd-card-kcal {
+  font-size: 11.5px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.lpd-card-macros {
+  display: flex;
+  gap: 10px;
+  font-size: 8.5px;
+  color: var(--lpd-muted);
+}
+.lpd-card-macros b {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.lpd-mp { color: var(--lpd-mp); }
+.lpd-mf { color: var(--lpd-mf); }
+.lpd-mc { color: var(--lpd-mc); }
+
+/* the new photo card slides in as the ring fills (scene 5) */
+.lpd-card-new {
+  opacity: 0;
+  animation: lpd-card-in var(--lpd-t) linear infinite;
+}
+@keyframes lpd-card-in {
+  0%, 81.5% {
+    opacity: 0;
+    transform: translateY(14px);
+    animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  85.5%, 100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* floating bottom nav */
+.lpd-nav {
+  position: absolute;
+  inset: auto 12px 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+.lpd-nav-pill {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--lpd-border);
+  background: rgba(20, 24, 26, 0.88);
+  backdrop-filter: blur(8px);
+  padding: 0 6px;
+}
+.lpd-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  font-size: 7.5px;
+  font-weight: 550;
+  color: var(--lpd-muted);
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+.lpd-nav-active {
+  color: var(--lpd-teal);
+  background: rgba(255, 255, 255, 0.08);
+}
+.lpd-nav-icon {
+  width: 13px;
+  height: 13px;
+}
+.lpd-plus {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  background: var(--lpd-teal);
+  color: var(--lpd-teal-ink);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+}
+.lpd-plus-icon {
+  width: 19px;
+  height: 19px;
+}
+/* the tap: press + expanding ripple @ ~15% (right before the camera scene) */
+.lpd-plus-tap {
+  animation: lpd-plus-press var(--lpd-t) linear infinite;
+}
+@keyframes lpd-plus-press {
+  0%, 13.8% { transform: scale(1); }
+  15% { transform: scale(0.86); }
+  16.2%, 100% { transform: scale(1); }
+}
+.lpd-plus-ripple {
+  position: absolute;
+  inset: -7px;
+  border-radius: 999px;
+  border: 2px solid var(--lpd-teal);
+  opacity: 0;
+  animation: lpd-plus-ripple var(--lpd-t) linear infinite;
+}
+@keyframes lpd-plus-ripple {
+  0%, 13.5% {
+    transform: scale(0.55);
+    opacity: 0;
+  }
+  14.5% { opacity: 0.55; }
+  17.5%, 100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+/* =========================================================================
+   CAMERA (scene 2)
+   ========================================================================= */
+.lpd-sc-cam {
+  justify-content: flex-end;
+}
+.lpd-cam-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: lpd-cam-zoom var(--lpd-t) linear infinite;
+}
+/* slow "hand-held" settle while framing the shot */
+@keyframes lpd-cam-zoom {
+  0%, 18% {
+    transform: scale(1.14);
+    animation-timing-function: ease-out;
+  }
+  40%, 100% { transform: scale(1.03); }
+}
+.lpd-cam-shade {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.62), transparent 30%),
+    linear-gradient(to top, rgba(0, 0, 0, 0.66), transparent 32%);
+}
+.lpd-cam-head {
+  position: absolute;
+  inset: 28px 16px auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lpd-cam-title {
+  font-size: 13px;
+  font-weight: 650;
+}
+.lpd-cam-cancel {
+  font-size: 10px;
+  font-weight: 550;
+  color: var(--lpd-muted);
+}
+.lpd-cam-hint {
+  position: absolute;
+  top: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  font-size: 8px;
+  font-weight: 550;
+  color: var(--lpd-fg);
+  background: rgba(10, 12, 11, 0.55);
+  border: 1px solid var(--lpd-border);
+  border-radius: 999px;
+  padding: 4px 9px;
+  backdrop-filter: blur(4px);
+}
+.lpd-cam-hint-icon {
+  width: 9px;
+  height: 9px;
+  color: var(--lpd-teal);
+}
+
+/* focus brackets over the plate */
+.lpd-brackets {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 158px;
+  height: 158px;
+  transform: translate(-50%, -54%);
+  --b: 2.5px solid var(--lpd-teal);
+  animation: lpd-brackets var(--lpd-t) linear infinite;
+}
+.lpd-brackets::before,
+.lpd-brackets::after {
+  content: "";
+  position: absolute;
+  width: 26px;
+  height: 26px;
+}
+.lpd-brackets::before {
+  top: 0;
+  left: 0;
+  border-top: var(--b);
+  border-left: var(--b);
+  border-top-left-radius: 10px;
+  box-shadow: 132px 0 0 -0px transparent;
+}
+.lpd-brackets::after {
+  bottom: 0;
+  right: 0;
+  border-bottom: var(--b);
+  border-right: var(--b);
+  border-bottom-right-radius: 10px;
+}
+/* the two remaining corners, drawn with gradients on the element itself */
+.lpd-brackets {
+  background:
+    linear-gradient(var(--lpd-teal), var(--lpd-teal)) top right / 26px 2.5px,
+    linear-gradient(var(--lpd-teal), var(--lpd-teal)) top right / 2.5px 26px,
+    linear-gradient(var(--lpd-teal), var(--lpd-teal)) bottom left / 26px 2.5px,
+    linear-gradient(var(--lpd-teal), var(--lpd-teal)) bottom left / 2.5px 26px;
+  background-repeat: no-repeat;
+}
+@keyframes lpd-brackets {
+  0%, 19% {
+    opacity: 0;
+    scale: 1.14;
+  }
+  22.5% {
+    opacity: 1;
+    scale: 1;
+  }
+  26% { scale: 1.035; }
+  29%, 100% {
+    opacity: 1;
+    scale: 1;
+  }
+}
+
+/* shutter + flash: fires @ ~36% */
+.lpd-shutter {
+  position: relative;
+  z-index: 2;
+  align-self: center;
+  margin-bottom: 22px;
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 3px rgba(10, 12, 11, 0.4),
+    0 0 0 5.5px #ffffff;
+  animation: lpd-shutter var(--lpd-t) linear infinite;
+}
+@keyframes lpd-shutter {
+  0%, 34.6% { transform: scale(1); }
+  35.8% { transform: scale(0.84); }
+  37%, 100% { transform: scale(1); }
+}
+.lpd-flash {
+  position: absolute;
+  inset: 0;
+  background: #ffffff;
+  opacity: 0;
+  z-index: 5;
+  animation: lpd-flash var(--lpd-t) linear infinite;
+}
+@keyframes lpd-flash {
+  0%, 35.6% { opacity: 0; }
+  36.6% { opacity: 0.95; }
+  38.8%, 100% { opacity: 0; }
+}
+
+/* =========================================================================
+   ANALYZE (scene 3)
+   ========================================================================= */
+.lpd-sc-scan {
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 30px 16px;
+}
+.lpd-scan-card {
+  position: relative;
+  width: 168px;
+  height: 200px;
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid var(--lpd-border);
+}
+.lpd-scan-photo {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.lpd-scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 6%;
+  height: 2.5px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--lpd-teal), transparent);
+  box-shadow: 0 0 14px 3px rgba(23, 209, 168, 0.55);
+  animation: lpd-scan-line var(--lpd-t) linear infinite;
+}
+@keyframes lpd-scan-line {
+  0%, 42% {
+    top: 6%;
+    animation-timing-function: ease-in-out;
+  }
+  47.5% {
+    top: 90%;
+    animation-timing-function: ease-in-out;
+  }
+  53%, 100% { top: 6%; }
+}
+/* Loader2-style spinner (continuous spin; visibility comes from the scene) */
+.lpd-spinner {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 2.5px solid transparent;
+  border-top-color: var(--lpd-teal);
+  border-right-color: var(--lpd-teal);
+  animation: lpd-spin 0.9s linear infinite;
+}
+@keyframes lpd-spin {
+  to { transform: rotate(360deg); }
+}
+.lpd-scan-text {
+  font-size: 11px;
+  color: var(--lpd-muted);
+}
+
+/* =========================================================================
+   RESULT (scene 4) — the confirm phase of dodaj/obrok
+   ========================================================================= */
+.lpd-sc-res {
+  padding: 30px 16px 0;
+  gap: 9px;
+}
+.lpd-res-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.lpd-res-title {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.lpd-res-conf {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 550;
+  color: var(--lpd-teal);
+}
+.lpd-res-conf-icon {
+  width: 11px;
+  height: 11px;
+}
+.lpd-res-chips {
+  display: flex;
+  gap: 5px;
+}
+.lpd-chip {
+  font-size: 8.5px;
+  color: var(--lpd-muted);
+  border: 1px solid var(--lpd-border);
+  border-radius: 999px;
+  padding: 2.5px 8px;
+}
+.lpd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.lpd-field-label {
+  font-size: 9px;
+  font-weight: 550;
+}
+.lpd-field-box {
+  border: 1px solid var(--lpd-border);
+  background: var(--lpd-bg);
+  border-radius: 10px;
+  padding: 7px 10px;
+  font-size: 11px;
+}
+.lpd-res-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+}
+.lpd-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 10px;
+}
+.lpd-stat-label {
+  font-size: 7.5px;
+  color: var(--lpd-muted);
+  white-space: nowrap;
+}
+.lpd-stat-num {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.lpd-res-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  border-radius: 11px;
+  background: var(--lpd-teal);
+  color: var(--lpd-teal-ink);
+  font-size: 12px;
+  font-weight: 650;
+  margin-top: 2px;
+}
+.lpd-res-note {
+  text-align: center;
+  font-size: 7.5px;
+  color: var(--lpd-muted);
+}
+
+/*
+ * Staggered entrance of the result rows. Keyframe selectors can't take
+ * custom-property percentages, so each row gets its own (tiny) keyframes —
+ * same shape, shifted ~1% apart. The CTA row additionally "gets pressed"
+ * @ ~76%, right before the app returns home.
+ */
+.lpd-res-row {
+  opacity: 0;
+}
+.lpd-res-r1 { animation: lpd-res-r1 var(--lpd-t) linear infinite; }
+.lpd-res-r2 { animation: lpd-res-r2 var(--lpd-t) linear infinite; }
+.lpd-res-r3 { animation: lpd-res-r3 var(--lpd-t) linear infinite; }
+.lpd-res-r4 { animation: lpd-res-r4 var(--lpd-t) linear infinite; }
+.lpd-res-r5 { animation: lpd-res-r5 var(--lpd-t) linear infinite; }
+.lpd-res-r6 { animation: lpd-res-r6 var(--lpd-t) linear infinite; }
+.lpd-res-cta {
+  animation:
+    lpd-res-r6 var(--lpd-t) linear infinite,
+    lpd-cta-press var(--lpd-t) linear infinite;
+}
+@keyframes lpd-res-r1 {
+  0%, 56% { opacity: 0; transform: translateY(9px); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  58.5%, 100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes lpd-res-r2 {
+  0%, 57% { opacity: 0; transform: translateY(9px); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  59.5%, 100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes lpd-res-r3 {
+  0%, 58% { opacity: 0; transform: translateY(9px); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  60.5%, 100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes lpd-res-r4 {
+  0%, 59% { opacity: 0; transform: translateY(9px); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  61.5%, 100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes lpd-res-r5 {
+  0%, 60% { opacity: 0; transform: translateY(9px); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  63%, 100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes lpd-res-r6 {
+  0%, 61% { opacity: 0; transform: translateY(9px); animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1); }
+  64%, 100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes lpd-cta-press {
+  0%, 75.5% { scale: 1; }
+  76.5% { scale: 0.96; }
+  77.5%, 100% { scale: 1; }
+}

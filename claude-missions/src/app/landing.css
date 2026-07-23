@@ -77,8 +77,6 @@
   /*
    * Entrance only, `backwards` fill: the phone holds the `from` state before
    * it starts, then reverts to its normal (transform-free) style once done.
-   * IMPORTANT: no *persistent* transform on `.phone` — a permanently
-   * transformed ancestor makes the <video> render black on iOS Safari.
    */
   animation: lp-phone-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s backwards;
 }
@@ -113,21 +111,6 @@
   border-radius: 35px;
   overflow: hidden;
   background: #0a0f0d;
-}
-
-/* ---------- Hero video ---------- */
-.lp .lp-video {
-  flex: 1;
-  width: 100%;
-  height: 100%;
-  min-height: 0;
-  object-fit: contain;
-  display: block;
-  background: #0a0f0d;
-  position: relative;
-  z-index: 1;
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
 }
 
 /* ---------- Title ---------- */

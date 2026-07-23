@@ -23,6 +23,16 @@ import {
   voiceMealSchema,
   type VoiceMealEstimate,
 } from "@/lib/ai/voice-estimate";
+import {
+  IPEACH_ANALYZE_LABEL_PROMPT,
+  IPEACH_ANALYZE_PROMPT,
+  IPEACH_ANALYZE_RESPONSE_SCHEMA,
+  IPEACH_FINALIZE_LABEL_PROMPT,
+  IPEACH_FINALIZE_PROMPT,
+  parseIPeachAnalysis,
+  type IPeachAnalysis,
+  type IPeachVariant,
+} from "@/lib/ai/ipeach";
 
 // Server-only Gemini client. We call the REST `generateContent` endpoint
 // directly (no SDK dependency -> no version churn, predictable on first
@@ -260,6 +270,95 @@ export async function estimateMealFromImageAndVoice(
   }
   if (note && note.trim()) {
     parts.push({ text: `Korisnikov opis (tekst): ${note.trim()}` });
+  }
+
+  const text = await postGenerateContent(
+    {
+      contents: [{ role: "user", parts }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: COMBINED_RESPONSE_SCHEMA,
+        temperature: 0.2,
+      },
+    },
+    process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
+  );
+  const parsed = combinedMealSchema.safeParse(parseJson(text));
+  if (!parsed.success) {
+    throw new GeminiError("Gemini output did not match the expected shape");
+  }
+  return parsed.data;
+}
+
+/** An inline image part for the multi-image iPeach calls. */
+export interface ImagePart {
+  base64: string;
+  mimeType: string;
+}
+
+function imageInlineParts(images: ImagePart[]): Array<Record<string, unknown>> {
+  return images.map((img) => ({
+    inline_data: { mime_type: img.mimeType, data: img.base64 },
+  }));
+}
+
+/**
+ * iPeach step 1 (ANALYZE): 1–5 photos of the same meal (or nutrition label) ->
+ * EITHER clarifying questions (each with tappable options) OR, when already
+ * confident, a final estimate. Defensive parse (`parseIPeachAnalysis`) never
+ * throws — a malformed response degrades to the "how much did you eat?"
+ * question so the flow can't dead-end. Uses the meal model.
+ */
+export async function analyzeIPeachMeal(
+  images: ImagePart[],
+  variant: IPeachVariant = "obrok"
+): Promise<IPeachAnalysis> {
+  const prompt =
+    variant === "deklaracija"
+      ? IPEACH_ANALYZE_LABEL_PROMPT
+      : IPEACH_ANALYZE_PROMPT;
+
+  const text = await postGenerateContent(
+    {
+      contents: [{ role: "user", parts: [{ text: prompt }, ...imageInlineParts(images)] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: IPEACH_ANALYZE_RESPONSE_SCHEMA,
+        temperature: 0.2,
+      },
+    },
+    process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
+  );
+  return parseIPeachAnalysis(parseJson(text), variant);
+}
+
+/**
+ * iPeach step 2 (FINALIZE): the same photos + the user's answers (as text
+ * and/or a spoken clip) -> a validated estimate in the SHARED meal schema, so
+ * the confirm/edit/save screen stays common. `answersText` is the compiled
+ * Q&A; `audio` is an optional single recording that answers everything by
+ * voice. Uses the meal model.
+ */
+export async function finalizeIPeachMeal(
+  images: ImagePart[],
+  answersText: string | null,
+  audio: { base64: string; mimeType: string } | null,
+  variant: IPeachVariant = "obrok"
+): Promise<CombinedMealEstimate> {
+  const prompt =
+    variant === "deklaracija"
+      ? IPEACH_FINALIZE_LABEL_PROMPT
+      : IPEACH_FINALIZE_PROMPT;
+
+  const parts: Array<Record<string, unknown>> = [
+    { text: prompt },
+    ...imageInlineParts(images),
+  ];
+  if (answersText && answersText.trim()) {
+    parts.push({ text: `Korisnikovi odgovori:\n${answersText.trim()}` });
+  }
+  if (audio) {
+    parts.push({ inline_data: { mime_type: audio.mimeType, data: audio.base64 } });
   }
 
   const text = await postGenerateContent(

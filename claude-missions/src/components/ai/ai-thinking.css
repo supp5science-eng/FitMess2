@@ -1,0 +1,189 @@
+/*
+ * "AI razmišlja" — the shared premium loading animation for every place where
+ * the app is waiting on a Gemini estimate (iPeach, Slikaj obrok, Reci obrok,
+ * Deklaracija). A morphing, breathing brand-gradient blob under a rotating
+ * conic ring and pulsing haloes, plus a shimmering indeterminate bar. Pure
+ * transform/opacity so it stays smooth on phones; fully theme-aware via the
+ * app's CSS vars; collapses to a calm static state under reduced motion.
+ */
+
+.ai-think {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 22px;
+  padding: 44px 0;
+  text-align: center;
+}
+
+.ai-think-orb {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+}
+
+/* Rotating conic sweep, masked into a thin ring around the orb. */
+.ai-think-orb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0 55%,
+    color-mix(in srgb, var(--brand, #17d1a8) 35%, transparent) 72%,
+    var(--brand, #17d1a8) 92%,
+    transparent 100%
+  );
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
+  animation: ai-spin 1.5s linear infinite;
+}
+
+/* Pulsing haloes that ripple outward, staggered. */
+.ai-think-ring {
+  position: absolute;
+  inset: 8px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--brand, #17d1a8) 55%, transparent);
+  animation: ai-ping 2.6s ease-out infinite;
+}
+.ai-think-ring:nth-child(2) {
+  animation-delay: 0.85s;
+}
+.ai-think-ring:nth-child(3) {
+  animation-delay: 1.7s;
+}
+
+/* The living core: brand wordmark gradient, breathing + morphing + drifting. */
+.ai-think-core {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border-radius: 42% 58% 54% 46% / 52% 46% 54% 48%;
+  background-image: var(
+    --wordmark-grad,
+    linear-gradient(135deg, #17d1a8, #6ee7d0 45%, #8b5cf6)
+  );
+  background-size: 200% 200%;
+  box-shadow: 0 12px 34px -10px color-mix(in srgb, var(--brand, #17d1a8) 65%, transparent);
+  animation:
+    ai-breathe 3s ease-in-out infinite,
+    ai-morph 8s ease-in-out infinite,
+    ai-drift 6s linear infinite;
+}
+/* Soft top gloss so the blob reads as a glossy bead, not a flat disc. */
+.ai-think-core::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.6), transparent 46%);
+}
+
+/* Indeterminate shimmer bar. */
+.ai-think-bar {
+  position: relative;
+  height: 4px;
+  width: 190px;
+  max-width: 60%;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--muted, rgba(0, 0, 0, 0.08));
+}
+.ai-think-bar > i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -42%;
+  width: 42%;
+  border-radius: inherit;
+  background-image: var(--wordmark-grad, linear-gradient(90deg, #17d1a8, #8b5cf6));
+  animation: ai-slide 1.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+}
+
+/* The cycling status line fades in each time it changes (React remounts it via key). */
+.ai-think-line {
+  animation: ai-fade 0.5s ease;
+}
+
+@keyframes ai-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes ai-ping {
+  0% {
+    transform: scale(0.72);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(1.28);
+    opacity: 0;
+  }
+}
+@keyframes ai-breathe {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.09);
+  }
+}
+@keyframes ai-morph {
+  0%,
+  100% {
+    border-radius: 42% 58% 54% 46% / 52% 46% 54% 48%;
+  }
+  50% {
+    border-radius: 58% 42% 46% 54% / 46% 58% 42% 54%;
+  }
+}
+@keyframes ai-drift {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+@keyframes ai-slide {
+  0% {
+    left: -42%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+@keyframes ai-fade {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-think-orb::before,
+  .ai-think-ring,
+  .ai-think-core,
+  .ai-think-bar > i,
+  .ai-think-line {
+    animation: none !important;
+  }
+  /* Keep a gentle, honest "working" hint: a single slow pulse on the core. */
+  .ai-think-core {
+    animation: ai-breathe 2.4s ease-in-out infinite !important;
+  }
+  .ai-think-bar > i {
+    left: 0;
+    width: 100%;
+    opacity: 0.5;
+  }
+}

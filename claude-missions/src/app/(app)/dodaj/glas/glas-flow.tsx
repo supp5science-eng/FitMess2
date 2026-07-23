@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Loader2, Mic, Sparkles, Square } from "lucide-react";
 
+import { AiThinking } from "@/components/ai/ai-thinking";
+
 import type { VoiceMealEstimate } from "@/lib/ai/voice-estimate";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import { logMealAction } from "../obrok/actions";
@@ -244,10 +246,14 @@ export function GlasFlow() {
       ) : null}
 
       {phase === "estimating" ? (
-        <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <Loader2 className="size-8 animate-spin text-primary" aria-hidden="true" />
-          <p className="text-sm text-muted-foreground">Slušam i računam…</p>
-        </div>
+        <AiThinking
+          title="Slušam i računam…"
+          lines={[
+            "Razumem šta si rekao…",
+            "Prepoznajem obrok i količinu…",
+            "Računam makronutrijente…",
+          ]}
+        />
       ) : null}
 
       {(phase === "confirm" || phase === "saving") && estimate ? (

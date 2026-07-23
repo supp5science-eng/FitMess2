@@ -3,8 +3,9 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Camera, Loader2, Upload } from "lucide-react";
+import { Camera, Upload } from "lucide-react";
 
+import { AiThinking } from "@/components/ai/ai-thinking";
 import { downscaleImage } from "@/lib/image/downscale";
 import { estimateLabelAction } from "./actions";
 
@@ -126,10 +127,14 @@ export function DeklaracijaFlow() {
           </button>
         </div>
       ) : (
-        <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <Loader2 className="size-8 animate-spin text-primary" aria-hidden="true" />
-          <p className="text-sm text-muted-foreground">Čitam deklaraciju…</p>
-        </div>
+        <AiThinking
+          title="Čitam deklaraciju…"
+          lines={[
+            "Očitavam nutritivnu tabelu…",
+            "Preračunavam na 100 g…",
+            "Skoro gotovo…",
+          ]}
+        />
       )}
     </main>
   );

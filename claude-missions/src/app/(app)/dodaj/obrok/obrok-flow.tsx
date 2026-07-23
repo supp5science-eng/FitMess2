@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Camera, ImageUp, Loader2, Sparkles } from "lucide-react";
 
+import { AiThinking } from "@/components/ai/ai-thinking";
 import type { MealEstimate } from "@/lib/ai/meal-estimate";
 import { downscaleImage } from "@/lib/image/downscale";
 import { estimateMealAction, logMealAction } from "./actions";
@@ -259,10 +260,14 @@ export function ObrokFlow() {
       ) : null}
 
       {phase === "estimating" ? (
-        <div className="flex flex-col items-center gap-3 py-10 text-center">
-          <Loader2 className="size-8 animate-spin text-primary" aria-hidden="true" />
-          <p className="text-sm text-muted-foreground">Analiziram obrok…</p>
-        </div>
+        <AiThinking
+          title="Analiziram obrok…"
+          lines={[
+            "Prepoznajem šta je na tanjiru…",
+            "Procenjujem porciju…",
+            "Računam makronutrijente…",
+          ]}
+        />
       ) : null}
 
       {(phase === "confirm" || phase === "saving") && estimate ? (

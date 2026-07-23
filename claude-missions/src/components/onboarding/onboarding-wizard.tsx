@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ProgressIndicator } from "@/components/onboarding/progress-indicator";
 import { SexStep } from "@/components/onboarding/steps/sex-step";
@@ -97,6 +98,10 @@ export function OnboardingWizard({
   const [stepIndex, setStepIndex] = useState(0);
   const [data, setData] = useState<OnboardingData>(DEFAULT_ONBOARDING_DATA);
   const [error, setError] = useState<string | undefined>(undefined);
+  // Drives the slide-transition direction: forward (Dalje) enters from the
+  // right, back (Nazad) from the left, so navigation has a clear sense of
+  // travel. Purely cosmetic — the step content is unchanged.
+  const [direction, setDirection] = useState<"forward" | "back">("forward");
 
   const stepIds = useMemo(() => visibleStepIds(data.goal), [data.goal]);
   const totalSteps = stepIds.length;
@@ -116,6 +121,7 @@ export function OnboardingWizard({
 
   function handleBack() {
     setError(undefined);
+    setDirection("back");
     setStepIndex(Math.max(0, currentIndex - 1));
   }
 
@@ -131,17 +137,31 @@ export function OnboardingWizard({
       onComplete(data);
       return;
     }
+    setDirection("forward");
     setStepIndex(currentIndex + 1);
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-6 py-8">
+    <div className="flex flex-1 flex-col gap-6 overflow-x-clip px-6 py-8">
       <ProgressIndicator
         currentStep={currentIndex + 1}
         totalSteps={totalSteps}
       />
 
-      {stepId === "pol" && (
+      {/* Keyed on the step id so each question remounts and plays its enter
+          animation; the direction (Dalje / Nazad) picks the slide side. The
+          whole block is `motion-safe`-gated, so reduced-motion users just see
+          the next question with no travel. */}
+      <div
+        key={stepId}
+        className={cn(
+          "flex flex-1 flex-col motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300 motion-safe:ease-out",
+          direction === "forward"
+            ? "motion-safe:slide-in-from-right-6"
+            : "motion-safe:slide-in-from-left-6"
+        )}
+      >
+        {stepId === "pol" && (
         <SexStep
           value={data.sex}
           onChange={(value) => update("sex", value)}
@@ -199,13 +219,14 @@ export function OnboardingWizard({
           error={error}
         />
       )}
-      {stepId === "tempo" && (
-        <TempoStep
-          data={data}
-          onChangePace={(value) => update("pace", value)}
-          onChangeTimeframe={(value) => update("timeframeWeeks", value)}
-        />
-      )}
+        {stepId === "tempo" && (
+          <TempoStep
+            data={data}
+            onChangePace={(value) => update("pace", value)}
+            onChangeTimeframe={(value) => update("timeframeWeeks", value)}
+          />
+        )}
+      </div>
 
       <div className="mt-auto flex items-center gap-3 pt-4">
         {currentIndex > 0 ? (

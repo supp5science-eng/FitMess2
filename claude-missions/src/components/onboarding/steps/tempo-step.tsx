@@ -208,7 +208,9 @@ export function TempoStep({
               {/* Selected check */}
               <span className="shrink-0">
                 {selected ? (
-                  <CheckIcon color={accent} />
+                  <span className="onb-pop block">
+                    <CheckIcon color={accent} />
+                  </span>
                 ) : (
                   <span className="block size-6 rounded-full border-2 border-border" />
                 )}

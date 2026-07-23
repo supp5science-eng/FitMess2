@@ -191,12 +191,17 @@ export default async function DanasPage({
   });
 
   const intro = isToday && cookieStore.get("fm_intro") != null;
+  // One-shot, set by the plan reveal alongside fm_intro: right after
+  // onboarding completes, offer to install the PWA (the overlay itself
+  // consumes the cookie + guards via localStorage, so it can never nag).
+  const installPrompt = isToday && cookieStore.get("fm_install") != null;
 
   return (
     <HomeScreen
       initialLogs={result.data.logs}
       target={result.data.target}
       intro={intro}
+      installPrompt={installPrompt}
       days={days}
       mealsHeading={isToday ? "Obroci danas" : `Obroci · ${shortDate(selectedKey)}`}
       adaptivePlan={adaptivePlan}

@@ -449,6 +449,16 @@
   gap: 8px;
   z-index: 10;
 }
+/* Fade panel under the floating nav so content that scrolls "behind" it
+   (short frames cut the meal list here) melts into the ground instead of
+   peeking through the transparent gutters around the pill. */
+.lpd-nav::before {
+  content: "";
+  position: absolute;
+  inset: -20px -12px -12px;
+  z-index: -1;
+  background: linear-gradient(to top, var(--lpd-bg) 62%, transparent);
+}
 .lpd-nav-pill {
   flex: 1;
   display: flex;

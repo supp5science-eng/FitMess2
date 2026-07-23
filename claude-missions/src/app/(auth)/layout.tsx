@@ -20,7 +20,10 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/brand/fitmess-icon.png" alt="FitMess" width={34} height={34} />
           <b>
-            Fit<span className="g">Mess</span>
+            {/* "Mess" wears the logo's iridescent pear gradient — same
+                `.fm-wordmark-accent` (globals.css, theme-aware) as the home
+                screen's wordmark, so auth + code-entry match the brand mark. */}
+            Fit<span className="fm-wordmark-accent">Mess</span>
           </b>
         </div>
         {children}

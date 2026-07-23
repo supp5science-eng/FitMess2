@@ -26,6 +26,42 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
+const COMPLETE_STASH = {
+  name: null,
+  sex: "female",
+  ageYears: 30,
+  heightCm: 170,
+  weightKg: 68,
+  activityLevel: "moderate",
+  goal: "lose",
+  targetWeightKg: 62,
+  pace: "recommended",
+  timeframeWeeks: 12,
+};
+
+describe("the pre-auth hand-off resumes with the name question, then the plan", () => {
+  it("stashed answers WITHOUT a name land on the 'Kako da te zovemo?' screen", () => {
+    window.localStorage.setItem(
+      "fm_onboarding",
+      JSON.stringify(COMPLETE_STASH)
+    );
+    render(<OnboardingPage />);
+    expect(
+      screen.getByRole("heading", { name: /Kako da te zovemo\?/ })
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("plan-reveal")).not.toBeInTheDocument();
+  });
+
+  it("stashed answers WITH a name (post-retry reload) skip straight to the plan", () => {
+    window.localStorage.setItem(
+      "fm_onboarding",
+      JSON.stringify({ ...COMPLETE_STASH, name: "Ana" })
+    );
+    render(<OnboardingPage />);
+    expect(screen.getByTestId("plan-reveal")).toBeInTheDocument();
+  });
+});
+
 describe("AS-018: /onboarding falls back to the questionnaire when no answers are stashed", () => {
   it("test_AS_018_onboarding_page_renders_the_pol_step_heading", () => {
     render(<OnboardingPage />);

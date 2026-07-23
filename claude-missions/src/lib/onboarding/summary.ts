@@ -133,9 +133,11 @@ export function parseOnboardingSearchParams(
 
 /** `OnboardingData` with every *required* field present -- what the F014
  * engine functions need. `targetWeightKg`/`timeframeWeeks` stay nullable
- * because maintain/tone goals legitimately have none. */
+ * because maintain/tone goals legitimately have none. `name` stays nullable
+ * too: the questionnaire is anonymous and the name is only filled in
+ * post-registration (the "kako da te zovemo" screen), right before persist. */
 export interface CompleteOnboardingData {
-  name: string;
+  name: string | null;
   sex: Sex;
   ageYears: number;
   heightCm: number;
@@ -152,14 +154,15 @@ export interface CompleteOnboardingData {
 
 /** Type guard: true when every field needed to compute a plan is present.
  * For maintain/tone that's everything except target/timeframe; for lose/gain
- * the target weight + timeframe are required too. (Range *validity* is
+ * the target weight + timeframe are required too. The name is deliberately
+ * NOT required — the budget engine never reads it and the questionnaire no
+ * longer collects it (it arrives post-registration). (Range *validity* is
  * `@/lib/onboarding/validation`'s job; this only guards against
  * `computeBudgetSummary` crashing on a missing input.) */
 export function isOnboardingDataComplete(
   data: OnboardingData
 ): data is CompleteOnboardingData {
   const baseComplete =
-    data.name !== null &&
     data.sex !== null &&
     data.ageYears !== null &&
     data.heightCm !== null &&

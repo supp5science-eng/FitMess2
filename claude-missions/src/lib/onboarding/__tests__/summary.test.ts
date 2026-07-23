@@ -81,6 +81,24 @@ describe("isOnboardingDataComplete: the empty-state gate", () => {
     expect(isOnboardingDataComplete(data)).toBe(true);
   });
 
+  it("a_missing_name_is_still_complete_the_questionnaire_is_anonymous", () => {
+    // The wizard no longer asks for a name — it arrives post-registration
+    // (name-screen.tsx). Answers without one must still count as a
+    // plan-able hand-off or the whole pre-auth flow would dead-end.
+    const data: OnboardingData = {
+      name: null,
+      sex: "female",
+      ageYears: 29,
+      heightCm: 168,
+      weightKg: 80,
+      activityLevel: "moderate",
+      goal: "lose",
+      targetWeightKg: 74,
+      timeframeWeeks: 12,
+    };
+    expect(isOnboardingDataComplete(data)).toBe(true);
+  });
+
   it("test_AS_020_a_single_missing_field_is_not_complete_renders_empty_state", () => {
     const data: OnboardingData = {
       name: "Ana",

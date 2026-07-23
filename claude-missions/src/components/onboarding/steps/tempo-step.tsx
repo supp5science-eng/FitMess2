@@ -115,7 +115,7 @@ export function TempoStep({
       return null;
     }
     return computeBudgetSummary({
-      name: data.name ?? "",
+      name: data.name,
       sex: data.sex,
       ageYears: data.ageYears,
       heightCm: data.heightCm,

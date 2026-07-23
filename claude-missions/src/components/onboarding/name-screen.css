@@ -1,0 +1,247 @@
+/*
+ * Post-registration "kako da te zovemo" screen (`name-screen.tsx`).
+ *
+ * The first thing a brand-new account sees while the app "wakes up": a calm
+ * dark stage with the app's ambient teal glow, the question blooming in word
+ * by word (blur -> sharp, rising), a big centered name input with a hairline
+ * underline that lights up teal on focus, and a CTA that surfaces only once
+ * a name exists. On submit the whole stage exhales (blur + fade + drift) and
+ * hands off to the plan-reveal, which greets the user by the name they just
+ * typed -- one continuous moment, no hard cuts.
+ *
+ * Scoped under `.ns`, dark-token driven (--primary, --foreground, ...) like
+ * `plan-reveal.css`. All motion collapses under `prefers-reduced-motion`.
+ */
+
+.ns {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 40px 28px calc(40px + env(safe-area-inset-bottom));
+  text-align: center;
+  overflow: hidden;
+}
+
+/* Soft ambient glow behind the stage (same family as `.pr::before`), fading
+   itself in first so the screen breathes awake instead of popping on. */
+.ns::before {
+  content: "";
+  position: absolute;
+  top: 40%;
+  left: 50%;
+  width: 460px;
+  height: 460px;
+  max-width: 120vw;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 20%, transparent) 0%,
+    transparent 68%
+  );
+  filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  animation:
+    ns-glow-in 1.1s ease-out forwards,
+    ns-breathe 4s ease-in-out 1.1s infinite;
+}
+@keyframes ns-glow-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.88);
+  }
+  to {
+    opacity: 0.65;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+@keyframes ns-breathe {
+  0%,
+  100% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) scale(0.95);
+  }
+  50% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+.ns-stage {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  width: 100%;
+  max-width: 360px;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Muted lead-in line. */
+.ns-kicker {
+  font-size: 12.5px;
+  font-weight: 650;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--primary);
+  opacity: 0;
+  animation: ns-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.25s forwards;
+}
+
+/* The question blooms in word by word. */
+.ns-title {
+  font-size: 33px;
+  font-weight: 800;
+  line-height: 1.16;
+  letter-spacing: -0.025em;
+  color: var(--foreground);
+  text-wrap: balance;
+}
+.ns-word {
+  display: inline-block;
+  opacity: 0;
+  filter: blur(8px);
+  transform: translateY(14px);
+  animation: ns-word 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: calc(0.45s + var(--ns-word-i, 0) * 0.11s);
+}
+@keyframes ns-word {
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes ns-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Big, quiet input: no box, just a hairline that wakes up on focus. */
+.ns-field {
+  width: 100%;
+  margin-top: 26px;
+  opacity: 0;
+  animation: ns-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 1s forwards;
+}
+.ns-input {
+  width: 100%;
+  padding: 6px 4px 12px;
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid color-mix(in srgb, var(--foreground) 16%, transparent);
+  border-radius: 0;
+  font-size: 30px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  text-align: center;
+  color: var(--foreground);
+  caret-color: var(--primary);
+  transition: border-color 0.35s ease;
+}
+.ns-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+.ns-input::placeholder {
+  color: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  font-weight: 600;
+}
+
+.ns-hint {
+  margin-top: 12px;
+  font-size: 13.5px;
+  color: var(--muted-foreground);
+  opacity: 0;
+  animation: ns-rise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 1.15s forwards;
+}
+
+/* CTA surfaces only once there's a name; visibility-gated so it can't be
+   tabbed to while hidden. */
+.ns-cta {
+  width: 100%;
+  margin-top: 30px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px);
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s linear 0.45s;
+}
+.ns-cta-show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    visibility 0s;
+}
+
+/* ---------- Outro (hand-off to the plan reveal) ----------
+ * The stage exhales -- content drifts up, blurs and fades while the glow
+ * flares once -- so the greeting on the next screen ("Zdravo, <ime>!") reads
+ * as the same breath continuing. */
+.ns-leaving .ns-stage {
+  animation: ns-out 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes ns-out {
+  to {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(-14px) scale(0.985);
+  }
+}
+.ns-leaving::before {
+  animation: ns-glow-flare 0.6s ease-out forwards;
+}
+@keyframes ns-glow-flare {
+  0% {
+    opacity: 0.65;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  45% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(1.18);
+  }
+  100% {
+    opacity: 0.35;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ns::before,
+  .ns-kicker,
+  .ns-word,
+  .ns-field,
+  .ns-hint,
+  .ns-leaving .ns-stage,
+  .ns-leaving::before {
+    animation: none !important;
+    opacity: 1 !important;
+    filter: none !important;
+    transform: none !important;
+  }
+  .ns::before {
+    opacity: 0.65 !important;
+    transform: translate(-50%, -50%) !important;
+  }
+  .ns-cta,
+  .ns-cta-show {
+    transition: none;
+  }
+}

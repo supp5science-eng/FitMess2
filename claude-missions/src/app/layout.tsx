@@ -31,15 +31,71 @@ const APP_NAME = "FitMess";
 const APP_DESCRIPTION =
   "Adaptivno praćenje ishrane na srpskom. Nedelja je jedinica uspeha — jedan loš obrok te ne ruši.";
 
+const DEFAULT_TITLE = "FitMess — dijeta koja ti oprašta";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://fitmess.app"),
   applicationName: APP_NAME,
   title: {
-    default: "FitMess — dijeta koja ti oprašta",
+    default: DEFAULT_TITLE,
     template: "%s · FitMess",
   },
   description: APP_DESCRIPTION,
   manifest: "/manifest.json",
+  // Every indexable page resolves to itself as the canonical; the marketing
+  // root is the primary entry point. Relative paths resolve against
+  // `metadataBase` above.
+  alternates: { canonical: "/" },
+  keywords: [
+    "praćenje kalorija",
+    "brojanje kalorija",
+    "kalorije",
+    "ishrana",
+    "makronutrijenti",
+    "dijeta",
+    "mršavljenje",
+    "zdrava ishrana",
+    "fitnes aplikacija",
+    "srpski",
+    "FitMess",
+  ],
+  authors: [{ name: "FitMess" }],
+  creator: "FitMess",
+  publisher: "FitMess",
+  category: "health",
+  // Let the marketing surface be indexed; the private app routes are kept out
+  // via `robots.ts`. Explicit here so Google/Bot get the full crawl directives.
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  // Google Search Console site verification — set `GOOGLE_SITE_VERIFICATION`
+  // (the token from the "HTML tag" method) in the deployment env to emit the
+  // `<meta name="google-site-verification">` tag. Absent → no tag rendered.
+  verification: process.env.GOOGLE_SITE_VERIFICATION
+    ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+    : undefined,
+  openGraph: {
+    type: "website",
+    siteName: APP_NAME,
+    title: DEFAULT_TITLE,
+    description: APP_DESCRIPTION,
+    url: "/",
+    locale: "sr_RS",
+    // The 1200×630 card image is supplied by `opengraph-image.tsx`.
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: DEFAULT_TITLE,
+    description: APP_DESCRIPTION,
+  },
   appleWebApp: {
     capable: true,
     title: APP_NAME,

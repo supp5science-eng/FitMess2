@@ -18,9 +18,34 @@ import "./landing.css";
  * (`src/components/shell/app-shell.tsx`) drops its mobile column and bottom
  * navigation here. Server Component; the hero is an autoplaying muted video.
  */
+// Structured data (schema.org) so Google can render a rich result for the
+// brand: a health/fitness web application, in Serbian, free to use. Emitted as
+// a JSON-LD <script> — the canonical way to expose structured data to crawlers.
+const JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "FitMess",
+  url: "https://fitmess.app",
+  applicationCategory: "HealthApplication",
+  operatingSystem: "Web, iOS, Android",
+  inLanguage: "sr-Latn",
+  description:
+    "Adaptivno praćenje ishrane na srpskom. Nedelja je jedinica uspeha — jedan loš obrok te ne ruši.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "RSD",
+  },
+};
+
 export default function LandingPage() {
   return (
     <div className="lp">
+      <script
+        type="application/ld+json"
+        // JSON.stringify output is safe to inline; no user data is interpolated.
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
+      />
       <main className="lp-hero">
         {/* Phone showing the hero video */}
         <div className="lp-phone-wrap">

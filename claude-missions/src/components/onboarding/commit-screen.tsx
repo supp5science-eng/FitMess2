@@ -16,6 +16,91 @@ const FLOOD_D = 2400; // diameter of the screen-flood circle (covers any phone)
 const RING_R = 50;
 const RING_C = 2 * Math.PI * RING_R;
 
+/**
+ * Motion-graphics for the intro beat. Scoped `fm-intro-*` class names +
+ * keyframes injected via a local <style> so nothing leaks into the shared
+ * `globals.css` (other agents work there). Everything is a staggered entrance
+ * plus a couple of gentle looping accents (aura breathe, sonar rings, glow),
+ * fully disabled under `prefers-reduced-motion`.
+ */
+const INTRO_KEYFRAMES = `
+@keyframes fmIntroPop {
+  0%   { opacity: 0; transform: translateY(16px) scale(.72); filter: blur(6px); }
+  60%  { opacity: 1; filter: blur(0); }
+  78%  { transform: translateY(0) scale(1.05); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes fmIntroRise {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fmIntroRing {
+  0%   { opacity: .5;  transform: scale(.62); }
+  100% { opacity: 0;   transform: scale(1.85); }
+}
+@keyframes fmIntroAura {
+  0%,100% { opacity: .5;  transform: translate(-50%, -50%) scale(1); }
+  50%     { opacity: .85; transform: translate(-50%, -50%) scale(1.12); }
+}
+@keyframes fmIntroGlow {
+  0%,100% { opacity: .35; }
+  50%     { opacity: .7; }
+}
+@keyframes fmIntroSheen {
+  0%       { background-position: -160% 0; }
+  55%,100% { background-position: 260% 0; }
+}
+
+.fm-intro-aura {
+  background: radial-gradient(circle at center,
+    color-mix(in srgb, var(--primary) 34%, transparent) 0%,
+    color-mix(in srgb, var(--primary) 12%, transparent) 42%,
+    transparent 70%);
+  animation: fmIntroAura 4.6s ease-in-out infinite;
+}
+.fm-intro-logo    { animation: fmIntroPop .8s cubic-bezier(.2,.7,.2,1) .05s both; }
+.fm-intro-glow {
+  position: absolute;
+  inset: -30%;
+  border-radius: 9999px;
+  background: radial-gradient(circle at center,
+    color-mix(in srgb, var(--primary) 55%, transparent) 0%, transparent 68%);
+  filter: blur(14px);
+  animation: fmIntroGlow 3s ease-in-out .6s infinite;
+}
+.fm-ring {
+  position: absolute;
+  width: 6rem; height: 6rem;
+  border-radius: 9999px;
+  border: 2px solid color-mix(in srgb, var(--primary) 70%, transparent);
+}
+.fm-ring-1 { animation: fmIntroRing 2.8s ease-out .7s infinite; }
+.fm-ring-2 { animation: fmIntroRing 2.8s ease-out 1.7s infinite; }
+
+.fm-intro-title {
+  background-image: linear-gradient(100deg,
+    var(--foreground) 28%, var(--primary) 50%, var(--foreground) 72%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: fmIntroRise .6s cubic-bezier(.2,.7,.2,1) .35s both,
+             fmIntroSheen 3.4s ease-in-out 1.2s infinite;
+}
+.fm-intro-copy { animation: fmIntroRise .6s cubic-bezier(.2,.7,.2,1) .55s both; }
+.fm-intro-warn { animation: fmIntroRise .6s cubic-bezier(.2,.7,.2,1) .82s both; }
+.fm-intro-cta  { animation: fmIntroRise .6s cubic-bezier(.2,.7,.2,1) 1.05s both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-intro-aura, .fm-intro-logo, .fm-intro-glow, .fm-ring,
+  .fm-intro-title, .fm-intro-copy, .fm-intro-warn, .fm-intro-cta {
+    animation: none !important;
+  }
+  .fm-ring { display: none; }
+  .fm-intro-title { color: var(--foreground); }
+}
+`;
+
 function vibrate(pattern: number | number[]) {
   try {
     if (typeof navigator !== "undefined" && navigator.vibrate) {
@@ -204,33 +289,84 @@ export function CommitScreen({
 
   if (phase === "intro") {
     return (
-      <div className="relative flex flex-1 flex-col gap-6 px-6 py-8">
+      <div className="relative flex flex-1 flex-col gap-6 overflow-hidden px-6 py-8">
+        <style>{INTRO_KEYFRAMES}</style>
+
+        {/* Ambient breathing aura behind everything — soft brand-teal glow. */}
+        <div
+          aria-hidden
+          className="fm-intro-aura pointer-events-none absolute left-1/2 top-[38%] -z-10 size-[min(120vw,560px)] -translate-x-1/2 -translate-y-1/2 rounded-full"
+        />
+
         <ProgressIndicator currentStep={9} totalSteps={10} />
-        <div className="flex flex-1 flex-col items-center justify-center gap-6 text-center">
-          <div className="size-24 overflow-hidden rounded-3xl">
-            <Image
-              src="/brand/fitmess-icon.png"
-              alt=""
-              width={96}
-              height={96}
-              draggable={false}
-              className="pointer-events-none size-full select-none [-webkit-touch-callout:none]"
-              priority
-            />
+
+        <div className="flex flex-1 flex-col items-center justify-center gap-7 text-center">
+          {/* Logo with expanding sonar rings + pulsing glow. */}
+          <div className="fm-intro-logo relative grid place-items-center">
+            <span aria-hidden className="fm-ring fm-ring-1" />
+            <span aria-hidden className="fm-ring fm-ring-2" />
+            <div aria-hidden className="fm-intro-glow" />
+            <div className="relative size-24 overflow-hidden rounded-3xl shadow-[0_18px_50px_-12px_rgba(23,209,168,0.5)] ring-1 ring-white/10">
+              <Image
+                src="/brand/fitmess-icon.png"
+                alt=""
+                width={96}
+                height={96}
+                draggable={false}
+                className="pointer-events-none size-full select-none [-webkit-touch-callout:none]"
+                priority
+              />
+            </div>
           </div>
-          <h2 className="text-3xl font-bold tracking-tight text-foreground">
-            Sve je spremno 🎯
-          </h2>
-          <p className="max-w-sm text-lg leading-relaxed text-muted-foreground">
-            {female ? "Popunila" : "Popunio"} si sve o sebi. Sad dolazi najvažniji
-            trenutak — da obećaš nešto{" "}
-            <span className="font-semibold text-foreground">sebi</span>.
-          </p>
+
+          <div className="space-y-3">
+            <h2 className="fm-intro-title text-3xl font-bold tracking-tight">
+              Sve je spremno
+            </h2>
+            <p className="fm-intro-copy mx-auto max-w-sm text-lg leading-relaxed text-muted-foreground">
+              Ali pre nego što zakoračiš u sve što sledi, moraš nešto da obećaš{" "}
+              <span className="font-semibold text-foreground">sebi</span>.
+            </p>
+          </div>
+
+          {/* "No going back" disclaimer — deliberately weighty. */}
+          <div className="fm-intro-warn mx-auto flex max-w-sm items-start gap-3 rounded-2xl border border-border bg-muted/60 px-4 py-3 text-left">
+            <span
+              aria-hidden
+              className="mt-0.5 grid size-8 shrink-0 place-items-center rounded-full bg-foreground/5 text-foreground"
+            >
+              <svg viewBox="0 0 24 24" className="size-4" fill="none" aria-hidden>
+                <rect
+                  x="5"
+                  y="10.5"
+                  width="14"
+                  height="9.5"
+                  rx="2.4"
+                  fill="currentColor"
+                  opacity="0.9"
+                />
+                <path
+                  d="M8 10.5V8a4 4 0 0 1 8 0v2.5"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </span>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              Kad si {female ? "stigla" : "stigao"} dovde, više ne postoji dugme za
+              nazad.{" "}
+              <span className="font-semibold text-foreground">
+                Ili nastavljaš, ili ostaješ na istom.
+              </span>
+            </p>
+          </div>
         </div>
+
         <Button
           type="button"
           onClick={() => setPhase("hold")}
-          className="h-14 w-full rounded-full text-base font-semibold"
+          className="fm-intro-cta h-14 w-full rounded-full text-base font-semibold"
         >
           Nastavi
         </Button>

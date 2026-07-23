@@ -25,7 +25,7 @@ describe("CommitScreen", () => {
     expect(screen.getByText(/Obećavam sebi da ću/)).toBeInTheDocument();
     expect(screen.getByText(/smršati 6 kg/)).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Pritisni i drži/ })
+      screen.getByRole("button", { name: /Pritisni i zadrži/ })
     ).toBeInTheDocument();
   });
 
@@ -38,7 +38,7 @@ describe("CommitScreen", () => {
 
       // fireEvent.click reports detail 0 with no preceding pointer gesture,
       // i.e. the keyboard/AT path.
-      fireEvent.click(screen.getByRole("button", { name: /Pritisni i drži/ }));
+      fireEvent.click(screen.getByRole("button", { name: /Pritisni i zadrži/ }));
 
       expect(screen.getByText(/Posvećeno/)).toBeInTheDocument();
       expect(onCommitted).not.toHaveBeenCalled();

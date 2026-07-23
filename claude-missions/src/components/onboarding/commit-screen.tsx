@@ -10,7 +10,7 @@ import { buildCommitment } from "@/lib/onboarding/commitment";
 import type { CommitmentInput } from "@/lib/onboarding/commitment";
 import { cn } from "@/lib/utils";
 
-const HOLD_MS = 2800; // press-and-hold duration to fully commit (time to read the pledge)
+const HOLD_MS = 5200; // press-and-hold duration to fully commit (long enough to say the pledge aloud while the screen floods)
 const CELEBRATE_MS = 2300; // celebration before auto-advancing
 const FLOOD_D = 2400; // diameter of the screen-flood circle (covers any phone)
 const RING_R = 50;
@@ -382,24 +382,32 @@ export function CommitScreen({
       </h2>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8">
-        {/* commitment bubble */}
-        <div className="relative max-w-sm rounded-3xl bg-muted px-6 py-5 text-lg leading-relaxed">
-          <p className="text-muted-foreground">
-            {commitment.intro}{" "}
-            <span className="font-bold text-foreground">
-              {commitment.emphasis}
-            </span>
-            .
-          </p>
-          <p className="mt-3 text-muted-foreground">{commitment.pledge}</p>
-          <div className="absolute -bottom-2 left-1/2 size-5 -translate-x-1/2 rotate-45 rounded-[4px] bg-muted" />
-        </div>
+        {/* commitment quote */}
+        <figure className="relative mx-auto max-w-sm">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -top-6 left-3 select-none font-serif text-7xl leading-none text-foreground/15"
+          >
+            &ldquo;
+          </span>
+          <blockquote className="relative rounded-3xl border-l-4 border-primary/60 bg-muted px-6 py-5 pt-7 text-lg italic leading-relaxed">
+            <p className="text-muted-foreground">
+              {commitment.intro}{" "}
+              <span className="font-bold not-italic text-foreground">
+                {commitment.emphasis}
+              </span>
+              .
+            </p>
+            <p className="mt-3 text-muted-foreground">{commitment.pledge}</p>
+            <div className="absolute -bottom-2 left-1/2 size-5 -translate-x-1/2 rotate-45 rounded-[4px] bg-muted" />
+          </blockquote>
+        </figure>
 
         {/* hold-to-commit seal */}
         <button
           ref={buttonRef}
           type="button"
-          aria-label="Pritisni i drži da se obavežeš"
+          aria-label="Pritisni i zadrži da se obavežeš"
           onPointerDown={(e) => {
             e.preventDefault();
             pointerUsedRef.current = true;
@@ -425,7 +433,7 @@ export function CommitScreen({
         </button>
 
         <p className="text-center text-sm font-semibold text-foreground">
-          Pritisni i drži da se obavežeš
+          Pritisni i zadrži
         </p>
       </div>
 

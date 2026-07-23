@@ -14,9 +14,12 @@ import { AppNavBar } from "@/components/shell/app-nav-bar";
  *   light neutral background, while the inner column stays clamped to the
  *   mobile max-width and is horizontally centered via `mx-auto` (AS-126).
  *
- * The navigation is a floating bar (`AppNavBar`) fixed to the bottom of the
- * viewport, so it stays visible no matter how far the content scrolls; the
- * inner column adds bottom padding so nothing hides behind it.
+ * The navigation (`AppNavBar`) is its OWN bottom section, not a floating
+ * overlay: the column is exactly one viewport tall, the content area scrolls
+ * INSIDE it, and the nav sits in the flow beneath it. So the bar is always
+ * visible AND can never overlap or hide content — the last of the page always
+ * clears it, with no magic bottom-padding to keep in sync. (Sticky sub-headers
+ * inside a page still work: they stick within the content scroll container.)
  *
  * Full-bleed exception: the public marketing landing (`/`) and the desktop
  * "open on your phone" gate (`/samo-za-telefon`) are full-width pages with
@@ -71,10 +74,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh w-full bg-muted">
-      <div className="relative mx-auto flex min-h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">
-        {/* Bottom padding clears the floating nav bar (fixed, out of flow) so
-            the last of the content is never hidden behind it. */}
-        <div className="flex flex-1 flex-col pb-28">{children}</div>
+      <div className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">
+        {/* Content scrolls inside this region only; the nav below keeps its own
+            space, so nothing ever hides behind it. */}
+        <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain">
+          {children}
+        </div>
         <AppNavBar />
       </div>
     </div>

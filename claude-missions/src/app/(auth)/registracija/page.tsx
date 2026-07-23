@@ -3,7 +3,16 @@ import Link from "next/link";
 import { GoogleSignInButton } from "../google-sign-in-button";
 import { SignUpForm } from "./sign-up-form";
 
-export default function RegistracijaPage() {
+export default async function RegistracijaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
+  // Carried back from the "proveri email" screen when the user realizes they
+  // mistyped their address ("Pogrešan email? Izmeni") — so they don't retype
+  // it from scratch.
+  const { email } = await searchParams;
+
   return (
     <>
       <div className="auth-card">
@@ -11,7 +20,7 @@ export default function RegistracijaPage() {
           <h1>Napravi nalog</h1>
           <p>Unesi email i lozinku da bi počeo/la sa praćenjem ishrane.</p>
         </div>
-        <SignUpForm />
+        <SignUpForm initialEmail={email} />
         <GoogleSignInButton />
       </div>
       <p className="auth-alt">

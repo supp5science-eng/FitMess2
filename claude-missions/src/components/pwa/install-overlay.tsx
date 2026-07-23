@@ -98,6 +98,9 @@ export function InstallOverlay() {
   const [platform, setPlatform] = useState<Platform>("android");
   const [stage, setStage] = useState<Stage>("guide");
   const [step, setStep] = useState(0);
+  // Once the user taps a step to read it at their own pace, stop the auto-loop
+  // so it never yanks them off the step they're looking at.
+  const [paused, setPaused] = useState(false);
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const reducedRef = useRef(false);
 
@@ -146,15 +149,23 @@ export function InstallOverlay() {
   }, []);
 
   // Auto-advance the walkthrough while the guide is up (looping). Under
-  // reduced motion we hold and let the user tap the step rows / dots.
+  // reduced motion — or once the user has tapped a step (`paused`) — we hold
+  // and let the user drive the steps themselves.
   useEffect(() => {
-    if (!visible || leaving || stage !== "guide" || reducedRef.current) return;
+    if (
+      !visible ||
+      leaving ||
+      stage !== "guide" ||
+      reducedRef.current ||
+      paused
+    )
+      return;
     const count = STEPS[platform].length;
     const id = window.setInterval(() => {
       setStep((s) => (s + 1) % count);
     }, STEP_MS);
     return () => window.clearInterval(id);
-  }, [visible, leaving, stage, platform]);
+  }, [visible, leaving, stage, platform, paused]);
 
   function close() {
     setLeaving(true);
@@ -230,7 +241,10 @@ export function InstallOverlay() {
                   <button
                     type="button"
                     className="pwi-step-btn"
-                    onClick={() => setStep(i)}
+                    onClick={() => {
+                      setPaused(true);
+                      setStep(i);
+                    }}
                     aria-current={i === step ? "step" : undefined}
                   >
                     <span className="pwi-num">{i + 1}</span>

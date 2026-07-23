@@ -20,7 +20,7 @@ function SubmitButton() {
 }
 
 /** AS-008: email + password signup form. */
-export function SignUpForm() {
+export function SignUpForm({ initialEmail }: { initialEmail?: string }) {
   const [state, formAction] = useActionState(signUpAction, initialState);
   const invalid = state?.ok === false || undefined;
 
@@ -34,6 +34,7 @@ export function SignUpForm() {
           type="email"
           inputMode="email"
           className="auth-input"
+          defaultValue={initialEmail}
           placeholder="ti@email.com"
           autoComplete="email"
           autoCapitalize="none"

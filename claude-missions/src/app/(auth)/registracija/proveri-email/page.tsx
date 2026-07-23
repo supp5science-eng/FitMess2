@@ -61,6 +61,16 @@ export default async function ProveriEmailPage({
           </p>
         )}
 
+        {email ? (
+          <p className="auth-hint">
+            Pogrešna adresa?{" "}
+            <Link href={`/registracija?email=${encodeURIComponent(email)}`}>
+              Izmeni email
+            </Link>{" "}
+            i pošalji kod ponovo.
+          </p>
+        ) : null}
+
         <p className="auth-hint">
           Otvaraš na računaru? Možeš i da klikneš link iz mejla.
         </p>

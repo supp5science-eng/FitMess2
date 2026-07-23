@@ -11,6 +11,12 @@
  * user-scoped pages must never be served from a shared cache (they could
  * leak between accounts on a shared device, or go stale after a mutation).
  * Data freshness and auth stay owned by the network + Supabase, not here.
+ *
+ * F071 adds Web Push: the `push` handler shows the daily reminder the
+ * server sends (see src/app/api/cron/reminders/route.ts — the payload is a
+ * JSON `{ title, body, url }`, built by src/lib/push/reminders.ts), and
+ * `notificationclick` focuses an existing app window or opens a new one on
+ * the notification's deep link (default `/danas`).
  */
 const CACHE = "fitmess-shell-v1";
 const PRECACHE = ["/", "/icons/icon-192.png", "/icons/icon-512.png", "/manifest.json"];
@@ -32,6 +38,43 @@ self.addEventListener("activate", (event) => {
         Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))
       )
       .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("push", (event) => {
+  // Tolerate a missing/malformed payload: iOS in particular REQUIRES a
+  // user-visible notification for every push, so always show something.
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    // Fall through to the defaults below.
+  }
+  const title = data.title || "FitMess";
+  const options = {
+    body: data.body || "Vreme je da upišeš današnji unos.",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    data: { url: data.url || "/danas" },
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/danas";
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windows) => {
+        for (const client of windows) {
+          if (new URL(client.url).origin === self.location.origin) {
+            client.navigate(url);
+            return client.focus();
+          }
+        }
+        return self.clients.openWindow(url);
+      })
   );
 });
 

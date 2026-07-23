@@ -95,6 +95,12 @@ export interface Database {
           is_admin: boolean;
           onboarded_at: string | null;
           rules: EatingRuleJson[];
+          /** F071: daily reminder time, Belgrade wall-clock `"HH:MM:SS"` (a
+           * Postgres `time`). NULL = reminders off. */
+          reminder_time: string | null;
+          /** F071: Belgrade calendar day (`"YYYY-MM-DD"`) the daily reminder
+           * was last sent — the cron's within-a-day idempotency marker. */
+          reminder_last_sent_on: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -110,6 +116,8 @@ export interface Database {
           is_admin?: boolean;
           onboarded_at?: string | null;
           rules?: EatingRuleJson[];
+          reminder_time?: string | null;
+          reminder_last_sent_on?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -125,6 +133,8 @@ export interface Database {
           is_admin?: boolean;
           onboarded_at?: string | null;
           rules?: EatingRuleJson[];
+          reminder_time?: string | null;
+          reminder_last_sent_on?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -437,6 +447,44 @@ export interface Database {
           },
         ];
       };
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** The push service URL `PushSubscription.toJSON()` returns. */
+          endpoint: string;
+          /** Client public key (base64url) for payload encryption. */
+          p256dh: string;
+          /** Client auth secret (base64url) for payload encryption. */
+          auth: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          endpoint?: string;
+          p256dh?: string;
+          auth?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       meal_photos: {
         Row: {
           /** PK + FK to public.logs(id); one photo per log, ON DELETE CASCADE. */
@@ -530,6 +578,11 @@ export type WaterIntakeInsert =
   Database["public"]["Tables"]["water_intake"]["Insert"];
 export type WaterIntakeUpdate =
   Database["public"]["Tables"]["water_intake"]["Update"];
+
+export type PushSubscriptionRow =
+  Database["public"]["Tables"]["push_subscriptions"]["Row"];
+export type PushSubscriptionInsert =
+  Database["public"]["Tables"]["push_subscriptions"]["Insert"];
 
 export type StepCount = Database["public"]["Tables"]["step_counts"]["Row"];
 export type StepCountInsert =

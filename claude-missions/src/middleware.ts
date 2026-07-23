@@ -151,7 +151,11 @@ export const config = {
   // spec's "keep the middleware matcher efficient" instruction. Pattern
   // follows Supabase's own Next.js SSR guide
   // (https://supabase.com/docs/guides/auth/server-side/nextjs).
+  // `api/cron` is excluded too: those routes are invoked machine-to-machine
+  // (Supabase pg_cron via pg_net, no cookies, non-mobile UA) and guard
+  // themselves with a shared-secret header instead — running the phone gate
+  // + session refresh on them would only redirect the scheduler away.
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|sw\\.js|api/cron|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

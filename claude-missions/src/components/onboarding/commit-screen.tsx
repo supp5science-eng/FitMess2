@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 const HOLD_MS = 5200; // press-and-hold duration to fully commit (long enough to say the pledge aloud while the screen floods)
 const CELEBRATE_MS = 2300; // celebration before auto-advancing
-const FLOOD_D = 2400; // diameter of the screen-flood circle (covers any phone)
+const FLOOD_FALLBACK_D = 2400; // pre-measurement fallback diameter
 const RING_R = 50;
 const RING_C = 2 * Math.PI * RING_R;
 
@@ -219,6 +219,7 @@ export function CommitScreen({
   const [holding, setHolding] = useState(false);
   const [done, setDone] = useState(false);
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
+  const [floodD, setFloodD] = useState(FLOOD_FALLBACK_D);
 
   const buttonRef = useRef<HTMLButtonElement>(null);
   const rafRef = useRef<number | null>(null);
@@ -236,7 +237,19 @@ export function CommitScreen({
     const el = buttonRef.current;
     if (!el) return;
     const r = el.getBoundingClientRect();
-    setOrigin({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
+    setOrigin({ x: cx, y: cy });
+    // Size the flood so it covers the screen exactly when the hold completes:
+    // the circle's radius must reach the farthest corner at scale === 1. This
+    // keeps the flood growing over the whole hold and hitting full-black right
+    // as we fire the confetti — no black-screen dead time.
+    if (typeof window !== "undefined") {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const radius = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy));
+      setFloodD(radius * 2 * 1.02); // tiny margin so edges seal fully
+    }
   }, []);
 
   const complete = useCallback(() => {
@@ -384,13 +397,13 @@ export function CommitScreen({
       <div className="flex flex-1 flex-col items-center justify-center gap-8">
         {/* commitment quote */}
         <figure className="relative mx-auto max-w-sm">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -top-6 left-3 select-none font-serif text-7xl leading-none text-foreground/15"
-          >
-            &ldquo;
-          </span>
-          <blockquote className="relative rounded-3xl border-l-4 border-primary/60 bg-muted px-6 py-5 pt-7 text-lg italic leading-relaxed">
+          <blockquote className="relative rounded-3xl border-l-4 border-primary/60 bg-muted px-6 pt-9 pb-5 text-lg italic leading-relaxed">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute left-4 top-2 select-none font-serif text-6xl leading-none text-foreground/15"
+            >
+              &ldquo;
+            </span>
             <p className="text-muted-foreground">
               {commitment.intro}{" "}
               <span className="font-bold not-italic text-foreground">
@@ -444,10 +457,10 @@ export function CommitScreen({
           style={{
             left: origin.x,
             top: origin.y,
-            width: FLOOD_D,
-            height: FLOOD_D,
-            marginLeft: -FLOOD_D / 2,
-            marginTop: -FLOOD_D / 2,
+            width: floodD,
+            height: floodD,
+            marginLeft: -floodD / 2,
+            marginTop: -floodD / 2,
             transform: `scale(${done ? 1 : progress})`,
             transition: holding ? "none" : "transform 300ms ease",
           }}

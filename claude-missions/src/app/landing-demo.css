@@ -129,7 +129,7 @@
    ========================================================================= */
 .lpd-sc-home1,
 .lpd-sc-home2 {
-  padding: 30px 16px 0;
+  padding: 30px 14px 0;
   gap: 10px;
 }
 
@@ -233,7 +233,7 @@
   flex-direction: column;
   align-items: center;
   gap: 1px;
-  min-width: 44px;
+  min-width: 36px;
 }
 .lpd-side-num {
   font-size: 14px;
@@ -245,10 +245,11 @@
   font-weight: 550;
   color: var(--lpd-muted);
 }
+/* Fluid: shrinks with the (now aspect-locked, possibly narrower) frame. */
 .lpd-ring {
   position: relative;
-  width: 128px;
-  height: 128px;
+  width: clamp(100px, 50%, 132px);
+  aspect-ratio: 1;
   flex-shrink: 0;
 }
 .lpd-ring svg {
@@ -266,7 +267,7 @@
   gap: 1px;
 }
 .lpd-ring-big {
-  font-size: 27px;
+  font-size: 25px;
   font-weight: 700;
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
@@ -448,6 +449,16 @@
   gap: 8px;
   z-index: 10;
 }
+/* Fade panel under the floating nav so content that scrolls "behind" it
+   (short frames cut the meal list here) melts into the ground instead of
+   peeking through the transparent gutters around the pill. */
+.lpd-nav::before {
+  content: "";
+  position: absolute;
+  inset: -20px -12px -12px;
+  z-index: -1;
+  background: linear-gradient(to top, var(--lpd-bg) 62%, transparent);
+}
 .lpd-nav-pill {
   flex: 1;
   display: flex;
@@ -468,7 +479,7 @@
   font-size: 7.5px;
   font-weight: 550;
   color: var(--lpd-muted);
-  padding: 4px 9px;
+  padding: 4px 7px;
   border-radius: 999px;
 }
 .lpd-nav-active {
@@ -579,7 +590,7 @@
   align-items: center;
   gap: 4px;
   white-space: nowrap;
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 550;
   color: var(--lpd-fg);
   background: rgba(10, 12, 11, 0.55);
@@ -599,8 +610,8 @@
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 158px;
-  height: 158px;
+  width: min(158px, 64%);
+  aspect-ratio: 1;
   transform: translate(-50%, -54%);
   --b: 2.5px solid var(--lpd-teal);
   animation: lpd-brackets var(--lpd-t) linear infinite;
@@ -697,8 +708,8 @@
 }
 .lpd-scan-card {
   position: relative;
-  width: 168px;
-  height: 200px;
+  width: min(168px, 66%);
+  aspect-ratio: 168 / 200;
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid var(--lpd-border);
@@ -753,7 +764,7 @@
    RESULT (scene 4) — the confirm phase of dodaj/obrok
    ========================================================================= */
 .lpd-sc-res {
-  padding: 30px 16px 0;
+  padding: 30px 14px 0;
   gap: 9px;
 }
 .lpd-res-head {

@@ -1,22 +1,28 @@
 import Link from "next/link";
 
+import { HeroDemo } from "@/components/landing/hero-demo";
+
 import "./landing.css";
+import "./landing-demo.css";
 
 /**
  * The public marketing landing page at `/`.
  *
  * Deliberately minimal (Cal-AI-style): a single phone frame playing the hero
- * video (`/civava.mp4`), one bold line, and a single primary action. There is
- * NO "install the app" CTA here anymore — the whole onboarding (questionnaire
- * → plan) runs on the web first, and the PWA install prompt only comes at the
- * very end, once the user has finished. So the landing's only jobs are:
+ * demo — a pure-CSS motion graphic of the app's signature journey (početna →
+ * slikaj obrok → AI procena → ring se popuni), see
+ * `components/landing/hero-demo.tsx` — one bold line, and a single primary
+ * action. There is NO "install the app" CTA here anymore — the whole
+ * onboarding (questionnaire → plan) runs on the web first, and the PWA
+ * install prompt only comes at the very end, once the user has finished. So
+ * the landing's only jobs are:
  *   - "Započni" → the pre-auth questionnaire (`/upitnik`), and
  *   - "Prijavi se" → sign in, for returning users.
  *
  * `/` is a public route (`isPublicPath` in
  * `src/lib/auth/route-protection.ts`) and renders full-bleed — the app shell
  * (`src/components/shell/app-shell.tsx`) drops its mobile column and bottom
- * navigation here. Server Component; the hero is an autoplaying muted video.
+ * navigation here. Server Component; the hero demo animates with CSS only.
  */
 // Structured data (schema.org) so Google can render a rich result for the
 // brand: a health/fitness web application, in Serbian, free to use. Emitted as
@@ -47,19 +53,11 @@ export default function LandingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD) }}
       />
       <main className="lp-hero">
-        {/* Phone showing the hero video */}
+        {/* Phone playing the in-app journey demo */}
         <div className="lp-phone-wrap">
           <div className="phone" aria-hidden="true">
             <div className="screen">
-              <video
-                className="lp-video"
-                src="/civava.mp4"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="auto"
-              />
+              <HeroDemo />
             </div>
           </div>
         </div>

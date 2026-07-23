@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ProgressIndicator } from "@/components/onboarding/progress-indicator";
 import { SexStep } from "@/components/onboarding/steps/sex-step";
-import { NameStep } from "@/components/onboarding/steps/name-step";
 import { AgeStep } from "@/components/onboarding/steps/age-step";
 import { HeightStep } from "@/components/onboarding/steps/height-step";
 import { WeightStep } from "@/components/onboarding/steps/weight-step";
@@ -27,7 +26,6 @@ import {
   validateAge,
   validateGoalType,
   validateHeight,
-  validateName,
   validateSex,
   validateTargetWeight,
   validateWeight,
@@ -46,8 +44,6 @@ function validateStep(
   switch (stepId) {
     case "pol":
       return validateSex(data.sex);
-    case "ime":
-      return validateName(data.name);
     case "godine":
       return validateAge(data.ageYears);
     case "visina":
@@ -165,13 +161,6 @@ export function OnboardingWizard({
         <SexStep
           value={data.sex}
           onChange={(value) => update("sex", value)}
-          error={error}
-        />
-      )}
-      {stepId === "ime" && (
-        <NameStep
-          value={data.name}
-          onChange={(value) => update("name", value)}
           error={error}
         />
       )}

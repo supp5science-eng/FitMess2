@@ -19,6 +19,9 @@ import { DEFAULT_PACE } from "@/lib/onboarding/pace";
 export type { ActivityLevel, GoalType, Sex };
 
 export interface OnboardingData {
+  /** Not collected by the wizard anymore — stays `null` through the whole
+   * questionnaire and is filled in post-registration by the "kako da te
+   * zovemo" screen, right before the plan is persisted. */
   name: string | null;
   sex: Sex | null;
   ageYears: number | null;
@@ -67,10 +70,12 @@ export const DEFAULT_ONBOARDING_DATA: OnboardingData = {
   pace: DEFAULT_PACE,
 };
 
-/** Every possible step, in order. The name (`ime`) comes late — after the
- * demographics + goal type — and the two goal-only steps (`cilj` = target
- * weight, `tempo` = pace) are conditional (see `visibleStepIds`), since
- * maintain/tone goals have no target to collect. */
+/** Every possible step, in order. The name is deliberately NOT asked here —
+ * the questionnaire stays anonymous; the "kako da te zovemo" moment happens
+ * post-registration (see `components/onboarding/name-screen.tsx`). The two
+ * goal-only steps (`cilj` = target weight, `tempo` = pace) are conditional
+ * (see `visibleStepIds`), since maintain/tone goals have no target to
+ * collect. */
 export const ONBOARDING_STEP_IDS = [
   "pol",
   "godine",
@@ -78,7 +83,6 @@ export const ONBOARDING_STEP_IDS = [
   "tezina",
   "aktivnost",
   "cilj-tip",
-  "ime",
   "cilj",
   "tempo",
 ] as const;

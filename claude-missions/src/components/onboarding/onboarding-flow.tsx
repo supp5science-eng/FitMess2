@@ -4,36 +4,44 @@ import { useEffect, useState } from "react";
 
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { CommitScreen } from "@/components/onboarding/commit-screen";
+import { NameScreen } from "@/components/onboarding/name-screen";
 import { PlanReveal } from "@/components/onboarding/plan-reveal";
 import { isOnboardingDataComplete } from "@/lib/onboarding/summary";
 import type { CompleteOnboardingData } from "@/lib/onboarding/summary";
 import type { OnboardingData } from "@/lib/onboarding/types";
-import { readCompletePendingOnboarding } from "@/lib/onboarding/storage";
+import {
+  readCompletePendingOnboarding,
+  savePendingOnboarding,
+} from "@/lib/onboarding/storage";
 
 /**
  * The post-auth `/onboarding` flow. A verified-but-not-yet-onboarded user is
  * redirected here right after signing in / verifying their email (see
  * `src/lib/auth/route-protection.ts`).
  *
- * Onboarding now runs pre-auth on the public `/upitnik` route, so most users
- * arrive here having ALREADY answered the questionnaire and seen their plan —
- * their answers are waiting in `localStorage`. Two paths:
+ * Onboarding now runs pre-auth on the public `/upitnik` route — and stays
+ * anonymous there (no name question). Most users therefore arrive here having
+ * already answered the questionnaire and seen their plan, with the answers
+ * waiting in `localStorage`. Two paths:
  *
- *   - Hand-off (the common case): stored answers exist, so we skip straight to
- *     the plan reveal in `persist` mode — it writes them to the account and
- *     continues to `/danas`, replaying the reveal as a nice confirmation.
+ *   - Hand-off (the common case): stored answers exist. The app "wakes up"
+ *     with the smooth "Kako da te zovemo?" screen (the one thing the
+ *     questionnaire didn't ask), then flows straight into the plan reveal in
+ *     `persist` mode — it writes everything (name included) to the account
+ *     and continues to `/danas`, replaying the reveal as a confirmation that
+ *     now greets them by name.
  *   - Fallback: no stored answers (a user who registered directly, or via
- *     Google, without doing `/upitnik` first) — we run the questionnaire here,
- *     then persist.
+ *     Google, without doing `/upitnik` first) — we run the questionnaire
+ *     here, then the commit pledge, then the same name screen, then persist.
  *
- * The `welcome` and `theme-choice` stages of the old flow are gone: the
- * questionnaire is no longer the first thing a signed-in user sees, and the
- * theme step was dropped per product direction.
+ * Either way the name screen re-stashes the merged answers before the persist
+ * so nothing is lost if the write needs a retry after a reload.
  */
 type Stage =
   | { kind: "loading" }
   | { kind: "wizard" }
   | { kind: "commit"; data: CompleteOnboardingData }
+  | { kind: "name"; data: CompleteOnboardingData }
   | { kind: "plan"; data: CompleteOnboardingData };
 
 export function OnboardingFlow() {
@@ -47,8 +55,17 @@ export function OnboardingFlow() {
   // server and first client render identical.
   useEffect(() => {
     const pending = readCompletePendingOnboarding();
+    // A name in the stash means it was already asked (e.g. the persist failed
+    // and the user reloaded) — skip straight to the plan instead of asking
+    // again.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: browser-only read resolved once, post-hydration (see above).
-    setStage(pending ? { kind: "plan", data: pending } : { kind: "wizard" });
+    setStage(
+      pending
+        ? pending.name !== null
+          ? { kind: "plan", data: pending }
+          : { kind: "name", data: pending }
+        : { kind: "wizard" }
+    );
   }, []);
 
   function handleWizardComplete(data: OnboardingData) {
@@ -57,12 +74,26 @@ export function OnboardingFlow() {
     }
   }
 
+  function handleNameSubmit(data: CompleteOnboardingData, name: string) {
+    const merged: CompleteOnboardingData = { ...data, name };
+    // Re-stash with the name so a reload between here and a landed persist
+    // resumes at the plan instead of asking for the name again.
+    savePendingOnboarding(merged);
+    setStage({ kind: "plan", data: merged });
+  }
+
   if (stage.kind === "commit") {
     return (
       <CommitScreen
         data={stage.data}
-        onCommitted={() => setStage({ kind: "plan", data: stage.data })}
+        onCommitted={() => setStage({ kind: "name", data: stage.data })}
       />
+    );
+  }
+
+  if (stage.kind === "name") {
+    return (
+      <NameScreen onSubmit={(name) => handleNameSubmit(stage.data, name)} />
     );
   }
 

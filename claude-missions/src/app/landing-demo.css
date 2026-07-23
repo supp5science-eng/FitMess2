@@ -536,6 +536,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  object-fit: cover;
   animation: lpd-cam-zoom var(--lpd-t) linear infinite;
 }
 /* slow "hand-held" settle while framing the shot */
@@ -705,6 +706,7 @@
 .lpd-scan-photo {
   width: 100%;
   height: 100%;
+  object-fit: cover;
   display: block;
 }
 .lpd-scan-line {

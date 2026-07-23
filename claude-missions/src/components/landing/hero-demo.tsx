@@ -84,97 +84,15 @@ function StatusBar() {
 }
 
 /**
- * The meal "photograph". Placeholder: a stylized top-down SVG plate matching
- * what the AI "recognizes" (piletina + pirinač + brokoli) on a dark table.
- *
- * SWAP POINT: when the real photo lands, replace this component's body with
- *   <img src="/landing/obrok.jpg" alt="" className={className} />
- * and every scene (camera, analysis, meal card) picks it up automatically.
+ * The meal photograph — grilled chicken + rice + broccoli on dark slate
+ * (product-owner-supplied, optimized to 960×1280 ~123KB). One component,
+ * three consumers: the camera viewfinder, the analysis card, and the new
+ * meal card — swap the file at `public/landing/obrok.jpg` and every scene
+ * follows.
  */
 function MealPhoto({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 200 260"
-      preserveAspectRatio="xMidYMid slice"
-      className={className}
-      aria-hidden="true"
-    >
-      <defs>
-        <radialGradient id="lpd-table" cx="50%" cy="42%" r="80%">
-          <stop offset="0%" stopColor="#2b211a" />
-          <stop offset="70%" stopColor="#1c1512" />
-          <stop offset="100%" stopColor="#120e0c" />
-        </radialGradient>
-        <radialGradient id="lpd-plate" cx="42%" cy="38%" r="75%">
-          <stop offset="0%" stopColor="#f2f0ea" />
-          <stop offset="78%" stopColor="#e4e1d8" />
-          <stop offset="100%" stopColor="#cfcbbf" />
-        </radialGradient>
-        <linearGradient id="lpd-chick" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#e0a95c" />
-          <stop offset="100%" stopColor="#a86227" />
-        </linearGradient>
-      </defs>
-
-      {/* table + plate */}
-      <rect width="200" height="260" fill="url(#lpd-table)" />
-      <ellipse cx="100" cy="134" rx="86" ry="84" fill="#0d0a08" opacity="0.55" />
-      <ellipse cx="100" cy="130" rx="84" ry="82" fill="url(#lpd-plate)" />
-      <ellipse cx="100" cy="130" rx="66" ry="64" fill="#efede6" />
-
-      {/* pirinač — creamy mound with grain flecks */}
-      <path
-        d="M55 118c-8 14-2 34 14 40 18 7 40 4 50-8 9-11 6-28-6-36-16-11-49-9-58 4Z"
-        fill="#f5efdc"
-      />
-      <g fill="#e6ddc0">
-        <circle cx="70" cy="128" r="1.7" />
-        <circle cx="82" cy="120" r="1.7" />
-        <circle cx="95" cy="132" r="1.7" />
-        <circle cx="78" cy="142" r="1.7" />
-        <circle cx="102" cy="118" r="1.7" />
-        <circle cx="90" cy="147" r="1.7" />
-        <circle cx="64" cy="140" r="1.7" />
-      </g>
-
-      {/* piletina — grilled slices */}
-      <g>
-        <rect x="98" y="78" width="52" height="22" rx="10" fill="url(#lpd-chick)" transform="rotate(18 124 89)" />
-        <rect x="104" y="96" width="56" height="23" rx="10" fill="url(#lpd-chick)" transform="rotate(12 132 107)" />
-        <rect x="108" y="116" width="52" height="22" rx="10" fill="url(#lpd-chick)" transform="rotate(6 134 127)" />
-        {/* grill marks */}
-        <g stroke="#7c431a" strokeWidth="2.4" strokeLinecap="round" opacity="0.65">
-          <path d="M112 84.5 140 94" />
-          <path d="M114 103 146 111" />
-          <path d="M116 122 148 128" />
-        </g>
-      </g>
-
-      {/* brokoli — florets */}
-      <g>
-        <circle cx="78" cy="172" r="12" fill="#3f9d5f" />
-        <circle cx="96" cy="180" r="10" fill="#57b26f" />
-        <circle cx="64" cy="184" r="9" fill="#2f8a4e" />
-        <g fill="#2c7f47" opacity="0.7">
-          <circle cx="74" cy="168" r="3" />
-          <circle cx="83" cy="175" r="3" />
-          <circle cx="94" cy="177" r="2.6" />
-          <circle cx="99" cy="184" r="2.6" />
-          <circle cx="62" cy="181" r="2.4" />
-          <circle cx="68" cy="188" r="2.4" />
-        </g>
-      </g>
-
-      {/* čeri paradajz */}
-      <circle cx="128" cy="168" r="9" fill="#d94f3f" />
-      <circle cx="126" cy="166" r="4" fill="#e87563" />
-      <circle cx="146" cy="156" r="7.5" fill="#d94f3f" />
-      <circle cx="144.5" cy="154.5" r="3.2" fill="#e87563" />
-
-      {/* soft rim light so it reads "photo", not "flat icon" */}
-      <ellipse cx="100" cy="130" rx="84" ry="82" fill="none" stroke="#ffffff" strokeWidth="1.4" opacity="0.12" />
-    </svg>
-  );
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/landing/obrok.jpg" alt="" className={className} />;
 }
 
 /** One date-strip cell: weekday over a mini progress ring with the day inside. */

@@ -22,7 +22,13 @@ import { SR_AUTH_MESSAGES, mapAuthErrorToSerbian } from "@/lib/auth/errors";
 
 export type AuthActionResult =
   | { ok: true }
-  | { ok: false; error_sr: string };
+  | {
+      ok: false;
+      error_sr: string;
+      /** Set only on the signup path when the email already has an account, so
+       * the form can offer a "Prijavi se" shortcut alongside the message. */
+      reason?: "already_registered";
+    };
 
 export type SignInResult =
   | { ok: true }
@@ -63,12 +69,20 @@ export function isEmailVerified(
 /**
  * Signs a new user up with email + password (AS-008).
  *
- * Deliberately treats "no error" as success even when Supabase's anti-
- * enumeration behavior means the account already existed (in which case
- * `data.user.identities` comes back empty and no new confirmation email is
- * sent) -- the caller must not be able to tell the two cases apart, per the
- * clarified spec's "never reveal whether an email exists" failure-handling
- * rule, which this feature applies to signup as well as login.
+ * PRODUCT DECISION (per user, 2026-07): the signup form now DOES tell the
+ * visitor when the email already has an account, instead of the previous
+ * anti-enumeration silence. That silence made a very confusing experience --
+ * a returning user re-registers, GoTrue sends no new email (the account
+ * exists), and the app just says "check your email" for a mail that never
+ * comes. So here we detect the "already registered" case two ways and surface
+ * it as an actionable error (`reason: "already_registered"`):
+ *   1. `error.code === "user_already_exists"` (the explicit signal), and
+ *   2. the anti-enumeration success shape, where GoTrue returns no error but
+ *      `data.user.identities` is an EMPTY array (a real new signup always has
+ *      exactly one identity). This covers projects/versions that obfuscate the
+ *      duplicate instead of erroring.
+ * Login and forgot-password keep their non-enumeration behavior -- only the
+ * signup form leaks existence, which is the flow the confusion lived in.
  */
 export async function signUpEmailPassword(
   supabase: SupabaseClient,
@@ -77,7 +91,7 @@ export async function signUpEmailPassword(
   emailRedirectTo: string,
   phone?: string
 ): Promise<AuthActionResult> {
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
@@ -90,15 +104,24 @@ export async function signUpEmailPassword(
   });
 
   if (error) {
-    // `user_already_exists` is Supabase's older/alternate signal for the
-    // same "account already registered" case the empty-identities response
-    // also covers -- fold it into the same non-revealing success-shaped
-    // message rather than surfacing an error that would confirm the email
-    // is taken.
     if (error.code === "user_already_exists") {
-      return { ok: true };
+      return {
+        ok: false,
+        error_sr: SR_AUTH_MESSAGES.emailAlreadyRegistered,
+        reason: "already_registered",
+      };
     }
     return { ok: false, error_sr: mapAuthErrorToSerbian(error) };
+  }
+
+  // Anti-enumeration success shape: an existing email comes back with no error
+  // but zero identities (a genuine new account always has exactly one).
+  if (data.user && (data.user.identities?.length ?? 0) === 0) {
+    return {
+      ok: false,
+      error_sr: SR_AUTH_MESSAGES.emailAlreadyRegistered,
+      reason: "already_registered",
+    };
   }
 
   return { ok: true };

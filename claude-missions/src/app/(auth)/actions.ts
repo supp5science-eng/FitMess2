@@ -36,7 +36,9 @@ import {
  * inline, in Serbian, without a page navigation.
  */
 
-export type AuthFormState = { ok: boolean; error_sr?: string } | null;
+export type AuthFormState =
+  | { ok: boolean; error_sr?: string; reason?: "already_registered" }
+  | null;
 
 /**
  * Derives the current request's own origin from its headers rather than a
@@ -102,7 +104,11 @@ export async function signUpAction(
   );
 
   if (!result.ok) {
-    return result;
+    return {
+      ok: false,
+      error_sr: result.error_sr,
+      reason: result.reason,
+    };
   }
 
   redirect(verifyEmailNoticePath(parsed.data.email, true));

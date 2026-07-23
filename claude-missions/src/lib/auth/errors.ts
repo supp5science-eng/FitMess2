@@ -27,6 +27,13 @@ export const SR_AUTH_MESSAGES = {
    * it does not leak account existence to a third party. */
   unconfirmed:
     "Nalog nije potvrđen. Proveri email i klikni na link za potvrdu naloga.",
+  /** Sign-up with an email that already has an account. PRODUCT DECISION
+   * (per user): the signup form DELIBERATELY reveals existence here, so people
+   * stop retrying a registration that (by anti-enumeration) silently sends no
+   * email and just looks broken. This trades the non-enumeration property on
+   * the *signup* form only -- login and forgot-password stay generic. */
+  emailAlreadyRegistered:
+    "Već postoji nalog sa ovom email adresom. Prijavi se, a ako još nisi potvrdio/la nalog, proveri email za kod.",
   /** Sign-up (and resend) success -- deliberately identical whether the email
    * was brand-new or already registered, so signup cannot be used to probe
    * account existence either. */

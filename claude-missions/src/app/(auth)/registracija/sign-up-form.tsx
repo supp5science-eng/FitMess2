@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
@@ -54,6 +55,12 @@ export function SignUpForm() {
       {state?.ok === false ? (
         <p role="alert" className="auth-error">
           {state.error_sr}
+          {state.reason === "already_registered" ? (
+            <>
+              {" "}
+              <Link href="/prijava">Prijavi se</Link>
+            </>
+          ) : null}
         </p>
       ) : null}
       <SubmitButton />

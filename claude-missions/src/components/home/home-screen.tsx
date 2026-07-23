@@ -5,6 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { DateStrip } from "@/components/home/date-strip";
 import { IntroCover } from "@/components/home/intro-cover";
+import { InstallOverlay } from "@/components/pwa/install-overlay";
 import { MacroBars } from "@/components/home/macro-bars";
 import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
@@ -57,6 +58,7 @@ export function HomeScreen({
   initialLogs,
   target,
   intro = false,
+  installPrompt = false,
   days = [],
   mealsHeading = "Obroci danas",
   adaptivePlan = null,
@@ -71,6 +73,11 @@ export function HomeScreen({
   // Set by `/danas` (from the one-time `fm_intro` cookie) when the user has
   // just finished onboarding, so we play the ring hand-off exactly once.
   intro?: boolean;
+  // Set by `/danas` (from the one-time `fm_install` cookie, dropped by the
+  // plan reveal): right after onboarding, rise the "install FitMess" overlay
+  // once the ring hand-off has settled. The overlay consumes the cookie and
+  // self-guards, so this can never replay on later visits.
+  installPrompt?: boolean;
   // The date strip's day cells (built server-side) + the meals-section heading
   // for the day currently being viewed ("Obroci danas" for today).
   days?: DayCell[];
@@ -299,6 +306,10 @@ export function HomeScreen({
           kcal={target?.daily_kcal ?? 0}
         />
       ) : null}
+
+      {/* Post-onboarding install offer: mounts only after the ring hand-off
+          has fully settled, so the two moments never fight for attention. */}
+      {installPrompt && !introActive ? <InstallOverlay /> : null}
     </main>
   );
 }

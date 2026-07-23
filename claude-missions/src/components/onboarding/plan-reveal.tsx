@@ -40,6 +40,9 @@ const OUTRO_MS = 900;
 // dashboard can play the "ring hand-off" intro (matching loading cover, then
 // a ghost ring that glides into the real daily ring) with zero seam.
 const INTRO_COOKIE = "fm_intro";
+// One-shot flag for the post-onboarding "install FitMess" overlay on /danas
+// (see `components/pwa/install-overlay.tsx`, which consumes it).
+const INSTALL_COOKIE = "fm_install";
 
 const CALC_LINES = [
   "Analiziramo tvoje podatke…",
@@ -185,6 +188,14 @@ export function PlanReveal({
           // A blocked cookie only means no intro animation -- never a blocked
           // navigation, so we still hand off below.
         }
+      }
+      try {
+        // Unlike the intro, the install offer is wanted under reduced motion
+        // too (the overlay renders a static poster there). Consumed one-shot
+        // by `InstallOverlay` on /danas.
+        document.cookie = `${INSTALL_COOKIE}=1; path=/; max-age=600; samesite=lax`;
+      } catch {
+        // No cookie -> no install offer; never a blocked navigation.
       }
       window.location.assign("/danas");
     }, outroMs);

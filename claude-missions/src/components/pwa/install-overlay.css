@@ -1,0 +1,694 @@
+/*
+ * Post-onboarding "install FitMess" overlay (`install-overlay.tsx`).
+ *
+ * Namespaced `.pwi-*`. Runs INSIDE the authenticated app (always dark), so
+ * colors come from the theme tokens per the repo rule — no inline hex except
+ * where a token genuinely doesn't exist (pure white/black glints).
+ *
+ * Motion design: the overlay rises over the fresh dashboard with a soft
+ * spring, the app icon lands with ripple halos, copy and the demo stagger in,
+ * and the mini phone loops the 3-step walkthrough (crossfading layers driven
+ * by `data-step`, same technique as the landing guide). Everything honours
+ * `prefers-reduced-motion` by collapsing to a static poster.
+ */
+
+.pwi {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--background) 96%, transparent);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  animation: pwi-rise 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes pwi-rise {
+  from {
+    opacity: 0;
+    transform: translateY(26px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.pwi-leaving {
+  animation: pwi-fall 0.36s cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes pwi-fall {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+}
+
+/* Soft teal aura behind the hero icon. */
+.pwi-glow {
+  position: fixed;
+  inset: -20% -30% auto;
+  height: 46vh;
+  pointer-events: none;
+  background: radial-gradient(
+    52% 60% at 50% 30%,
+    color-mix(in srgb, var(--primary) 16%, transparent),
+    transparent 70%
+  );
+}
+
+.pwi-body {
+  position: relative;
+  margin: auto;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+  padding:
+    calc(28px + env(safe-area-inset-top))
+    24px
+    calc(22px + env(safe-area-inset-bottom));
+}
+
+/* ---------- hero icon + halos ---------- */
+.pwi-hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+.pwi-appicon {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  box-shadow:
+    0 14px 34px -12px rgba(0, 0, 0, 0.7),
+    0 0 0 1px var(--border);
+  animation: pwi-icon-in 0.7s cubic-bezier(0.34, 1.4, 0.5, 1) 0.12s backwards;
+}
+@keyframes pwi-icon-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.pwi-ripple {
+  position: absolute;
+  width: 72px;
+  height: 72px;
+  border-radius: 24px;
+  border: 1.5px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  animation: pwi-ripple 2.6s cubic-bezier(0.2, 0.6, 0.35, 1) 0.5s infinite;
+  pointer-events: none;
+}
+.pwi-ripple-2 {
+  animation-delay: 1.5s;
+}
+@keyframes pwi-ripple {
+  0% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+/* ---------- copy ---------- */
+.pwi-title {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--foreground);
+  text-wrap: balance;
+}
+.pwi-hi {
+  color: var(--primary);
+}
+.pwi-sub {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+  text-wrap: balance;
+}
+.pwi-sub b {
+  color: var(--foreground);
+}
+
+/* Staggered entrance for the content blocks. */
+.pwi-in {
+  animation: pwi-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.pwi-d1 { animation-delay: 0.2s; }
+.pwi-d2 { animation-delay: 0.3s; }
+.pwi-d3 { animation-delay: 0.42s; }
+.pwi-d4 { animation-delay: 0.56s; }
+.pwi-d5 { animation-delay: 0.66s; }
+@keyframes pwi-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------- demo: mini phone + steps ---------- */
+.pwi-demo {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  margin-top: 4px;
+  padding: 14px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--card) 80%, transparent);
+}
+
+.pwi-phone {
+  position: relative;
+  flex-shrink: 0;
+  width: 118px;
+  aspect-ratio: 9 / 18;
+  border-radius: 20px;
+  padding: 5px;
+  background: linear-gradient(165deg, #2a3a35, #05100d);
+  box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.7);
+}
+.pwi-notch {
+  position: absolute;
+  top: 9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34px;
+  height: 3.5px;
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.16);
+  z-index: 2;
+}
+.pwi-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 15px;
+  overflow: hidden;
+  background: var(--background);
+}
+
+/* Crossfading step layers, driven by data-step on .pwi-phone. */
+.pwi-layer {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  transform: scale(0.985);
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  pointer-events: none;
+}
+.pwi-phone[data-step="0"] .pwi-layer[data-for="0"],
+.pwi-phone[data-step="1"] .pwi-layer[data-for="1"],
+.pwi-phone[data-step="2"] .pwi-layer[data-for="2"],
+.pwi-phone[data-step="3"] .pwi-layer[data-for="3"] {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Faux page lines */
+.pwi-web {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 22px 12px 0;
+  flex: 1;
+  transition: opacity 0.3s;
+}
+.pwi-web.is-dim {
+  opacity: 0.3;
+}
+.pwi-line {
+  height: 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--foreground) 14%, transparent);
+}
+.pwi-line.w1 { width: 62%; background: color-mix(in srgb, var(--primary) 45%, transparent); }
+.pwi-line.w2 { width: 88%; }
+.pwi-line.w3 { width: 74%; }
+.pwi-line.w4 { width: 52%; }
+
+/* Browser chrome bars */
+.pwi-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 4px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+}
+.pwi-bar-bottom {
+  margin-top: auto;
+  border-top: 1px solid var(--border);
+  justify-content: space-between;
+  gap: 4px;
+}
+.pwi-bar-top {
+  border-bottom: 1px solid var(--border);
+  justify-content: space-between;
+}
+/* The centred address pill in the iOS bottom bar. */
+.pwi-omni-c {
+  flex: 1;
+  text-align: center;
+}
+.pwi-reload {
+  font-size: 11px;
+}
+/* The ••• (More) button — the real entry point on modern iOS Safari. */
+.pwi-more {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-size: 11px;
+}
+.pwi-bar-ic {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.pwi-bar-ic svg {
+  width: 13px;
+  height: 13px;
+}
+.pwi-omni {
+  flex: 1;
+  font-size: 7.5px;
+  color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--foreground) 8%, transparent);
+  border-radius: 999px;
+  padding: 4px 8px;
+  text-align: left;
+}
+.pwi-kebab {
+  font-weight: 700;
+}
+
+/* The pulsing "tap here" target */
+.pwi-target {
+  color: var(--primary);
+}
+.pwi-tap {
+  position: absolute;
+  inset: -5px;
+  border-radius: 10px;
+  border: 1.5px solid var(--primary);
+  animation: pwi-tap 1.5s ease-out infinite;
+  pointer-events: none;
+}
+@keyframes pwi-tap {
+  0% {
+    opacity: 0.9;
+    transform: scale(0.7);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.5);
+  }
+}
+
+/* iOS share sheet / Android menu */
+.pwi-sheet,
+.pwi-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 8px;
+}
+.pwi-sheet {
+  margin-top: auto;
+  border-radius: 12px 12px 0 0;
+  animation: pwi-sheet-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes pwi-sheet-up {
+  from {
+    transform: translateY(60%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.pwi-menu {
+  margin: 4px 6px 0 auto;
+  width: 82%;
+  border-radius: 10px;
+  transform-origin: top right;
+  animation: pwi-menu-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* iOS ••• dropdown: anchored to the BOTTOM-right, over the ••• button. */
+.pwi-menu-br {
+  margin: auto 6px 6px auto;
+  width: 86%;
+  transform-origin: bottom right;
+}
+@keyframes pwi-menu-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.pwi-grip {
+  align-self: center;
+  width: 26px;
+  height: 3px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--foreground) 22%, transparent);
+  margin-bottom: 2px;
+}
+/* The share sheet's target-page card (thumb + title + host), like iOS. */
+.pwi-share-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.pwi-share-card img {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.pwi-share-meta {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  min-width: 0;
+}
+.pwi-share-meta b {
+  font-size: 8px;
+  font-weight: 650;
+  color: var(--foreground);
+}
+.pwi-share-meta span {
+  font-size: 6.5px;
+  color: var(--muted-foreground);
+}
+.pwi-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 7.5px;
+  color: var(--muted-foreground);
+  border-radius: 7px;
+  padding: 6px 7px;
+  text-align: left;
+}
+.pwi-row svg {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+.pwi-row.pwi-target {
+  color: var(--foreground);
+  font-weight: 650;
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 45%, transparent);
+}
+.pwi-row.pwi-target .pwi-tap {
+  border-radius: 9px;
+}
+
+/* Step 3: home screen + tile pop */
+.pwi-home {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  position: relative;
+}
+.pwi-dots {
+  position: absolute;
+  inset: 8px;
+  background-image: radial-gradient(
+    color-mix(in srgb, var(--foreground) 14%, transparent) 1.2px,
+    transparent 1.3px
+  );
+  background-size: 22px 22px;
+  border-radius: 10px;
+}
+.pwi-tile {
+  position: relative;
+  animation: pwi-tile-pop 0.55s cubic-bezier(0.34, 1.45, 0.5, 1) 0.15s backwards;
+}
+@keyframes pwi-tile-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+.pwi-tile img {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  box-shadow: 0 8px 18px -8px rgba(0, 0, 0, 0.8);
+}
+.pwi-tile-check {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+  animation: pwi-tile-pop 0.4s cubic-bezier(0.34, 1.45, 0.5, 1) 0.45s backwards;
+}
+.pwi-tile-check svg {
+  width: 10px;
+  height: 10px;
+}
+/* one-shot teal spark ring behind the tile */
+.pwi-spark {
+  position: absolute;
+  inset: -8px;
+  border-radius: 18px;
+  border: 1.5px solid var(--primary);
+  animation: pwi-tap 1.4s ease-out 0.35s infinite;
+  pointer-events: none;
+}
+.pwi-tile-label {
+  position: relative;
+  font-size: 7.5px;
+  font-weight: 550;
+  color: var(--foreground);
+}
+
+/* ---------- steps list ---------- */
+.pwi-steps {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.pwi-step-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border-radius: 12px;
+  padding: 8px 9px;
+  color: var(--muted-foreground);
+  font-size: 12.5px;
+  line-height: 1.35;
+  transition: background 0.3s, color 0.3s, opacity 0.3s;
+  opacity: 0.6;
+  text-align: left;
+}
+.pwi-steps li.is-active .pwi-step-btn {
+  opacity: 1;
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.pwi-steps b {
+  color: var(--foreground);
+  font-weight: 650;
+}
+.pwi-steps li.is-active b {
+  color: var(--primary);
+}
+.pwi-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--muted-foreground);
+  transition: all 0.3s;
+}
+.pwi-steps li.is-active .pwi-num {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+/* A quiet helper for the iOS "Add to Home Screen" gotcha (may be under
+   "Prikaži još" / View More in the share sheet). */
+.pwi-note {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  text-wrap: balance;
+}
+.pwi-note b {
+  color: var(--foreground);
+  font-weight: 600;
+}
+
+/* ---------- CTA ---------- */
+.pwi-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+  margin-top: 4px;
+}
+.pwi-install {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 52px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  box-shadow: 0 12px 28px -12px color-mix(in srgb, var(--primary) 55%, transparent);
+  transition: transform 0.12s ease;
+}
+.pwi-install:active {
+  transform: scale(0.98);
+}
+.pwi-install svg {
+  width: 18px;
+  height: 18px;
+}
+.pwi-skip {
+  align-self: center;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 550;
+  color: var(--muted-foreground);
+  border-radius: 999px;
+  transition: color 0.15s;
+}
+.pwi-skip:hover {
+  color: var(--foreground);
+}
+
+/* ---------- installed state ---------- */
+.pwi-done {
+  gap: 10px;
+}
+.pwi-done-badge {
+  position: relative;
+  margin-bottom: 6px;
+}
+.pwi-done-badge .pwi-appicon {
+  width: 84px;
+  height: 84px;
+  border-radius: 21px;
+}
+.pwi-done-check {
+  position: absolute;
+  right: -8px;
+  bottom: -8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  animation: pwi-tile-pop 0.5s cubic-bezier(0.34, 1.45, 0.5, 1) 0.25s backwards;
+}
+.pwi-done-check svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---------- reduced motion: static poster ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .pwi,
+  .pwi *,
+  .pwi *::before,
+  .pwi *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .pwi-tap,
+  .pwi-spark,
+  .pwi-ripple {
+    display: none;
+  }
+}

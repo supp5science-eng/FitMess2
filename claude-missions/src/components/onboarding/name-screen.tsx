@@ -118,7 +118,7 @@ export function NameScreen({ onSubmit }: { onSubmit: (name: string) => void }) {
             disabled={leaving}
             className="h-14 w-full rounded-full text-base font-semibold"
           >
-            To sam ja
+            Nastavi
           </Button>
         </div>
       </form>

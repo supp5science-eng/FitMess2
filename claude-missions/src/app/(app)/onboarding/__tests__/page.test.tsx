@@ -5,12 +5,16 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
 
-// The plan-reveal pulls in a `"use server"` action graph (Supabase server
-// client) that isn't relevant to this page test and can't run in jsdom. We
-// only care that `/onboarding` renders the questionnaire when there's no
-// pre-auth hand-off waiting, so stub the reveal to a marker.
+// The plan-reveal and the straight-to-app finish both pull in a `"use server"`
+// action graph (Supabase server client) that isn't relevant to this page test
+// and can't run in jsdom. We only care which stage `/onboarding` lands on, so
+// stub both to markers. The common hand-off (stash from `/upitnik`) finishes
+// via `FinishAndRedirect`; the animated `PlanReveal` is the fallback path.
 vi.mock("@/components/onboarding/plan-reveal", () => ({
   PlanReveal: () => <div data-testid="plan-reveal" />,
+}));
+vi.mock("@/components/onboarding/finish-and-redirect", () => ({
+  FinishAndRedirect: () => <div data-testid="finish-redirect" />,
 }));
 
 import OnboardingPage from "../page";
@@ -49,16 +53,19 @@ describe("the pre-auth hand-off resumes with the name question, then the plan", 
     expect(
       screen.getByRole("heading", { name: /Kako da te zovemo\?/ })
     ).toBeInTheDocument();
-    expect(screen.queryByTestId("plan-reveal")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("finish-redirect")).not.toBeInTheDocument();
   });
 
-  it("stashed answers WITH a name (post-retry reload) skip straight to the plan", () => {
+  it("stashed answers WITH a name (post-retry reload) skip straight to the app", () => {
     window.localStorage.setItem(
       "fm_onboarding",
       JSON.stringify({ ...COMPLETE_STASH, name: "Ana" })
     );
     render(<OnboardingPage />);
-    expect(screen.getByTestId("plan-reveal")).toBeInTheDocument();
+    // Hand-off users already saw the reveal on `/upitnik`, so the finish is the
+    // no-animation straight-to-app write, not the plan reveal.
+    expect(screen.getByTestId("finish-redirect")).toBeInTheDocument();
+    expect(screen.queryByTestId("plan-reveal")).not.toBeInTheDocument();
   });
 });
 

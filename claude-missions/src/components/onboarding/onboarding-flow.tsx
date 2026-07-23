@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 import { CommitScreen } from "@/components/onboarding/commit-screen";
 import { NameScreen } from "@/components/onboarding/name-screen";
+import { FinishAndRedirect } from "@/components/onboarding/finish-and-redirect";
 import { PlanReveal } from "@/components/onboarding/plan-reveal";
 import { isOnboardingDataComplete } from "@/lib/onboarding/summary";
 import type { CompleteOnboardingData } from "@/lib/onboarding/summary";
@@ -26,23 +27,29 @@ import {
  *
  *   - Hand-off (the common case): stored answers exist. The app "wakes up"
  *     with the smooth "Kako da te zovemo?" screen (the one thing the
- *     questionnaire didn't ask), then flows straight into the plan reveal in
- *     `persist` mode — it writes everything (name included) to the account
- *     and continues to `/danas`, replaying the reveal as a confirmation that
- *     now greets them by name.
+ *     questionnaire didn't ask), then writes everything (name included) to the
+ *     account and goes straight to `/danas` (`FinishAndRedirect`). It does NOT
+ *     replay the "računamo tvoj plan" reveal — that already played once at the
+ *     end of the `/upitnik` questionnaire, so a second time would be redundant.
  *   - Fallback: no stored answers (a user who registered directly, or via
- *     Google, without doing `/upitnik` first) — we run the questionnaire
- *     here, then the commit pledge, then the same name screen, then persist.
+ *     Google, without doing `/upitnik` first) — we run the questionnaire here,
+ *     then the commit pledge, then the name screen, then the ANIMATED plan
+ *     reveal, since these users never saw it on `/upitnik`. So they get their
+ *     plan exactly once, right before entering the app.
  *
  * Either way the name screen re-stashes the merged answers before the persist
  * so nothing is lost if the write needs a retry after a reload.
+ *
+ * `alreadyRevealed` is what decides between the two finishes: true (hand-off,
+ * preview already played on `/upitnik`) → straight-to-app `FinishAndRedirect`
+ * with no re-animation; false (fallback, first time) → animated `PlanReveal`.
  */
 type Stage =
   | { kind: "loading" }
   | { kind: "wizard" }
-  | { kind: "commit"; data: CompleteOnboardingData }
-  | { kind: "name"; data: CompleteOnboardingData }
-  | { kind: "plan"; data: CompleteOnboardingData };
+  | { kind: "commit"; data: CompleteOnboardingData; alreadyRevealed: boolean }
+  | { kind: "name"; data: CompleteOnboardingData; alreadyRevealed: boolean }
+  | { kind: "plan"; data: CompleteOnboardingData; alreadyRevealed: boolean };
 
 export function OnboardingFlow() {
   const [stage, setStage] = useState<Stage>({ kind: "loading" });
@@ -59,41 +66,58 @@ export function OnboardingFlow() {
     // and the user reloaded) — skip straight to the plan instead of asking
     // again.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: browser-only read resolved once, post-hydration (see above).
+    // Stashed answers came from `/upitnik`, where the plan reveal already
+    // played — so these hand-off users are `alreadyRevealed: true`.
     setStage(
       pending
         ? pending.name !== null
-          ? { kind: "plan", data: pending }
-          : { kind: "name", data: pending }
+          ? { kind: "plan", data: pending, alreadyRevealed: true }
+          : { kind: "name", data: pending, alreadyRevealed: true }
         : { kind: "wizard" }
     );
   }, []);
 
   function handleWizardComplete(data: OnboardingData) {
     if (isOnboardingDataComplete(data)) {
-      setStage({ kind: "commit", data });
+      // Fallback (no `/upitnik`): the reveal hasn't been shown yet.
+      setStage({ kind: "commit", data, alreadyRevealed: false });
     }
   }
 
-  function handleNameSubmit(data: CompleteOnboardingData, name: string) {
+  function handleNameSubmit(
+    data: CompleteOnboardingData,
+    name: string,
+    alreadyRevealed: boolean
+  ) {
     const merged: CompleteOnboardingData = { ...data, name };
     // Re-stash with the name so a reload between here and a landed persist
     // resumes at the plan instead of asking for the name again.
     savePendingOnboarding(merged);
-    setStage({ kind: "plan", data: merged });
+    setStage({ kind: "plan", data: merged, alreadyRevealed });
   }
 
   if (stage.kind === "commit") {
     return (
       <CommitScreen
         data={stage.data}
-        onCommitted={() => setStage({ kind: "name", data: stage.data })}
+        onCommitted={() =>
+          setStage({
+            kind: "name",
+            data: stage.data,
+            alreadyRevealed: stage.alreadyRevealed,
+          })
+        }
       />
     );
   }
 
   if (stage.kind === "name") {
     return (
-      <NameScreen onSubmit={(name) => handleNameSubmit(stage.data, name)} />
+      <NameScreen
+        onSubmit={(name) =>
+          handleNameSubmit(stage.data, name, stage.alreadyRevealed)
+        }
+      />
     );
   }
 
@@ -106,7 +130,14 @@ export function OnboardingFlow() {
   }
 
   if (stage.kind === "plan") {
-    return <PlanReveal data={stage.data} mode="persist" />;
+    // Hand-off users already saw "računamo tvoj plan" on `/upitnik` — don't
+    // replay it; write and go straight into the app. Fallback users (direct /
+    // Google signup) never saw it, so they get the animated reveal once here.
+    return stage.alreadyRevealed ? (
+      <FinishAndRedirect data={stage.data} />
+    ) : (
+      <PlanReveal data={stage.data} mode="persist" />
+    );
   }
 
   return <OnboardingWizard onComplete={handleWizardComplete} />;

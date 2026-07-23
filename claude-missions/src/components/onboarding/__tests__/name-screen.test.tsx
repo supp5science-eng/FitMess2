@@ -19,7 +19,7 @@ afterEach(() => {
 });
 
 function submit() {
-  fireEvent.click(screen.getByRole("button", { name: /To sam ja/ }));
+  fireEvent.click(screen.getByRole("button", { name: /Nastavi/ }));
 }
 
 describe("NameScreen", () => {

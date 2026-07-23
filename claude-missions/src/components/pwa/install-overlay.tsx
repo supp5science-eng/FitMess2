@@ -48,16 +48,21 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
+// The REAL modern iOS Safari flow (bottom address bar, iOS 15+): the share
+// icon is NOT in the toolbar — you go ••• (More) → Podeli (Share) → the system
+// share sheet → Dodaj na početni ekran. Verified against the product owner's
+// own on-device screenshots (2026-07). Android/Chrome is the ⋮ menu flow.
 const STEPS: Record<Platform, { key: string; text: React.ReactNode }[]> = {
   ios: [
-    { key: "share", text: <>Tapni <b>Podeli</b> u dnu Safari-ja</> },
-    { key: "add", text: <>Izaberi <b>Dodaj na početni ekran</b></> },
-    { key: "done", text: <>Potvrdi na <b>Dodaj</b> — i gotovo!</> },
+    { key: "more", text: <>Tapni <b>•••</b> u dnu Safari-ja</> },
+    { key: "share", text: <>Izaberi <b>Podeli</b></> },
+    { key: "add", text: <>Tapni <b>Dodaj na početni ekran</b></> },
+    { key: "done", text: <>I <b>FitMess</b> je na tvom ekranu 🎉</> },
   ],
   android: [
     { key: "menu", text: <>Tapni meni <b>⋮</b> gore desno</> },
     { key: "install", text: <>Izaberi <b>Instaliraj aplikaciju</b></> },
-    { key: "done", text: <>Potvrdi na <b>Instaliraj</b> — i gotovo!</> },
+    { key: "done", text: <>I <b>FitMess</b> je na tvom ekranu 🎉</> },
   ],
 };
 
@@ -144,11 +149,12 @@ export function InstallOverlay() {
   // reduced motion we hold and let the user tap the step rows / dots.
   useEffect(() => {
     if (!visible || leaving || stage !== "guide" || reducedRef.current) return;
+    const count = STEPS[platform].length;
     const id = window.setInterval(() => {
-      setStep((s) => (s + 1) % 3);
+      setStep((s) => (s + 1) % count);
     }, STEP_MS);
     return () => window.clearInterval(id);
-  }, [visible, leaving, stage]);
+  }, [visible, leaving, stage, platform]);
 
   function close() {
     setLeaving(true);
@@ -235,7 +241,15 @@ export function InstallOverlay() {
             </ol>
           </div>
 
-          <div className="pwi-cta pwi-in pwi-d4">
+          {platform === "ios" ? (
+            <p className="pwi-note pwi-in pwi-d4">
+              Ne vidiš „Dodaj na početni ekran”? Skroluj listu ili tapni
+              {" "}
+              <b>Prikaži još</b>.
+            </p>
+          ) : null}
+
+          <div className="pwi-cta pwi-in pwi-d5">
             {deferred ? (
               <button type="button" className="pwi-install" onClick={onPrimary}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -257,55 +271,79 @@ export function InstallOverlay() {
 }
 
 /**
- * The mini phone that DEMONSTRATES the current step — dark-theme cousin of
- * the landing `InstallGuide` mock-up: browser chrome + pulsing target on step
- * 1, the sheet/menu with the highlighted row on step 2, the FitMess tile
- * popping onto a home screen on step 3.
+ * The mini phone that DEMONSTRATES the current step — a dark-theme,
+ * platform-accurate re-enactment. iOS mirrors the REAL modern Safari flow
+ * (bottom bar with •••, not a toolbar share icon): ••• → the ••• menu with
+ * Podeli → the system share sheet with "Dodaj na početni ekran" → the tile
+ * landing on the home screen. Android: the ⋮ menu → Instaliraj aplikaciju →
+ * home screen. The final home-screen layer is shared and sits at the last
+ * step index of whichever platform (iOS: 3, Android: 2).
  */
 function MiniPhone({ platform, step }: { platform: Platform; step: number }) {
+  const lastIndex = STEPS[platform].length - 1;
   return (
     <div className="pwi-phone" data-step={step} data-platform={platform}>
       <span className="pwi-notch" aria-hidden="true" />
       <div className="pwi-screen">
         {platform === "ios" ? (
           <>
-            {/* 1: Safari, share pulsing */}
+            {/* 0: Safari with the BOTTOM address bar; ••• (More) pulsing */}
             <div className="pwi-layer" data-for="0">
               <WebLines />
               <div className="pwi-bar pwi-bar-bottom">
                 <span className="pwi-bar-ic">‹</span>
-                <span className="pwi-bar-ic">›</span>
-                <span className="pwi-bar-ic pwi-target">
+                <span className="pwi-omni pwi-omni-c">fitmess.app</span>
+                <span className="pwi-bar-ic pwi-reload">↻</span>
+                <span className="pwi-bar-ic pwi-target pwi-more">
+                  •••<span className="pwi-tap" />
+                </span>
+              </div>
+            </div>
+            {/* 1: the ••• menu (bottom-right); Podeli highlighted */}
+            <div className="pwi-layer" data-for="1">
+              <WebLines dim />
+              <div className="pwi-menu pwi-menu-br">
+                <div className="pwi-row pwi-target">
+                  <span>Podeli</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M12 3v13" />
                     <path d="m8 7 4-4 4 4" />
                     <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
                   </svg>
                   <span className="pwi-tap" />
-                </span>
-                <span className="pwi-bar-ic">▢</span>
+                </div>
+                <div className="pwi-row">Dodaj obeleživač</div>
+                <div className="pwi-row">Nova kartica</div>
               </div>
             </div>
-            {/* 2: share sheet, target row */}
-            <div className="pwi-layer" data-for="1">
+            {/* 2: the system share sheet; Dodaj na početni ekran highlighted */}
+            <div className="pwi-layer" data-for="2">
               <WebLines dim />
               <div className="pwi-sheet">
                 <span className="pwi-grip" />
+                <div className="pwi-share-card">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/landing/obrok.jpg" alt="" />
+                  <span className="pwi-share-meta">
+                    <b>FitMess</b>
+                    <span>fitmess.app</span>
+                  </span>
+                </div>
                 <div className="pwi-row">Kopiraj</div>
                 <div className="pwi-row pwi-target">
                   <span>Dodaj na početni ekran</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                    <path d="M12 5v14M5 12h14" />
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="4" y="4" width="16" height="16" rx="3" />
+                    <path d="M12 9v6M9 12h6" />
                   </svg>
                   <span className="pwi-tap" />
                 </div>
-                <div className="pwi-row">Označi stranicu</div>
               </div>
             </div>
           </>
         ) : (
           <>
-            {/* 1: Chrome, kebab pulsing */}
+            {/* 0: Chrome, kebab pulsing */}
             <div className="pwi-layer" data-for="0">
               <div className="pwi-bar pwi-bar-top">
                 <span className="pwi-omni">fitmess.app</span>
@@ -315,7 +353,7 @@ function MiniPhone({ platform, step }: { platform: Platform; step: number }) {
               </div>
               <WebLines />
             </div>
-            {/* 2: menu, target row */}
+            {/* 1: menu, target row */}
             <div className="pwi-layer" data-for="1">
               <div className="pwi-bar pwi-bar-top">
                 <span className="pwi-omni">fitmess.app</span>
@@ -339,8 +377,8 @@ function MiniPhone({ platform, step }: { platform: Platform; step: number }) {
           </>
         )}
 
-        {/* 3 (shared): home screen, tile pops in with a teal spark */}
-        <div className="pwi-layer" data-for="2">
+        {/* shared final: home screen, tile pops in with a teal spark */}
+        <div className="pwi-layer" data-for={String(lastIndex)}>
           <div className="pwi-home">
             <span className="pwi-dots" aria-hidden="true" />
             <span className="pwi-tile">

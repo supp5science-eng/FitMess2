@@ -160,6 +160,7 @@
 .pwi-d2 { animation-delay: 0.3s; }
 .pwi-d3 { animation-delay: 0.42s; }
 .pwi-d4 { animation-delay: 0.56s; }
+.pwi-d5 { animation-delay: 0.66s; }
 @keyframes pwi-in {
   from {
     opacity: 0;
@@ -227,7 +228,8 @@
 }
 .pwi-phone[data-step="0"] .pwi-layer[data-for="0"],
 .pwi-phone[data-step="1"] .pwi-layer[data-for="1"],
-.pwi-phone[data-step="2"] .pwi-layer[data-for="2"] {
+.pwi-phone[data-step="2"] .pwi-layer[data-for="2"],
+.pwi-phone[data-step="3"] .pwi-layer[data-for="3"] {
   opacity: 1;
   transform: scale(1);
 }
@@ -266,10 +268,26 @@
 .pwi-bar-bottom {
   margin-top: auto;
   border-top: 1px solid var(--border);
+  justify-content: space-between;
+  gap: 4px;
 }
 .pwi-bar-top {
   border-bottom: 1px solid var(--border);
   justify-content: space-between;
+}
+/* The centred address pill in the iOS bottom bar. */
+.pwi-omni-c {
+  flex: 1;
+  text-align: center;
+}
+.pwi-reload {
+  font-size: 11px;
+}
+/* The ••• (More) button — the real entry point on modern iOS Safari. */
+.pwi-more {
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  font-size: 11px;
 }
 .pwi-bar-ic {
   position: relative;
@@ -353,6 +371,12 @@
   transform-origin: top right;
   animation: pwi-menu-pop 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+/* iOS ••• dropdown: anchored to the BOTTOM-right, over the ••• button. */
+.pwi-menu-br {
+  margin: auto 6px 6px auto;
+  width: 86%;
+  transform-origin: bottom right;
+}
 @keyframes pwi-menu-pop {
   from {
     opacity: 0;
@@ -370,6 +394,37 @@
   border-radius: 99px;
   background: color-mix(in srgb, var(--foreground) 22%, transparent);
   margin-bottom: 2px;
+}
+/* The share sheet's target-page card (thumb + title + host), like iOS. */
+.pwi-share-card {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 6px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 2px;
+}
+.pwi-share-card img {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.pwi-share-meta {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  min-width: 0;
+}
+.pwi-share-meta b {
+  font-size: 8px;
+  font-weight: 650;
+  color: var(--foreground);
+}
+.pwi-share-meta span {
+  font-size: 6.5px;
+  color: var(--muted-foreground);
 }
 .pwi-row {
   position: relative;
@@ -529,6 +584,20 @@
   background: var(--primary);
   border-color: var(--primary);
   color: var(--primary-foreground);
+}
+
+/* A quiet helper for the iOS "Add to Home Screen" gotcha (may be under
+   "Prikaži još" / View More in the share sheet). */
+.pwi-note {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--muted-foreground);
+  text-wrap: balance;
+}
+.pwi-note b {
+  color: var(--foreground);
+  font-weight: 600;
 }
 
 /* ---------- CTA ---------- */

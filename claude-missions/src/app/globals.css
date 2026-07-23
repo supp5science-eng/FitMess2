@@ -387,3 +387,30 @@ a[aria-disabled="true"]:active,
     font-size: 16px;
   }
 }
+
+/* ---------------------------------------------------------------------
+   Onboarding selection "pop" — the questionnaire's tactile confirmation.
+   When a radio option becomes selected, its indicator (the dot / check)
+   springs in with a slight overshoot for a Cal-AI-style "locked it in"
+   feel. Applied via `.onb-pop` on the indicator, which mounts only on
+   selection so it fires exactly once per pick. Motion-safe only —
+   reduced-motion users get the selected state with no animation. -------- */
+@keyframes onb-pop {
+  0% {
+    transform: scale(0.2);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.25);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .onb-pop {
+    animation: onb-pop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  }
+}

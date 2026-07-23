@@ -74,8 +74,13 @@ export function IconOptionGroup<T extends string>({
           >
             <span
               className={cn(
-                "flex shrink-0 items-center justify-center rounded-full bg-muted text-foreground",
-                styles.badge
+                "flex shrink-0 items-center justify-center rounded-full transition-colors",
+                styles.badge,
+                // Selected badge flips to a solid foreground fill so the pick
+                // reads at a glance (Cal-AI-style highlight).
+                selected
+                  ? "bg-foreground text-background"
+                  : "bg-muted text-foreground"
               )}
             >
               {option.icon}
@@ -100,7 +105,7 @@ export function IconOptionGroup<T extends string>({
               )}
             >
               {selected ? (
-                <span className="size-1.5 rounded-full bg-background" />
+                <span className="onb-pop size-1.5 rounded-full bg-background" />
               ) : null}
             </span>
           </button>

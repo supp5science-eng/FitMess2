@@ -6,9 +6,9 @@ import { SignInForm } from "./sign-in-form";
 export default async function PrijavaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ greska?: string }>;
+  searchParams: Promise<{ greska?: string; email?: string }>;
 }) {
-  const { greska } = await searchParams;
+  const { greska, email } = await searchParams;
 
   return (
     <>
@@ -23,7 +23,7 @@ export default async function PrijavaPage({
             zatraži novi link sa stranice za registraciju.
           </p>
         ) : null}
-        <SignInForm />
+        <SignInForm initialEmail={email} />
         <p className="auth-alt" style={{ marginTop: 0 }}>
           <Link href="/zaboravljena-lozinka">Zaboravio/la si lozinku?</Link>
         </p>

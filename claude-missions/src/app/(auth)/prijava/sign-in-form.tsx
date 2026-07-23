@@ -18,7 +18,7 @@ function SubmitButton() {
 }
 
 /** AS-009 / AS-017: email + password login form. */
-export function SignInForm() {
+export function SignInForm({ initialEmail }: { initialEmail?: string }) {
   const [state, formAction] = useActionState(signInAction, initialState);
   const invalid = state?.ok === false || undefined;
 
@@ -32,6 +32,7 @@ export function SignInForm() {
           type="email"
           inputMode="email"
           className="auth-input"
+          defaultValue={initialEmail}
           placeholder="ti@email.com"
           autoComplete="email"
           autoCapitalize="none"

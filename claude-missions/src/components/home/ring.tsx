@@ -9,12 +9,13 @@ import { cn } from "@/lib/utils";
 //
 // Visual redesign per the product owner's 2026-07-22 decision: an
 // Apple-Fitness-style FULL ring (360°, thick rounded stroke, fills clockwise
-// from 12 o'clock) instead of the earlier 270° gauge, coloured with the
-// brand-logo gradient (the pear's teal→mint→blue sheen) so it reads as
-// "FitMess" in BOTH themes -- the traffic-light stroke washed out on the
-// white theme. The traffic-light LEVEL is still computed and exposed as
-// `data-level` (tests + potential future accents key off it); what changed is
-// only the stroke itself.
+// from 12 o'clock) instead of the earlier 270° gauge. The stroke is THEMED
+// (2026-07-24): dark keeps the brand-logo gradient (the pear's
+// teal→mint→blue sheen), light uses an azure gradient that holds its
+// contrast on white where the brand teal washed out — both via the
+// `--gauge-grad-*` tokens. The traffic-light LEVEL is still computed and
+// exposed as `data-level` (tests + potential future accents key off it);
+// what changed is only the stroke itself.
 //
 //   * The ring ALWAYS fills with consumption (consumed / limit), regardless of
 //     the toggle -- one consistent "how full is my day" metaphor.
@@ -27,14 +28,18 @@ import { cn } from "@/lib/utils";
 
 export type RingView = "remaining" | "consumed";
 
-// The brand-logo ring gradient (sampled from the pear logo's teal→mint→blue
-// iridescence; the middle stop is the canonical `--brand` teal #17d1a8).
-// Shared with the date strip's mini day-rings so both read as one system.
-export const RING_GRADIENT_STOPS = ["#3ee6bf", "#17d1a8", "#2a9fd1"] as const;
-// Faint track behind the fill -- a transparent tint of the brand teal, which
-// stays visible on white and on the near-black dark theme alike.
-export const RING_TRACK_STROKE =
-  "color-mix(in srgb, #17d1a8 18%, transparent)";
+// The ring gradient + faint track are THEMED via the `--gauge-grad-1/2/3` and
+// `--gauge-track` tokens (globals.css): dark keeps the brand pear gradient
+// (teal→mint→blue), light uses the azure "health blue" that holds up on white.
+// Shared with the date strip's mini day-rings so both read as one system. SVG
+// `stop-color`/`stroke` take the vars via `style` -- `var()` is CSS-only and
+// silently fails inside plain SVG attributes.
+export const RING_GRADIENT_STOPS = [
+  "var(--gauge-grad-1)",
+  "var(--gauge-grad-2)",
+  "var(--gauge-grad-3)",
+] as const;
+export const RING_TRACK_STROKE = "var(--gauge-track)";
 
 const VIEW_BOX = 200;
 const CENTER = VIEW_BOX / 2;
@@ -125,9 +130,12 @@ export function Ring({
               x2="1"
               y2="1"
             >
-              <stop offset="0%" stopColor={RING_GRADIENT_STOPS[0]} />
-              <stop offset="55%" stopColor={RING_GRADIENT_STOPS[1]} />
-              <stop offset="100%" stopColor={RING_GRADIENT_STOPS[2]} />
+              <stop offset="0%" style={{ stopColor: RING_GRADIENT_STOPS[0] }} />
+              <stop offset="55%" style={{ stopColor: RING_GRADIENT_STOPS[1] }} />
+              <stop
+                offset="100%"
+                style={{ stopColor: RING_GRADIENT_STOPS[2] }}
+              />
             </linearGradient>
           </defs>
 
@@ -137,7 +145,7 @@ export function Ring({
             cy={CENTER}
             r={RADIUS}
             fill="none"
-            stroke={RING_TRACK_STROKE}
+            style={{ stroke: RING_TRACK_STROKE }}
             strokeWidth={STROKE}
           />
           {/* First lap: fills clockwise from 12 o'clock with consumption,

@@ -82,6 +82,15 @@
   --ring: #0a0c0b;
   /* Calorie-gauge fill: light blue in both themes (per product request). */
   --gauge: #38bdf8;
+  /* Calorie-ring gradient + track (ring.tsx, date-strip.tsx). LIGHT theme:
+     azure (sky→deep blue) — the brand pear gradient washed out on white, so
+     the ring gets its own clean "health blue" here (2026-07-24 product
+     decision); actions stay black, progress reads blue. DARK keeps the brand
+     gradient. */
+  --gauge-grad-1: #4cc3f7;
+  --gauge-grad-2: #0ea5e9;
+  --gauge-grad-3: #0a6fae;
+  --gauge-track: color-mix(in srgb, #0ea5e9 14%, transparent);
   --chart-1: #0a0c0b;
   --chart-2: #646b6f;
   --chart-3: #8a9095;
@@ -161,6 +170,12 @@
   );
   /* Dark theme keeps the teal accent on the gauge (same as the + button). */
   --gauge: #17d1a8;
+  /* Calorie-ring gradient, DARK theme: the brand-logo pear gradient
+     (teal→mint→blue), unchanged — only the light theme re-colours the ring. */
+  --gauge-grad-1: #3ee6bf;
+  --gauge-grad-2: #17d1a8;
+  --gauge-grad-3: #2a9fd1;
+  --gauge-track: color-mix(in srgb, #17d1a8 18%, transparent);
   --chart-1: #17d1a8;
   --chart-2: #6fd9c4;
   --chart-3: #a6b0ab;

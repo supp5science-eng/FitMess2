@@ -63,13 +63,15 @@ function DayCircle({ cell }: { cell: DayCell }) {
         aria-hidden="true"
       >
         <defs>
-          {/* Same brand-logo gradient as the big daily ring (`ring.tsx`),
+          {/* Same themed gradient as the big daily ring (`ring.tsx`) via the
+              `--gauge-grad-*` tokens (azure on light, brand teal on dark),
               duplicated per-cell -- identical stops, so whichever instance
-              the id resolves to renders the same. */}
+              the id resolves to renders the same. `var()` only works through
+              `style`, not plain SVG attributes. */}
           <linearGradient id="fm-day-ring-gradient" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#3ee6bf" />
-            <stop offset="55%" stopColor="#17d1a8" />
-            <stop offset="100%" stopColor="#2a9fd1" />
+            <stop offset="0%" style={{ stopColor: "var(--gauge-grad-1)" }} />
+            <stop offset="55%" style={{ stopColor: "var(--gauge-grad-2)" }} />
+            <stop offset="100%" style={{ stopColor: "var(--gauge-grad-3)" }} />
           </linearGradient>
         </defs>
         <circle
@@ -81,7 +83,7 @@ function DayCircle({ cell }: { cell: DayCell }) {
           style={{
             stroke: disabled
               ? "color-mix(in srgb, var(--foreground) 8%, transparent)"
-              : "color-mix(in srgb, #17d1a8 18%, transparent)",
+              : "var(--gauge-track)",
           }}
         />
         {fraction > 0 ? (

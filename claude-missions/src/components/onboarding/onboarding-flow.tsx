@@ -95,7 +95,7 @@ export function OnboardingFlow() {
     // Re-stash with the name so a reload between here and a landed persist
     // resumes at the plan instead of asking for the name again.
     savePendingOnboarding(merged);
-    // Right after the name, let the user pick dark/light (dark default) before
+    // Right after the name, let the user pick light/dark (light default) before
     // the plan reveal.
     setStage({ kind: "theme", data: merged, alreadyRevealed });
   }

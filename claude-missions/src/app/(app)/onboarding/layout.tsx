@@ -5,8 +5,9 @@ import type { ReactNode } from "react";
  *
  * The onboarding flow is full-bleed (see `src/components/shell/app-shell.tsx`):
  * the app shell drops its centered column + bottom navigation here, so this
- * layout owns the viewport — a dark, near-black canvas (the app runs dark)
- * with a safe-area-aware, mobile-width centered column. The post-login
+ * layout owns the viewport — the app's themed canvas (`bg-background`, white in
+ * the default light theme) with a safe-area-aware, mobile-width centered
+ * column. The post-login
  * welcome, the questionnaire and its summary all render inside it, none of
  * them showing the Danas/Nedelja/Agent/Profil tabs until onboarding is done.
  */

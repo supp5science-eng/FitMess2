@@ -105,20 +105,16 @@
 
 /* --- the fork ------------------------------------------------------------ */
 
-.sg-fork-line {
-  stroke: color-mix(in srgb, var(--foreground, #fff) 62%, transparent);
-  stroke-width: 2.6;
-  stroke-linecap: round;
-  fill: none;
-}
-.sg-fork-head {
-  stroke: color-mix(in srgb, var(--foreground, #fff) 62%, transparent);
-  stroke-width: 3.4;
-  stroke-linecap: round;
-  fill: none;
+/* Solid fork, drawn to read as cutlery at a glance: a soft metallic fill with
+   a hairline edge so tines and handle stay crisp on both themes. */
+.sg-fork-part {
+  fill: color-mix(in srgb, var(--foreground, #fff) 66%, transparent);
+  stroke: color-mix(in srgb, var(--foreground, #fff) 82%, transparent);
+  stroke-width: 0.6;
 }
 
-/* The fork slides in and stays — it is half the instruction. */
+/* The fork slides in and stays — it is half the instruction. It now lives on
+   the left, so it slides in from the left. */
 .sg-fork {
   animation: sg-fork-in 5s ease-in-out infinite;
 }
@@ -136,7 +132,7 @@
 @keyframes sg-fork-in {
   0%,
   30% {
-    transform: translateX(30px);
+    transform: translateX(-30px);
     opacity: 0;
   }
   52%,
@@ -145,7 +141,7 @@
     opacity: 1;
   }
   100% {
-    transform: translateX(30px);
+    transform: translateX(-30px);
     opacity: 0;
   }
 }

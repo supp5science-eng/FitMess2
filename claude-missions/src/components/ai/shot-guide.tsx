@@ -58,13 +58,21 @@ export function ShotGuide({ variant }: { variant: "top" | "angle" }) {
           <ellipse className="sg-food-greens" cx="154" cy="176" rx="13" ry="6" />
         </g>
 
-        {/* --- the fork, lying beside the plate --------------------------- */}
+        {/* --- the fork, lying on the table beside the plate ---------------
+            On the LEFT: the camera swings out to the right on the angled
+            scene, so keeping the fork opposite stops the two from colliding
+            and leaves both readable. Drawn as filled shapes (four tines, a
+            shoulder that tapers into the neck, then the handle) rather than
+            bare strokes -- at this size, lines just read as scratches. */}
         <g className="sg-fork">
-          {/* tines */}
-          <path className="sg-fork-line" d="M240 141v13M246 141v13M252 141v13" />
-          {/* neck + handle */}
-          <path className="sg-fork-line" d="M246 154v34" />
-          <path className="sg-fork-head" d="M239 153h14" />
+          <rect className="sg-fork-part" x="48.5" y="133" width="3.4" height="21" rx="1.7" />
+          <rect className="sg-fork-part" x="53.7" y="133" width="3.4" height="21" rx="1.7" />
+          <rect className="sg-fork-part" x="58.9" y="133" width="3.4" height="21" rx="1.7" />
+          <rect className="sg-fork-part" x="64.1" y="133" width="3.4" height="21" rx="1.7" />
+          <path
+            className="sg-fork-part"
+            d="M47 150H69v9c0 6-7.5 6-7.5 12v17a3.2 3.2 0 0 1-6.5 0v-17c0-6-8-6-8-12z"
+          />
         </g>
 
         {/* --- the 45° arc (angle scene only) ----------------------------- */}

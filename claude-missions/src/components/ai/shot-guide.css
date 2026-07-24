@@ -75,9 +75,10 @@
   letter-spacing: 0.02em;
 }
 
-/* Shutter flash when the shot "lands". */
+/* Shutter flash when the shot "lands". Brand teal rather than white: a white
+   flash is invisible on the light theme's white card. */
 .sg-flash {
-  fill: #fff;
+  fill: var(--brand, #17d1a8);
   opacity: 0;
 }
 
@@ -259,7 +260,7 @@
     opacity: 0;
   }
   66% {
-    opacity: 0.34;
+    opacity: 0.26;
   }
   74%,
   100% {

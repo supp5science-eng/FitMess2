@@ -1,8 +1,8 @@
 /*
  * FitMess auth screens — scoped styles.
  *
- * Namespaced under `.auth` so this dark visual world stays isolated from the
- * app's light Tailwind theme (the auth routes render full-bleed via
+ * Namespaced under `.auth` so this self-contained visual world stays isolated
+ * from the app's Tailwind theme (the auth routes render full-bleed via
  * `src/components/shell/app-shell.tsx`, so they own the whole viewport).
  *
  * Design (LIGHT, 2026-07-21): the same clean white, teal-accented world as

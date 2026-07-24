@@ -5,8 +5,9 @@ import type { ReactNode } from "react";
  *
  * Mirrors the post-auth onboarding layout: full-bleed (the app shell drops its
  * centered column + bottom navigation for this route — see
- * `src/components/shell/app-shell.tsx`), a dark near-black canvas with a
- * safe-area-aware, mobile-width centered column. A logged-out visitor answers
+ * `src/components/shell/app-shell.tsx`), the app's themed canvas
+ * (`bg-background`, white in the default light theme) with a safe-area-aware,
+ * mobile-width centered column. A logged-out visitor answers
  * the questionnaire and sees their plan inside it, never seeing the app's tab
  * bar (which requires a finished account anyway).
  */

@@ -14,8 +14,8 @@ import "./theme-choice-screen.css";
  * continuous breath: the user types their name, then picks how the app should
  * look, then their plan appears.
  *
- * DARK IS THE DEFAULT: we `applyTheme("dark")` on mount, so the stage itself
- * shows the default look and "Tamna" starts selected. Tapping either card
+ * LIGHT IS THE DEFAULT: we `applyTheme("light")` on mount, so the stage itself
+ * shows the default look and "Svetla" starts selected. Tapping either card
  * live-previews that theme across the whole screen (the `.ns` stage is
  * token-driven); the small preview windows inside the cards keep explicit
  * colors so each always shows its own theme. `applyTheme` persists the choice
@@ -26,7 +26,7 @@ import "./theme-choice-screen.css";
 
 const OUTRO_MS = 600; // keep in sync with `ns-out` in name-screen.css
 
-const TITLE_WORDS = ["Tamna", "ili", "svetla?"];
+const TITLE_WORDS = ["Svetla", "ili", "tamna?"];
 
 function CheckIcon() {
   return (
@@ -79,7 +79,7 @@ export function ThemeChoiceScreen({
 }: {
   onSubmit: (theme: Theme) => void;
 }) {
-  const [selected, setSelected] = useState<Theme>("dark");
+  const [selected, setSelected] = useState<Theme>("light");
   const [leaving, setLeaving] = useState(false);
   const submittedRef = useRef(false);
 
@@ -88,10 +88,10 @@ export function ThemeChoiceScreen({
     typeof window.matchMedia === "function" &&
     window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // Dark by default: apply on mount so the stage shows the default look and the
-  // "Tamna" card starts genuinely active (not just visually pre-selected).
+  // Light by default: apply on mount so the stage shows the default look and the
+  // "Svetla" card starts genuinely active (not just visually pre-selected).
   useEffect(() => {
-    applyTheme("dark");
+    applyTheme("light");
   }, []);
 
   function choose(next: Theme) {
@@ -118,16 +118,16 @@ export function ThemeChoiceScreen({
     previewClass: string;
   }[] = [
     {
-      value: "dark",
-      label: "Tamna",
-      icon: <MoonIcon />,
-      previewClass: "tc-preview-dark",
-    },
-    {
       value: "light",
       label: "Svetla",
       icon: <SunIcon />,
       previewClass: "tc-preview-light",
+    },
+    {
+      value: "dark",
+      label: "Tamna",
+      icon: <MoonIcon />,
+      previewClass: "tc-preview-dark",
     },
   ];
 

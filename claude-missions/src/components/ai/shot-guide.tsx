@@ -3,96 +3,112 @@ import "./shot-guide.css";
 /**
  * The two iPeach capture scenes, shown right before the shot they describe.
  *
- * `top` — the camera rises overhead and the plate opens from a side profile
- * into a full circle, with the fork sliding in beside it. Reads as: shoot
- * straight down, and put something next to the plate.
+ * Both scenes show the same thing from the same viewpoint -- a plate of food
+ * with a fork beside it, and the phone above -- so the ONLY difference the eye
+ * has to catch is the one that matters: how the phone is tilted. Scene `top`
+ * holds the phone flat and drops its cone straight down; scene `angle` swings
+ * it down a drawn 45° arc so the cone comes in from the side.
  *
- * `angle` — a 45° arc draws itself, the camera rides down it, and the food's
- * side wall lifts into view. Reads as: now from the side, so I can see how
- * tall it is.
+ * The phone is drawn centred on the origin and positioned entirely from CSS,
+ * which is what lets the whole camera -- body, lens and light cone together --
+ * travel and rotate as one rigid piece.
  *
  * Presentational and hook-free, so the flow owns all state. Motion lives in
- * `shot-guide.css`, which holds each scene on its final, still-legible frame
+ * `shot-guide.css`, which parks each scene on its final, still-legible frame
  * under `prefers-reduced-motion`.
  */
 export function ShotGuide({ variant }: { variant: "top" | "angle" }) {
+  const isTop = variant === "top";
+
   return (
-    <div className={`sg ${variant === "top" ? "sg-top" : "sg-angle"}`}>
+    <div className={`sg ${isTop ? "sg-top" : "sg-angle"}`}>
       <svg
         className="sg-svg"
-        viewBox="0 0 300 200"
+        viewBox="0 0 320 220"
         role="img"
         aria-label={
-          variant === "top"
-            ? "Animacija: telefon se podiže iznad tanjira i slika pravo odozgo, viljuška je pored tanjira"
-            : "Animacija: telefon se spušta po luku do ugla od 45 stepeni i slika tanjir sa strane"
+          isTop
+            ? "Animacija: telefon stoji ravno iznad tanjira i slika pravo odozgo, viljuška leži pored tanjira"
+            : "Animacija: telefon se spušta po luku i naginje na 45 stepeni da uslika tanjir sa strane"
         }
       >
-        {variant === "top" ? (
+        {/* The table line, so the plate and fork read as lying on something. */}
+        <line className="sg-table" x1="34" y1="196" x2="286" y2="196" />
+
+        {/* --- the plate ------------------------------------------------- */}
+        <g className="sg-plate">
+          <ellipse className="sg-plate-rim" cx="150" cy="168" rx="68" ry="26" />
+          <ellipse className="sg-plate-well" cx="150" cy="168" rx="52" ry="18" />
+
+          {/* On the angled scene the food grows a visible side wall — the
+              height is the entire reason for taking the second shot, so the
+              picture should show it rather than only the caption saying it. */}
+          {!isTop ? (
+            <g className="sg-height">
+              <path className="sg-wall-meat" d="M114 164a19 9 0 0 0 38 0v11a19 9 0 0 1-38 0z" />
+              <path className="sg-wall-side" d="M152 162a15 7 0 0 0 30 0v9a15 7 0 0 1-30 0z" />
+              <path className="sg-wall-greens" d="M141 176a13 6 0 0 0 26 0v7a13 6 0 0 1-26 0z" />
+            </g>
+          ) : null}
+
+          {/* Food, in the app's macro colours: meat, side, greens. Three
+              distinct shapes so it reads as "a meal" at a glance. */}
+          <ellipse className="sg-food-meat" cx="133" cy="164" rx="19" ry="9" />
+          <ellipse className="sg-food-side" cx="167" cy="162" rx="15" ry="7" />
+          <ellipse className="sg-food-greens" cx="154" cy="176" rx="13" ry="6" />
+        </g>
+
+        {/* --- the fork, lying beside the plate --------------------------- */}
+        <g className="sg-fork">
+          {/* tines */}
+          <path className="sg-fork-line" d="M240 141v13M246 141v13M252 141v13" />
+          {/* neck + handle */}
+          <path className="sg-fork-line" d="M246 154v34" />
+          <path className="sg-fork-head" d="M239 153h14" />
+        </g>
+
+        {/* --- the 45° arc (angle scene only) ----------------------------- */}
+        {!isTop ? (
           <>
-            {/* Camera's line of sight, drawn straight down onto the plate. */}
-            <line className="sg-beam" x1="150" y1="52" x2="150" y2="112" />
-
-            <g className="sg-plate-group">
-              <ellipse className="sg-plate-face" cx="150" cy="132" rx="66" ry="66" />
-              <ellipse className="sg-plate-rim" cx="150" cy="132" rx="66" ry="66" />
-              <circle className="sg-food" cx="150" cy="132" r="40" />
-              {/* Fork: handle plus three tines, laid beside the plate. */}
-              <g className="sg-fork-group">
-                <path className="sg-fork" d="M236 108v48" />
-                <path className="sg-fork" d="M230 108v14M236 108v14M242 108v14" />
-              </g>
-            </g>
-
-            <g className="sg-phone-group">
-              <rect
-                className="sg-phone"
-                x="136"
-                y="16"
-                width="28"
-                height="40"
-                rx="6"
-              />
-              <circle className="sg-phone-lens" cx="150" cy="36" r="6" />
-            </g>
-          </>
-        ) : (
-          <>
-            {/* The swing path, from overhead down to 45°. */}
-            <path className="sg-arc" d="M150 40 A 95 95 0 0 1 217 68" />
-
-            <g>
-              <ellipse className="sg-plate-face" cx="150" cy="140" rx="66" ry="20" />
-              <ellipse className="sg-plate-rim" cx="150" cy="140" rx="66" ry="20" />
-              {/* The height that only an angled shot reveals. */}
-              <path
-                className="sg-food-side"
-                d="M110 140a40 12 0 0 0 80 0v-22a40 12 0 0 1-80 0z"
-              />
-              <ellipse className="sg-food" cx="150" cy="118" rx="40" ry="12" />
-              <path className="sg-fork" d="M236 122v40" />
-              <path className="sg-fork" d="M230 122v12M236 122v12M242 122v12" />
-            </g>
-
-            <text className="sg-label" x="196" y="104">
+            {/* Straight-up reference, so 45° has something to be 45° FROM. */}
+            <line className="sg-ref" x1="150" y1="168" x2="150" y2="96" />
+            <path className="sg-arc" d="M150 108 A 60 60 0 0 1 192 126" />
+            <text className="sg-label" x="198" y="122">
               45°
             </text>
-
-            <g className="sg-phone-group">
-              <rect
-                className="sg-phone"
-                x="136"
-                y="22"
-                width="28"
-                height="40"
-                rx="6"
-              />
-              <circle className="sg-phone-lens" cx="150" cy="42" r="6" />
-            </g>
           </>
+        ) : (
+          <text className="sg-label" x="162" y="112">
+            90°
+          </text>
         )}
 
-        <rect className="sg-flash" x="0" y="0" width="300" height="200" />
+        {/* --- the camera: body, lens and light cone as one rigid piece --- */}
+        <g className="sg-cam">
+          {/* Light cone, pointing out of the lens. Reaches 120 units, which is
+              exactly the lens-to-plate distance in BOTH resting poses — so the
+              cone lands on the middle of the plate either way. */}
+          <path className="sg-cone" d="M0 26 L-34 120 L34 120 Z" />
+          <rect
+            className="sg-phone-body"
+            x="-22"
+            y="-31"
+            width="44"
+            height="62"
+            rx="9"
+          />
+          <rect
+            className="sg-phone-screen"
+            x="-16"
+            y="-25"
+            width="32"
+            height="42"
+            rx="5"
+          />
+          <circle className="sg-phone-lens" cx="0" cy="23" r="5" />
+        </g>
+
+        <rect className="sg-flash" x="0" y="0" width="320" height="220" />
       </svg>
     </div>
   );

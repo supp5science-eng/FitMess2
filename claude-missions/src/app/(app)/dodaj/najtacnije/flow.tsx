@@ -687,9 +687,9 @@ export function NajtacnijeFlow() {
           subtitle="Tako vidim koliko je hrane po širini tanjira."
           variant="top"
           tips={[
-            "Dobro svetlo — bez senke preko tanjira",
+            "Stavi viljušku ili kašiku PORED tanjira — po njoj merim veličinu",
             "Ceo tanjir u kadru",
-            "Stavi viljušku ili kašiku pored tanjira",
+            "Dobro svetlo — bez senke preko tanjira",
           ]}
           cta="Jasno — otvori kameru"
           onStart={() => openCamera("review1")}
@@ -775,9 +775,9 @@ export function NajtacnijeFlow() {
           subtitle="Odozgo se vidi širina, iz ugla visina. Zajedno mi daju količinu."
           variant="angle"
           tips={[
+            "Viljuška neka ostane PORED tanjira, kao na prvoj slici",
             "Spusti telefon na oko 45°",
-            "Isti tanjir, ne pomeraj hranu",
-            "Neka se vidi koliko je jelo visoko",
+            "Isti tanjir — ne pomeraj hranu",
           ]}
           cta="Otvori kameru"
           onStart={() => openCamera("review2")}

@@ -1,14 +1,18 @@
 /*
  * iPeach "kako da slikaš" — the two motion-graphics scenes that teach the two
- * required angles. Scene 1: the camera rises overhead and the plate opens from
- * a side profile into a full circle (width). Scene 2: the camera swings down a
- * drawn 45° arc and the food's thickness lifts into view (height).
+ * required angles.
  *
- * The whole point is that the user understands the WHY in about two seconds
- * without reading: two angles bound the volume, one does not. Pure
- * transform/opacity so it stays smooth on a phone, theme-aware via the app's
- * CSS vars, and it collapses to the informative end-state under reduced motion
- * rather than just freezing mid-move.
+ * Both scenes are the SAME picture (plate of food, fork beside it, phone
+ * above), so the only thing the eye has to catch is the difference that
+ * matters: the tilt of the phone and where its light cone lands. Scene 1 holds
+ * the phone flat overhead, cone straight down. Scene 2 swings it down a 45°
+ * arc, tilting as it goes, so the cone comes in from the side.
+ *
+ * The camera (body + lens + cone) is drawn centred on the origin and placed
+ * purely by CSS `transform`, which is what lets it travel and rotate as one
+ * rigid piece. Pure transform/opacity so it stays smooth on a phone,
+ * theme-aware via the app's CSS vars, and under `prefers-reduced-motion` every
+ * scene parks on its final frame rather than freezing halfway through a move.
  */
 
 .sg {
@@ -18,7 +22,7 @@
   overflow: hidden;
   background:
     radial-gradient(
-      120% 90% at 50% 8%,
+      120% 90% at 50% 6%,
       color-mix(in srgb, var(--brand, #17d1a8) 13%, transparent),
       transparent 62%
     ),
@@ -32,273 +36,293 @@
   height: auto;
 }
 
-/* --- shared scene pieces -------------------------------------------------- */
+/* --- the table, plate and food ------------------------------------------- */
 
-.sg-plate-rim {
-  fill: none;
-  stroke: color-mix(in srgb, var(--foreground, #fff) 26%, transparent);
-  stroke-width: 2.5;
-}
-.sg-plate-face {
-  fill: color-mix(in srgb, var(--foreground, #fff) 7%, transparent);
-}
-.sg-food {
-  fill: var(--brand, #17d1a8);
-  opacity: 0.9;
-}
-.sg-food-side {
-  fill: color-mix(in srgb, var(--brand, #17d1a8) 70%, #000);
-}
-.sg-fork {
-  stroke: color-mix(in srgb, var(--foreground, #fff) 55%, transparent);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  fill: none;
-}
-.sg-phone {
-  fill: var(--foreground, #fff);
-}
-.sg-phone-lens {
-  fill: var(--brand, #17d1a8);
-}
-.sg-beam {
-  stroke: var(--brand, #17d1a8);
+.sg-table {
+  stroke: color-mix(in srgb, var(--foreground, #fff) 14%, transparent);
   stroke-width: 2;
   stroke-linecap: round;
-  stroke-dasharray: 5 7;
-  opacity: 0.75;
-}
-.sg-label {
-  fill: var(--brand, #17d1a8);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
 }
 
-/* Shutter flash when the shot "lands". Brand teal rather than white: a white
-   flash is invisible on the light theme's white card. */
-.sg-flash {
-  fill: var(--brand, #17d1a8);
-  opacity: 0;
+/* Rim and well drawn separately so it reads as a real plate with a lip, not
+   a flat disc. */
+.sg-plate-rim {
+  fill: color-mix(in srgb, var(--foreground, #fff) 10%, transparent);
+  stroke: color-mix(in srgb, var(--foreground, #fff) 38%, transparent);
+  stroke-width: 2.5;
+}
+.sg-plate-well {
+  fill: color-mix(in srgb, var(--foreground, #fff) 6%, transparent);
+  stroke: color-mix(in srgb, var(--foreground, #fff) 20%, transparent);
+  stroke-width: 1.5;
 }
 
-/* --- scene 1: straight down ---------------------------------------------- */
-/* The plate group is squashed vertically to read as a side view, then opens to
-   a full circle as the camera arrives overhead. One transform tells the whole
-   story: this is what "odozgo" buys you. */
-
-.sg-top .sg-plate-group {
-  transform-origin: 150px 132px;
-  animation: sg-open 5s ease-in-out infinite;
+/* The app's macro colours, so the food reads as food and stays on-brand. */
+.sg-food-meat {
+  fill: #f9745f;
 }
-.sg-top .sg-phone-group {
-  animation: sg-descend 5s ease-in-out infinite;
+.sg-food-side {
+  fill: #f2c14e;
 }
-.sg-top .sg-beam {
-  animation: sg-beam-in 5s ease-in-out infinite;
-}
-.sg-top .sg-fork-group {
-  animation: sg-fork-in 5s ease-in-out infinite;
-}
-.sg-top .sg-flash {
-  animation: sg-flash 5s ease-in-out infinite;
+.sg-food-greens {
+  fill: #45c78d;
 }
 
-@keyframes sg-open {
+/* Shaded side walls that give the food thickness on the angled scene —
+   darkened versions of the same three colours. They rise as the camera swings
+   down, so the payoff of the second angle is literally visible. */
+.sg-wall-meat {
+  fill: color-mix(in srgb, #f9745f 62%, #000);
+}
+.sg-wall-side {
+  fill: color-mix(in srgb, #f2c14e 62%, #000);
+}
+.sg-wall-greens {
+  fill: color-mix(in srgb, #45c78d 62%, #000);
+}
+.sg-height {
+  transform-box: view-box;
+  transform-origin: 150px 168px;
+  animation: sg-rise 5s ease-in-out infinite;
+}
+
+@keyframes sg-rise {
   0%,
-  8% {
-    transform: scaleY(0.3);
+  26% {
+    transform: scaleY(0.05);
+    opacity: 0;
   }
-  46%,
-  88% {
+  50%,
+  90% {
     transform: scaleY(1);
-  }
-  100% {
-    transform: scaleY(0.3);
-  }
-}
-@keyframes sg-descend {
-  0%,
-  8% {
-    transform: translateY(-26px) scale(0.86);
-    opacity: 0.45;
-  }
-  46%,
-  88% {
-    transform: translateY(0) scale(1);
     opacity: 1;
   }
   100% {
-    transform: translateY(-26px) scale(0.86);
-    opacity: 0.45;
+    transform: scaleY(0.05);
+    opacity: 0;
   }
 }
-@keyframes sg-beam-in {
-  0%,
-  20% {
-    opacity: 0;
-    stroke-dashoffset: 40;
-  }
-  50%,
-  88% {
-    opacity: 0.75;
-    stroke-dashoffset: 0;
-  }
-  100% {
-    opacity: 0;
-    stroke-dashoffset: 40;
-  }
+
+/* --- the fork ------------------------------------------------------------ */
+
+.sg-fork-line {
+  stroke: color-mix(in srgb, var(--foreground, #fff) 62%, transparent);
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  fill: none;
 }
+.sg-fork-head {
+  stroke: color-mix(in srgb, var(--foreground, #fff) 62%, transparent);
+  stroke-width: 3.4;
+  stroke-linecap: round;
+  fill: none;
+}
+
+/* The fork slides in and stays — it is half the instruction. */
+.sg-fork {
+  animation: sg-fork-in 5s ease-in-out infinite;
+}
+
+/* Pin both animated groups to the SVG's own coordinate system, so a `px` in a
+   keyframe means a viewBox unit and rotation pivots on the origin the shapes
+   were drawn around. Without this, browsers that still default `transform-box`
+   to `border-box` would pivot the phone around its bounding box instead. */
+.sg-cam,
+.sg-fork {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+
 @keyframes sg-fork-in {
   0%,
-  40% {
-    transform: translateX(26px);
+  30% {
+    transform: translateX(30px);
     opacity: 0;
   }
-  62%,
-  88% {
+  52%,
+  90% {
     transform: translateX(0);
     opacity: 1;
   }
   100% {
-    transform: translateX(26px);
+    transform: translateX(30px);
+    opacity: 0;
+  }
+}
+
+/* --- the camera ---------------------------------------------------------- */
+
+.sg-phone-body {
+  fill: var(--foreground, #fff);
+}
+.sg-phone-screen {
+  fill: color-mix(in srgb, var(--card, #14181a) 88%, var(--foreground, #fff));
+}
+.sg-phone-lens {
+  fill: var(--brand, #17d1a8);
+  stroke: var(--card, #14181a);
+  stroke-width: 1.5;
+}
+/* The cone is what actually communicates "this is where it's looking". */
+.sg-cone {
+  fill: var(--brand, #17d1a8);
+  opacity: 0.16;
+}
+
+/* --- angle guides -------------------------------------------------------- */
+
+.sg-ref {
+  stroke: color-mix(in srgb, var(--foreground, #fff) 30%, transparent);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 6;
+}
+.sg-arc {
+  fill: none;
+  stroke: var(--brand, #17d1a8);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 90;
+  animation: sg-draw 5s ease-in-out infinite;
+}
+.sg-label {
+  fill: var(--brand, #17d1a8);
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+@keyframes sg-draw {
+  0%,
+  10% {
+    stroke-dashoffset: 90;
+  }
+  46%,
+  90% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: 90;
+  }
+}
+
+/* --- scene 1: flat, straight down --------------------------------------- */
+/* The phone drops in from above and holds level: cone lands square on the
+   plate. Nothing rotates, which is the point — this is the "0° tilt" shot. */
+
+.sg-top .sg-cam {
+  animation: sg-drop 5s ease-in-out infinite;
+}
+.sg-top .sg-label {
+  animation: sg-label-in 5s ease-in-out infinite;
+}
+
+@keyframes sg-drop {
+  0%,
+  8% {
+    transform: translate(150px, 14px) rotate(0deg);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  44%,
+  90% {
+    transform: translate(150px, 48px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(150px, 14px) rotate(0deg);
     opacity: 0;
   }
 }
 
 /* --- scene 2: the 45° swing ---------------------------------------------- */
-/* The arc draws itself, the phone rides down it, and the food's side wall
-   rises — "iz ugla se vidi visina", shown rather than stated. */
+/* Starts exactly where scene 1 ended — flat overhead — then rides the arc
+   down to the right, tilting as it goes, until the phone sits at a true 45°
+   and its cone strikes the plate from the side. */
 
-.sg-angle .sg-arc {
-  fill: none;
-  stroke: color-mix(in srgb, var(--brand, #17d1a8) 55%, transparent);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dasharray: 120;
-  animation: sg-draw 5s ease-in-out infinite;
-}
-.sg-angle .sg-phone-group {
+.sg-angle .sg-cam {
   animation: sg-swing 5s ease-in-out infinite;
 }
-.sg-angle .sg-food-side {
-  transform-origin: 150px 140px;
-  animation: sg-rise 5s ease-in-out infinite;
+
+@keyframes sg-swing {
+  0%,
+  10% {
+    transform: translate(150px, 48px) rotate(0deg);
+  }
+  28% {
+    transform: translate(196px, 58px) rotate(22deg);
+  }
+  46%,
+  90% {
+    transform: translate(236px, 82px) rotate(45deg);
+  }
+  100% {
+    transform: translate(150px, 48px) rotate(0deg);
+  }
 }
-.sg-angle .sg-label {
-  animation: sg-label-in 5s ease-in-out infinite;
+
+@keyframes sg-label-in {
+  0%,
+  30% {
+    opacity: 0;
+  }
+  50%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
-.sg-angle .sg-flash {
+
+/* Shutter flash when the shot lands. Brand teal rather than white: a white
+   flash is invisible on the light theme's white card. */
+.sg-flash {
+  fill: var(--brand, #17d1a8);
+  opacity: 0;
   animation: sg-flash 5s ease-in-out infinite;
 }
 
-@keyframes sg-draw {
-  0%,
-  6% {
-    stroke-dashoffset: 120;
-  }
-  42%,
-  88% {
-    stroke-dashoffset: 0;
-  }
-  100% {
-    stroke-dashoffset: 120;
-  }
-}
-/* Rides the arc from directly overhead down to 45°. The rotation keeps the
-   lens pointed at the plate the whole way. */
-@keyframes sg-swing {
-  0%,
-  6% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-  24% {
-    transform: translate(36px, 7px) rotate(-22deg);
-  }
-  42%,
-  88% {
-    transform: translate(67px, 28px) rotate(-45deg);
-  }
-  100% {
-    transform: translate(0, 0) rotate(0deg);
-  }
-}
-@keyframes sg-rise {
-  0%,
-  30% {
-    transform: scaleY(0.1);
-    opacity: 0;
-  }
-  58%,
-  88% {
-    transform: scaleY(1);
-    opacity: 1;
-  }
-  100% {
-    transform: scaleY(0.1);
-    opacity: 0;
-  }
-}
-@keyframes sg-label-in {
-  0%,
-  34% {
-    opacity: 0;
-  }
-  54%,
-  88% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Shared shutter blink, timed to when the camera settles. */
 @keyframes sg-flash {
   0%,
   62% {
     opacity: 0;
   }
   66% {
-    opacity: 0.26;
+    opacity: 0.24;
   }
-  74%,
+  76%,
   100% {
     opacity: 0;
   }
 }
 
 /*
- * Reduced motion: hold every scene at its FINAL frame — plate open, arc drawn,
- * fork placed, height risen. The instruction survives intact; only the movement
- * goes away.
+ * Reduced motion: hold every scene on its FINAL frame — phone in position at
+ * the correct tilt, cone on the plate, arc drawn, fork placed. The instruction
+ * survives intact; only the movement goes away.
  */
 @media (prefers-reduced-motion: reduce) {
-  .sg-plate-group,
-  .sg-phone-group,
-  .sg-beam,
-  .sg-fork-group,
+  .sg-cam,
+  .sg-fork,
   .sg-arc,
-  .sg-food-side,
   .sg-label,
+  .sg-height,
   .sg-flash {
     animation: none !important;
   }
-  .sg-top .sg-plate-group {
+  .sg-height {
     transform: scaleY(1);
   }
-  .sg-top .sg-beam {
-    opacity: 0.75;
+  .sg-top .sg-cam {
+    transform: translate(150px, 48px) rotate(0deg);
+  }
+  .sg-angle .sg-cam {
+    transform: translate(236px, 82px) rotate(45deg);
+  }
+  .sg-arc {
     stroke-dashoffset: 0;
-  }
-  .sg-angle .sg-arc {
-    stroke-dashoffset: 0;
-  }
-  .sg-angle .sg-phone-group {
-    transform: translate(67px, 28px) rotate(-45deg);
-  }
-  .sg-angle .sg-food-side {
-    transform: scaleY(1);
   }
   .sg-flash {
     opacity: 0;

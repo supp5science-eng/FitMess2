@@ -58,15 +58,15 @@ interface AddSheetOption {
 // hidden fallbacks (the barcode scanner's "manual search" escape hatch, the
 // portion flow, etc.), so nothing breaks; they're just no longer advertised.
 const OPTIONS: AddSheetOption[] = [
-  // The highest-accuracy path (photo + spoken/typed portion) leads the menu and
-  // carries a teal "NAJTAČNIJE" badge to draw people to try it.
+  // The highest-accuracy path (guided two angles + the AI's own questions)
+  // leads the menu and carries a teal "NAJTAČNIJE" badge to draw people to it.
   {
     key: "najtacnije",
     label: "iPeach mtd",
     icon: Target,
     href: "/dodaj/najtacnije",
     available: true,
-    description: "Najtačnije: slikaj + reci",
+    description: "Najtačnije: dva ugla + pitanja",
     badge: "NAJTAČNIJE",
   },
   {

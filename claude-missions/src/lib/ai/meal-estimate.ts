@@ -18,9 +18,38 @@ const bounded = (max: number) =>
 export const CONFIDENCE_VALUES = ["niska", "srednja", "visoka"] as const;
 export type Confidence = (typeof CONFIDENCE_VALUES)[number];
 
+/**
+ * One line of the meal's breakdown ("piletina — 140 g, 230 kcal"). Asking the
+ * model to itemise BEFORE it states a total is the single biggest accuracy win
+ * in this file: estimating a whole plate in one leap invites a round number,
+ * while "chicken + rice + a spoon of oil" forces it to actually add up. The
+ * `propertyOrdering` in the response schema keeps components generated first,
+ * so the totals are written with the itemisation already in the context.
+ *
+ * It is also what the user sees on the result screen -- the breakdown is the
+ * difference between "the AI said 720" and "here is where 720 comes from",
+ * and it is what lets them strike a line they did not actually eat.
+ */
+export const mealComponentSchema = z.object({
+  naziv: z.string().trim().min(1).max(60).catch("Sastojak"),
+  grami: z.coerce
+    .number()
+    .catch(0)
+    .transform((n) => (Number.isFinite(n) ? Math.min(Math.max(n, 0), 3000) : 0)),
+  kcal: bounded(4000),
+  protein_g: bounded(400),
+  uh_g: bounded(700),
+  mast_g: bounded(400),
+});
+
+export type MealComponent = z.infer<typeof mealComponentSchema>;
+
 export const mealEstimateSchema = z.object({
   naziv: z.string().trim().min(1).max(120).catch("Obrok sa slike"),
   sastojci: z.array(z.string().trim().min(1).max(60)).catch([]).default([]),
+  // Itemised breakdown. Optional so the older flows (label scan, voice) that
+  // never ask for it keep parsing unchanged.
+  komponente: z.array(mealComponentSchema).max(12).catch([]).default([]),
   // Estimated total edible weight of the depicted portion, grams.
   procenjeni_grami: z.coerce
     .number()

@@ -24,15 +24,19 @@ import {
   type VoiceMealEstimate,
 } from "@/lib/ai/voice-estimate";
 import {
+  describeShots,
   IPEACH_ANALYZE_LABEL_PROMPT,
   IPEACH_ANALYZE_PROMPT,
   IPEACH_ANALYZE_RESPONSE_SCHEMA,
   IPEACH_FINALIZE_LABEL_PROMPT,
   IPEACH_FINALIZE_PROMPT,
+  IPEACH_FINALIZE_RESPONSE_SCHEMA,
   parseIPeachAnalysis,
   type IPeachAnalysis,
   type IPeachVariant,
+  type ReferenceObject,
 } from "@/lib/ai/ipeach";
+import { reconcileEstimate } from "@/lib/ai/reconcile";
 
 // Server-only Gemini client. We call the REST `generateContent` endpoint
 // directly (no SDK dependency -> no version churn, predictable on first
@@ -311,20 +315,28 @@ function imageInlineParts(images: ImagePart[]): Array<Record<string, unknown>> {
  */
 export async function analyzeIPeachMeal(
   images: ImagePart[],
-  variant: IPeachVariant = "obrok"
+  variant: IPeachVariant = "obrok",
+  reference: ReferenceObject = "nista"
 ): Promise<IPeachAnalysis> {
-  const prompt =
-    variant === "deklaracija"
-      ? IPEACH_ANALYZE_LABEL_PROMPT
-      : IPEACH_ANALYZE_PROMPT;
+  const isLabel = variant === "deklaracija";
+  const parts: Array<Record<string, unknown>> = [
+    { text: isLabel ? IPEACH_ANALYZE_LABEL_PROMPT : IPEACH_ANALYZE_PROMPT },
+  ];
+  // Angles and a scale anchor only mean something for a plate of food; the
+  // label flow is just reading a table, so it gets neither.
+  if (!isLabel) {
+    parts.push({ text: describeShots(images.length, reference) });
+  }
+  parts.push(...imageInlineParts(images));
 
   const text = await postGenerateContent(
     {
-      contents: [{ role: "user", parts: [{ text: prompt }, ...imageInlineParts(images)] }],
+      contents: [{ role: "user", parts }],
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: IPEACH_ANALYZE_RESPONSE_SCHEMA,
-        temperature: 0.2,
+        // Measurement, not writing -- no reason to sample.
+        temperature: 0,
       },
     },
     process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
@@ -343,17 +355,18 @@ export async function finalizeIPeachMeal(
   images: ImagePart[],
   answersText: string | null,
   audio: { base64: string; mimeType: string } | null,
-  variant: IPeachVariant = "obrok"
+  variant: IPeachVariant = "obrok",
+  reference: ReferenceObject = "nista"
 ): Promise<CombinedMealEstimate> {
-  const prompt =
-    variant === "deklaracija"
-      ? IPEACH_FINALIZE_LABEL_PROMPT
-      : IPEACH_FINALIZE_PROMPT;
-
+  const isLabel = variant === "deklaracija";
   const parts: Array<Record<string, unknown>> = [
-    { text: prompt },
-    ...imageInlineParts(images),
+    { text: isLabel ? IPEACH_FINALIZE_LABEL_PROMPT : IPEACH_FINALIZE_PROMPT },
   ];
+  if (!isLabel) {
+    parts.push({ text: describeShots(images.length, reference) });
+  }
+  parts.push(...imageInlineParts(images));
+
   if (answersText && answersText.trim()) {
     parts.push({ text: `Korisnikovi odgovori:\n${answersText.trim()}` });
   }
@@ -366,8 +379,10 @@ export async function finalizeIPeachMeal(
       contents: [{ role: "user", parts }],
       generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: COMBINED_RESPONSE_SCHEMA,
-        temperature: 0.2,
+        // iPeach-only schema: forces `komponente` BEFORE the totals, so the
+        // model itemises and sums instead of leaping to a round number.
+        responseSchema: IPEACH_FINALIZE_RESPONSE_SCHEMA,
+        temperature: 0,
       },
     },
     process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
@@ -376,7 +391,14 @@ export async function finalizeIPeachMeal(
   if (!parsed.success) {
     throw new GeminiError("Gemini output did not match the expected shape");
   }
-  return parsed.data;
+
+  // Verify the model's arithmetic rather than trusting it: the breakdown must
+  // add up to the total, and the macros must add up to the calories.
+  const { estimate, corrections } = reconcileEstimate(parsed.data);
+  if (corrections.length > 0) {
+    console.warn("[ipeach] reconciled estimate:", corrections.join("; "));
+  }
+  return estimate;
 }
 
 /** Spoken meal description/dictation -> validated meal estimate. */

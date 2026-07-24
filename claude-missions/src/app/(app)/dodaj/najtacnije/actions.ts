@@ -8,7 +8,12 @@ import {
   type CombinedVariant,
   type ImagePart,
 } from "@/lib/ai/gemini";
-import type { IPeachAnalysis, IPeachVariant } from "@/lib/ai/ipeach";
+import {
+  REFERENCE_OBJECTS,
+  type IPeachAnalysis,
+  type IPeachVariant,
+  type ReferenceObject,
+} from "@/lib/ai/ipeach";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -110,7 +115,12 @@ export type IPeachAnalyzeResult =
 async function readImages(
   formData: FormData
 ): Promise<
-  | { ok: true; images: ImagePart[]; variant: IPeachVariant }
+  | {
+      ok: true;
+      images: ImagePart[];
+      variant: IPeachVariant;
+      reference: ReferenceObject;
+    }
   | { ok: false; error_sr: string }
 > {
   const supabase = await createClient();
@@ -153,7 +163,15 @@ async function readImages(
   const variant: IPeachVariant =
     tipRaw === "deklaracija" ? "deklaracija" : "obrok";
 
-  return { ok: true, images, variant };
+  // Which object the user laid beside the plate -- the model's metric anchor.
+  const refRaw = formData.get("referenca");
+  const reference: ReferenceObject = REFERENCE_OBJECTS.includes(
+    refRaw as ReferenceObject
+  )
+    ? (refRaw as ReferenceObject)
+    : "nista";
+
+  return { ok: true, images, variant, reference };
 }
 
 /**
@@ -167,7 +185,11 @@ export async function analyzeMealAction(
   if (!read.ok) return read;
 
   try {
-    const data = await analyzeIPeachMeal(read.images, read.variant);
+    const data = await analyzeIPeachMeal(
+      read.images,
+      read.variant,
+      read.reference
+    );
     return { ok: true, data };
   } catch (err) {
     console.error("[najtacnije] analyze failed:", err);
@@ -216,7 +238,8 @@ export async function finalizeMealAction(
       read.images,
       answers || null,
       audioPart,
-      read.variant
+      read.variant,
+      read.reference
     );
     return { ok: true, data };
   } catch (err) {

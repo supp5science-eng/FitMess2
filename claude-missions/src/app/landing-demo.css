@@ -147,21 +147,10 @@
   font-size: 20px;
   letter-spacing: -0.01em;
 }
-/* sedef gradient for "Mess" — dark-theme --wordmark-grad from globals.css */
-.lpd-wordmark-mess {
-  background: linear-gradient(
-    112deg,
-    #26ddb6 0%,
-    #35d3cc 22%,
-    #ecc766 40%,
-    #57a8ee 62%,
-    #40d98c 83%,
-    #63dd76 100%
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+/* "Mess" uses the shared `.fm-wordmark-accent` (globals.css) — this file used
+   to carry its own copy of the dark gradient, which is exactly how the mark
+   drifts between screens. The landing root is `.lp.dark`, so the shared class
+   picks up the dark stops here, same as in the app. */
 
 /* date strip */
 .lpd-strip {

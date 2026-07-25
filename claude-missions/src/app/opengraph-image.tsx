@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 
+import { wordmarkLetterColors } from "@/lib/brand/wordmark";
+
 /**
  * The social-share card (`og:image` / `twitter:image`) for the site root,
  * generated at the standard 1200×630 ratio via Next's file-based metadata
@@ -18,6 +20,9 @@ export const alt =
   "FitMess — praćenje kalorija bez griže savesti. Nedelja je jedinica uspeha.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+const MESS_LETTERS = ["M", "e", "s", "s"];
+const MESS_COLORS = wordmarkLetterColors(MESS_LETTERS.length, "dark");
 
 export default function OpengraphImage() {
   return new ImageResponse(
@@ -54,8 +59,24 @@ export default function OpengraphImage() {
           >
             F
           </div>
-          <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: -1 }}>
-            FitMess
+          {/* "Mess" in the pear's shell gradient, one letter at a time --
+              `next/og` renders flat fills, so the shimmer is sampled per
+              letter (same trick as the PDF report). Dark stops: this card
+              sits on the app's dark surface. */}
+          <div
+            style={{
+              display: "flex",
+              fontSize: 40,
+              fontWeight: 800,
+              letterSpacing: -1,
+            }}
+          >
+            <span>Fit</span>
+            {MESS_LETTERS.map((letter, index) => (
+              <span key={`${letter}-${index}`} style={{ color: MESS_COLORS[index] }}>
+                {letter}
+              </span>
+            ))}
           </div>
         </div>
 

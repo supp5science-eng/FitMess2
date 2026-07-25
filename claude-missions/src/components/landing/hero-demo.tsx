@@ -209,7 +209,7 @@ function HomeScene({ end }: { end: boolean }) {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/brand/fitmess-icon.png" alt="" className="lpd-pear" />
         <span className="lpd-wordmark">
-          Fit<span className="lpd-wordmark-mess">Mess</span>
+          Fit<span className="fm-wordmark-accent">Mess</span>
         </span>
       </div>
 

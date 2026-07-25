@@ -7,6 +7,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 
+import { wordmarkLetterColors } from "@/lib/brand/wordmark";
 import { PDF_FONT_FAMILY, PDF_FONT_SOURCES } from "@/lib/export/pdf-font";
 import type { ReportField, ReportModel, ReportTable } from "@/lib/export/report-model";
 
@@ -53,7 +54,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   wordmark: { fontSize: 20, fontWeight: 700 },
-  wordmarkAccent: { color: BRAND },
   headerRight: { fontSize: 8, color: MUTED, textAlign: "right" },
   title: { fontSize: 13, fontWeight: 700, marginBottom: 2 },
   intro: { fontSize: 8.5, color: MUTED, marginBottom: 14, lineHeight: 1.4 },
@@ -206,6 +206,30 @@ function Table({ table }: { table: ReportTable }) {
  * wrapper -- even one that returns exactly that -- widens the type into a
  * generic element the renderer's signature rejects.
  */
+/**
+ * "Mess" in the pear's iridescent shell, letter by letter.
+ *
+ * The report used to print it in flat teal while every screen in the app
+ * shimmered -- the one place the brand mark didn't match itself.
+ * `@react-pdf/renderer` has no gradient text (only a solid `color` per
+ * `<Text>`), so the gradient is sampled once per letter; the light stops are
+ * used because this lands on white paper.
+ */
+const MESS_LETTERS = ["M", "e", "s", "s"];
+const MESS_COLORS = wordmarkLetterColors(MESS_LETTERS.length, "light");
+
+function WordmarkAccent() {
+  return (
+    <>
+      {MESS_LETTERS.map((letter, index) => (
+        <Text key={`${letter}-${index}`} style={{ color: MESS_COLORS[index] }}>
+          {letter}
+        </Text>
+      ))}
+    </>
+  );
+}
+
 export function buildReportDocument(model: ReportModel) {
   return (
     <Document
@@ -216,7 +240,8 @@ export function buildReportDocument(model: ReportModel) {
       <Page size="A4" style={styles.page}>
         <View style={styles.header} fixed>
           <Text style={styles.wordmark}>
-            Fit<Text style={styles.wordmarkAccent}>Mess</Text>
+            Fit
+            <WordmarkAccent />
           </Text>
           <Text style={styles.headerRight}>
             Izveštaj napravljen{"\n"}

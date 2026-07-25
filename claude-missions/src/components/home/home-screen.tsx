@@ -267,10 +267,17 @@ export function HomeScreen({
           <h2 className="home-body text-xl font-semibold tracking-tight text-foreground">
             Dnevni unos
           </h2>
-          {/* Two swipeable pages (2026-07-25): the calorie ring + macros, and --
-              one swipe right -- the four micronutrients + the health score. The
-              heading above and the recommended-goals row below stay put, so only
-              the intake block itself moves. */}
+          {/* Three swipeable pages (2026-07-25), in the order the day is
+              usually read: calories -> movement/hydration -> nutrient quality.
+              Only this block moves; the heading above and the recommended-goals
+              row below stay put. The pager's height follows the swipe, so a
+              short page never leaves a gap above the dots.
+
+              "Gric" deliberately stays on page ONE (the product owner's call):
+              it is the fastest "I just ate something small" path on the screen,
+              and it belongs next to the calorie ring it affects -- not behind a
+              swipe. Koraci + Voda move to page two, where each card shows its
+              goal and opens its own entry sheet. */}
           <IntakePager
             pages={[
               {
@@ -307,9 +314,39 @@ export function HomeScreen({
                       />
                     </div>
                     <ViewToggle view={view} onChange={setView} />
+                    {/* Gric logs at `now()`, so it only makes sense on today. */}
+                    {isToday ? (
+                      <div className="home-body">
+                        <GricButton />
+                      </div>
+                    ) : null}
                   </div>
                 ),
               },
+              // Koraci + Voda. Only when we know which day we're on -- both
+              // write to that day's row, same guard as before the move.
+              ...(dayKey
+                ? [
+                    {
+                      id: "aktivnost",
+                      labelSr: "Koraci i voda",
+                      content: (
+                        <div className="home-body flex flex-col gap-2.5">
+                          <StepsCard
+                            dayKey={dayKey}
+                            initialSteps={initialSteps}
+                            goal={stepsGoal}
+                          />
+                          <WaterButton
+                            dayKey={dayKey}
+                            initialMl={initialWaterMl}
+                            goalMl={waterGoal}
+                          />
+                        </div>
+                      ),
+                    },
+                  ]
+                : []),
               {
                 id: "nutrijenti",
                 labelSr: "Vlakna, šećer, so i zasićene masti",
@@ -337,7 +374,11 @@ export function HomeScreen({
         </div>
       )}
 
-      {dayKey ? (
+      {/* Koraci, Voda and Gric used to sit here as a fixed row; they now live
+          inside the pager (Koraci/Voda on page two, Gric on page one). Kept out
+          of the "no target set" branch above on purpose -- a user without a plan
+          still sees the meal list below. */}
+      {!target && dayKey ? (
         <div className="home-body flex flex-col gap-3">
           <StepsCard
             dayKey={dayKey}
@@ -349,9 +390,6 @@ export function HomeScreen({
             initialMl={initialWaterMl}
             goalMl={waterGoal}
           />
-          {/* Gric sits directly under Voda: both are the "one tap, no
-              ceremony" row of the screen. It logs at `now()`, so it only
-              appears on today. */}
           {isToday ? <GricButton /> : null}
         </div>
       ) : null}

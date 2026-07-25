@@ -288,7 +288,7 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
 });
 
 describe("Gric: the quick-log button on the home screen", () => {
-  it("test_gric_sits_directly_below_voda", () => {
+  it("test_gric_stays_on_the_first_pager_page_with_the_calorie_ring", () => {
     render(
       <HomeScreen
         initialLogs={[]}
@@ -298,19 +298,42 @@ describe("Gric: the quick-log button on the home screen", () => {
       />
     );
 
-    const voda = screen.getByTestId("water-open-button");
     const gric = screen.getByTestId("gric-open-button");
-
     expect(gric).toHaveAttribute("href", "/dodaj/gric");
-    // Gric belongs to the same "one tap, no ceremony" row as Koraci/Voda
-    // (WaterButton wraps its own trigger, so compare the row, not the parent),
-    // and must FOLLOW Voda rather than sit above it or drift elsewhere.
-    const row = gric.parentElement;
-    expect(row).not.toBeNull();
-    expect(row).toContainElement(voda);
+
+    // 2026-07-25 product decision: Koraci/Voda moved to the pager's SECOND page,
+    // but Gric stays on the FIRST -- it is the fastest "I ate something small"
+    // path and belongs beside the calorie ring it affects, not behind a swipe.
+    expect(screen.getByTestId("intake-page-kalorije")).toContainElement(gric);
+    expect(screen.getByTestId("intake-page-aktivnost")).toContainElement(
+      screen.getByTestId("water-open-button")
+    );
+    expect(screen.getByTestId("intake-page-aktivnost")).toContainElement(
+      screen.getByTestId("steps-open-button")
+    );
+  });
+
+  it("test_the_pager_has_three_pages_with_koraci_i_voda_in_the_middle", () => {
+    render(
+      <HomeScreen
+        initialLogs={[]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+
+    const pages = screen
+      .getAllByRole("region")
+      .filter((region) => region.dataset.testid?.startsWith("intake-page-"));
+    expect(pages.map((page) => page.dataset.testid)).toEqual([
+      "intake-page-kalorije",
+      "intake-page-aktivnost",
+      "intake-page-nutrijenti",
+    ]);
     expect(
-      voda.compareDocumentPosition(gric) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
+      screen.getAllByRole("button", { name: /^Prikaži:/ })
+    ).toHaveLength(3);
   });
 
   it("test_gric_is_hidden_on_a_past_day", () => {

@@ -4,9 +4,12 @@ import { Droplet, Flame, Footprints } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { DateStrip } from "@/components/home/date-strip";
+import { HealthScoreCard } from "@/components/home/health-score-card";
+import { IntakePager } from "@/components/home/intake-pager";
 import { IntroCover } from "@/components/home/intro-cover";
 import { InstallOverlay } from "@/components/pwa/install-overlay";
 import { MacroBars } from "@/components/home/macro-bars";
+import { MicroCards } from "@/components/home/micro-cards";
 import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
 import { StepsCard } from "@/components/home/steps-card";
@@ -16,6 +19,8 @@ import type { AdaptivePlan } from "@/lib/home/adaptive";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import type { DayCell } from "@/lib/home/date-strip";
 import { computeDayTotals } from "@/lib/home/totals";
+import { computeHealthScore } from "@/lib/nutrition/health-score";
+import { computeMicroTotals, microTargetsForKcal } from "@/lib/nutrition/micro";
 import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
 import { formatWaterSr, waterGoalMl } from "@/lib/water/water-week";
 import type { Log, Target } from "@/lib/types/db";
@@ -191,6 +196,37 @@ export function HomeScreen({
 
   const totals = useMemo(() => computeDayTotals(logs), [logs]);
 
+  // The kcal number the whole block is measured against: the adapted target when
+  // this week's overshoot has trimmed today, otherwise the plain daily one.
+  const targetKcal =
+    adaptivePlan?.isAdjusted
+      ? adaptivePlan.adaptiveDailyTarget
+      : (target?.daily_kcal ?? 0);
+
+  // Second page (2026-07-25): fiber / sugar / sodium / saturated fat and the
+  // health score. Both are pure functions of the SAME `logs` state the ring uses,
+  // so an edit or delete updates all of it in one re-render, with no extra fetch
+  // (the AS-043 "no full page reload" rule). Micros fall back to the referenced
+  // food's per-100g values when a log's own snapshot is unknown -- see
+  // `resolveLogMicros`.
+  const micros = useMemo(() => computeMicroTotals(logs), [logs]);
+  const microTargets = useMemo(
+    () => microTargetsForKcal(targetKcal),
+    [targetKcal]
+  );
+  const healthScore = useMemo(
+    () =>
+      computeHealthScore({
+        consumedKcal: totals.kcal,
+        consumedProteinG: totals.protein,
+        micros,
+        targetKcal,
+        targetProteinG: target?.protein_g ?? 0,
+        microTargets,
+      }),
+    [totals.kcal, totals.protein, micros, targetKcal, target?.protein_g, microTargets]
+  );
+
   return (
     <main
       data-testid="home-screen"
@@ -231,44 +267,63 @@ export function HomeScreen({
           <h2 className="home-body text-xl font-semibold tracking-tight text-foreground">
             Dnevni unos
           </h2>
-          {/* The ring lives in its own slot so the intro can fade just the
-              ring in (where the ghost lands) after the body has risen in. */}
-          <div ref={ringRef} className="home-ring-slot">
-            <Ring
-              consumedKcal={totals.kcal}
-              targetKcal={
-                adaptivePlan?.isAdjusted
-                  ? adaptivePlan.adaptiveDailyTarget
-                  : target.daily_kcal
-              }
-              view={view}
-            />
-          </div>
-          {adaptivePlan?.isAdjusted ? (
-            <AdaptiveNote plan={adaptivePlan} />
-          ) : null}
-          <div className="home-body">
-            <MacroBars
-              consumed={{
-                protein: totals.protein,
-                carbs: totals.carbs,
-                fat: totals.fat,
-              }}
-              target={{
-                proteinG: target.protein_g,
-                carbsG: target.carbs_g,
-                fatG: target.fat_g,
-              }}
-              view={view}
-            />
-          </div>
-          <ViewToggle view={view} onChange={setView} />
+          {/* Two swipeable pages (2026-07-25): the calorie ring + macros, and --
+              one swipe right -- the four micronutrients + the health score. The
+              heading above and the recommended-goals row below stay put, so only
+              the intake block itself moves. */}
+          <IntakePager
+            pages={[
+              {
+                id: "kalorije",
+                labelSr: "Kalorije i makroi",
+                content: (
+                  <div className="flex flex-col gap-7">
+                    {/* The ring lives in its own slot so the intro can fade
+                        just the ring in (where the ghost lands) after the body
+                        has risen in. */}
+                    <div ref={ringRef} className="home-ring-slot">
+                      <Ring
+                        consumedKcal={totals.kcal}
+                        targetKcal={targetKcal}
+                        view={view}
+                      />
+                    </div>
+                    {adaptivePlan?.isAdjusted ? (
+                      <AdaptiveNote plan={adaptivePlan} />
+                    ) : null}
+                    <div className="home-body">
+                      <MacroBars
+                        consumed={{
+                          protein: totals.protein,
+                          carbs: totals.carbs,
+                          fat: totals.fat,
+                        }}
+                        target={{
+                          proteinG: target.protein_g,
+                          carbsG: target.carbs_g,
+                          fatG: target.fat_g,
+                        }}
+                        view={view}
+                      />
+                    </div>
+                    <ViewToggle view={view} onChange={setView} />
+                  </div>
+                ),
+              },
+              {
+                id: "nutrijenti",
+                labelSr: "Vlakna, šećer, so i zasićene masti",
+                content: (
+                  <div className="home-body flex flex-col gap-2.5">
+                    <MicroCards micros={micros} targets={microTargets} />
+                    <HealthScoreCard score={healthScore} />
+                  </div>
+                ),
+              },
+            ]}
+          />
           <DailyTargets
-            kcal={
-              adaptivePlan?.isAdjusted
-                ? adaptivePlan.adaptiveDailyTarget
-                : target.daily_kcal
-            }
+            kcal={targetKcal}
             stepsGoal={stepsGoal}
             waterGoalMl={waterGoal}
           />

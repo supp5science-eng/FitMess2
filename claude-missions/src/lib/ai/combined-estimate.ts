@@ -8,6 +8,8 @@
 // Zod parse are the same ones the meal-photo flow already uses, so the
 // confirm/edit screen and the `logs` write stay shared, not duplicated.
 
+import { MICRO_PROMPT_RULES } from "@/lib/ai/meal-estimate";
+
 export {
   mealEstimateSchema as combinedMealSchema,
   MEAL_RESPONSE_SCHEMA as COMBINED_RESPONSE_SCHEMA,
@@ -29,6 +31,7 @@ Pravila:
 - "sastojci": glavne komponente koje prepoznaješ sa slike ili iz opisa.
 - "procenjeni_grami": ukupna POJEDENA masa u gramima.
 - "kcal", "protein_g", "uh_g", "mast_g": UKUPNO za pojedenu porciju (ne na 100 g).
+${MICRO_PROMPT_RULES}
 - "sigurnost": "visoka" kad se slika i jasan opis slažu; "srednja"/"niska" kad je nešto nejasno ili se izvori kose.
 - "napomena": kratko objasni ključne pretpostavke ili neslaganje slike i opisa.
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;
@@ -54,6 +57,8 @@ Pravila:
 - "sastojci": prazan niz [] osim ako se jasno vide.
 - "procenjeni_grami": POJEDENA masa u gramima.
 - "kcal", "protein_g", "uh_g", "mast_g": UKUPNO za pojedenu porciju (skalirano sa 100 g).
+${MICRO_PROMPT_RULES}
+- Ako deklaracija navodi vlakna, šećere, so/natrijum ili zasićene masti, pročitaj ih sa tabele i skaliraj isto kao makroe; ako ih nema na tabeli, proceni po vrsti proizvoda. Za so na deklaraciji ("so 1,2 g"): natrijum_mg = 1,2 × 400 = 480.
 - "sigurnost": "visoka" kad su i deklaracija i količina jasni; "srednja"/"niska" kad procenjuješ.
 - "napomena": kratko (npr. "125 g od 250 g paketa").
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;

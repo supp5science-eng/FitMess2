@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "seed:foods": "tsx scripts/seed-foods.ts",
-    "import:off": "tsx scripts/import-off.ts"
+    "import:off": "tsx scripts/import-off.ts",
+    "backfill:micro": "tsx scripts/backfill-food-micro.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",

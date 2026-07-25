@@ -15,6 +15,25 @@ const bounded = (max: number) =>
     .catch(0)
     .transform((n) => (Number.isFinite(n) ? Math.min(Math.max(n, 0), max) : 0));
 
+/**
+ * Same clamp, but "the model didn't say" stays `null` instead of collapsing to
+ * `0` -- used for the micronutrients (2026-07-25). For kcal/macros a missing
+ * value is a broken response, so `0` is a fine fallback; for fiber/sugar/sodium
+ * "unknown" and "none" are genuinely different claims, and writing a confident
+ * `0 g` into `logs` would make the home screen's "preostalo" cards wrong (see
+ * `supabase/migrations/0017_micronutrients.sql` and `src/lib/nutrition/micro.ts`).
+ */
+const boundedNullable = (max: number) =>
+  z
+    .union([z.coerce.number(), z.null()])
+    .nullish()
+    .catch(null)
+    .transform((n) =>
+      typeof n === "number" && Number.isFinite(n)
+        ? Math.min(Math.max(n, 0), max)
+        : null
+    );
+
 export const CONFIDENCE_VALUES = ["niska", "srednja", "visoka"] as const;
 export type Confidence = (typeof CONFIDENCE_VALUES)[number];
 
@@ -59,6 +78,13 @@ export const mealEstimateSchema = z.object({
   protein_g: bounded(500),
   uh_g: bounded(800),
   mast_g: bounded(500),
+  // Micronutrients for the depicted portion (2026-07-25), feeding the home
+  // tab's second page. Nullable: an older/unsure response simply leaves them
+  // unknown rather than claiming zero.
+  vlakna_g: boundedNullable(200),
+  secer_g: boundedNullable(800),
+  natrijum_mg: boundedNullable(20000),
+  zasicene_g: boundedNullable(300),
   sigurnost: z.enum(CONFIDENCE_VALUES).catch("srednja"),
   napomena: z.string().trim().max(300).catch("").default(""),
 });
@@ -77,6 +103,10 @@ export const MEAL_RESPONSE_SCHEMA = {
     protein_g: { type: "NUMBER" },
     uh_g: { type: "NUMBER" },
     mast_g: { type: "NUMBER" },
+    vlakna_g: { type: "NUMBER" },
+    secer_g: { type: "NUMBER" },
+    natrijum_mg: { type: "NUMBER" },
+    zasicene_g: { type: "NUMBER" },
     sigurnost: { type: "STRING", enum: [...CONFIDENCE_VALUES] },
     napomena: { type: "STRING" },
   },
@@ -87,6 +117,10 @@ export const MEAL_RESPONSE_SCHEMA = {
     "protein_g",
     "uh_g",
     "mast_g",
+    "vlakna_g",
+    "secer_g",
+    "natrijum_mg",
+    "zasicene_g",
     "sigurnost",
   ],
   propertyOrdering: [
@@ -97,10 +131,66 @@ export const MEAL_RESPONSE_SCHEMA = {
     "protein_g",
     "uh_g",
     "mast_g",
+    "vlakna_g",
+    "secer_g",
+    "natrijum_mg",
+    "zasicene_g",
     "sigurnost",
     "napomena",
   ],
 } as const;
+
+/**
+ * Rescales an estimate's micronutrients to the portion the user finally
+ * confirmed. The confirm screens let the user correct the grams, and the macros
+ * are already recomputed from the AI's per-100g ratio when they do -- this keeps
+ * the four micros on that same ratio, so "AI said 700 g, I actually ate 350 g"
+ * halves the sodium too instead of logging the full plate's salt.
+ *
+ * Unknown (`null`) stays unknown at any portion size. Shared by all three
+ * confirm flows (photo / voice / photo+description) so they can't drift apart.
+ */
+export function scaleMealMicros(
+  estimate: Pick<
+    MealEstimate,
+    "procenjeni_grami" | "vlakna_g" | "secer_g" | "natrijum_mg" | "zasicene_g"
+  >,
+  grams: number
+): {
+  fiber: number | null;
+  sugar: number | null;
+  sodium: number | null;
+  satFat: number | null;
+} {
+  const base = estimate.procenjeni_grami;
+  const scale =
+    Number.isFinite(base) && base > 0 && Number.isFinite(grams) && grams > 0
+      ? grams / base
+      : 1;
+  const scaled = (value: number | null) =>
+    value === null ? null : Math.round(value * scale * 10) / 10;
+  return {
+    fiber: scaled(estimate.vlakna_g),
+    sugar: scaled(estimate.secer_g),
+    sodium: scaled(estimate.natrijum_mg),
+    satFat: scaled(estimate.zasicene_g),
+  };
+}
+
+/**
+ * The four micronutrient rules, shared verbatim by every prompt that fills the
+ * meal schema (photo, photo+voice, label+voice, voice) so the model is told the
+ * same thing everywhere -- most importantly that sodium is milligrams, not grams
+ * of salt, which is the single easiest unit for it to get wrong (a 40x error).
+ * The domain hints ("meso i ulje ne nose vlakna", "industrijska hrana je
+ * slanija") are there because they measurably steer a Flash model away from
+ * lazily proportional guesses.
+ */
+export const MICRO_PROMPT_RULES = `- "vlakna_g", "secer_g", "natrijum_mg", "zasicene_g": takođe UKUPNO za tu porciju:
+  - "vlakna_g": dijetna vlakna u gramima (povrće, voće, integralne žitarice, mahunarke nose vlakna; meso, jaja, sir i ulje NE nose).
+  - "secer_g": UKUPNI šećeri u gramima (i prirodni iz voća/mleka i dodati iz slatkiša/soseva).
+  - "natrijum_mg": natrijum u MILIGRAMIMA (ne so u gramima). Ako računaš preko soli: natrijum_mg = grami_soli × 400. Industrijska hrana, sirevi, suhomesnato, pekarski proizvodi i restoranska hrana su znatno slaniji od kuvanog kod kuće.
+  - "zasicene_g": zasićene masne kiseline u gramima (deo ukupne masti — mora biti manje od "mast_g"; masti životinjskog porekla, mlečni proizvodi, palmino i kokosovo ulje ih nose najviše).`;
 
 export const MEAL_PROMPT = `Ti si iskusan nutricionista koji procenjuje obroke sa fotografija.
 Na slici je hrana/obrok. Proceni nutritivne vrednosti ZA KOLIČINU KOJA SE VIDI na slici (ne za 100 g).
@@ -110,6 +200,7 @@ Pravila:
 - "sastojci": glavne komponente koje prepoznaješ (npr. ["ćevapi", "lepinja", "crni luk"]).
 - "procenjeni_grami": ukupna jestiva masa porcije koja se vidi, u gramima.
 - "kcal", "protein_g", "uh_g", "mast_g": UKUPNO za tu porciju (ne na 100 g).
+${MICRO_PROMPT_RULES}
 - Koristi realne balkanske porcije. Ako nisi siguran, daj najbolju procenu i snizi "sigurnost".
 - "sigurnost": "niska" | "srednja" | "visoka".
 - "napomena": kratko objasni pretpostavke (npr. "pretpostavljene 2 kašike ulja").

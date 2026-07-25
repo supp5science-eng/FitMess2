@@ -148,7 +148,11 @@ export async function PATCH(
 
     const { data: food, error: foodError } = await supabase
       .from("foods")
-      .select("id, name_sr, kcal_100g, protein_100g, carbs_100g, fat_100g")
+      // 0017: micro columns included so an edited portion rescales the
+      // micronutrient snapshot together with the macros.
+      .select(
+        "id, name_sr, kcal_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, sugar_100g, sodium_100g, sat_fat_100g"
+      )
       .eq("id", existingLog.food_id)
       .maybeSingle();
 

@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { estimateMealFromImage } from "@/lib/ai/gemini";
 import type { MealEstimate } from "@/lib/ai/meal-estimate";
+import { estimateMealMicros } from "@/lib/ai/micro-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -54,6 +55,11 @@ export async function estimateMealAction(
   }
 }
 
+/** An optional micronutrient number: absent/null both mean "unknown", which is
+ * NOT the same as 0 (see `supabase/migrations/0017_micronutrients.sql`). */
+const optionalMicro = (max: number) =>
+  z.coerce.number().min(0).max(max).nullish();
+
 const logMealSchema = z.object({
   name: z.string().trim().min(1, "Unesi naziv obroka.").max(120),
   grams: z.coerce.number().min(1).max(5000),
@@ -61,6 +67,14 @@ const logMealSchema = z.object({
   protein: z.coerce.number().min(0).max(800),
   carbs: z.coerce.number().min(0).max(800),
   fat: z.coerce.number().min(0).max(800),
+  // 0017: totals for this portion, when the flow's estimator produced them
+  // (photo / voice / photo+description all do now). Omitted by the "Prizma"
+  // flow, whose own response schema doesn't carry them -- those get filled in
+  // below by `estimateMealMicros`.
+  fiber: optionalMicro(300),
+  sugar: optionalMicro(1000),
+  sodium: optionalMicro(30000),
+  satFat: optionalMicro(500),
 });
 
 export type LogMealInput = z.input<typeof logMealSchema>;
@@ -107,6 +121,30 @@ export async function logMealAction(
   const round1 = (n: number) => Math.round(n * 10) / 10;
   const { name, grams, kcal, protein, carbs, fat } = parsed.data;
 
+  // Micronutrients (0017). Preferred source is the flow's own estimate, which
+  // came from the actual photo/recording. When a flow doesn't provide them, fill
+  // them in from the meal's name + macros with one cheap text call -- otherwise
+  // this meal would sit in the day as an unknown and drag the second page's
+  // coverage down. Best-effort by design: a failure leaves them null and the
+  // meal still saves (the cards then honestly report partial coverage).
+  let micros = {
+    fiber: parsed.data.fiber ?? null,
+    sugar: parsed.data.sugar ?? null,
+    sodium: parsed.data.sodium ?? null,
+    satFat: parsed.data.satFat ?? null,
+  };
+  if (micros.fiber === null && micros.sugar === null && micros.sodium === null) {
+    const filled = await estimateMealMicros({
+      name,
+      grams,
+      kcal,
+      protein,
+      carbs,
+      fat,
+    });
+    if (filled) micros = filled;
+  }
+
   const { data: inserted, error } = await supabase
     .from("logs")
     .insert({
@@ -118,6 +156,10 @@ export async function logMealAction(
       protein: round1(protein),
       carbs: round1(carbs),
       fat: round1(fat),
+      fiber: micros.fiber === null ? null : round1(micros.fiber),
+      sugar: micros.sugar === null ? null : round1(micros.sugar),
+      sodium: micros.sodium === null ? null : round1(micros.sodium),
+      sat_fat: micros.satFat === null ? null : round1(micros.satFat),
       method: "meal",
     })
     .select("id")

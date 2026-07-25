@@ -72,6 +72,11 @@ export type FoodSource = "seed" | "off" | "user";
 /** F020: how a `logs` row was created. See `supabase/migrations/0004_foods_logs.sql`. */
 export type LogMethod = "search" | "barcode" | "label" | "meal" | "agent";
 
+/** 0017: where a food's fiber/sugar/sodium/saturated-fat values came from --
+ * `'label'` read off a real nutrition declaration, `'ai'` estimated from the
+ * name + macros (`src/lib/ai/micro-estimate.ts`), `'manual'` typed by a human. */
+export type MicroSource = "label" | "ai" | "manual";
+
 /** F020: a single element of `foods.common_units` (jsonb array) -- a
  * user-facing portion shortcut, e.g. `{ label: "parce", grams: 50 }`. */
 export interface FoodCommonUnit {
@@ -208,6 +213,22 @@ export interface Database {
           // 0012: optional reference price in RSD for the whole product/package
           // (NOT per 100 g). Nullable -- most foods have none.
           price: number | null;
+          // 0017 micronutrients, per 100 g. `null` = UNKNOWN, which is NOT the
+          // same as 0 (see `0017_micronutrients.sql`): an unknown fiber value
+          // must never contribute a confident "0 g" to the day's total.
+          // Sodium is in MILLIGRAMS, the other three in grams.
+          //
+          // Typed OPTIONAL (`?`) rather than plain `| null`: `select("*")`
+          // always returns all four, but dozens of hand-built `Food` fixtures
+          // across the test suite predate this migration, and every reader goes
+          // through `src/lib/nutrition/micro.ts` (which normalises
+          // `undefined`/`null` to "unknown" identically). Same reasoning for
+          // the `logs` columns below.
+          fiber_100g?: number | null;
+          sugar_100g?: number | null;
+          sodium_100g?: number | null;
+          sat_fat_100g?: number | null;
+          micro_source?: MicroSource | null;
           submitted_by: string | null;
           label_photo_path: string | null;
           is_removed: boolean;
@@ -229,6 +250,11 @@ export interface Database {
           is_default?: boolean;
           barcode?: string | null;
           price?: number | null;
+          fiber_100g?: number | null;
+          sugar_100g?: number | null;
+          sodium_100g?: number | null;
+          sat_fat_100g?: number | null;
+          micro_source?: MicroSource | null;
           submitted_by?: string | null;
           label_photo_path?: string | null;
           is_removed?: boolean;
@@ -250,6 +276,11 @@ export interface Database {
           is_default?: boolean;
           barcode?: string | null;
           price?: number | null;
+          fiber_100g?: number | null;
+          sugar_100g?: number | null;
+          sodium_100g?: number | null;
+          sat_fat_100g?: number | null;
+          micro_source?: MicroSource | null;
           submitted_by?: string | null;
           label_photo_path?: string | null;
           is_removed?: boolean;
@@ -314,6 +345,15 @@ export interface Database {
           protein: number;
           carbs: number;
           fat: number;
+          // 0017 micronutrients, snapshotted for THIS entry (sodium in mg, the
+          // rest in grams). `null`/absent = unknown, never 0 -- readers go
+          // through `src/lib/nutrition/micro.ts`, which falls back to the
+          // referenced food's per-100g value and reports partial coverage.
+          // Optional for the same fixture reason as the `foods` columns above.
+          fiber?: number | null;
+          sugar?: number | null;
+          sodium?: number | null;
+          sat_fat?: number | null;
           logged_at: string;
           method: LogMethod;
           created_at: string;
@@ -328,6 +368,10 @@ export interface Database {
           protein: number;
           carbs: number;
           fat: number;
+          fiber?: number | null;
+          sugar?: number | null;
+          sodium?: number | null;
+          sat_fat?: number | null;
           logged_at?: string;
           method: LogMethod;
           created_at?: string;
@@ -342,6 +386,10 @@ export interface Database {
           protein?: number;
           carbs?: number;
           fat?: number;
+          fiber?: number | null;
+          sugar?: number | null;
+          sodium?: number | null;
+          sat_fat?: number | null;
           logged_at?: string;
           method?: LogMethod;
           created_at?: string;

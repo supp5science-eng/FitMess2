@@ -1,8 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { after, NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { fillFoodMicrosIfMissing } from "@/lib/food/micro-fill";
 import { createLogFromPortion } from "@/lib/food/portions";
 import type { Database, LogMethod } from "@/lib/types/db";
 
@@ -98,7 +99,11 @@ export async function POST(request: NextRequest) {
   try {
     const { data: food, error: foodError } = await supabase
       .from("foods")
-      .select("id, name_sr, kcal_100g, protein_100g, carbs_100g, fat_100g")
+      // 0017: the micro columns come along so `createLogFromPortion` can
+      // snapshot them onto the log exactly like the macros.
+      .select(
+        "id, name_sr, kcal_100g, protein_100g, carbs_100g, fat_100g, fiber_100g, sugar_100g, sodium_100g, sat_fat_100g"
+      )
       .eq("id", foodId)
       .maybeSingle();
 
@@ -128,6 +133,16 @@ export async function POST(request: NextRequest) {
         { ok: false, error_sr: result.error_sr },
         { status: result.status }
       );
+    }
+
+    // 0017: a food nobody has micro values for yet (a freshly barcode-scanned
+    // or hand-entered product) gets them estimated AFTER the response is sent,
+    // so logging stays exactly as fast as before. Filling the catalog row is
+    // enough for today's cards to become complete -- the home screen falls back
+    // to the food's per-100g values when a log's own snapshot is null (see
+    // `fillFoodMicrosIfMissing`).
+    if (food.fiber_100g === null || food.fiber_100g === undefined) {
+      after(() => fillFoodMicrosIfMissing(food.id));
     }
 
     return NextResponse.json({ ok: true, data: result.data }, { status: 200 });

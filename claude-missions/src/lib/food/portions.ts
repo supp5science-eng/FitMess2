@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { microForGrams } from "@/lib/nutrition/micro";
 import type { Database, FoodCommonUnit, Log, LogMethod } from "@/lib/types/db";
 
 // F025 / AS-041, AS-042: the shared "portion -> log row" core.
@@ -70,6 +71,15 @@ export interface PortionFoodInput {
   protein_100g: number;
   carbs_100g: number;
   fat_100g: number;
+  // 0017 micronutrients, per 100 g (sodium in mg). OPTIONAL and nullable: most
+  // of the catalog had no values at all until the AI backfill ran, and `null`
+  // must stay "unknown" all the way onto the log row -- never 0. Scaled by
+  // `microForGrams` in `src/lib/nutrition/micro.ts`, the same
+  // `value_100g * grams/100` arithmetic `computeMacrosForGrams` does below.
+  fiber_100g?: number | null;
+  sugar_100g?: number | null;
+  sodium_100g?: number | null;
+  sat_fat_100g?: number | null;
 }
 
 /** zod schema for a raw, already-resolved portion size in grams (the UI has
@@ -209,6 +219,7 @@ export async function createLogFromPortion(
   }
   const grams = roundToOneDecimal(parsedGrams.data);
   const macros = computeMacrosForGrams(params.food, grams);
+  const micros = microForGrams(params.food, grams);
 
   const { data, error } = await supabase
     .from("logs")
@@ -221,6 +232,10 @@ export async function createLogFromPortion(
       protein: macros.protein,
       carbs: macros.carbs,
       fat: macros.fat,
+      fiber: micros.fiber,
+      sugar: micros.sugar,
+      sodium: micros.sodium,
+      sat_fat: micros.satFat,
       method: params.method,
     })
     .select("*")
@@ -270,6 +285,7 @@ export async function updateLogFromPortion(
   }
   const grams = roundToOneDecimal(parsedGrams.data);
   const macros = computeMacrosForGrams(params.food, grams);
+  const micros = microForGrams(params.food, grams);
 
   const { data, error } = await supabase
     .from("logs")
@@ -279,6 +295,10 @@ export async function updateLogFromPortion(
       protein: macros.protein,
       carbs: macros.carbs,
       fat: macros.fat,
+      fiber: micros.fiber,
+      sugar: micros.sugar,
+      sodium: micros.sodium,
+      sat_fat: micros.satFat,
     })
     .eq("id", params.logId)
     .select("*")

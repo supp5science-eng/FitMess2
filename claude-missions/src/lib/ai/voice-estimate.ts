@@ -7,6 +7,8 @@
 // duplicated. This file only owns the spoken-input prompt; the response schema
 // and the defensive Zod parse are re-exported from the meal-photo module.
 
+import { MICRO_PROMPT_RULES } from "@/lib/ai/meal-estimate";
+
 export {
   mealEstimateSchema as voiceMealSchema,
   MEAL_RESPONSE_SCHEMA as VOICE_RESPONSE_SCHEMA,
@@ -25,6 +27,7 @@ Pravila:
 - "sastojci": prazan niz [] osim ako korisnik izričito nabraja komponente.
 - "procenjeni_grami": masa/zapremina konzumirane porcije u gramima (za tečnost 1 ml ≈ 1 g). Ako je korisnik naveo gramažu/zapreminu, koristi to; inače proceni tipičnu porciju.
 - "kcal", "protein_g", "uh_g", "mast_g": UKUPNO za konzumiranu porciju.
+${MICRO_PROMPT_RULES}
 - "sigurnost": "visoka" ako je korisnik jasno izgovorio brojeve; "srednja" ili "niska" kada procenjuješ.
 - "napomena": kratko (npr. "vrednosti izgovorene" ili "procenjena tipična porcija od 150 g").
 - Ako u snimku NEMA hrane/pića ili je nerazumljivo, vrati "naziv": "Nejasan unos", sve brojeve 0, "sigurnost": "niska".

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Camera, ImageUp, Loader2, Sparkles } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
-import type { MealEstimate } from "@/lib/ai/meal-estimate";
+import { scaleMealMicros, type MealEstimate } from "@/lib/ai/meal-estimate";
 import { downscaleImage } from "@/lib/image/downscale";
 import { estimateMealAction, logMealAction } from "./actions";
 
@@ -162,6 +162,12 @@ export function ObrokFlow() {
       }
     }
 
+    // 0017 micronutrients, on the AI's own ratio for whatever portion the user
+    // confirmed (see `scaleMealMicros`).
+    const micros = estimate
+      ? scaleMealMicros(estimate, grams)
+      : { fiber: null, sugar: null, sodium: null, satFat: null };
+
     const result = await logMealAction(
       {
         name,
@@ -170,6 +176,10 @@ export function ObrokFlow() {
         protein: nutrition.protein,
         carbs: nutrition.carbs,
         fat: nutrition.fat,
+        fiber: micros.fiber,
+        sugar: micros.sugar,
+        sodium: micros.sodium,
+        satFat: micros.satFat,
       },
       photo
     );

@@ -7,6 +7,7 @@ import { Loader2, Mic, Sparkles, Square } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
 
+import { scaleMealMicros } from "@/lib/ai/meal-estimate";
 import type { VoiceMealEstimate } from "@/lib/ai/voice-estimate";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import { logMealAction } from "../obrok/actions";
@@ -160,6 +161,12 @@ export function GlasFlow() {
   async function handleSave() {
     setError(null);
     setPhase("saving");
+    // 0017 micronutrients, rescaled to the confirmed portion (see
+    // `scaleMealMicros`); unknown stays unknown.
+    const micros = estimate
+      ? scaleMealMicros(estimate, grams)
+      : { fiber: null, sugar: null, sodium: null, satFat: null };
+
     const result = await logMealAction({
       name,
       grams,
@@ -167,6 +174,10 @@ export function GlasFlow() {
       protein: nutrition.protein,
       carbs: nutrition.carbs,
       fat: nutrition.fat,
+      fiber: micros.fiber,
+      sugar: micros.sugar,
+      sodium: micros.sodium,
+      satFat: micros.satFat,
     });
     if (!result.ok) {
       setError(result.error_sr);

@@ -90,6 +90,25 @@ export function RemindersForm({
   const blocked = permission === "denied";
   const canArm = environment === "ready" && !missingKey && !blocked;
 
+  // Exactly one explanation, most-blocking first: an iPhone in a Safari tab
+  // cannot act on "unblock notifications" advice, and a device with no Push API
+  // cannot act on either.
+  const notice:
+    | "unsupported"
+    | "needs-install"
+    | "blocked"
+    | "missing-key"
+    | null =
+    environment === "unsupported"
+      ? "unsupported"
+      : environment === "needs-install"
+        ? "needs-install"
+        : blocked
+          ? "blocked"
+          : missingKey
+            ? "missing-key"
+            : null;
+
   async function toggle(next: boolean) {
     setStatus({ kind: "working" });
     setTestStatus({ kind: "idle" });
@@ -235,8 +254,19 @@ export function RemindersForm({
         </label>
       </div>
 
-      {/* What the environment can and cannot do — said out loud. */}
-      {environment === "needs-install" ? (
+      {/* What the environment can and cannot do — said out loud, but ONE
+          message at a time. Screenshotting this page caught it stacking the
+          "install the app first" and "notifications are blocked" notices on
+          top of each other: two different instructions for one problem.
+          Priority: no Push API at all > must be installed > blocked > server
+          not configured. */}
+      {notice === "unsupported" ? (
+        <p className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">
+          Ovaj pregledač ne podržava notifikacije.
+        </p>
+      ) : null}
+
+      {notice === "needs-install" ? (
         <p
           data-testid="reminder-needs-install"
           className="flex items-start gap-2 rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground"
@@ -250,13 +280,7 @@ export function RemindersForm({
         </p>
       ) : null}
 
-      {environment === "unsupported" ? (
-        <p className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">
-          Ovaj pregledač ne podržava notifikacije.
-        </p>
-      ) : null}
-
-      {blocked ? (
+      {notice === "blocked" ? (
         <p
           data-testid="reminder-blocked"
           className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground"
@@ -266,7 +290,7 @@ export function RemindersForm({
         </p>
       ) : null}
 
-      {missingKey ? (
+      {notice === "missing-key" ? (
         <p className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">
           Notifikacije još nisu podešene na serveru.
         </p>

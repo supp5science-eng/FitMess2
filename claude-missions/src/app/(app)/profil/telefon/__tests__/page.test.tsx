@@ -47,8 +47,22 @@ describe("Broj telefona u Podešavanjima", () => {
   it("test_prefills_the_number_already_on_the_profile", async () => {
     render(await TelefonSettingsPage());
 
-    expect(screen.getByLabelText("Broj telefona")).toHaveValue("600637486");
+    // Grouped for readability; the digits are the ones already on file.
+    expect(screen.getByLabelText("Broj telefona")).toHaveValue("600 637 486");
     expect(screen.getByLabelText("Pozivni broj države")).toHaveValue("+381");
+  });
+
+  it("test_shows_exactly_what_will_be_stored", async () => {
+    // `normalizePhone` drops spaces and the trunk zero -- users who type
+    // "060 063 7486" should see "+381600637486" before they hit save, not
+    // discover it afterwards.
+    render(await TelefonSettingsPage());
+
+    fireEvent.change(screen.getByLabelText("Broj telefona"), {
+      target: { value: "060 063 7486" },
+    });
+
+    expect(screen.getByText("+381600637486")).toBeInTheDocument();
   });
 
   it("test_there_is_always_a_way_back_to_podesavanja", async () => {

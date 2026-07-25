@@ -301,7 +301,7 @@ export function StepsCard({
           look: the page is as tall as the calorie page, and the slack ended up
           as dead air inside the card. The 7-day strip is what earns that height
           honestly instead. */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-4">
+      <div className="flex flex-col gap-2.5 rounded-2xl border border-border bg-card px-4 py-3.5">
         <button
           type="button"
           onClick={openSheet}

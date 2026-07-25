@@ -1,5 +1,4 @@
 import { Beef, Candy, Soup, Wheat } from "lucide-react";
-import { useId } from "react";
 
 import {
   computeMicroCardState,
@@ -71,66 +70,40 @@ const MICRO_STYLE: Record<
   },
 };
 
-/** A nutrient's little progress ring (same construction as the steps card's). */
-function MicroRing({
+/**
+ * A nutrient's fill, as a slim bar (2026-07-25).
+ *
+ * Was a 56px progress ring per card, which is what made this page read as the
+ * heaviest of the three: four rings meant four 142px cards for four small
+ * numbers. A bar carries the same "how far along am I" in 6px of height, so the
+ * card can be a third shorter without dropping anything the user reads. The
+ * rings stay where they earn their size -- the calorie gauge and the
+ * Koraci/Voda cards.
+ */
+function MicroBar({
   fraction,
   colorKey,
-  children,
 }: {
   fraction: number;
   colorKey: MicroKey;
-  children: React.ReactNode;
 }) {
-  const gradientId = useId();
   const style = MICRO_STYLE[colorKey];
-  const size = 56;
-  const stroke = 5;
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
   const clamped = Math.max(0, Math.min(1, fraction));
-  const offset = c * (1 - clamped);
 
   return (
-    <div
-      className="relative shrink-0"
-      style={{ width: size, height: size }}
+    <span
+      className={cn("block h-1.5 w-full overflow-hidden rounded-full", style.chip)}
       aria-hidden="true"
     >
-      <svg width={size} height={size} className="-rotate-90">
-        <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={style.from} />
-            <stop offset="100%" stopColor={style.to} />
-          </linearGradient>
-        </defs>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="currentColor"
-          className={style.track}
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={`url(#${gradientId})`}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          style={{
-            transition: "stroke-dashoffset 0.45s cubic-bezier(0.2,0,0,1)",
-          }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        {children}
-      </div>
-    </div>
+      <span
+        data-testid={`micro-bar-${colorKey}`}
+        className="block h-full rounded-full transition-[width] duration-500"
+        style={{
+          width: `${clamped * 100}%`,
+          backgroundImage: `linear-gradient(90deg, ${style.from}, ${style.to})`,
+        }}
+      />
+    </span>
   );
 }
 
@@ -140,20 +113,24 @@ function MicroRing({
  * remaining -- honest, and it's the number that would make someone act.
  */
 function headlineFor(card: MicroCardState): { value: string; sub: string } {
-  const { unit, kind, labelSr } = card.spec;
+  const { unit, kind } = card.spec;
+  // The nutrient's NAME now sits in the card's own header row, so this line
+  // only has to say what the number means -- which is what let the card lose a
+  // wrapped second line ("Zasićene masti · nema podataka" used to run onto two
+  // rows and stretch the whole grid row with it).
   if (!card.hasData) {
-    return { value: "—", sub: `${labelSr} · nema podataka` };
+    return { value: "—", sub: "nema podataka" };
   }
   if (card.isOver) {
     const over = formatMicroAmount(Math.abs(card.remaining), unit);
     return {
       value: over,
-      sub: kind === "goal" ? `${labelSr} iznad cilja` : `${labelSr} preko granice`,
+      sub: kind === "goal" ? "iznad cilja" : "preko granice",
     };
   }
   return {
     value: formatMicroAmount(card.remaining, unit),
-    sub: `${labelSr} — preostalo`,
+    sub: "preostalo",
   };
 }
 
@@ -169,26 +146,44 @@ function MicroCard({ card }: { card: MicroCardState }) {
       data-testid={`micro-card-${card.key}`}
       data-over={card.isOver ? "true" : undefined}
       className={cn(
-        "flex flex-col gap-2 rounded-2xl border bg-card px-3.5 py-3.5",
+        "flex flex-col gap-2 rounded-2xl border bg-card px-3 py-2.5",
         warn ? "border-amber-500/35" : "border-border"
       )}
     >
-      <div className="flex flex-col gap-0.5">
+      {/* Header: the nutrient's badge + name, on one line. */}
+      <div className="flex items-center gap-1.5">
+        <span
+          className={cn(
+            "flex size-6 shrink-0 items-center justify-center rounded-full",
+            style.chip,
+            style.text
+          )}
+        >
+          {style.icon}
+        </span>
+        <span className="truncate text-xs font-semibold text-foreground">
+          {card.spec.labelSr}
+        </span>
+      </div>
+
+      <div className="flex items-baseline justify-between gap-1.5">
         <span
           data-testid={`micro-value-${card.key}`}
-          className="text-2xl font-bold tabular-nums tracking-tight text-foreground"
+          className="text-xl font-bold leading-none tabular-nums tracking-tight text-foreground"
         >
           {value}
         </span>
-        <span className="text-[0.7rem] font-medium leading-tight text-muted-foreground">
+        <span className="shrink-0 text-[0.65rem] font-medium text-muted-foreground">
           {sub}
         </span>
       </div>
-      <div className="flex items-end justify-between gap-2">
-        <MicroRing fraction={card.hasData ? card.fillFraction : 0} colorKey={card.key}>
-          <span className={style.text}>{style.icon}</span>
-        </MicroRing>
-        <span className="pb-1 text-[0.7rem] tabular-nums text-muted-foreground">
+
+      <div className="flex flex-col gap-1">
+        <MicroBar
+          fraction={card.hasData ? card.fillFraction : 0}
+          colorKey={card.key}
+        />
+        <span className="text-[0.65rem] tabular-nums text-muted-foreground">
           {card.hasData
             ? `${Math.round(card.consumed)} / ${card.target}`
             : `cilj ${card.target}`}

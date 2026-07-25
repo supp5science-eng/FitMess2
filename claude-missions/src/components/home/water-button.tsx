@@ -213,7 +213,7 @@ export function WaterButton({
           presets, 7-day strip. The card hugs its content and is NEVER stretched
           to fill the pager page -- stretching it is what produced the reported
           "huge holes inside the cards". */}
-      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-4">
+      <div className="flex flex-col gap-2.5 rounded-2xl border border-border bg-card px-4 py-3.5">
         <button
           type="button"
           onClick={openSheet}

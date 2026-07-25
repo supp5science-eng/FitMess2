@@ -300,7 +300,11 @@ export function HomeScreen({
                 id: "kalorije",
                 labelSr: "Kalorije i makroi",
                 content: (
-                  <div className="flex flex-1 flex-col gap-7">
+                  // gap-5, not gap-7 (2026-07-25): this page is the tallest of
+                  // the three and therefore sets the pager's height, so every
+                  // pixel of air here is a pixel the OTHER two pages have to
+                  // find something to do with.
+                  <div className="flex flex-1 flex-col gap-5">
                     {/* The ring lives in its own slot so the intro can fade
                         just the ring in (where the ghost lands) after the body
                         has risen in. */}
@@ -347,7 +351,11 @@ export function HomeScreen({
                 id: "nutrijenti",
                 labelSr: "Vlakna, šećer, so i zasićene masti",
                 content: (
-                  <div className="home-body flex flex-1 flex-col justify-between gap-2.5">
+                  // Centred, not `justify-between`: the cards keep their own
+                  // size and any leftover height breathes above and below the
+                  // pair — the same rule as the Koraci/Voda page, so no page
+                  // ever pulls its contents apart to fill space.
+                  <div className="home-body flex flex-1 flex-col justify-center gap-2.5">
                     <MicroCards micros={micros} targets={microTargets} />
                     <HealthScoreCard score={healthScore} />
                   </div>

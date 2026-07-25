@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   applyAddMore,
+  componentPieceCount,
   componentUnitLabel,
   MAX_UNITS,
   readComponents,
@@ -19,28 +20,32 @@ import type { Log } from "@/lib/types/db";
 // The design problem is that "I ate one more wafer" and "I went back for two
 // more eggs and a spoon of sour cream" are the same intention at different
 // resolutions, and the second one must not make the first one slower. So the
-// sheet opens ALREADY ANSWERING the common case -- on an entry with no
-// breakdown, "još 1" is pre-selected and the whole interaction is open →
-// "Dodaj" -- while an itemised meal gets a stepper per part, starting at zero,
-// because there the user does have something specific to say.
+// sheet opens ALREADY ANSWERING the common case -- on an entry with no parts,
+// "još 1" is pre-selected and the interaction is open → "Dodaj" -- while an
+// itemised meal gets a stepper per food, starting at zero, because there the
+// user does have something specific to say.
+//
+// Entries logged before 0019 (and everything from the catalog / Gric / voice)
+// carry no breakdown, which would leave the feature able only to DOUBLE those
+// meals. So the sheet asks for one on open (`POST /api/logs/[id]/razlozi`,
+// once per entry, cached onto the row) rather than waiting for the user to
+// photograph that meal again some other day. If the split fails, the sheet
+// degrades to whole-entry seconds instead of blocking.
 //
 // The preview runs `applyAddMore`, the exact function the server re-runs
-// against the stored row after the request arrives (see
-// `src/app/api/logs/[id]/dodaj/route.ts`) -- same guarantee as F026's edit
-// sheet: what you see added is what gets written. Only unit counts go over the
-// wire; no macro number is ever client-authored.
-//
-// Same dependency-free overlay pattern as `LogEditSheet` (no Sheet primitive
-// exists in this codebase) and the same self-contained trigger, so a meal card
-// only has to drop `<LogAddMoreSheet log={log} onSaved={...} />` in place.
+// against the stored row (`src/app/api/logs/[id]/dodaj/route.ts`) -- same
+// guarantee as F026's edit sheet: what you see added is what gets written. Only
+// unit counts go over the wire; no macro number is ever client-authored.
 
 const SAVE_FAILED_ERROR_SR = "Nismo uspeli da dodamo. Pokušaj ponovo.";
 
-interface AddMoreResponseBody {
+interface LogResponseBody {
   ok: boolean;
   error_sr?: string;
   data?: Log;
 }
+
+type Phase = "idle" | "splitting" | "saving";
 
 export function LogAddMoreSheet({
   log,
@@ -50,14 +55,21 @@ export function LogAddMoreSheet({
   /** Called with the grown log row, so the day's ring/macros recompute. */
   onSaved?: (updatedLog: Log) => void;
 }) {
-  const components = useMemo(() => readComponents(log.components), [log.components]);
+  // The entry as the sheet currently knows it: the prop, then whatever the
+  // split returns (the row gains `components` without its totals changing).
+  const [entry, setEntry] = useState<Log>(log);
+  const components = useMemo(
+    () => readComponents(entry.components),
+    [entry.components]
+  );
   const hasBreakdown = components.length > 0;
 
   const [isOpen, setIsOpen] = useState(false);
   const [whole, setWhole] = useState(0);
   const [units, setUnits] = useState<number[]>([]);
-  const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
+  const [phase, setPhase] = useState<Phase>("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
+  const [splitNote, setSplitNote] = useState<string | undefined>(undefined);
 
   const selection = useMemo<AddMoreSelection>(
     () => ({
@@ -69,29 +81,59 @@ export function LogAddMoreSheet({
     [whole, units]
   );
 
-  const preview = useMemo(
-    () => applyAddMore(log, selection),
-    [log, selection]
-  );
+  const preview = useMemo(() => applyAddMore(entry, selection), [entry, selection]);
 
-  function openSheet() {
-    // An entry with no parts has exactly one thing you could mean, so mean it
-    // for the user: one tap to open, one to confirm.
-    setWhole(hasBreakdown ? 0 : 1);
+  async function openSheet() {
     setUnits(components.map(() => 0));
-    setStatus("idle");
     setErrorMessage(undefined);
+    setSplitNote(undefined);
     setIsOpen(true);
+
+    if (hasBreakdown) {
+      setWhole(0);
+      setPhase("idle");
+      return;
+    }
+
+    // No breakdown yet: ask for one. "Ceo obrok" stays at 0 while we wait so a
+    // fast tapper can't confirm a doubling they didn't mean; it falls back to 1
+    // only if the split doesn't arrive.
+    setWhole(0);
+    setPhase("splitting");
+    try {
+      const response = await fetch(`/api/logs/${entry.id}/razlozi`, {
+        method: "POST",
+      });
+      const body = (await response.json()) as LogResponseBody;
+      const split = body.ok && body.data ? readComponents(body.data.components) : [];
+
+      if (split.length > 0 && body.data) {
+        setEntry(body.data);
+        setUnits(split.map(() => 0));
+      } else {
+        setWhole(1);
+        setSplitNote(
+          "Ovaj obrok nismo uspeli da razložimo na namirnice — možeš da dodaš ceo unos još jednom."
+        );
+      }
+    } catch {
+      setWhole(1);
+      setSplitNote(
+        "Ovaj obrok nismo uspeli da razložimo na namirnice — možeš da dodaš ceo unos još jednom."
+      );
+    } finally {
+      setPhase("idle");
+    }
   }
 
   function closeSheet() {
-    if (status === "saving") return;
+    if (phase === "saving") return;
     setIsOpen(false);
   }
 
   function stepWhole(delta: number) {
     setWhole((current) => Math.min(Math.max(current + delta, 0), MAX_UNITS));
-    setStatus("idle");
+    setErrorMessage(undefined);
   }
 
   function stepComponent(index: number, delta: number) {
@@ -100,34 +142,35 @@ export function LogAddMoreSheet({
         i === index ? Math.min(Math.max(value + delta, 0), MAX_UNITS) : value
       )
     );
-    setStatus("idle");
+    setErrorMessage(undefined);
   }
 
-  const canConfirm = !preview.isEmpty && status !== "saving";
+  const canConfirm = !preview.isEmpty && phase === "idle";
 
   async function onConfirm() {
     if (!canConfirm) return;
-    setStatus("saving");
+    setPhase("saving");
     setErrorMessage(undefined);
     try {
-      const response = await fetch(`/api/logs/${log.id}/dodaj`, {
+      const response = await fetch(`/api/logs/${entry.id}/dodaj`, {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(selection),
       });
-      const body = (await response.json()) as AddMoreResponseBody;
+      const body = (await response.json()) as LogResponseBody;
 
       if (!response.ok || !body.ok || !body.data) {
-        setStatus("error");
+        setPhase("idle");
         setErrorMessage(body.error_sr || SAVE_FAILED_ERROR_SR);
         return;
       }
 
-      setStatus("idle");
+      setEntry(body.data);
+      setPhase("idle");
       onSaved?.(body.data);
       setIsOpen(false);
     } catch {
-      setStatus("error");
+      setPhase("idle");
       setErrorMessage(SAVE_FAILED_ERROR_SR);
     }
   }
@@ -163,34 +206,63 @@ export function LogAddMoreSheet({
               >
                 Dodaj još
               </h2>
-              <p className="text-sm text-muted-foreground">{log.name}</p>
+              <p className="text-sm text-muted-foreground">{entry.name}</p>
             </div>
 
-            <StepperRow
-              testId="log-add-more-whole"
-              label={hasBreakdown ? "Ceo obrok još jednom" : "Još isto"}
-              detail={`${Math.round(log.kcal)} kcal · ${Math.round(log.grams)} g`}
-              value={whole}
-              onStep={stepWhole}
-            />
+            {phase === "splitting" ? (
+              <p
+                data-testid="log-add-more-splitting"
+                className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-sm text-muted-foreground"
+              >
+                Razlažemo obrok na namirnice…
+              </p>
+            ) : (
+              <>
+                {hasBreakdown ? (
+                  <div className="flex flex-col gap-2">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      Koliko si još pojeo/la
+                    </p>
+                    {components.map((component, index) => (
+                      <StepperRow
+                        key={`${component.naziv}-${index}`}
+                        testId={`log-add-more-component-${index}`}
+                        label={component.naziv}
+                        detail={`u obroku: ${describeAmount(component)} · korak: ${componentUnitLabel(
+                          component
+                        )}`}
+                        value={units[index] ?? 0}
+                        onStep={(delta) => stepComponent(index, delta)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
 
-            {hasBreakdown ? (
-              <div className="flex flex-col gap-2">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Ili samo deo obroka
-                </p>
-                {components.map((component, index) => (
+                {/* A one-food entry (a wafer, an apple) has a single part that
+                    IS the whole entry, so a separate "Ceo obrok" row would be
+                    the same stepper twice. */}
+                {components.length === 1 ? null : (
                   <StepperRow
-                    key={`${component.naziv}-${index}`}
-                    testId={`log-add-more-component-${index}`}
-                    label={component.naziv}
-                    detail={componentUnitLabel(component)}
-                    value={units[index] ?? 0}
-                    onStep={(delta) => stepComponent(index, delta)}
+                    testId="log-add-more-whole"
+                    label={hasBreakdown ? "Ceo obrok još jednom" : "Još isto"}
+                    detail={`${Math.round(entry.kcal)} kcal · ${Math.round(
+                      entry.grams
+                    )} g`}
+                    value={whole}
+                    onStep={stepWhole}
                   />
-                ))}
-              </div>
-            ) : null}
+                )}
+
+                {splitNote ? (
+                  <p
+                    data-testid="log-add-more-split-note"
+                    className="text-xs text-muted-foreground"
+                  >
+                    {splitNote}
+                  </p>
+                ) : null}
+              </>
+            )}
 
             <div
               data-testid="log-add-more-preview"
@@ -208,7 +280,7 @@ export function LogAddMoreSheet({
               Ukupno posle dodavanja: {preview.totals.kcal} kcal
             </p>
 
-            {status === "error" && errorMessage ? (
+            {errorMessage ? (
               <p
                 role="alert"
                 data-testid="log-add-more-error"
@@ -223,7 +295,7 @@ export function LogAddMoreSheet({
                 type="button"
                 variant="outline"
                 onClick={closeSheet}
-                disabled={status === "saving"}
+                disabled={phase === "saving"}
                 data-testid="log-add-more-cancel"
               >
                 Otkaži
@@ -234,7 +306,7 @@ export function LogAddMoreSheet({
                 disabled={!canConfirm}
                 data-testid="log-add-more-save"
               >
-                {status === "saving" ? "Čuvanje..." : "Dodaj"}
+                {phase === "saving" ? "Čuvanje..." : "Dodaj"}
               </Button>
             </div>
           </div>
@@ -242,6 +314,14 @@ export function LogAddMoreSheet({
       ) : null}
     </div>
   );
+}
+
+/** "6 × jaje" when the food has a natural unit, plain grams when it doesn't. */
+function describeAmount(component: Parameters<typeof componentPieceCount>[0]): string {
+  const count = componentPieceCount(component);
+  const unitName = (component.kom_naziv ?? "").trim();
+  if (count && unitName) return `${count} × ${unitName}`;
+  return `${Math.round(component.grami)} g`;
 }
 
 /** One "− 0 +" row. Big round targets: this is a one-handed, mid-meal control. */

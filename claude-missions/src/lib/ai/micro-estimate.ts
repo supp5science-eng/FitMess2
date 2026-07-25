@@ -104,8 +104,14 @@ function model(): string {
  * Minimal JSON-mode POST. Returns the model's raw text, or `null` on ANY
  * failure (missing key, HTTP error, timeout, empty candidate) -- callers treat
  * `null` as "still unknown" and carry on; a fill-in must never break a save.
+ *
+ * Exported (2026-07-25) so `split-meal.ts` can reuse this exact transport: it
+ * has the same shape of job (cheap text-only structured call, zero temperature,
+ * every failure collapses to "we don't know") and duplicating the retry /
+ * timeout / thinking-level tuning documented below would guarantee the two
+ * copies drift.
  */
-async function postJsonPrompt(
+export async function postJsonPrompt(
   prompt: string,
   responseSchema: unknown,
   timeoutMs: number,

@@ -111,6 +111,24 @@ export function componentUnitFraction(component: LogComponentSnapshot): number {
   return Math.min(unit / total, 1);
 }
 
+/**
+ * How many natural units this line currently holds -- "6" for 300 g of eggs at
+ * 50 g each. `null` when the line has no natural unit, and therefore nothing
+ * countable to show.
+ *
+ * Display only: it tells the user WHAT IS ALREADY IN the meal ("6 × jaje"), so
+ * the stepper beside it is unambiguously "how many MORE".
+ */
+export function componentPieceCount(
+  component: LogComponentSnapshot
+): number | null {
+  const total = nonNegative(component.grami);
+  const unit = nonNegative(component.kom_grami ?? 0);
+  if (total <= 0 || unit <= 0) return null;
+  const count = Math.round(total / unit);
+  return count > 0 ? count : null;
+}
+
 /** Human label for one step of a line: "1 jaje (60 g)" / "još jednom (120 g)". */
 export function componentUnitLabel(component: LogComponentSnapshot): string {
   const unitName = (component.kom_naziv ?? "").trim();

@@ -47,11 +47,11 @@ export default async function TelefonSettingsPage() {
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Broj telefona
         </h1>
-        <p className="text-sm text-muted-foreground">
-          {phone
-            ? "Ispravi broj ako si ga promenio/la ili je pogrešno unet."
-            : "Još nemamo tvoj broj — možeš ga dodati ovde."}
-        </p>
+        {phone ? null : (
+          <p className="text-sm text-muted-foreground">
+            Još nemamo tvoj broj — možeš ga dodati ovde.
+          </p>
+        )}
       </div>
 
       <PhoneForm phone={phone} />

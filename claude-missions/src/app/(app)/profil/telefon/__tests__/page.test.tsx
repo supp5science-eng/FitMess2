@@ -47,8 +47,10 @@ describe("Broj telefona u Podešavanjima", () => {
   it("test_prefills_the_number_already_on_the_profile", async () => {
     render(await TelefonSettingsPage());
 
-    // Grouped for readability; the digits are the ones already on file.
-    expect(screen.getByLabelText("Broj telefona")).toHaveValue("600 637 486");
+    // Grouped the way the owner reads it (06X XXX XXXX minus the trunk zero),
+    // not in threes from the left -- "600 637 486" looks like a different
+    // number. Digits are exactly the ones already on file.
+    expect(screen.getByLabelText("Broj telefona")).toHaveValue("60 063 7486");
     expect(screen.getByLabelText("Pozivni broj države")).toHaveValue("+381");
   });
 

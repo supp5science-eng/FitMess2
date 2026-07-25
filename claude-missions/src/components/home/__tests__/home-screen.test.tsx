@@ -286,3 +286,46 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
   });
 });
+
+describe("Gric: the quick-log button on the home screen", () => {
+  it("test_gric_sits_directly_below_voda", () => {
+    render(
+      <HomeScreen
+        initialLogs={[]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+
+    const voda = screen.getByTestId("water-open-button");
+    const gric = screen.getByTestId("gric-open-button");
+
+    expect(gric).toHaveAttribute("href", "/dodaj/gric");
+    // Gric belongs to the same "one tap, no ceremony" row as Koraci/Voda
+    // (WaterButton wraps its own trigger, so compare the row, not the parent),
+    // and must FOLLOW Voda rather than sit above it or drift elsewhere.
+    const row = gric.parentElement;
+    expect(row).not.toBeNull();
+    expect(row).toContainElement(voda);
+    expect(
+      voda.compareDocumentPosition(gric) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it("test_gric_is_hidden_on_a_past_day", () => {
+    render(
+      <HomeScreen
+        initialLogs={[]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        dayKey="2026-07-20"
+        isToday={false}
+      />
+    );
+
+    // The flow writes rows at `now()`, so it has nothing to offer here --
+    // while Voda, which takes an explicit dayKey, stays.
+    expect(screen.queryByTestId("gric-open-button")).not.toBeInTheDocument();
+    expect(screen.getByTestId("water-open-button")).toBeInTheDocument();
+  });
+});

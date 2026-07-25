@@ -4,6 +4,7 @@ import {
   ChevronLeft,
   CircleCheck,
   Download,
+  FileDown,
   Footprints,
   GlassWater,
   Mail,
@@ -45,6 +46,7 @@ const ICONS: Record<string, LucideIcon> = {
  * navigation, not with an inline message). */
 const ERROR_TEXT_SR: Record<string, string> = {
   sesija: "Sesija je istekla. Prijavi se ponovo pa pokušaj opet.",
+  pdf: "Nismo uspeli da napravimo PDF. Pokušaj ponovo, a ako se ponovi, preuzmi .json ispod.",
   "1": "Nismo uspeli da pripremimo tvoj fajl. Proveri konekciju i pokušaj ponovo.",
 };
 
@@ -135,22 +137,35 @@ export default async function MojiPodaciPage({
       </section>
 
       <div className="flex flex-col gap-2">
-        {/* A plain link, not a fetch + Blob dance: the route already sends
-            `Content-Disposition: attachment`, so the browser downloads it. */}
+        {/* Plain links, not a fetch + Blob dance: both routes send
+            `Content-Disposition: attachment`, so the browser downloads them. */}
+        <a
+          href="/api/export/pdf"
+          download
+          data-testid="export-pdf-link"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground"
+        >
+          <FileDown className="size-4" aria-hidden={true} />
+          Preuzmi PDF
+        </a>
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          Uredan izveštaj koji možeš otvoriti na telefonu, odštampati ili
+          proslediti lekaru/treneru. Same slike obroka nisu u njemu — brišu se
+          automatski otprilike dan po unosu, a kalorije i makroi tog obroka
+          ostaju u tabeli unosa.
+        </p>
+
+        {/* Kept for people (or apps) that want the machine-readable form --
+            deliberately quiet, since almost nobody wants a .json file. */}
         <a
           href="/api/export"
           download
           data-testid="export-download-link"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground"
+          className="mt-1 inline-flex items-center gap-1.5 self-start text-xs text-muted-foreground underline-offset-4 hover:underline"
         >
-          <Download className="size-4" aria-hidden={true} />
-          Preuzmi sve (.json)
+          <Download className="size-3.5" aria-hidden={true} />
+          Preuzmi i .json (za prenos u drugu aplikaciju)
         </a>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Dobićeš jedan fajl koji možeš otvoriti u bilo kom editoru teksta.
-          Same slike obroka nisu u njemu — brišu se automatski otprilike dan po
-          unosu, a kalorije i makroi tog obroka ostaju u unosima.
-        </p>
       </div>
 
       <p className="text-xs leading-relaxed text-muted-foreground">

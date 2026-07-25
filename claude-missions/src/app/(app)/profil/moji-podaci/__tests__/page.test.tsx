@@ -70,7 +70,17 @@ describe("Moji podaci: the summary", () => {
     expect(screen.getByText(/2026/)).toBeInTheDocument();
   });
 
-  it("test_the_download_is_a_plain_link_to_the_export_route", async () => {
+  it("test_the_pdf_is_the_primary_download", async () => {
+    render(await MojiPodaciPage({ searchParams: Promise.resolve({}) }));
+
+    const pdf = screen.getByTestId("export-pdf-link");
+    expect(pdf).toHaveAttribute("href", "/api/export/pdf");
+    expect(pdf).toHaveTextContent("Preuzmi PDF");
+  });
+
+  it("test_the_json_export_is_still_offered_as_the_machine_readable_form", async () => {
+    // GDPR-wise the machine-readable copy matters; it just isn't what a person
+    // wants when they tap "my data", so it sits quietly under the PDF.
     render(await MojiPodaciPage({ searchParams: Promise.resolve({}) }));
 
     expect(screen.getByTestId("export-download-link")).toHaveAttribute(

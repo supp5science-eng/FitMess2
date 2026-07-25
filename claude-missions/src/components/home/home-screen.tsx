@@ -298,7 +298,7 @@ export function HomeScreen({
                 id: "kalorije",
                 labelSr: "Kalorije i makroi",
                 content: (
-                  <div className="flex flex-col gap-7">
+                  <div className="flex flex-1 flex-col gap-7">
                     {/* The ring lives in its own slot so the intro can fade
                         just the ring in (where the ghost lands) after the body
                         has risen in. */}
@@ -349,7 +349,7 @@ export function HomeScreen({
                       id: "aktivnost",
                       labelSr: "Koraci i voda",
                       content: (
-                        <div className="home-body flex flex-col gap-2.5">
+                        <div className="home-body flex flex-1 flex-col justify-between gap-2.5">
                           {/* The recommended daily goals for steps + water now
                               live HERE (2026-07-25), not in a separate row under
                               the pager: this is the page about steps and water,
@@ -378,7 +378,7 @@ export function HomeScreen({
                 id: "nutrijenti",
                 labelSr: "Vlakna, šećer, so i zasićene masti",
                 content: (
-                  <div className="home-body flex flex-col gap-2.5">
+                  <div className="home-body flex flex-1 flex-col justify-between gap-2.5">
                     <MicroCards micros={micros} targets={microTargets} />
                     <HealthScoreCard score={healthScore} />
                   </div>

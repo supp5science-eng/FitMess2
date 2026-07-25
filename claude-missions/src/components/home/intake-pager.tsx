@@ -5,51 +5,46 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 // The horizontal, swipeable pager that holds the home tab's "Dnevni unos" block
-// (2026-07-25). Page 1 is the calorie ring + macro bars exactly as before; page
-// 2, reached by swiping right, carries the four micronutrient cards and the
-// health score. Dots below show where you are and jump when tapped.
+// (2026-07-25). Page 1 is the calorie ring + macro bars, page 2 Koraci + Voda,
+// page 3 the micronutrients + health score. Dots below show where you are and
+// jump when tapped.
 //
 // Built on native CSS scroll-snap rather than a carousel library: it is one
 // scroll container, so the swipe has real iOS momentum and rubber-banding for
 // free, it works with no JS if hydration is slow, and it adds zero dependencies.
-// The only JS is reading which page is showing (for the dots) and scrolling on a
-// dot tap.
+//
+// ## The height rule, learned the hard way
+//
+// THE CONTAINER'S HEIGHT IS NEVER TOUCHED FROM JAVASCRIPT. Do not "improve" this.
+//
+// A flex row is as tall as its TALLEST page, which left an empty gap under the
+// shorter pages. Two attempts to fix that by driving the height from JS both
+// produced real, reported bugs: interpolating it from the scroll offset, and then
+// snapping it on scroll-settle. Mutating a scroll container's height re-triggers
+// the browser's snap/momentum machinery mid-gesture -- the swipe stuck, refused
+// to come back, ended up between pages, and generally stopped feeling native.
+// No amount of debouncing fixed the class of problem.
+//
+// The gap is solved in CSS instead, with nothing moving:
+//   * pages stretch to a shared height (the flex default -- no `items-start`),
+//   * each page's content is a `flex-1` column, so a SHORT page distributes its
+//     own slack internally (`justify-between` on that page's root) instead of
+//     leaving dead space above the dots.
+//
+// The only JS left is reading which page is showing, to light the right dot --
+// pure state, zero layout mutation.
 //
 // iOS/mobile notes:
 //   * `overscroll-x-contain` stops a horizontal swipe from chaining out into
 //     Safari's back-navigation gesture at the first page's edge.
+//   * `snap-always` (scroll-snap-stop) keeps one flick from skipping a page, so
+//     a fast swipe can never overshoot from page 1 to page 3.
 //   * The container is FULL-BLEED (`-mx-6`) with the padding moved onto each
 //     page, so a page's content lines up with the rest of the screen while the
-//     snap edges sit at the real screen edges -- otherwise the second page peeks
-//     in at rest.
+//     snap edges sit at the real screen edges.
 //   * `touch-action: pan-x pan-y` keeps vertical scrolling of the page itself
 //     working while a horizontal drag is in progress.
 //   * Scrollbars are hidden the same way the date strip hides them.
-//
-// ## Vertical size: tallest while moving, exact once it lands
-//
-// A plain flex row is as tall as its TALLEST page, which left a big empty gap
-// under the shorter page (reported: a void between the Potrošeno/Preostalo
-// toggle and the dots). So the height has to change per page -- but WHEN it
-// changes turns out to matter more than the value.
-//
-// The first attempt interpolated the height continuously from the scroll offset.
-// It looked right on paper and broke in the hand: mutating a scroll container's
-// height while a snap scroll is in flight makes the browser re-evaluate its snap
-// positions mid-gesture, so swiping to the second page stuck, bounced, or left
-// the dots disagreeing with what was on screen.
-//
-// The rule now: NOTHING moves while the finger is down. During any scroll the
-// pager holds the tallest page's height (so no page is clipped and the snap
-// engine sees a stable box); when the scroll settles it eases to the height of
-// the page the user landed on. Costs one short animation after the swipe and
-// removes a whole class of gesture bugs.
-//
-// Page heights come from a ResizeObserver, so a page that grows later (a new
-// coverage note, a "Cilj 🎉" badge, a longer score sentence) is picked up
-// automatically. Before the first measurement the height stays `auto` (SSR and
-// first paint), degrading to the plain tallest-page behaviour, never to a
-// collapsed box.
 
 export interface IntakePagerPage {
   /** Stable key + the accessible name announced for the page. */
@@ -66,20 +61,13 @@ export function IntakePager({
   className?: string;
 }) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const pageRefs = useRef<(HTMLElement | null)[]>([]);
   const [active, setActive] = useState(0);
-  // Measured content height of each page, in page order. Empty until the first
-  // ResizeObserver callback, which is what keeps the height `auto` on first paint.
-  const [heights, setHeights] = useState<number[]>([]);
-  // True from the first scroll event until the scroll settles. While it's true
-  // the pager holds the TALLEST height (see the header comment): the height must
-  // not move under the user's finger.
-  const [scrolling, setScrolling] = useState(false);
   const frameRef = useRef<number | null>(null);
-  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Read the scroll position ONCE per frame (a swipe fires scroll events far
-  // faster than the screen refreshes) and move the dot to the nearest page.
+  // faster than the screen refreshes) and light the nearest page's dot. This is
+  // the pager's entire JS footprint: no measuring, no style writes, nothing that
+  // can perturb the scroll in progress.
   const syncActive = useCallback(() => {
     const element = scrollerRef.current;
     const width = element?.clientWidth ?? 0;
@@ -89,13 +77,6 @@ export function IntakePager({
   }, [pages.length]);
 
   function handleScroll() {
-    setScrolling(true);
-    // Settle detection: iOS fires no reliable "scroll ended" event for a
-    // momentum swipe on every version, so we treat "no scroll event for a
-    // moment" as settled. `scrollend` (where supported) makes this snappier.
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-    settleTimerRef.current = setTimeout(() => setScrolling(false), 220);
-
     if (frameRef.current !== null) return;
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = null;
@@ -103,52 +84,12 @@ export function IntakePager({
     });
   }
 
-  function handleScrollEnd() {
-    if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
-    syncActive();
-    setScrolling(false);
-  }
-
-  // Track each page's content height. Fires once on mount (so the initial height
-  // is the FIRST page's, not the tallest) and again whenever a page's content
-  // changes -- a new coverage note, a "Cilj 🎉" badge, a longer score sentence.
-  useEffect(() => {
-    if (typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => {
-      const next = pageRefs.current.map((page) => page?.offsetHeight ?? 0);
-      setHeights((previous) =>
-        previous.length === next.length &&
-        previous.every((value, index) => value === next[index])
-          ? previous
-          : next
-      );
-    });
-    for (const page of pageRefs.current) {
-      if (page) observer.observe(page);
-    }
-    return () => observer.disconnect();
-  }, [pages.length]);
-
   useEffect(
     () => () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-      if (settleTimerRef.current) clearTimeout(settleTimerRef.current);
     },
     []
   );
-
-  // The height actually applied. While the user is scrolling it is the tallest
-  // page (so nothing is clipped and, crucially, nothing MOVES mid-swipe); once
-  // the scroll settles it eases down to the page they landed on. `undefined`
-  // before the first measurement, i.e. plain auto height.
-  const measuredMax = heights.length > 0 ? Math.max(...heights) : 0;
-  const activeHeight = heights[active] ?? 0;
-  const appliedHeight =
-    measuredMax <= 0
-      ? undefined
-      : scrolling
-        ? measuredMax
-        : activeHeight || measuredMax;
 
   function goTo(index: number) {
     const element = scrollerRef.current;
@@ -169,41 +110,25 @@ export function IntakePager({
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
-        onScrollEnd={handleScrollEnd}
         data-testid="intake-pager"
         className={cn(
-          "-mx-6 flex snap-x snap-mandatory items-start overflow-x-auto overscroll-x-contain",
+          "-mx-6 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain",
           "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         )}
-        style={{
-          touchAction: "pan-x pan-y",
-          height: appliedHeight,
-          // `overflow-x: auto` forces this axis to compute to `auto` if left
-          // `visible`, which would raise an inner vertical scrollbar whenever a
-          // page is taller than the box. Hidden instead -- and since the applied
-          // height is the TALLEST page for the whole duration of a scroll,
-          // nothing is ever actually cut off while moving.
-          overflowY: "hidden",
-          // Only animate the settle. Never during the scroll: a transition
-          // running against the finger is what made the second page feel broken.
-          transition: scrolling ? undefined : "height 220ms ease-out",
-        }}
+        // Both axes stay pannable so the page itself still scrolls vertically
+        // mid-drag. NOTE: no `height` and no `transition` here, on purpose --
+        // see the height rule in the header comment.
+        style={{ touchAction: "pan-x pan-y" }}
       >
-        {pages.map((page, index) => (
+        {pages.map((page) => (
           <section
             key={page.id}
-            ref={(element) => {
-              pageRefs.current[index] = element;
-            }}
             data-testid={`intake-page-${page.id}`}
             aria-label={page.labelSr}
-            className="w-full shrink-0 snap-center px-6"
-            // Only the visible page should be reachable by a swipe of the
-            // screen reader's focus order in practice, but hiding the other page
-            // outright would break the (native) scroll-snap navigation, so both
-            // stay in the tree -- each is a labelled <section> the user can move
-            // through deliberately.
-            data-page-index={index}
+            // `flex flex-col` + the row's default stretch is what lets a short
+            // page fill the shared height from the inside (its content root is
+            // `flex-1`), instead of leaving a void above the dots.
+            className="flex w-full shrink-0 snap-center snap-always flex-col px-6"
           >
             {page.content}
           </section>
@@ -229,7 +154,6 @@ export function IntakePager({
                 onClick={() => goTo(index)}
                 aria-label={`Prikaži: ${page.labelSr}`}
                 aria-current={selected ? "true" : undefined}
-                // 44px tap target (iOS) around a small visual dot.
                 className="flex size-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >
                 <span

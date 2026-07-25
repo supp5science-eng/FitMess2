@@ -526,6 +526,40 @@ export interface Database {
           },
         ];
       };
+      habit_checks: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** Rule id from the catalog in `src/lib/budget/rules.ts`. */
+          habit_id: string;
+          /** Belgrade calendar day, `"YYYY-MM-DD"` (a Postgres `date`). */
+          day: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          habit_id: string;
+          day: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          habit_id?: string;
+          day?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "habit_checks_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -578,6 +612,10 @@ export type WaterIntakeInsert =
   Database["public"]["Tables"]["water_intake"]["Insert"];
 export type WaterIntakeUpdate =
   Database["public"]["Tables"]["water_intake"]["Update"];
+
+export type HabitCheck = Database["public"]["Tables"]["habit_checks"]["Row"];
+export type HabitCheckInsert =
+  Database["public"]["Tables"]["habit_checks"]["Insert"];
 
 export type StepCount = Database["public"]["Tables"]["step_counts"]["Row"];
 export type StepCountInsert =

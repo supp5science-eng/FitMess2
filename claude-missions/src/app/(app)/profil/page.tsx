@@ -113,7 +113,8 @@ export default async function ProfilPage() {
         <SettingsLinkRow
           href="/profil/pravila"
           icon={UtensilsCrossed}
-          label="Pravila ishrane"
+          label="Navike"
+          description="Čekiraj dnevne navike i prati niz"
         />
       </SettingsGroup>
 

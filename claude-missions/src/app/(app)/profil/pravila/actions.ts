@@ -1,6 +1,9 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { toBelgradeCalendarDay } from "@/lib/dates";
+import { toggleHabitCheck } from "@/lib/habits/checks";
+import type { ToggleHabitResult } from "@/lib/habits/checks";
 import { regenerateRules, updateRules } from "@/lib/profil/rules-settings";
 import type { RegenerateRulesResult, UpdateRulesResult } from "@/lib/profil/rules-settings";
 import type { PersistedRule } from "@/lib/budget/rules";
@@ -49,4 +52,33 @@ export async function regenerateRulesAction(): Promise<RegenerateRulesResult> {
   }
 
   return regenerateRules(supabase, user.id);
+}
+
+/**
+ * Checks a habit off for TODAY (or un-checks it). The day is resolved on the
+ * server via `toBelgradeCalendarDay` rather than sent by the client: a phone
+ * whose clock or timezone is off would otherwise write check-offs onto the
+ * wrong day and quietly corrupt the streak.
+ */
+export async function toggleHabitAction(
+  habitId: string,
+  done: boolean
+): Promise<ToggleHabitResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+
+  if (userError || !user) {
+    return { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR };
+  }
+
+  return toggleHabitCheck(
+    supabase,
+    user.id,
+    habitId,
+    toBelgradeCalendarDay(),
+    done
+  );
 }

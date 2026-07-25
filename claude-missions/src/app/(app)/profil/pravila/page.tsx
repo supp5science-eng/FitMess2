@@ -1,22 +1,27 @@
 import Link from "next/link";
 
-import { RulesScreen } from "@/components/profil/rules-screen";
+import { HabitsScreen } from "@/components/profil/habits-screen";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { toBelgradeCalendarDay } from "@/lib/dates";
+import { getHabitChecks } from "@/lib/habits/checks";
+import { buildHabitProgress } from "@/lib/habits/streak";
 import { createClient } from "@/lib/supabase/server";
 import type { PersistedRule } from "@/lib/budget/rules";
 
 /**
- * F017 / AS-028, AS-029: `/profil/pravila` -- shows the 3-5 eating rules
- * generated at onboarding completion (AS-028), lets the user toggle/edit
- * them (AS-029), and shows the optional day-structure guidance card.
+ * `/profil/pravila` -- "Navike".
  *
- * Server Component reads the current user's `profiles.rules` + latest
- * `targets.daily_kcal` (per the clarified "Server-fetched props" data-shape
- * answer) and hands them to the client `RulesScreen` for interactivity.
- * `middleware.ts` (F013) already guarantees only an authenticated,
- * onboarded user reaches this route -- this page still defensively handles
- * "no session"/"read failed" rather than assuming that guarantee always
- * holds (clarified failure-handling answer: "never a blank/broken screen").
+ * Server Component: reads the habit definitions (`profiles.rules`), the last
+ * 30 days of check-offs (`habit_checks`) and the current daily budget, joins
+ * them into per-habit progress, and hands that to the client `HabitsScreen`.
+ *
+ * The route keeps its `/profil/pravila` path even though the feature is now
+ * called "Navike": renaming it would break any installed PWA's cached links
+ * and every existing reference for no user-visible gain.
+ *
+ * `middleware.ts` (F013) already guarantees only an authenticated, onboarded
+ * user reaches this route -- this page still defensively handles "no
+ * session" / "read failed" rather than assuming that guarantee always holds.
  */
 export default async function PravilaPage() {
   const supabase = await createClient();
@@ -28,31 +33,43 @@ export default async function PravilaPage() {
     return <RetryErrorState message="Sesija je istekla. Prijavi se ponovo." />;
   }
 
-  // The two reads are independent -- fetch them in parallel so the page waits
-  // on one round trip, not two in series.
-  const [
-    { data: profile, error: profileError },
-    { data: target },
-  ] = await Promise.all([
-    supabase.from("profiles").select("rules").eq("user_id", userId).maybeSingle(),
-    supabase
-      .from("targets")
-      .select("daily_kcal")
-      .eq("user_id", userId)
-      .order("effective_from", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
+  const todayKey = toBelgradeCalendarDay();
+
+  // Independent reads -- one round trip, not three in series. `getHabitChecks`
+  // swallows its own errors (empty history still renders a usable screen).
+  const [{ data: profile, error: profileError }, { data: target }, checks] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("rules")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("targets")
+        .select("daily_kcal")
+        .eq("user_id", userId)
+        .order("effective_from", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      getHabitChecks(supabase, userId, todayKey),
+    ]);
 
   if (profileError) {
     return (
-      <RetryErrorState message="Nismo uspeli da učitamo tvoja pravila. Proveri konekciju i pokušaj ponovo." />
+      <RetryErrorState message="Nismo uspeli da učitamo tvoje navike. Proveri konekciju i pokušaj ponovo." />
     );
   }
 
   const rules: PersistedRule[] = profile?.rules ?? [];
+  const habits = buildHabitProgress(rules, checks, todayKey);
 
-  return <RulesScreen initialRules={rules} dailyKcal={target?.daily_kcal ?? null} />;
+  return (
+    <HabitsScreen
+      initialHabits={habits}
+      initialRules={rules}
+      dailyKcal={target?.daily_kcal ?? null}
+    />
+  );
 }
 
 function RetryErrorState({ message }: { message: string }) {

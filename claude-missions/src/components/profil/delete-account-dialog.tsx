@@ -22,7 +22,7 @@ const GENERIC_DELETE_ERROR_SR =
  * pulling in a new Radix/base-ui dialog package for a single feature: a
  * fixed-position overlay + `role="alertdialog"` panel, opened/closed with
  * local `useState`, matching this codebase's existing pattern of small
- * hand-built interactive pieces (e.g. `RulesScreen`'s inline edit rows)
+ * hand-built interactive pieces (e.g. `HabitsScreen`'s inline edit rows)
  * over adding new UI-library surface area.
  *
  * The submit button stays disabled until the user has typed the exact

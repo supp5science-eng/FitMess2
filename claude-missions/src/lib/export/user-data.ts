@@ -119,6 +119,16 @@ const USER_OWNED_TABLES: readonly UserOwnedTableConfig[] = [
     userColumn: "user_id",
     labelSr: "čekirane navike po danima",
   },
+  {
+    key: "reminderSettings",
+    table: "reminder_settings",
+    userColumn: "user_id",
+    labelSr: "podešavanja podsetnika",
+  }, // 0021 (Podsetnici)
+  // `push_subscriptions` is deliberately NOT exported: its rows are live device
+  // CREDENTIALS (endpoint + p256dh/auth keys), not something the user told us
+  // about themselves. Putting them in a downloadable file only creates a way to
+  // leak them; the setting that matters (`reminder_settings`) is right above.
   // --- Extension point: append future user-owned tables here as they land ---
   // { key: "conversations", table: "conversations", userColumn: "user_id", labelSr: "razgovori sa agentom i sažeci" }, // M6
 ];

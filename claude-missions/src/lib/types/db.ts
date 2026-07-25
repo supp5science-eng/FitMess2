@@ -521,6 +521,88 @@ export interface Database {
           },
         ];
       };
+      /** Podsetnici (0021): one row per DEVICE the user allowed notifications
+       * on. Keyed by `endpoint` — re-subscribing the same device updates it. */
+      push_subscriptions: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** The push service URL for this device (globally unique). */
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent: string | null;
+          created_at: string;
+          last_success_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          endpoint: string;
+          p256dh: string;
+          auth: string;
+          user_agent?: string | null;
+          created_at?: string;
+          last_success_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          endpoint?: string;
+          p256dh?: string;
+          auth?: string;
+          user_agent?: string | null;
+          created_at?: string;
+          last_success_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      /** Podsetnici (0021): one row per user — which reminders are on, when. */
+      reminder_settings: {
+        Row: {
+          user_id: string;
+          no_log_enabled: boolean;
+          /** Belgrade wall-clock time, `"HH:MM:SS"` (a Postgres `time`). */
+          no_log_time: string;
+          /** Belgrade calendar day it last fired (`"YYYY-MM-DD"`), or null. */
+          no_log_last_sent: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          no_log_enabled?: boolean;
+          no_log_time?: string;
+          no_log_last_sent?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          no_log_enabled?: boolean;
+          no_log_time?: string;
+          no_log_last_sent?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "reminder_settings_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       meal_photos: {
         Row: {
           /** PK + FK to public.logs(id); one photo per log, ON DELETE CASCADE. */

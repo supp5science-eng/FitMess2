@@ -120,6 +120,17 @@ type TableResult = {
   error?: { message: string; code?: string } | null;
 };
 
+const REMINDER_SETTINGS_ROWS = [
+  {
+    user_id: "user-1",
+    no_log_enabled: true,
+    no_log_time: "12:00:00",
+    no_log_last_sent: "2026-07-24",
+    created_at: "2026-07-20T09:00:00.000Z",
+    updated_at: "2026-07-24T12:00:00.000Z",
+  },
+];
+
 const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
   targets: TARGET_ROWS,
   logs: LOG_ROWS,
@@ -127,6 +138,7 @@ const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
   water_intake: WATER_ROWS,
   step_counts: STEP_ROWS,
   habit_checks: HABIT_CHECK_ROWS,
+  reminder_settings: REMINDER_SETTINGS_ROWS,
   meal_photos: MEAL_PHOTO_ROWS,
 };
 
@@ -220,6 +232,7 @@ describe("collectUserExport: AS-014 -- builds a complete own-data export", () =>
     expect(result.waterIntake).toEqual(WATER_ROWS);
     expect(result.stepCounts).toEqual(STEP_ROWS);
     expect(result.habitChecks).toEqual(HABIT_CHECK_ROWS);
+    expect(result.reminderSettings).toEqual(REMINDER_SETTINGS_ROWS);
     expect(result.mealPhotos).toEqual(MEAL_PHOTO_ROWS);
     expect(result.missing_sections).toEqual([]);
   });

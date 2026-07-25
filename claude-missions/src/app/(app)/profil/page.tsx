@@ -133,15 +133,11 @@ export default async function ProfilPage() {
           label="Izgled"
           trailing={<ThemeToggle initialTheme={theme} />}
         />
-        <SettingsInfoRow
+        <SettingsLinkRow
+          href="/profil/podsetnici"
           icon={Bell}
           label="Podsetnici"
-          description="Podsećanje na unos i merenje"
-          trailing={
-            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-              uskoro
-            </span>
-          }
+          description="Javimo se ako dan prođe bez ijednog unosa"
         />
         <RefreshAppButton />
       </SettingsGroup>

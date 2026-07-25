@@ -13,6 +13,7 @@ import {
   isPasswordResetPath,
   isPhoneCapturePath,
   isPublicPath,
+  isMachinePath,
 } from "@/lib/auth/route-protection";
 
 // F013: unit coverage for the pure redirect-decision function that backs
@@ -397,5 +398,18 @@ describe("path classifier helpers", () => {
     expect(isPhoneCapturePath("/telefon/x")).toBe(true);
     expect(isPhoneCapturePath("/telefonx")).toBe(false);
     expect(isPhoneCapturePath("/prijava")).toBe(false);
+  });
+});
+
+describe("machine-to-machine paths", () => {
+  it("lets the reminder scheduler's endpoint through both gates", () => {
+    // It has no session and no phone User-Agent; the route itself checks a
+    // shared secret. An exact match only -- a prefix would open every future
+    // /api/podsetnici/* route by accident.
+    expect(isMachinePath("/api/podsetnici/posalji")).toBe(true);
+    expect(isMachinePath("/api/podsetnici/posalji/nesto")).toBe(false);
+    expect(isMachinePath("/api/podsetnici/proba")).toBe(false);
+    expect(isMachinePath("/api/podsetnici/pretplata")).toBe(false);
+    expect(isMachinePath("/danas")).toBe(false);
   });
 });

@@ -115,6 +115,24 @@ export function isPhoneCapturePath(pathname: string): boolean {
   return matchesPrefix(pathname, PHONE_CAPTURE_PATH);
 }
 
+/**
+ * Machine-to-machine endpoints: called by a scheduler, never by a person.
+ *
+ * These carry no session cookie and no phone User-Agent, so BOTH middleware
+ * gates (phone-only, then auth) would bounce them before the handler ever ran.
+ * They are let through as an exact-match allowlist — never a prefix — and each
+ * one authenticates its caller itself with a shared secret, so skipping the
+ * cookie-based gates costs nothing.
+ *
+ * Today that is only the reminder sender, driven by pg_cron every 15 minutes
+ * (see `supabase/migrations/0021_push_reminders.sql`).
+ */
+export const MACHINE_PATHS: readonly string[] = ["/api/podsetnici/posalji"];
+
+export function isMachinePath(pathname: string): boolean {
+  return MACHINE_PATHS.includes(pathname);
+}
+
 /** Never gated regardless of auth/verification/onboarding state: the public
  * marketing landing page, the pre-auth `/upitnik` questionnaire, the
  * login/signup pages, the auth callback, and the password-reset flow. */

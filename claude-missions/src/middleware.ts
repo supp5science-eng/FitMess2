@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isMobileUserAgent } from "@/lib/device/is-mobile";
 import {
   decideRouteAccess,
+  isMachinePath,
   VERIFY_EMAIL_NOTICE_PATH,
 } from "@/lib/auth/route-protection";
 import { updateSession } from "@/lib/supabase/middleware";
@@ -38,6 +39,14 @@ const GATE_COOKIE_MAX_AGE = 60 * 60 * 24 * 400;
  * `auth.getUser()`, which re-validates against Supabase Auth's servers.
  */
 export async function middleware(request: NextRequest) {
+  // Machine-to-machine endpoints first: the scheduler that sends reminders has
+  // no session and no phone User-Agent, so both gates below would bounce it
+  // before its handler could check its own shared secret. Exact-match
+  // allowlist -- see `isMachinePath`.
+  if (isMachinePath(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
   // Phone-only gate (runs before any auth/session work). FitMess is designed
   // and shipped for phones only: non-mobile visitors are redirected to the
   // "open it on your phone" gate for EVERY route, before the requested page

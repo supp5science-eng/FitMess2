@@ -18,7 +18,9 @@ import { buildDateStrip } from "@/lib/home/date-strip";
 import { getLoggedDayKcals } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
 import { getStepsForDay, getStepsWeek } from "@/lib/steps/steps";
-import { computeStepsWeek, DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
+import { resolveStepGoal } from "@/lib/steps/step-goal";
+import { getCustomStepGoal } from "@/lib/steps/step-goal-read";
+import { computeStepsWeek } from "@/lib/steps/steps-week";
 import { getWaterMl, getWaterWeek } from "@/lib/water/water";
 import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
 import { createClient } from "@/lib/supabase/server";
@@ -107,13 +109,18 @@ export default async function DanasPage({
   // Belgrade day range for the selected day (noon-UTC is a robust in-day
   // instant). Fetch the day's data + the sign-up day in parallel.
   const range = getBelgradeDayRange(new Date(`${selectedKey}T12:00:00.000Z`));
-  const [result, profileResult] = await Promise.all([
+  const [result, profileResult, customStepGoal] = await Promise.all([
     getTodayData(supabase, userId, range),
     supabase
       .from("profiles")
-      .select("created_at, sex, weight_kg")
+      // `activity_level` rides along (the column has always existed) because
+      // it is what the automatic step goal is derived from; the newer
+      // `daily_step_goal` override is read separately -- see
+      // `src/lib/steps/step-goal-read.ts` for why.
+      .select("created_at, sex, weight_kg, activity_level")
       .eq("user_id", userId)
       .maybeSingle(),
+    getCustomStepGoal(supabase, userId),
   ]);
 
   if (result.error) {
@@ -161,6 +168,13 @@ export default async function DanasPage({
   // (not always today), so a past day's card shows that day in context.
   const selectedNoon = new Date(`${selectedKey}T12:00:00.000Z`);
 
+  // Cilj koraka (2026-07-25): the user's own goal if they set one, otherwise
+  // one derived from their activity level -- NOT a flat 10.000 for everybody.
+  const stepGoal = resolveStepGoal(
+    profileResult.data?.activity_level ?? null,
+    customStepGoal
+  ).goal;
+
   const [
     dayKcals,
     adaptivePlan,
@@ -183,6 +197,7 @@ export default async function DanasPage({
           result.data.target.daily_kcal,
           profileResult.data?.sex ?? "male",
           result.data.target.goal,
+          stepGoal,
           now
         )
       : Promise.resolve(null),
@@ -206,7 +221,7 @@ export default async function DanasPage({
   const stepsWeek = computeStepsWeek(
     stepsWeekRows.rows,
     selectedNoon,
-    DEFAULT_STEP_GOAL
+    stepGoal
   ).days.map((day) => ({
     label: day.label,
     pct: day.pct,
@@ -259,7 +274,7 @@ export default async function DanasPage({
       dayKey={selectedKey}
       initialWaterMl={water.ml}
       initialSteps={steps.steps}
-      stepsGoal={DEFAULT_STEP_GOAL}
+      stepsGoal={stepGoal}
       waterGoal={waterGoal}
       stepsWeek={stepsWeek}
       waterWeek={waterWeek}
@@ -279,6 +294,7 @@ async function getAdaptivePlan(
   baseDailyTarget: number,
   sex: "male" | "female",
   goal: GoalType | null,
+  baseStepGoal: number,
   now: Date
 ): Promise<AdaptivePlan | null> {
   const thisWeek = getBelgradeWeekRange(now);
@@ -319,6 +335,7 @@ async function getAdaptivePlan(
     baseDailyTarget,
     sex,
     goal,
+    baseStepGoal,
     carryInKcal,
     now,
   });

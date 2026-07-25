@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Footprints, Minus, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -10,7 +11,7 @@ import {
 import { ProgressRing } from "@/components/home/progress-ring";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
-import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
+import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { cn } from "@/lib/utils";
 
 // Koraci: an interactive step card on `/danas`. Steps are self-reported (a PWA
@@ -156,7 +157,7 @@ function StepperButton({
 export function StepsCard({
   dayKey,
   initialSteps = 0,
-  goal = DEFAULT_STEP_GOAL,
+  goal = FALLBACK_STEP_GOAL,
   week = [],
   className,
 }: {
@@ -164,8 +165,9 @@ export function StepsCard({
   dayKey: string;
   /** The day's already-logged step total, read server-side. */
   initialSteps?: number;
-  /** Recommended daily step goal the ring fills toward (defaults to the classic
-   * 10k target `Analitika` uses, so home and analytics agree). */
+  /** The daily step goal the ring fills toward. Resolved server-side from the
+   * user's own setting or their activity level (`src/lib/steps/step-goal.ts`) --
+   * NOT a flat 10.000 any more. Editable at `/profil/koraci`. */
   goal?: number;
   /** The last 7 days vs the goal, for the strip at the foot of the card
    * (server-derived by `computeStepsWeek`). Empty => the strip is not drawn. */
@@ -563,6 +565,17 @@ export function StepsCard({
                   ? `Uneseno danas: ${formatSteps(totalSteps)} koraka`
                   : `Ukupno danas: ${formatSteps(resultSteps)} koraka`}
               </p>
+              {/* The goal is no longer a flat 10.000 nobody agreed to -- so it
+                  has to be reachable from where it's shown. A Link, not a
+                  button-in-a-button: the card's own tap target is a <button>,
+                  the sheet is not. */}
+              <Link
+                href="/profil/koraci"
+                data-testid="steps-edit-goal-link"
+                className="text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
+              >
+                Cilj: {formatSteps(goal)} · promeni
+              </Link>
             </div>
           </div>
         </div>

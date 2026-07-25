@@ -5,7 +5,7 @@ import {
   computeAdaptivePlan,
   computeCarryInFromLastWeek,
 } from "@/lib/home/adaptive";
-import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
+import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 
 // Deterministic "now": Wednesday 2026-01-07 (week starts Monday 2026-01-05).
 // Mon = index 0, Tue = 1, Wed(today) = 2 -> elapsed 3, 5 days left.
@@ -205,10 +205,25 @@ describe("the activity suggestion and the step goal are one number, not two", ()
       sex: "male",
       now: WED,
     });
-    // 250 kcal of brisk walking ~= 5000 steps on top of the default goal.
+    // 250 kcal of brisk walking ~= 5000 steps on top of the user's own goal.
     expect(plan.trainingSuggestionKcal).toBe(250);
     expect(plan.extraSteps).toBe(5000);
-    expect(plan.adaptiveStepGoal).toBe(DEFAULT_STEP_GOAL + 5000);
+    expect(plan.adaptiveStepGoal).toBe(FALLBACK_STEP_GOAL + 5000);
+  });
+
+  it("adds the extra steps to the USER's goal, not to a flat 10.000", () => {
+    // A sedentary user's goal is 5.000; telling them 15.000 because the app
+    // assumed everybody walks 10.000 is exactly the unrealistic figure this
+    // feature removed.
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 8000), log(TUE, 3000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      baseStepGoal: 5000,
+      now: WED,
+    });
+    expect(plan.extraSteps).toBe(5000);
+    expect(plan.adaptiveStepGoal).toBe(10000);
   });
 
   it("leaves the step goal alone when no activity is needed", () => {
@@ -219,7 +234,7 @@ describe("the activity suggestion and the step goal are one number, not two", ()
       now: WED,
     });
     expect(plan.extraSteps).toBe(0);
-    expect(plan.adaptiveStepGoal).toBe(DEFAULT_STEP_GOAL);
+    expect(plan.adaptiveStepGoal).toBe(FALLBACK_STEP_GOAL);
   });
 });
 

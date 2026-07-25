@@ -11,6 +11,8 @@ import { getMicroHistory } from "@/lib/nutrition/micro-history";
 import { microTargetsForKcal } from "@/lib/nutrition/micro";
 import { computeMicroWeek } from "@/lib/nutrition/micro-week";
 import { getStepsWeek } from "@/lib/steps/steps";
+import { resolveStepGoal } from "@/lib/steps/step-goal";
+import { getCustomStepGoal } from "@/lib/steps/step-goal-read";
 import { computeStepsWeek } from "@/lib/steps/steps-week";
 import { createClient } from "@/lib/supabase/server";
 import { getWaterWeek } from "@/lib/water/water";
@@ -55,6 +57,7 @@ export default async function NedeljaPage() {
     waterResult,
     stepsResult,
     profileResult,
+    customStepGoal,
   ] = await Promise.all([
     getWeekData(supabase, userId, now),
     getMealHistory(supabase, userId, now),
@@ -74,6 +77,9 @@ export default async function NedeljaPage() {
       .select("sex, weight_kg, height_cm, birth_year, activity_level")
       .eq("user_id", userId)
       .maybeSingle(),
+    // Cilj koraka: read on its own so a missing column can't take the profile
+    // read down with it (see `src/lib/steps/step-goal-read.ts`).
+    getCustomStepGoal(supabase, userId),
   ]);
 
   if (result.error) {
@@ -214,7 +220,12 @@ export default async function NedeljaPage() {
   // error (the card then shows a calm retry message).
   const stepsWeek =
     stepsResult.error === null
-      ? computeStepsWeek(stepsResult.rows, now)
+      ? computeStepsWeek(
+          stepsResult.rows,
+          now,
+          // Same goal the home screen counts toward -- one number, two screens.
+          resolveStepGoal(profile?.activity_level ?? null, customStepGoal).goal
+        )
       : null;
 
   // "Svi obroci" meal-history log: group the 30-day window by day, then split

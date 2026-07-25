@@ -119,6 +119,10 @@ export interface Database {
           height_cm: number | null;
           weight_kg: number | null;
           activity_level: ActivityLevel | null;
+          // 0020: the user's own daily step goal. `null`/absent = automatic,
+          // i.e. derived from `activity_level` (see src/lib/steps/step-goal.ts).
+          // Optional for the same fixture reason as the `logs` micro columns.
+          daily_step_goal?: number | null;
           is_admin: boolean;
           onboarded_at: string | null;
           rules: EatingRuleJson[];
@@ -134,6 +138,7 @@ export interface Database {
           height_cm?: number | null;
           weight_kg?: number | null;
           activity_level?: ActivityLevel | null;
+          daily_step_goal?: number | null;
           is_admin?: boolean;
           onboarded_at?: string | null;
           rules?: EatingRuleJson[];
@@ -149,6 +154,7 @@ export interface Database {
           height_cm?: number | null;
           weight_kg?: number | null;
           activity_level?: ActivityLevel | null;
+          daily_step_goal?: number | null;
           is_admin?: boolean;
           onboarded_at?: string | null;
           rules?: EatingRuleJson[];

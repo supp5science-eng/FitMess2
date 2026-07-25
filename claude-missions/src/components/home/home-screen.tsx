@@ -22,7 +22,7 @@ import type { DayCell } from "@/lib/home/date-strip";
 import { computeDayTotals } from "@/lib/home/totals";
 import { computeHealthScore } from "@/lib/nutrition/health-score";
 import { computeMicroTotals, microTargetsForKcal } from "@/lib/nutrition/micro";
-import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
+import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { waterGoalMl } from "@/lib/water/water-week";
 import type { Log, Target } from "@/lib/types/db";
 import { cn } from "@/lib/utils";
@@ -68,7 +68,7 @@ export function HomeScreen({
   dayKey,
   initialWaterMl = 0,
   initialSteps = 0,
-  stepsGoal = DEFAULT_STEP_GOAL,
+  stepsGoal = FALLBACK_STEP_GOAL,
   waterGoal = waterGoalMl(null),
   stepsWeek = [],
   waterWeek = [],

@@ -36,7 +36,7 @@
  */
 
 import { KCAL_FLOOR } from "@/lib/budget/engine";
-import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
+import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { computeWeekSummary, type LogForWeek } from "@/lib/week/summary";
 import type { GoalType, Sex } from "@/lib/types/db";
 
@@ -106,8 +106,8 @@ export interface AdaptivePlan {
   trainingSuggestionKcal: number;
   /** Rough brisk-walk minutes matching `trainingSuggestionKcal` (0 if none). */
   trainingWalkMinutes: number;
-  /** Today's step goal: the default, raised to cover the activity suggestion.
-   * Equals `DEFAULT_STEP_GOAL` when no activity is needed. */
+  /** Today's step goal: the user's own goal, raised to cover the activity
+   * suggestion. Equals the plain goal when no activity is needed. */
   adaptiveStepGoal: number;
   /** Extra steps above the default (0 when none) -- what the note announces. */
   extraSteps: number;
@@ -124,6 +124,13 @@ export interface AdaptivePlanInput {
    * upward. Missing/unknown is treated as a cutting goal (the safe default:
    * never tell someone to eat more on a guess). */
   goal?: GoalType | null;
+  /**
+   * The user's own daily step goal (see `src/lib/steps/step-goal.ts`) -- the
+   * base the activity suggestion is added ON TOP of. Was a flat 10.000 for
+   * everybody until 2026-07-25; passing the real goal is what keeps "prošetaj
+   * još 3.000" from quietly assuming a target the user never agreed to.
+   */
+  baseStepGoal?: number;
   /** Debt carried from the previous week (>= 0); default 0. */
   carryInKcal?: number;
   /** "Now" (injectable for tests); defaults to the real clock at the call. */
@@ -206,7 +213,7 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
     liftedKcal,
     trainingSuggestionKcal,
     trainingWalkMinutes,
-    adaptiveStepGoal: DEFAULT_STEP_GOAL + extraSteps,
+    adaptiveStepGoal: (input.baseStepGoal ?? FALLBACK_STEP_GOAL) + extraSteps,
     extraSteps,
   };
 }

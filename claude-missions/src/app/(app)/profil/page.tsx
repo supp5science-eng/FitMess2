@@ -3,6 +3,7 @@ import {
   Bell,
   Download,
   FileText,
+  Footprints,
   LifeBuoy,
   LogOut,
   Phone,
@@ -111,6 +112,12 @@ export default async function ProfilPage() {
           icon={SlidersHorizontal}
           label="Lični podaci"
           description="Pol, godine, visina, težina, aktivnost"
+        />
+        <SettingsLinkRow
+          href="/profil/koraci"
+          icon={Footprints}
+          label="Cilj koraka"
+          description="Automatski po aktivnosti ili tvoj broj"
         />
         <SettingsLinkRow
           href="/profil/pravila"

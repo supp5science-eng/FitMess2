@@ -10,6 +10,7 @@ import { MacroBars } from "@/components/home/macro-bars";
 import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
 import { StepsCard } from "@/components/home/steps-card";
+import { GricButton } from "@/components/home/gric-button";
 import { WaterButton } from "@/components/home/water-button";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
 import type { LogWithFood } from "@/lib/home/attach-food";
@@ -67,6 +68,7 @@ export function HomeScreen({
   initialSteps = 0,
   stepsGoal = DEFAULT_STEP_GOAL,
   waterGoal = waterGoalMl(null),
+  isToday = true,
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
@@ -100,6 +102,9 @@ export function HomeScreen({
   // bodyweight (the same `waterGoalMl` the Analitika card uses).
   stepsGoal?: number;
   waterGoal?: number;
+  // Whether `dayKey` is the current Belgrade day. Gates "Gric", which always
+  // writes at `now()` and so has no meaning on a past day.
+  isToday?: boolean;
 }) {
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
 
@@ -289,6 +294,10 @@ export function HomeScreen({
             initialMl={initialWaterMl}
             goalMl={waterGoal}
           />
+          {/* Gric sits directly under Voda: both are the "one tap, no
+              ceremony" row of the screen. It logs at `now()`, so it only
+              appears on today. */}
+          {isToday ? <GricButton /> : null}
         </div>
       ) : null}
 

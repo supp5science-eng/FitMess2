@@ -210,6 +210,7 @@ export default async function DanasPage({
       initialSteps={steps.steps}
       stepsGoal={DEFAULT_STEP_GOAL}
       waterGoal={waterGoalMl(profileResult.data?.weight_kg ?? null)}
+      isToday={isToday}
     />
   );
 }

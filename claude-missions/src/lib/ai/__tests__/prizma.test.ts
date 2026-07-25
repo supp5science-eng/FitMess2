@@ -6,13 +6,18 @@ import {
   parsePrizmaAnalysis,
 } from "@/lib/ai/prizma";
 
-function question(pitanje: string, uticaj_kcal: number) {
+function question(pitanje: string, uticaj_kcal: number, stavka = "") {
   return {
+    stavka,
     pitanje,
     opcije: ["Da", "Ne"],
     zasto: "test",
     uticaj_kcal,
   };
+}
+
+function seen(stavka: string, sigurnost: "niska" | "srednja" | "visoka") {
+  return { stavka, sigurnost, nejasno: "" };
 }
 
 describe("parsePrizmaAnalysis", () => {
@@ -73,6 +78,95 @@ describe("parsePrizmaAnalysis", () => {
     if (result.status !== "pitanja") return;
     expect(result.pitanja).toHaveLength(1);
     expect(result.pitanja[0].opcije.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("keeps only questions bound to an item the model was unsure about", () => {
+    const result = parsePrizmaAnalysis(
+      {
+        status: "pitanja",
+        vidim: [seen("pileće belo", "visoka"), seen("sos ispod mesa", "niska")],
+        pitanja: [
+          // Highest impact, but about something it says it sees clearly.
+          question("Koliko je mesa?", 400, "pileće belo"),
+          question("Pavlaka ili majonez?", 150, "sos ispod mesa"),
+        ],
+      },
+      "obrok"
+    );
+    if (result.status !== "pitanja") return;
+    expect(result.source).toBe("derived");
+    expect(result.pitanja.map((q) => q.pitanje)).toEqual([
+      "Pavlaka ili majonez?",
+    ]);
+  });
+
+  it("matches the item loosely, ignoring case and diacritics", () => {
+    const result = parsePrizmaAnalysis(
+      {
+        status: "pitanja",
+        vidim: [seen("Pileće belo meso", "srednja")],
+        pitanja: [question("Kako je spremljeno?", 200, "pilece belo")],
+      },
+      "obrok"
+    );
+    if (result.status !== "pitanja") return;
+    expect(result.source).toBe("derived");
+    expect(result.pitanja).toHaveLength(1);
+  });
+
+  it("cuts template questions down to one when none is bound to doubt", () => {
+    const result = parsePrizmaAnalysis(
+      {
+        status: "pitanja",
+        vidim: [seen("pasulj", "visoka")],
+        pitanja: [
+          question("Šta si jeo?", 100),
+          question("Kako je pripremljeno?", 300),
+          question("Koliko si pojeo?", 200),
+        ],
+      },
+      "obrok"
+    );
+    if (result.status !== "pitanja") return;
+    expect(result.source).toBe("unbound");
+    // Only the most valuable one survives -- three unearned questions is the
+    // complaint we are fixing.
+    expect(result.pitanja.map((q) => q.pitanje)).toEqual([
+      "Kako je pripremljeno?",
+    ]);
+  });
+
+  it("lets questions through untouched when no inventory came back", () => {
+    const result = parsePrizmaAnalysis(
+      {
+        status: "pitanja",
+        pitanja: [question("a", 100), question("b", 200)],
+      },
+      "obrok"
+    );
+    if (result.status !== "pitanja") return;
+    expect(result.source).toBe("unverified");
+    expect(result.pitanja).toHaveLength(2);
+  });
+
+  it("names the food in the fallback question when it knows what it saw", () => {
+    const result = parsePrizmaAnalysis(
+      {
+        status: "pitanja",
+        vidim: [seen("pasulj", "niska"), seen("hleb", "srednja")],
+        pitanja: [],
+      },
+      "obrok"
+    );
+    if (result.status !== "pitanja") return;
+    expect(result.source).toBe("fallback");
+    expect(result.pitanja[0].pitanje).toBe("Koliko si pojeo — pasulj i hleb?");
+  });
+
+  it("still asks the plain portion question with no inventory at all", () => {
+    const result = parsePrizmaAnalysis({ status: "pitanja", pitanja: [] }, "obrok");
+    if (result.status !== "pitanja") return;
+    expect(result.pitanja[0].pitanje).toBe("Koliko si pojeo?");
   });
 
   it("passes a confident estimate straight through", () => {

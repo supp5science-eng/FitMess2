@@ -341,13 +341,40 @@ export async function analyzePrizmaMeal(
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: PRIZMA_ANALYZE_RESPONSE_SCHEMA,
-        // Measurement, not writing -- no reason to sample.
-        temperature: 0,
+        // Deciding WHAT to ask is a judgement call, so this step samples a
+        // little (2026-07-25). At 0 it was fully deterministic: two similar
+        // plates produced word-for-word the same three questions, which is a
+        // large part of why the questions read as canned. The FINALIZE call
+        // below stays at 0 -- that one is arithmetic, and must not wander.
+        temperature: 0.4,
       },
     },
     process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
   );
-  return parsePrizmaAnalysis(parseJson(text), variant);
+  const analysis = parsePrizmaAnalysis(parseJson(text), variant);
+
+  // Server-side trace, never shown to the user. "The questions feel generic"
+  // has three very different causes (a template answer, a malformed one, or an
+  // honestly repetitive plate) and they are indistinguishable from the UI --
+  // this line is how we tell them apart in the logs.
+  if (analysis.status === "pitanja") {
+    console.info(
+      "[prizma] analyze:",
+      JSON.stringify({
+        source: analysis.source,
+        vidim: analysis.vidim.map((i) => `${i.stavka}:${i.sigurnost}`),
+        pitanja: analysis.pitanja.map((q) => ({
+          stavka: q.stavka,
+          pitanje: q.pitanje,
+          kcal: q.uticaj_kcal,
+        })),
+      })
+    );
+  } else {
+    console.info("[prizma] analyze: confident estimate, no questions");
+  }
+
+  return analysis;
 }
 
 /**

@@ -83,8 +83,11 @@ export function describeShots(count: number, reference: ReferenceObject): string
 /** One clarifying question. `opcije` are the tappable answers; `zasto` is what
  * the model could not tell from the photo (shown to the user, so the question
  * visibly comes from THEIR plate); `uticaj_kcal` is how much the answer moves
- * the estimate, which is how we rank and cut to the top three. */
+ * the estimate, which is how we rank and cut to the top three; `stavka` names
+ * the item from `vidim` the question is about, which is what lets us VERIFY the
+ * question was derived from doubt rather than pulled from a template. */
 export const prizmaQuestionSchema = z.object({
+  stavka: z.string().trim().max(80).catch("").default(""),
   pitanje: z.string().trim().min(1).max(200),
   opcije: z.array(z.string().trim().min(1).max(80)).min(2).max(5),
   zasto: z.string().trim().max(160).catch("").default(""),
@@ -96,33 +99,122 @@ export const prizmaQuestionSchema = z.object({
 });
 export type PrizmaQuestion = z.infer<typeof prizmaQuestionSchema>;
 
+/** One line of the model's own inventory of the plate: what it thinks it sees,
+ * how sure it is, and what specifically blocks it. */
+export const prizmaSeenItemSchema = z.object({
+  stavka: z.string().trim().min(1).max(80),
+  sigurnost: z.enum(CONFIDENCE_VALUES).catch("srednja"),
+  nejasno: z.string().trim().max(160).catch("").default(""),
+});
+export type PrizmaSeenItem = z.infer<typeof prizmaSeenItemSchema>;
+
+/**
+ * Where the questions the user ends up seeing actually came from. Logged
+ * server-side (never shown), because "the questions feel generic" has three
+ * very different causes and they are indistinguishable from the outside:
+ *
+ *  - `derived`    — bound to an item the model itself marked unclear. Working
+ *                   as designed.
+ *  - `unbound`    — the model asked about something it claimed to see clearly,
+ *                   or about nothing in particular: a template question. We
+ *                   keep only the single highest-impact one.
+ *  - `unverified` — no inventory came back, so there was nothing to check
+ *                   against; the questions pass through as before.
+ *  - `fallback`   — nothing usable at all; the built-in portion question.
+ */
+export type PrizmaQuestionSource =
+  | "derived"
+  | "unbound"
+  | "unverified"
+  | "fallback";
+
 /** Analysis outcome: EITHER clarifying questions OR (already confident) a final
  * estimate in the shared meal shape. */
 export type PrizmaAnalysis =
-  | { status: "pitanja"; pitanja: PrizmaQuestion[] }
+  | {
+      status: "pitanja";
+      pitanja: PrizmaQuestion[];
+      /** The model's own inventory of the plate (may be empty). */
+      vidim: PrizmaSeenItem[];
+      source: PrizmaQuestionSource;
+    }
   | { status: "procena"; estimate: MealEstimate };
 
 export type PrizmaVariant = "obrok" | "deklaracija";
 
-/** Last-resort question when the model gives us neither a usable estimate nor a
- * usable question. Generic by definition -- but it only ever fires on a
- * malformed response, so the flow degrades instead of dead-ending. */
-function defaultPortionQuestion(variant: PrizmaVariant): PrizmaQuestion {
+/**
+ * Last-resort question when the model gives us neither a usable estimate nor a
+ * usable question. It only fires on a malformed response, so the flow degrades
+ * instead of dead-ending.
+ *
+ * It is still the portion question -- that is the one thing always worth
+ * knowing -- but when we DO have the model's inventory it names the food, so
+ * even the fallback reads as "about your plate" rather than a stock line.
+ */
+function defaultPortionQuestion(
+  variant: PrizmaVariant,
+  seen: PrizmaSeenItem[]
+): PrizmaQuestion {
+  const named = seen
+    .map((item) => item.stavka)
+    .filter(Boolean)
+    .slice(0, 2)
+    .join(" i ");
+
   return variant === "deklaracija"
     ? {
+        stavka: "",
         pitanje: "Koliko si pojeo?",
         opcije: ["Ceo proizvod", "Otprilike pola", "Trećinu", "Dve kašike"],
-        zasto: "",
+        zasto: named ? `Ne vidim koliko je pojedeno od: ${named}.` : "",
         uticaj_kcal: 0,
         vise_odgovora: false,
       }
     : {
-        pitanje: "Koliko si pojeo?",
+        stavka: named,
+        pitanje: named ? `Koliko si pojeo — ${named}?` : "Koliko si pojeo?",
         opcije: ["Sve", "Otprilike pola", "Manje od pola", "Više od pola"],
-        zasto: "",
+        zasto: named ? "Ne mogu pouzdano da procenim količinu sa slike." : "",
         uticaj_kcal: 0,
         vise_odgovora: false,
       };
+}
+
+/** Lowercase + strip Serbian diacritics, so "Pileće belo" matches "pilece belo". */
+function normalise(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/đ/g, "d")
+    .trim();
+}
+
+/**
+ * Does this question point at something the model itself said it was unsure of?
+ *
+ * The prompt has always ORDERED the model to ask only about unclear items, but
+ * an order in a prompt is a request, not a constraint -- nothing stopped it
+ * from filling in a confident inventory and then asking the same three template
+ * questions anyway. This is the check that makes the rule real.
+ *
+ * Matching is deliberately loose (either string containing the other, accents
+ * folded): the model writes "meso" in one field and "pileće meso" in the other
+ * far too often for exact equality to be worth defending.
+ */
+function isDerivedFromDoubt(
+  question: PrizmaQuestion,
+  seen: PrizmaSeenItem[]
+): boolean {
+  const target = normalise(question.stavka);
+  if (target.length < 2) return false;
+
+  return seen.some((item) => {
+    if (item.sigurnost === "visoka") return false;
+    const name = normalise(item.stavka);
+    if (name.length < 2) return false;
+    return name.includes(target) || target.includes(name);
+  });
 }
 
 /**
@@ -140,6 +232,12 @@ export function parsePrizmaAnalysis(
 ): PrizmaAnalysis {
   const obj = (raw ?? {}) as Record<string, unknown>;
 
+  // The model's inventory of the plate. Parsed per item for the same reason the
+  // questions are: one bad line must not cost us the rest.
+  const seen = (Array.isArray(obj.vidim) ? obj.vidim : [])
+    .map((item) => prizmaSeenItemSchema.safeParse(item))
+    .flatMap((result) => (result.success ? [result.data] : []));
+
   if (obj.status === "procena") {
     const est = mealEstimateSchema.safeParse(obj);
     // `mealEstimateSchema` is all-`.catch()`, so it succeeds on nearly any
@@ -155,17 +253,53 @@ export function parsePrizmaAnalysis(
   // Parse question-by-question: one malformed entry must not take the usable
   // ones down with it (which `z.array(...).safeParse` would do).
   const rawList = Array.isArray(obj.pitanja) ? obj.pitanja : [];
-  const pitanja = rawList
+  const parsed = rawList
     .map((q) => prizmaQuestionSchema.safeParse(q))
     .flatMap((result) => (result.success ? [result.data] : []))
     .filter((q) => q.opcije.length >= 2)
-    .sort((a, b) => b.uticaj_kcal - a.uticaj_kcal)
-    .slice(0, MAX_QUESTIONS);
+    .sort((a, b) => b.uticaj_kcal - a.uticaj_kcal);
 
-  if (pitanja.length === 0) {
-    return { status: "pitanja", pitanja: [defaultPortionQuestion(variant)] };
+  if (parsed.length === 0) {
+    return {
+      status: "pitanja",
+      pitanja: [defaultPortionQuestion(variant, seen)],
+      vidim: seen,
+      source: "fallback",
+    };
   }
-  return { status: "pitanja", pitanja };
+
+  // With no inventory there is nothing to check the questions against, so they
+  // pass through as before -- a missing `vidim` is our blind spot, not the
+  // user's problem.
+  if (seen.length === 0) {
+    return {
+      status: "pitanja",
+      pitanja: parsed.slice(0, MAX_QUESTIONS),
+      vidim: seen,
+      source: "unverified",
+    };
+  }
+
+  const derived = parsed.filter((q) => isDerivedFromDoubt(q, seen));
+  if (derived.length > 0) {
+    return {
+      status: "pitanja",
+      pitanja: derived.slice(0, MAX_QUESTIONS),
+      vidim: seen,
+      source: "derived",
+    };
+  }
+
+  // The model inventoried the plate and then asked about none of it -- template
+  // questions. Rather than three of them, keep the single most valuable one:
+  // dropping them all would only push the user into the generic fallback, and
+  // asking three questions that weren't earned is exactly the complaint.
+  return {
+    status: "pitanja",
+    pitanja: parsed.slice(0, 1),
+    vidim: seen,
+    source: "unbound",
+  };
 }
 
 // The JSON schema for the ANALYSIS call. `vidim` comes FIRST in
@@ -195,14 +329,20 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
       items: {
         type: "OBJECT",
         properties: {
+          // `stavka` FIRST, mirroring the `vidim`-first trick one level up: the
+          // model must name the item it is unsure about before it writes the
+          // question, so the question follows from the doubt instead of the
+          // doubt being back-filled to justify a template question.
+          stavka: { type: "STRING" },
           pitanje: { type: "STRING" },
           opcije: { type: "ARRAY", items: { type: "STRING" } },
           zasto: { type: "STRING" },
           uticaj_kcal: { type: "NUMBER" },
           vise_odgovora: { type: "BOOLEAN" },
         },
-        required: ["pitanje", "opcije", "zasto", "uticaj_kcal"],
+        required: ["stavka", "pitanje", "opcije", "zasto", "uticaj_kcal"],
         propertyOrdering: [
+          "stavka",
           "pitanje",
           "opcije",
           "zasto",
@@ -338,13 +478,17 @@ U "nejasno" napiši KONKRETNO šta te koči kod te stavke (npr. "ne vidim dno ta
 
 KORAK 2 — PITAJ SAMO ONO ŠTO SI SAM OZNAČIO KAO NEJASNO.
 Pitanja izvedi ISKLJUČIVO iz stavki sa "srednja"/"niska" sigurnošću. Najviše ${MAX_QUESTIONS}.
+- OBAVEZNO: u "stavka" upiši TAČAN naziv stavke iz "vidim" na koju se pitanje odnosi. Pitanje bez stavke iz "vidim" se odbacuje.
+- Ako su sve stavke "visoka" — NE postavljaj nijedno pitanje, nego idi na KORAK 3.
+- IMENUJ hranu u samom pitanju umesto uopštene kategorije: "Sos ispod mesa — pavlaka ili majonez?" je dobro, "Kako je pripremljeno?" nije.
 - STROGO ZABRANJENO: pitanje na koje slike već odgovaraju. Ako se sa dva ugla vidi koliko je hrane, NE pitaj koliko je pojedeno.
-- STROGO ZABRANJENO: opšta pitanja po šablonu ("Šta si jeo?", "Da li je zdravo?").
+- STROGO ZABRANJENO: opšta pitanja po šablonu ("Šta si jeo?", "Da li je zdravo?", "Kako je spremljeno?" bez imena jela).
 - Svako pitanje mora da menja procenu za bar 40 kcal. U "uticaj_kcal" napiši koliko kcal otprilike visi o tom odgovoru (razlika između najskuplje i najjeftinije opcije).
-- U "zasto" napiši kratko šta tačno na slici ne možeš da razaznaš. To se prikazuje korisniku.
+- U "zasto" napiši kratko šta tačno na TOJ stavci ne možeš da razaznaš. To se prikazuje korisniku.
 - "opcije": 2–4 konkretna, kratka odgovora (npr. "Grilovano", "Na ulju", "Pohovano", "U rerni"). NE dodaj "Ne znam" ni "Nešto drugo" — to dodaje aplikacija.
 - "vise_odgovora": true samo kad više odgovora može da važi istovremeno (npr. koji sve prilozi).
 - Pitanja i opcije na srpskom (latinica).
+- Bolje jedno pitanje koje zaista menja procenu nego tri pitanja da bi ih bilo tri.
 Vrati "status": "pitanja".
 
 KORAK 3 — ILI PROCENI ODMAH.
@@ -361,6 +505,7 @@ U "vidim" navedi šta si očitao (npr. "kcal na 100 g", "ukupna masa pakovanja")
 
 KORAK 2 — PITAJ ONO ŠTO FALI.
 Sa deklaracije čitaš vrednosti na 100 g, ali ti gotovo uvek fali KOLIKO je proizvod ukupno težak i KOLIKO je pojedeno. Postavi najviše ${MAX_QUESTIONS} kratka pitanja sa 2–4 ponuđena odgovora.
+- OBAVEZNO: u "stavka" upiši naziv stavke iz "vidim" na koju se pitanje odnosi.
 - U "uticaj_kcal" napiši koliko kcal visi o odgovoru; u "zasto" šta ti nedostaje.
 - NE dodaj "Ne znam" ni "Nešto drugo" u opcije — to dodaje aplikacija.
 - Pitanja i opcije na srpskom (latinica).

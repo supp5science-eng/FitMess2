@@ -6,7 +6,7 @@ import "./ai-thinking.css";
 
 /**
  * The shared "AI razmišlja" loading animation — used everywhere the app is
- * waiting on a Gemini estimate (iPeach, Slikaj obrok, Reci obrok, Deklaracija).
+ * waiting on a Gemini estimate (Prizma, Slikaj obrok, Reci obrok, Deklaracija).
  * A morphing brand-gradient orb under a rotating ring + pulsing haloes, with a
  * short status line that cycles through `lines` so the wait feels alive and
  * on-brand instead of a bare spinner. See `ai-thinking.css` for the motion.

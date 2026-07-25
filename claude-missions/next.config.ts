@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
     SUPABASE_PUBLISHABLE_KEY: process.env.SUPABASE_PUBLISHABLE_KEY,
   },
   experimental: {
-    // Default Server Action body limit is 1MB. "iPeach mtd" posts a photo AND
+    // Default Server Action body limit is 1MB. "Prizma" posts a photo AND
     // an audio clip in one action (each up to ~2MB), so the combined payload
     // can exceed 1MB -- which silently rejected the request before the action
     // ran and left the flow spinning forever. 10MB comfortably covers image +

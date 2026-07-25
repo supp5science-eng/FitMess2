@@ -2,18 +2,18 @@
 
 import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
 import {
-  analyzeIPeachMeal,
+  analyzePrizmaMeal,
   estimateMealFromImageAndVoice,
-  finalizeIPeachMeal,
+  finalizePrizmaMeal,
   type CombinedVariant,
   type ImagePart,
 } from "@/lib/ai/gemini";
 import {
   REFERENCE_OBJECTS,
-  type IPeachAnalysis,
-  type IPeachVariant,
+  type PrizmaAnalysis,
+  type PrizmaVariant,
   type ReferenceObject,
-} from "@/lib/ai/ipeach";
+} from "@/lib/ai/prizma";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,7 +26,7 @@ import { createClient } from "@/lib/supabase/server";
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB (client already downscales)
 const MAX_AUDIO_BYTES = 12 * 1024 * 1024; // ~60s mono 16kHz WAV is well under this
 const MAX_NOTE_LEN = 1000;
-const MAX_IMAGES = 5; // iPeach v2: up to 5 angles of the same meal
+const MAX_IMAGES = 5; // Prizma v2: up to 5 angles of the same meal
 const MAX_ANSWERS_LEN = 4000; // compiled Q&A text
 
 export type CombinedEstimateResult =
@@ -105,10 +105,10 @@ export async function estimateCombinedAction(
   }
 }
 
-// --- iPeach mtd v2: photos -> AI questions -> answers -> estimate -----------
+// --- Prizma v2: photos -> AI questions -> answers -> estimate -----------
 
-export type IPeachAnalyzeResult =
-  | { ok: true; data: IPeachAnalysis }
+export type PrizmaAnalyzeResult =
+  | { ok: true; data: PrizmaAnalysis }
   | { ok: false; error_sr: string };
 
 /** Read the 1–5 uploaded photos off the form, auth-gated + size-checked. */
@@ -118,7 +118,7 @@ async function readImages(
   | {
       ok: true;
       images: ImagePart[];
-      variant: IPeachVariant;
+      variant: PrizmaVariant;
       reference: ReferenceObject;
     }
   | { ok: false; error_sr: string }
@@ -160,7 +160,7 @@ async function readImages(
   }
 
   const tipRaw = formData.get("tip");
-  const variant: IPeachVariant =
+  const variant: PrizmaVariant =
     tipRaw === "deklaracija" ? "deklaracija" : "obrok";
 
   // Which object the user laid beside the plate -- the model's metric anchor.
@@ -175,17 +175,17 @@ async function readImages(
 }
 
 /**
- * iPeach step 1: send the photos to Gemini and get back EITHER clarifying
+ * Prizma step 1: send the photos to Gemini and get back EITHER clarifying
  * questions or (already confident) a final estimate.
  */
 export async function analyzeMealAction(
   formData: FormData
-): Promise<IPeachAnalyzeResult> {
+): Promise<PrizmaAnalyzeResult> {
   const read = await readImages(formData);
   if (!read.ok) return read;
 
   try {
-    const data = await analyzeIPeachMeal(
+    const data = await analyzePrizmaMeal(
       read.images,
       read.variant,
       read.reference
@@ -201,7 +201,7 @@ export async function analyzeMealAction(
 }
 
 /**
- * iPeach step 2: the same photos + the user's answers (compiled text and/or a
+ * Prizma step 2: the same photos + the user's answers (compiled text and/or a
  * spoken clip) -> the final estimate in the shared meal shape.
  */
 export async function finalizeMealAction(
@@ -234,7 +234,7 @@ export async function finalizeMealAction(
   }
 
   try {
-    const data = await finalizeIPeachMeal(
+    const data = await finalizePrizmaMeal(
       read.images,
       answers || null,
       audioPart,

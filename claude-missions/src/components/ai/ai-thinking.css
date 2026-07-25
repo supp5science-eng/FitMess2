@@ -1,6 +1,6 @@
 /*
  * "AI razmišlja" — the shared premium loading animation for every place where
- * the app is waiting on a Gemini estimate (iPeach, Slikaj obrok, Reci obrok,
+ * the app is waiting on a Gemini estimate (Prizma, Slikaj obrok, Reci obrok,
  * Deklaracija). A morphing, breathing brand-gradient blob under a rotating
  * conic ring and pulsing haloes, plus a shimmering indeterminate bar. Pure
  * transform/opacity so it stays smooth on phones; fully theme-aware via the

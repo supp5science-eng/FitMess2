@@ -62,7 +62,7 @@ const OPTIONS: AddSheetOption[] = [
   // leads the menu and carries a teal "NAJTAČNIJE" badge to draw people to it.
   {
     key: "najtacnije",
-    label: "iPeach mtd",
+    label: "Prizma",
     icon: Target,
     href: "/dodaj/najtacnije",
     available: true,

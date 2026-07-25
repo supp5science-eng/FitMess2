@@ -3,8 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   describeShots,
   MAX_QUESTIONS,
-  parseIPeachAnalysis,
-} from "@/lib/ai/ipeach";
+  parsePrizmaAnalysis,
+} from "@/lib/ai/prizma";
 
 function question(pitanje: string, uticaj_kcal: number) {
   return {
@@ -15,9 +15,9 @@ function question(pitanje: string, uticaj_kcal: number) {
   };
 }
 
-describe("parseIPeachAnalysis", () => {
+describe("parsePrizmaAnalysis", () => {
   it("orders questions by how much they move the estimate", () => {
-    const result = parseIPeachAnalysis(
+    const result = parsePrizmaAnalysis(
       {
         status: "pitanja",
         pitanja: [question("malo", 40), question("puno", 280), question("srednje", 120)],
@@ -34,7 +34,7 @@ describe("parseIPeachAnalysis", () => {
   });
 
   it("keeps only the highest-impact questions", () => {
-    const result = parseIPeachAnalysis(
+    const result = parsePrizmaAnalysis(
       {
         status: "pitanja",
         pitanja: [
@@ -53,7 +53,7 @@ describe("parseIPeachAnalysis", () => {
   });
 
   it("drops questions that don't offer a real choice", () => {
-    const result = parseIPeachAnalysis(
+    const result = parsePrizmaAnalysis(
       {
         status: "pitanja",
         pitanja: [
@@ -69,14 +69,14 @@ describe("parseIPeachAnalysis", () => {
   });
 
   it("falls back to the portion question instead of dead-ending", () => {
-    const result = parseIPeachAnalysis({ status: "pitanja", pitanja: [] }, "obrok");
+    const result = parsePrizmaAnalysis({ status: "pitanja", pitanja: [] }, "obrok");
     if (result.status !== "pitanja") return;
     expect(result.pitanja).toHaveLength(1);
     expect(result.pitanja[0].opcije.length).toBeGreaterThanOrEqual(2);
   });
 
   it("passes a confident estimate straight through", () => {
-    const result = parseIPeachAnalysis(
+    const result = parsePrizmaAnalysis(
       {
         status: "procena",
         naziv: "Pileća supa",
@@ -95,7 +95,7 @@ describe("parseIPeachAnalysis", () => {
   });
 
   it("asks rather than returning a malformed estimate", () => {
-    const result = parseIPeachAnalysis(
+    const result = parsePrizmaAnalysis(
       { status: "procena", pitanja: [question("koliko", 200)] },
       "obrok"
     );

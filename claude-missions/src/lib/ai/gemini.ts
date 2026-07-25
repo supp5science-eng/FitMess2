@@ -25,17 +25,17 @@ import {
 } from "@/lib/ai/voice-estimate";
 import {
   describeShots,
-  IPEACH_ANALYZE_LABEL_PROMPT,
-  IPEACH_ANALYZE_PROMPT,
-  IPEACH_ANALYZE_RESPONSE_SCHEMA,
-  IPEACH_FINALIZE_LABEL_PROMPT,
-  IPEACH_FINALIZE_PROMPT,
-  IPEACH_FINALIZE_RESPONSE_SCHEMA,
-  parseIPeachAnalysis,
-  type IPeachAnalysis,
-  type IPeachVariant,
+  PRIZMA_ANALYZE_LABEL_PROMPT,
+  PRIZMA_ANALYZE_PROMPT,
+  PRIZMA_ANALYZE_RESPONSE_SCHEMA,
+  PRIZMA_FINALIZE_LABEL_PROMPT,
+  PRIZMA_FINALIZE_PROMPT,
+  PRIZMA_FINALIZE_RESPONSE_SCHEMA,
+  parsePrizmaAnalysis,
+  type PrizmaAnalysis,
+  type PrizmaVariant,
   type ReferenceObject,
-} from "@/lib/ai/ipeach";
+} from "@/lib/ai/prizma";
 import { reconcileEstimate } from "@/lib/ai/reconcile";
 
 // Server-only Gemini client. We call the REST `generateContent` endpoint
@@ -245,12 +245,12 @@ export async function estimateMealFromImage(
   return parsed.data;
 }
 
-/** iPeach input variant: a plate of food ("obrok") or a nutrition label
+/** Prizma input variant: a plate of food ("obrok") or a nutrition label
  * ("deklaracija") -- selects which fusion prompt Gemini gets. */
 export type CombinedVariant = "obrok" | "deklaracija";
 
 /**
- * "iPeach": photo + the user's spoken and/or typed description (with a rough
+ * "Prizma": photo + the user's spoken and/or typed description (with a rough
  * portion) -> validated estimate, fused in ONE multimodal request. `variant`
  * picks the prompt: "obrok" reads a plate + the eaten amount; "deklaracija"
  * reads a nutrition label per-100g + the total/eaten amount the user states.
@@ -294,7 +294,7 @@ export async function estimateMealFromImageAndVoice(
   return parsed.data;
 }
 
-/** An inline image part for the multi-image iPeach calls. */
+/** An inline image part for the multi-image Prizma calls. */
 export interface ImagePart {
   base64: string;
   mimeType: string;
@@ -307,20 +307,20 @@ function imageInlineParts(images: ImagePart[]): Array<Record<string, unknown>> {
 }
 
 /**
- * iPeach step 1 (ANALYZE): 1–5 photos of the same meal (or nutrition label) ->
+ * Prizma step 1 (ANALYZE): 1–5 photos of the same meal (or nutrition label) ->
  * EITHER clarifying questions (each with tappable options) OR, when already
- * confident, a final estimate. Defensive parse (`parseIPeachAnalysis`) never
+ * confident, a final estimate. Defensive parse (`parsePrizmaAnalysis`) never
  * throws — a malformed response degrades to the "how much did you eat?"
  * question so the flow can't dead-end. Uses the meal model.
  */
-export async function analyzeIPeachMeal(
+export async function analyzePrizmaMeal(
   images: ImagePart[],
-  variant: IPeachVariant = "obrok",
+  variant: PrizmaVariant = "obrok",
   reference: ReferenceObject = "nista"
-): Promise<IPeachAnalysis> {
+): Promise<PrizmaAnalysis> {
   const isLabel = variant === "deklaracija";
   const parts: Array<Record<string, unknown>> = [
-    { text: isLabel ? IPEACH_ANALYZE_LABEL_PROMPT : IPEACH_ANALYZE_PROMPT },
+    { text: isLabel ? PRIZMA_ANALYZE_LABEL_PROMPT : PRIZMA_ANALYZE_PROMPT },
   ];
   // Angles and a scale anchor only mean something for a plate of food; the
   // label flow is just reading a table, so it gets neither.
@@ -334,33 +334,33 @@ export async function analyzeIPeachMeal(
       contents: [{ role: "user", parts }],
       generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: IPEACH_ANALYZE_RESPONSE_SCHEMA,
+        responseSchema: PRIZMA_ANALYZE_RESPONSE_SCHEMA,
         // Measurement, not writing -- no reason to sample.
         temperature: 0,
       },
     },
     process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
   );
-  return parseIPeachAnalysis(parseJson(text), variant);
+  return parsePrizmaAnalysis(parseJson(text), variant);
 }
 
 /**
- * iPeach step 2 (FINALIZE): the same photos + the user's answers (as text
+ * Prizma step 2 (FINALIZE): the same photos + the user's answers (as text
  * and/or a spoken clip) -> a validated estimate in the SHARED meal schema, so
  * the confirm/edit/save screen stays common. `answersText` is the compiled
  * Q&A; `audio` is an optional single recording that answers everything by
  * voice. Uses the meal model.
  */
-export async function finalizeIPeachMeal(
+export async function finalizePrizmaMeal(
   images: ImagePart[],
   answersText: string | null,
   audio: { base64: string; mimeType: string } | null,
-  variant: IPeachVariant = "obrok",
+  variant: PrizmaVariant = "obrok",
   reference: ReferenceObject = "nista"
 ): Promise<CombinedMealEstimate> {
   const isLabel = variant === "deklaracija";
   const parts: Array<Record<string, unknown>> = [
-    { text: isLabel ? IPEACH_FINALIZE_LABEL_PROMPT : IPEACH_FINALIZE_PROMPT },
+    { text: isLabel ? PRIZMA_FINALIZE_LABEL_PROMPT : PRIZMA_FINALIZE_PROMPT },
   ];
   if (!isLabel) {
     parts.push({ text: describeShots(images.length, reference) });
@@ -379,9 +379,9 @@ export async function finalizeIPeachMeal(
       contents: [{ role: "user", parts }],
       generationConfig: {
         responseMimeType: "application/json",
-        // iPeach-only schema: forces `komponente` BEFORE the totals, so the
+        // Prizma-only schema: forces `komponente` BEFORE the totals, so the
         // model itemises and sums instead of leaping to a round number.
-        responseSchema: IPEACH_FINALIZE_RESPONSE_SCHEMA,
+        responseSchema: PRIZMA_FINALIZE_RESPONSE_SCHEMA,
         temperature: 0,
       },
     },
@@ -396,7 +396,7 @@ export async function finalizeIPeachMeal(
   // add up to the total, and the macros must add up to the calories.
   const { estimate, corrections } = reconcileEstimate(parsed.data);
   if (corrections.length > 0) {
-    console.warn("[ipeach] reconciled estimate:", corrections.join("; "));
+    console.warn("[prizma] reconciled estimate:", corrections.join("; "));
   }
   return estimate;
 }

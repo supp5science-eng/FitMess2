@@ -11,7 +11,7 @@ import type { MealEstimate } from "@/lib/ai/meal-estimate";
 //   1. The components must add up to the stated total.
 //   2. The macros must add up to the stated calories (Atwater: 4/4/9).
 //
-// This runs only on the iPeach path, where we ask for the breakdown. It never
+// This runs only on the Prizma path, where we ask for the breakdown. It never
 // invents numbers -- it only picks which of the model's own figures to trust
 // when they disagree, and lowers confidence when it had to intervene.
 
@@ -59,7 +59,7 @@ export function kcalFromMacros(
 }
 
 /**
- * Reconcile an iPeach estimate with itself. Returns a corrected copy plus a
+ * Reconcile an Prizma estimate with itself. Returns a corrected copy plus a
  * list of what changed; never throws, never fabricates a value that isn't
  * derived from the model's own output.
  */

@@ -1,7 +1,7 @@
 import "./shot-guide.css";
 
 /**
- * The two iPeach capture scenes, shown right before the shot they describe.
+ * The two Prizma capture scenes, shown right before the shot they describe.
  *
  * Both scenes show the same thing from the same viewpoint -- a plate of food
  * with a fork beside it, and the phone above -- so the ONLY difference the eye

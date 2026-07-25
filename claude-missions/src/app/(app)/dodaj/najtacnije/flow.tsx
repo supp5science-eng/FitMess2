@@ -25,9 +25,9 @@ import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
 import {
   DONT_KNOW_LABEL,
   OTHER_LABEL,
-  type IPeachQuestion,
+  type PrizmaQuestion,
   type ReferenceObject,
-} from "@/lib/ai/ipeach";
+} from "@/lib/ai/prizma";
 import type { MealComponent } from "@/lib/ai/meal-estimate";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import { downscaleImage } from "@/lib/image/downscale";
@@ -35,7 +35,7 @@ import { inspectPhoto, type PhotoIssue } from "@/lib/image/quality";
 import { logMealAction } from "../obrok/actions";
 import { analyzeMealAction, finalizeMealAction } from "./actions";
 
-// iPeach mtd v3 — the guided two-angle flow.
+// Prizma v3 — the guided two-angle flow.
 //
 // The accuracy of every other add-flow is capped by one thing: a photo cannot
 // weigh food. This screen's job is to go and get what the photo is missing,
@@ -167,7 +167,7 @@ export function NajtacnijeFlow() {
   const [confirmSkipShot, setConfirmSkipShot] = useState(false);
 
   // AI questions + the user's tapped answers (index-aligned to `questions`).
-  const [questions, setQuestions] = useState<IPeachQuestion[]>([]);
+  const [questions, setQuestions] = useState<PrizmaQuestion[]>([]);
   const [answers, setAnswers] = useState<string[][]>([]);
   const [note, setNote] = useState("");
 
@@ -590,7 +590,7 @@ export function NajtacnijeFlow() {
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          iPeach mtd
+          Prizma
         </h1>
         <div className="flex items-center gap-3">
           {/* Always available, so dismissing the guides is never one-way. */}

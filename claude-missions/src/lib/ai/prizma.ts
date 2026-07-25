@@ -6,7 +6,7 @@ import {
   type MealEstimate,
 } from "@/lib/ai/meal-estimate";
 
-// iPeach mtd v3 — the highest-accuracy path, built around one idea: a photo
+// Prizma v3 — the highest-accuracy path, built around one idea: a photo
 // cannot weigh food, so stop pretending it can and go get the missing facts.
 //
 // Three things carry the accuracy, in order of how much they matter:
@@ -84,7 +84,7 @@ export function describeShots(count: number, reference: ReferenceObject): string
  * the model could not tell from the photo (shown to the user, so the question
  * visibly comes from THEIR plate); `uticaj_kcal` is how much the answer moves
  * the estimate, which is how we rank and cut to the top three. */
-export const ipeachQuestionSchema = z.object({
+export const prizmaQuestionSchema = z.object({
   pitanje: z.string().trim().min(1).max(200),
   opcije: z.array(z.string().trim().min(1).max(80)).min(2).max(5),
   zasto: z.string().trim().max(160).catch("").default(""),
@@ -94,20 +94,20 @@ export const ipeachQuestionSchema = z.object({
     .transform((n) => (Number.isFinite(n) ? Math.min(Math.max(n, 0), 2000) : 0)),
   vise_odgovora: z.coerce.boolean().catch(false).default(false),
 });
-export type IPeachQuestion = z.infer<typeof ipeachQuestionSchema>;
+export type PrizmaQuestion = z.infer<typeof prizmaQuestionSchema>;
 
 /** Analysis outcome: EITHER clarifying questions OR (already confident) a final
  * estimate in the shared meal shape. */
-export type IPeachAnalysis =
-  | { status: "pitanja"; pitanja: IPeachQuestion[] }
+export type PrizmaAnalysis =
+  | { status: "pitanja"; pitanja: PrizmaQuestion[] }
   | { status: "procena"; estimate: MealEstimate };
 
-export type IPeachVariant = "obrok" | "deklaracija";
+export type PrizmaVariant = "obrok" | "deklaracija";
 
 /** Last-resort question when the model gives us neither a usable estimate nor a
  * usable question. Generic by definition -- but it only ever fires on a
  * malformed response, so the flow degrades instead of dead-ending. */
-function defaultPortionQuestion(variant: IPeachVariant): IPeachQuestion {
+function defaultPortionQuestion(variant: PrizmaVariant): PrizmaQuestion {
   return variant === "deklaracija"
     ? {
         pitanje: "Koliko si pojeo?",
@@ -126,7 +126,7 @@ function defaultPortionQuestion(variant: IPeachVariant): IPeachQuestion {
 }
 
 /**
- * Defensively turn Gemini's raw analysis JSON into a typed `IPeachAnalysis`.
+ * Defensively turn Gemini's raw analysis JSON into a typed `PrizmaAnalysis`.
  * Never throws: a malformed estimate falls through to questions, malformed
  * questions are dropped, and if nothing usable is left we ask the one thing we
  * always need (the eaten amount), so the flow can never dead-end.
@@ -134,10 +134,10 @@ function defaultPortionQuestion(variant: IPeachVariant): IPeachQuestion {
  * Surviving questions are ordered by kcal at stake and cut to `MAX_QUESTIONS`,
  * so when the model over-asks the user still only sees what actually matters.
  */
-export function parseIPeachAnalysis(
+export function parsePrizmaAnalysis(
   raw: unknown,
-  variant: IPeachVariant
-): IPeachAnalysis {
+  variant: PrizmaVariant
+): PrizmaAnalysis {
   const obj = (raw ?? {}) as Record<string, unknown>;
 
   if (obj.status === "procena") {
@@ -156,7 +156,7 @@ export function parseIPeachAnalysis(
   // ones down with it (which `z.array(...).safeParse` would do).
   const rawList = Array.isArray(obj.pitanja) ? obj.pitanja : [];
   const pitanja = rawList
-    .map((q) => ipeachQuestionSchema.safeParse(q))
+    .map((q) => prizmaQuestionSchema.safeParse(q))
     .flatMap((result) => (result.success ? [result.data] : []))
     .filter((q) => q.opcije.length >= 2)
     .sort((a, b) => b.uticaj_kcal - a.uticaj_kcal)
@@ -173,7 +173,7 @@ export function parseIPeachAnalysis(
 // item, with its own confidence per item, before it is allowed to write
 // questions or an estimate. Questions then fall out of the low-confidence
 // items instead of being pulled from a template.
-export const IPEACH_ANALYZE_RESPONSE_SCHEMA = {
+export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
     vidim: {
@@ -238,12 +238,12 @@ export const IPEACH_ANALYZE_RESPONSE_SCHEMA = {
   ],
 } as const;
 
-// The FINALIZE schema. This one is iPeach-only (the shared
+// The FINALIZE schema. This one is Prizma-only (the shared
 // `MEAL_RESPONSE_SCHEMA` stays untouched, so the plain "Slikaj obrok" flow is
 // unaffected) and its whole point is `komponente` sitting BEFORE the totals in
 // `propertyOrdering`: the model itemises, then sums, instead of leaping to a
 // round number. `reconcile.ts` then verifies that sum arithmetically.
-export const IPEACH_FINALIZE_RESPONSE_SCHEMA = {
+export const PRIZMA_FINALIZE_RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
     naziv: { type: "STRING" },
@@ -327,7 +327,7 @@ Kućne mere:
 
 // --- ANALYSIS prompts (step 1) --------------------------------------------
 
-export const IPEACH_ANALYZE_PROMPT = `Ti si iskusan nutricionista koji procenjuje obroke sa fotografija.
+export const PRIZMA_ANALYZE_PROMPT = `Ti si iskusan nutricionista koji procenjuje obroke sa fotografija.
 
 KORAK 1 — POPIŠI ŠTA VIDIŠ.
 U "vidim" navedi svaku komponentu obroka posebno, i za SVAKU odredi svoju sigurnost:
@@ -354,7 +354,7 @@ ${NUTRITION_ANCHORS}
 
 Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;
 
-export const IPEACH_ANALYZE_LABEL_PROMPT = `Dobijaš 1–5 FOTOGRAFIJA nutritivne DEKLARACIJE (tabele) proizvoda, po potrebi i sam proizvod/pakovanje.
+export const PRIZMA_ANALYZE_LABEL_PROMPT = `Dobijaš 1–5 FOTOGRAFIJA nutritivne DEKLARACIJE (tabele) proizvoda, po potrebi i sam proizvod/pakovanje.
 
 KORAK 1 — POPIŠI ŠTA VIDIŠ.
 U "vidim" navedi šta si očitao (npr. "kcal na 100 g", "ukupna masa pakovanja") sa sigurnošću za svaku stavku, i u "nejasno" šta ne možeš da pročitaš.
@@ -373,7 +373,7 @@ Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedi
 
 // --- FINALIZE prompts (step 2) --------------------------------------------
 
-export const IPEACH_FINALIZE_PROMPT = `Ti si iskusan nutricionista. Dobijaš FOTOGRAFIJE obroka i korisnikove ODGOVORE na tvoja pitanja (tekst i/ili glasovni snimak).
+export const PRIZMA_FINALIZE_PROMPT = `Ti si iskusan nutricionista. Dobijaš FOTOGRAFIJE obroka i korisnikove ODGOVORE na tvoja pitanja (tekst i/ili glasovni snimak).
 
 Zadatak: proceni nutritivne vrednosti ZA POJEDENU porciju.
 
@@ -401,7 +401,7 @@ Pravila za izlaz:
 - "napomena": kratko objasni ključne pretpostavke.
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;
 
-export const IPEACH_FINALIZE_LABEL_PROMPT = `Dobijaš FOTOGRAFIJE nutritivne deklaracije i korisnikove ODGOVORE (tekst i/ili glasovni snimak) o ukupnoj masi proizvoda i pojedenoj količini.
+export const PRIZMA_FINALIZE_LABEL_PROMPT = `Dobijaš FOTOGRAFIJE nutritivne deklaracije i korisnikove ODGOVORE (tekst i/ili glasovni snimak) o ukupnoj masi proizvoda i pojedenoj količini.
 
 Zadatak: izračunaj nutritivne vrednosti ZA POJEDENU količinu.
 - Sa deklaracije pročitaj vrednosti na 100 g (ako je energija u kJ: kcal = kJ / 4.184).

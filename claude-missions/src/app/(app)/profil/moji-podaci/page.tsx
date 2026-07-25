@@ -3,8 +3,6 @@ import {
   Camera,
   ChevronLeft,
   CircleCheck,
-  Download,
-  FileDown,
   Footprints,
   GlassWater,
   Mail,
@@ -14,7 +12,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { ExportDownloadButton } from "@/components/settings/export-download-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { exportErrorText } from "@/lib/export/error-messages";
 import { collectExportSummary, formatMemberSince } from "@/lib/export/summary";
 import { createClient } from "@/lib/supabase/server";
 
@@ -41,22 +41,15 @@ const ICONS: Record<string, LucideIcon> = {
   targets: SlidersHorizontal,
 };
 
-/** Serbian text for the `?greska=` reason `/api/export` redirects back with
- * when a download fails (it is reached by a link, so it can only answer with a
- * navigation, not with an inline message). */
-const ERROR_TEXT_SR: Record<string, string> = {
-  sesija: "Sesija je istekla. Prijavi se ponovo pa pokušaj opet.",
-  pdf: "Nismo uspeli da napravimo PDF. Pokušaj ponovo, a ako se ponovi, preuzmi .json ispod.",
-  "1": "Nismo uspeli da pripremimo tvoj fajl. Proveri konekciju i pokušaj ponovo.",
-};
-
 export default async function MojiPodaciPage({
   searchParams,
 }: {
   searchParams: Promise<{ greska?: string }>;
 }) {
   const { greska } = await searchParams;
-  const errorText = greska ? ERROR_TEXT_SR[greska] ?? ERROR_TEXT_SR["1"] : null;
+  // Only reachable if someone opens `/api/export*` directly (or an old cached
+  // link): the buttons below never navigate, they report failures inline.
+  const errorText = greska ? exportErrorText(greska) : null;
 
   const supabase = await createClient();
   const currentUser = await getCurrentUser(supabase);
@@ -137,17 +130,20 @@ export default async function MojiPodaciPage({
       </section>
 
       <div className="flex flex-col gap-2">
-        {/* Plain links, not a fetch + Blob dance: both routes send
-            `Content-Disposition: attachment`, so the browser downloads them. */}
-        <a
+        {/* NOT plain links. A link to a PDF inside an installed PWA on iOS
+            opens the file in the app's own webview -- no back button, no way
+            out except force-quitting the app. `ExportDownloadButton` fetches
+            the bytes and hands them to the share sheet / download instead, so
+            the app is never navigated away from. */}
+        <ExportDownloadButton
           href="/api/export/pdf"
-          download
-          data-testid="export-pdf-link"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm font-semibold text-primary-foreground"
-        >
-          <FileDown className="size-4" aria-hidden={true} />
-          Preuzmi PDF
-        </a>
+          contentType="application/pdf"
+          fallbackFilename="fitmess-moji-podaci.pdf"
+          label="Preuzmi PDF"
+          readyLabel="Sačuvaj PDF"
+          doneText="PDF je sačuvan."
+          testId="export-pdf-link"
+        />
         <p className="text-xs leading-relaxed text-muted-foreground">
           Uredan izveštaj koji možeš otvoriti na telefonu, odštampati ili
           proslediti lekaru/treneru. Same slike obroka nisu u njemu — brišu se
@@ -157,15 +153,16 @@ export default async function MojiPodaciPage({
 
         {/* Kept for people (or apps) that want the machine-readable form --
             deliberately quiet, since almost nobody wants a .json file. */}
-        <a
+        <ExportDownloadButton
           href="/api/export"
-          download
-          data-testid="export-download-link"
-          className="mt-1 inline-flex items-center gap-1.5 self-start text-xs text-muted-foreground underline-offset-4 hover:underline"
-        >
-          <Download className="size-3.5" aria-hidden={true} />
-          Preuzmi i .json (za prenos u drugu aplikaciju)
-        </a>
+          contentType="application/json"
+          fallbackFilename="fitmess-podaci.json"
+          label="Preuzmi i .json (za prenos u drugu aplikaciju)"
+          readyLabel="Sačuvaj .json"
+          doneText=".json je sačuvan."
+          variant="quiet"
+          testId="export-download-link"
+        />
       </div>
 
       <p className="text-xs leading-relaxed text-muted-foreground">

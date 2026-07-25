@@ -74,8 +74,20 @@ describe("Moji podaci: the summary", () => {
     render(await MojiPodaciPage({ searchParams: Promise.resolve({}) }));
 
     const pdf = screen.getByTestId("export-pdf-link");
-    expect(pdf).toHaveAttribute("href", "/api/export/pdf");
+    expect(pdf).toHaveAttribute("data-endpoint", "/api/export/pdf");
     expect(pdf).toHaveTextContent("Preuzmi PDF");
+  });
+
+  it("test_the_download_never_navigates_the_app_to_the_file", async () => {
+    // An installed PWA on iOS renders a linked PDF in its own webview with no
+    // way back out -- so neither export may be a plain <a href> to the route.
+    render(await MojiPodaciPage({ searchParams: Promise.resolve({}) }));
+
+    for (const testId of ["export-pdf-link", "export-download-link"]) {
+      const control = screen.getByTestId(testId);
+      expect(control.tagName).toBe("BUTTON");
+      expect(control).not.toHaveAttribute("href");
+    }
   });
 
   it("test_the_json_export_is_still_offered_as_the_machine_readable_form", async () => {
@@ -84,7 +96,7 @@ describe("Moji podaci: the summary", () => {
     render(await MojiPodaciPage({ searchParams: Promise.resolve({}) }));
 
     expect(screen.getByTestId("export-download-link")).toHaveAttribute(
-      "href",
+      "data-endpoint",
       "/api/export"
     );
   });

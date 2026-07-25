@@ -1,7 +1,7 @@
 "use client";
 
 import { Minus, Plus } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useCountUp } from "@/components/home/animated-number";
 import { Button } from "@/components/ui/button";
@@ -154,9 +154,24 @@ export function LogAddMoreSheet({
   }
 
   function closeSheet() {
+    // Mid-write is the one moment closing would be a lie: the row is already
+    // being changed on the server. Every other state, including the split, is
+    // safely abandonable.
     if (phase === "saving") return;
     setIsOpen(false);
   }
+
+  // Escape closes it too. A sheet you can only leave through one button at the
+  // bottom reads as a trap -- tapping the dimmed area above it is what people
+  // try first, and it must work.
+  useEffect(() => {
+    if (!isOpen) return;
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") closeSheet();
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
 
   function stepWhole(delta: number) {
     setWhole((current) => Math.min(Math.max(current + delta, 0), MAX_UNITS));
@@ -218,6 +233,12 @@ export function LogAddMoreSheet({
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 px-0 backdrop-blur-[2px] sm:items-center sm:px-6"
           data-testid="log-add-more-overlay"
+          // Tap anywhere on the dimmed area to dismiss. Guarded by the target
+          // check so a tap that lands on the panel (and bubbles up here) never
+          // closes it.
+          onClick={(event) => {
+            if (event.target === event.currentTarget) closeSheet();
+          }}
         >
           <div
             role="dialog"
@@ -254,20 +275,26 @@ export function LogAddMoreSheet({
             </header>
 
             {phase === "splitting" ? (
+              // The wait is ~2 s of nothing, and "Gledamo od čega se sastoji"
+              // alone did not tell the user WHAT was about to appear. So the
+              // loading state is shaped like the answer: placeholder rows in
+              // the exact geometry of the steppers that replace them, shimmering
+              // in sequence. Nothing moves position when the real list lands.
               <div
                 data-testid="log-add-more-splitting"
-                className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border px-4 py-8 text-center"
+                className="flex flex-col gap-2"
+                role="status"
+                aria-live="polite"
               >
-                <span className="flex gap-1" aria-hidden="true">
-                  <Dot delay="0ms" />
-                  <Dot delay="120ms" />
-                  <Dot delay="240ms" />
-                </span>
-                <p className="text-sm font-medium text-foreground">
-                  Gledamo od čega se sastoji…
+                <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  <span className="size-1.5 animate-ping rounded-full bg-primary" />
+                  Razlažemo obrok na namirnice…
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  Da možeš da dodaš samo ono što si stvarno pojeo/la.
+                <SkeletonRow delay="0ms" nameWidth="w-24" />
+                <SkeletonRow delay="140ms" nameWidth="w-32" />
+                <SkeletonRow delay="280ms" nameWidth="w-20" />
+                <p className="px-1 text-xs text-muted-foreground">
+                  Za koji trenutak biraš tačno šta si još pojeo/la.
                 </p>
               </div>
             ) : (
@@ -408,13 +435,34 @@ function capitalize(text: string): string {
   return trimmed.charAt(0).toLocaleUpperCase("sr-Latn") + trimmed.slice(1);
 }
 
-/** One pulsing dot of the "we're looking at your meal" indicator. */
-function Dot({ delay }: { delay: string }) {
+/**
+ * A placeholder in the exact shape of a `StepperRow`, so the loading state
+ * previews its own answer instead of just saying "wait". The staggered delay
+ * makes the group read as one calm sweep rather than three things blinking.
+ */
+function SkeletonRow({
+  delay,
+  nameWidth,
+}: {
+  delay: string;
+  nameWidth: string;
+}) {
   return (
-    <span
-      className="size-1.5 animate-pulse rounded-full bg-primary"
+    <div
+      aria-hidden="true"
+      className="flex animate-pulse items-center justify-between gap-3 rounded-2xl border border-border bg-card px-3 py-2.5"
       style={{ animationDelay: delay }}
-    />
+    >
+      <div className="flex flex-col gap-1.5">
+        <span className={`block h-3.5 rounded-full bg-muted-foreground/25 ${nameWidth}`} />
+        <span className="block h-2.5 w-28 rounded-full bg-muted-foreground/15" />
+      </div>
+      <div className="flex shrink-0 items-center gap-1.5">
+        <span className="block size-10 rounded-full border border-border" />
+        <span className="block h-4 w-3 rounded-full bg-muted-foreground/15" />
+        <span className="block size-10 rounded-full bg-muted-foreground/20" />
+      </div>
+    </div>
   );
 }
 

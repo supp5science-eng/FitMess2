@@ -7,6 +7,9 @@ import { bmr, tdee } from "@/lib/budget/engine";
 import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { groupLogsByDay } from "@/lib/log/group";
 import { getMealHistory } from "@/lib/log/history";
+import { getMicroHistory } from "@/lib/nutrition/micro-history";
+import { microTargetsForKcal } from "@/lib/nutrition/micro";
+import { computeMicroWeek } from "@/lib/nutrition/micro-week";
 import { getStepsWeek } from "@/lib/steps/steps";
 import { computeStepsWeek } from "@/lib/steps/steps-week";
 import { createClient } from "@/lib/supabase/server";
@@ -45,23 +48,33 @@ export default async function NedeljaPage() {
   }
 
   const now = new Date();
-  const [result, historyResult, waterResult, stepsResult, profileResult] =
-    await Promise.all([
-      getWeekData(supabase, userId, now),
-      getMealHistory(supabase, userId, now),
-      getWaterWeek(supabase, userId, now),
-      getStepsWeek(supabase, userId, now),
-      // Profile questionnaire data. `weight_kg` + height feed the BMI card;
-      // sex/height/weight/birth_year + activity_level feed the TDEE behind the
-      // intake-trend card; weight also sets the water goal. A failure here is
-      // non-fatal (each card degrades to its own "dopuni profil" state), so it
-      // never blocks the screen.
-      supabase
-        .from("profiles")
-        .select("sex, weight_kg, height_cm, birth_year, activity_level")
-        .eq("user_id", userId)
-        .maybeSingle(),
-    ]);
+  const [
+    result,
+    historyResult,
+    microResult,
+    waterResult,
+    stepsResult,
+    profileResult,
+  ] = await Promise.all([
+    getWeekData(supabase, userId, now),
+    getMealHistory(supabase, userId, now),
+    // Separate, narrower read: the last 7 days of logs WITH their micro
+    // columns + the per-100g fallback from the catalog (see `micro-history.ts`
+    // for why this isn't folded into the meal history read).
+    getMicroHistory(supabase, userId, now),
+    getWaterWeek(supabase, userId, now),
+    getStepsWeek(supabase, userId, now),
+    // Profile questionnaire data. `weight_kg` + height feed the BMI card;
+    // sex/height/weight/birth_year + activity_level feed the TDEE behind the
+    // intake-trend card; weight also sets the water goal. A failure here is
+    // non-fatal (each card degrades to its own "dopuni profil" state), so it
+    // never blocks the screen.
+    supabase
+      .from("profiles")
+      .select("sex, weight_kg, height_cm, birth_year, activity_level")
+      .eq("user_id", userId)
+      .maybeSingle(),
+  ]);
 
   if (result.error) {
     console.error(
@@ -85,6 +98,12 @@ export default async function NedeljaPage() {
     console.error(
       "[Koraci /analitika] getStepsWeek failed:",
       stepsResult.error.message
+    );
+  }
+  if (microResult.error) {
+    console.error(
+      "[Mikronutrijenti /analitika] getMicroHistory failed:",
+      microResult.error.message
     );
   }
 
@@ -121,6 +140,20 @@ export default async function NedeljaPage() {
   // per day, average over logged days) from the same 30-day meal-history window
   // already read above -- no extra query. Empty on a history read failure.
   const macroWeeks = computeMacroWeeks(historyResult.data ?? [], now, 4);
+
+  // "Mikronutrijenti" card: fiber / sugar / sodium / saturated fat per day over
+  // the last 7 days, against the SAME targets the home tab derives from the
+  // calorie budget (`microTargetsForKcal`) -- so a number can never mean one
+  // thing on Početna and another here. Degrades to null (a calm retry line) on
+  // a read error.
+  const microWeek =
+    microResult.error === null
+      ? computeMicroWeek(
+          microResult.rows,
+          now,
+          microTargetsForKcal(target.daily_kcal)
+        )
+      : null;
 
   // BMI (kg / m²) from the questionnaire's height + weight. Only computed when
   // both inputs are present and valid; otherwise null, and the card shows a
@@ -204,6 +237,7 @@ export default async function NedeljaPage() {
     <WeeklyDashboard
       bmi={bmi}
       macroWeeks={macroWeeks}
+      microWeek={microWeek}
       intakeTrend={intakeTrend}
       waterWeek={waterWeek}
       stepsWeek={stepsWeek}

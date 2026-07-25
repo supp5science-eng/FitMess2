@@ -3,8 +3,10 @@ import type { ReactNode } from "react";
 import { BmiCard } from "@/components/analytics/bmi-card";
 import { IntakeTrendCard } from "@/components/analytics/intake-trend-card";
 import { MacroAverageCard } from "@/components/analytics/macro-average-card";
+import { MicroWeekCard } from "@/components/analytics/micro-week-card";
 import { StepsCard } from "@/components/analytics/steps-card";
 import { WaterCard } from "@/components/analytics/water-card";
+import type { MicroWeek } from "@/lib/nutrition/micro-week";
 import type { StepsWeek } from "@/lib/steps/steps-week";
 import type { IntakeTrend } from "@/lib/weight/intake-trend";
 import type { WaterWeek } from "@/lib/water/water-week";
@@ -16,6 +18,7 @@ import type { MacroWeek } from "@/lib/week/macro-weeks";
 export function WeeklyDashboard({
   bmi,
   macroWeeks,
+  microWeek,
   intakeTrend,
   waterWeek,
   stepsWeek,
@@ -28,6 +31,10 @@ export function WeeklyDashboard({
   /** Per-week macro-stacked summaries (index 0 = this week) for the "Dnevni
    * prosek kalorija" card, computed server-side by `computeMacroWeeks`. */
   macroWeeks: MacroWeek[];
+  /** Per-nutrient 7-day series for fiber/sugar/sodium/saturated fat
+   * (`computeMicroWeek`). `null` when the read failed -- the card then shows a
+   * calm retry line instead of an empty chart. */
+  microWeek: MicroWeek | null;
   /** Estimated 7-day weight trend from calorie intake (`computeIntakeTrend`).
    * `null` when TDEE or current weight can't be derived -- the card then shows
    * a calm "dopuni profil" state. */
@@ -54,6 +61,12 @@ export function WeeklyDashboard({
 
       {/* Daily average calories + macro-stacked per-day chart + week selector. */}
       <MacroAverageCard weeks={macroWeeks} />
+
+      {/* Fiber / sugar / sodium / saturated fat over the last 7 days -- the
+          weekly view of the four cards on the home tab's second page. Sits
+          right under the calorie+macro card because it answers the next
+          question about the same meals: not how much, but what kind. */}
+      <MicroWeekCard week={microWeek} />
 
       {/* Estimated weight trend from calorie intake (energy balance + macros). */}
       <IntakeTrendCard trend={intakeTrend} />

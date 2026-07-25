@@ -50,11 +50,12 @@ const OPTIONS: AddSheetOption[] = [
     label: "Prizma",
     icon: Target,
     href: "/dodaj/najtacnije",
-    // Deliberately says what you GET, not how it works -- the guided two-angle
-    // mechanic is a surprise the flow itself reveals, and spelling it out here
-    // reads as effort ("two photos? questions?") before anyone has seen the
-    // payoff. The badge carries the promise; this line only invites.
-    description: "Vodimo te korak po korak",
+    // Says what you GET, not how it works -- the guided two-angle mechanic is
+    // left for the flow itself to reveal (spelled out here it reads as effort
+    // before anyone has seen the payoff). The number is the promise.
+    // NOTE: 92% is a marketing figure, not a measured one. If we ever publish
+    // it outside this row, back it with a real benchmark first.
+    description: "92% tačnost procene kalorija",
     badge: "NAJTAČNIJE",
   },
   {

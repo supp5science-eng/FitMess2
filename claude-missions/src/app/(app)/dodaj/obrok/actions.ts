@@ -60,6 +60,20 @@ export async function estimateMealAction(
 const optionalMicro = (max: number) =>
   z.coerce.number().min(0).max(max).nullish();
 
+/** One stored breakdown line. Mirrors `mealComponentSchema`'s output shape
+ * (`src/lib/ai/meal-estimate.ts`) -- re-validated here because it arrives from
+ * the client, and clamped so a wild value can't be written into the snapshot. */
+const logComponentSchema = z.object({
+  naziv: z.string().trim().min(1).max(60),
+  kom_naziv: z.string().trim().max(24).optional().default(""),
+  kom_grami: z.coerce.number().min(0).max(3000).optional().default(0),
+  grami: z.coerce.number().min(0).max(5000),
+  kcal: z.coerce.number().min(0).max(6000),
+  protein_g: z.coerce.number().min(0).max(800),
+  uh_g: z.coerce.number().min(0).max(800),
+  mast_g: z.coerce.number().min(0).max(800),
+});
+
 const logMealSchema = z.object({
   name: z.string().trim().min(1, "Unesi naziv obroka.").max(120),
   grams: z.coerce.number().min(1).max(5000),
@@ -75,6 +89,12 @@ const logMealSchema = z.object({
   sugar: optionalMicro(1000),
   sodium: optionalMicro(30000),
   satFat: optionalMicro(500),
+  // 0019: the itemised breakdown the estimator already produced, kept on the
+  // row so "Dodaj još" can offer "+2 jaja" later without a second photo. The
+  // confirm screens show this same list, so what gets stored is what the user
+  // saw and accepted. Absent (search/barcode/voice-without-parts) = no
+  // breakdown, and the entry supports whole-portion seconds only.
+  components: z.array(logComponentSchema).max(12).optional(),
 });
 
 export type LogMealInput = z.input<typeof logMealSchema>;
@@ -119,7 +139,7 @@ export async function logMealAction(
   }
 
   const round1 = (n: number) => Math.round(n * 10) / 10;
-  const { name, grams, kcal, protein, carbs, fat } = parsed.data;
+  const { name, grams, kcal, protein, carbs, fat, components } = parsed.data;
 
   // Micronutrients (0017). Preferred source is the flow's own estimate, which
   // came from the actual photo/recording. When a flow doesn't provide them, fill
@@ -160,6 +180,9 @@ export async function logMealAction(
       sugar: micros.sugar === null ? null : round1(micros.sugar),
       sodium: micros.sodium === null ? null : round1(micros.sodium),
       sat_fat: micros.satFat === null ? null : round1(micros.satFat),
+      // Left NULL (not `[]`) when the flow had no breakdown, so "no parts" and
+      // "parts we stored" stay distinguishable on the row.
+      components: components && components.length > 0 ? components : null,
       method: "meal",
     })
     .select("id")

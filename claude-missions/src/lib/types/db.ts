@@ -72,6 +72,28 @@ export type FoodSource = "seed" | "off" | "user";
 /** F020: how a `logs` row was created. See `supabase/migrations/0004_foods_logs.sql`. */
 export type LogMethod = "search" | "barcode" | "label" | "meal" | "agent";
 
+/**
+ * 0019: one line of a logged meal's itemised breakdown, snapshotted onto
+ * `logs.components` at log time. Field names mirror the AI schema
+ * (`mealComponentSchema` in `src/lib/ai/meal-estimate.ts`) so the estimate is
+ * stored verbatim, without a translation layer that could drift.
+ *
+ * This is what lets "Dodaj još" offer "+2 jaja" on a meal that was
+ * photographed as one plate -- see `src/lib/log/add-more.ts`.
+ */
+export interface LogComponentSnapshot {
+  naziv: string;
+  grami: number;
+  kcal: number;
+  protein_g: number;
+  uh_g: number;
+  mast_g: number;
+  /** Natural single unit of this part and its mass ("jaje"/60, "kašika"/15).
+   * Absent / 0 = no natural unit, so one step adds the whole line. */
+  kom_naziv?: string;
+  kom_grami?: number;
+}
+
 /** 0017: where a food's fiber/sugar/sodium/saturated-fat values came from --
  * `'label'` read off a real nutrition declaration, `'ai'` estimated from the
  * name + macros (`src/lib/ai/micro-estimate.ts`), `'manual'` typed by a human. */
@@ -354,6 +376,12 @@ export interface Database {
           sugar?: number | null;
           sodium?: number | null;
           sat_fat?: number | null;
+          // 0019: itemised breakdown of this entry ("jaja 120 g, tuna 80 g,
+          // pavlaka 30 g"), snapshotted at log time by the AI flows. `null`/
+          // absent = no breakdown (catalog entry, or logged before 0019) --
+          // "Dodaj još" then only offers whole-entry seconds. Optional for the
+          // same fixture reason as the micro columns above.
+          components?: LogComponentSnapshot[] | null;
           logged_at: string;
           method: LogMethod;
           created_at: string;
@@ -372,6 +400,7 @@ export interface Database {
           sugar?: number | null;
           sodium?: number | null;
           sat_fat?: number | null;
+          components?: LogComponentSnapshot[] | null;
           logged_at?: string;
           method: LogMethod;
           created_at?: string;
@@ -390,6 +419,7 @@ export interface Database {
           sugar?: number | null;
           sodium?: number | null;
           sat_fat?: number | null;
+          components?: LogComponentSnapshot[] | null;
           logged_at?: string;
           method?: LogMethod;
           created_at?: string;

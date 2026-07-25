@@ -6,7 +6,11 @@ import Link from "next/link";
 import { Camera, ImageUp, Loader2, Sparkles } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
-import { scaleMealMicros, type MealEstimate } from "@/lib/ai/meal-estimate";
+import {
+  scaleMealComponents,
+  scaleMealMicros,
+  type MealEstimate,
+} from "@/lib/ai/meal-estimate";
 import { downscaleImage } from "@/lib/image/downscale";
 import { estimateMealAction, logMealAction } from "./actions";
 
@@ -180,6 +184,10 @@ export function ObrokFlow() {
         sugar: micros.sugar,
         sodium: micros.sodium,
         satFat: micros.satFat,
+        // 0019: itemised breakdown, on the same confirmed-portion ratio as the
+        // micros. This is what later powers "Dodaj još → +1 jaje" on a plate
+        // that was photographed once.
+        components: estimate ? scaleMealComponents(estimate, grams) : undefined,
       },
       photo
     );

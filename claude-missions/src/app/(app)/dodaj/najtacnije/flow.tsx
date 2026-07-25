@@ -511,7 +511,10 @@ export function NajtacnijeFlow() {
       const factor = value / previous;
       setComponents((prev) =>
         prev.map((c) => ({
-          naziv: c.naziv,
+          // Spread first so a line's natural unit (`kom_naziv`/`kom_grami`,
+          // used by "Dodaj još") survives a portion correction untouched --
+          // one egg still weighs 60 g however big the plate turned out to be.
+          ...c,
           grami: c.grami * factor,
           kcal: c.kcal * factor,
           protein_g: c.protein_g * factor,
@@ -573,6 +576,10 @@ export function NajtacnijeFlow() {
         protein: nutrition.protein,
         carbs: nutrition.carbs,
         fat: nutrition.fat,
+        // 0019: the breakdown the user just reviewed (and possibly struck lines
+        // from) rides along onto the log row, so "Dodaj još" can later offer
+        // seconds of a single part without another photo session.
+        components,
       },
       photo
     );

@@ -55,6 +55,27 @@ export const mealComponentSchema = z.object({
     .number()
     .catch(0)
     .transform((n) => (Number.isFinite(n) ? Math.min(Math.max(n, 0), 3000) : 0)),
+  /**
+   * The NATURAL SINGLE UNIT of this component and its mass -- "jaje" / 60,
+   * "kašika" / 15, "kriška" / 30. Optional, and `0`/"" means "no natural unit,
+   * treat the whole line as one".
+   *
+   * This exists for "Dodaj još" (2026-07-25): a breakdown line reads "jaja,
+   * 120 g", so without a per-unit mass one tap of "+" would silently add TWO
+   * eggs. With it, the stepper adds exactly one egg, one spoon, one slice --
+   * which is how people actually describe seconds. See
+   * `src/lib/log/add-more.ts`.
+   */
+  // Optional in the OUTPUT type as well, not just the input: the older flows
+  // (Prizma, voice) fill `komponente` from their own schemas, which know
+  // nothing about natural units, and every reader already treats "absent" as
+  // "no natural unit" (`componentUnitFraction`).
+  kom_naziv: z.string().trim().max(24).catch("").optional(),
+  kom_grami: z.coerce
+    .number()
+    .catch(0)
+    .transform((n) => (Number.isFinite(n) ? Math.min(Math.max(n, 0), 3000) : 0))
+    .optional(),
   kcal: bounded(4000),
   protein_g: bounded(400),
   uh_g: bounded(700),
@@ -98,6 +119,48 @@ export const MEAL_RESPONSE_SCHEMA = {
   properties: {
     naziv: { type: "STRING" },
     sastojci: { type: "ARRAY", items: { type: "STRING" } },
+    // 2026-07-25: the photo flow now asks for the itemised breakdown too (it
+    // was Prizma-only before). Two reasons, in order of importance: it is what
+    // "Dodaj još" stores on the log row so the user can add two more eggs to a
+    // photographed plate without re-shooting it (0019_log_components.sql), and
+    // -- per this file's `mealComponentSchema` header -- itemising BEFORE
+    // totalling is itself the biggest accuracy win available here.
+    komponente: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          naziv: { type: "STRING" },
+          kom_naziv: { type: "STRING" },
+          kom_grami: { type: "NUMBER" },
+          grami: { type: "NUMBER" },
+          kcal: { type: "NUMBER" },
+          protein_g: { type: "NUMBER" },
+          uh_g: { type: "NUMBER" },
+          mast_g: { type: "NUMBER" },
+        },
+        required: [
+          "naziv",
+          "kom_naziv",
+          "kom_grami",
+          "grami",
+          "kcal",
+          "protein_g",
+          "uh_g",
+          "mast_g",
+        ],
+        propertyOrdering: [
+          "naziv",
+          "kom_naziv",
+          "kom_grami",
+          "grami",
+          "kcal",
+          "protein_g",
+          "uh_g",
+          "mast_g",
+        ],
+      },
+    },
     procenjeni_grami: { type: "NUMBER" },
     kcal: { type: "NUMBER" },
     protein_g: { type: "NUMBER" },
@@ -112,6 +175,7 @@ export const MEAL_RESPONSE_SCHEMA = {
   },
   required: [
     "naziv",
+    "komponente",
     "procenjeni_grami",
     "kcal",
     "protein_g",
@@ -126,6 +190,10 @@ export const MEAL_RESPONSE_SCHEMA = {
   propertyOrdering: [
     "naziv",
     "sastojci",
+    // Generated BEFORE the totals on purpose: the model writes the totals with
+    // its own itemisation already in context, so it adds up instead of guessing
+    // a round number for the whole plate.
+    "komponente",
     "procenjeni_grami",
     "kcal",
     "protein_g",
@@ -178,6 +246,36 @@ export function scaleMealMicros(
 }
 
 /**
+ * Rescales the itemised breakdown to the portion the user finally confirmed --
+ * the same "AI said 700 g, I actually ate 350 g" correction `scaleMealMicros`
+ * applies to the micros, so the stored breakdown stays consistent with the
+ * stored totals (0019). Without this, "Dodaj još" would offer "+1 jaje" priced
+ * off a plate the user already told us was twice too big.
+ *
+ * `kom_grami` is deliberately NOT scaled: one egg weighs 60 g regardless of how
+ * many were on the plate.
+ */
+export function scaleMealComponents(
+  estimate: Pick<MealEstimate, "procenjeni_grami" | "komponente">,
+  grams: number
+): MealComponent[] {
+  const base = estimate.procenjeni_grami;
+  const scale =
+    Number.isFinite(base) && base > 0 && Number.isFinite(grams) && grams > 0
+      ? grams / base
+      : 1;
+  const round1 = (n: number) => Math.round(n * 10) / 10;
+  return estimate.komponente.map((component) => ({
+    ...component,
+    grami: round1(component.grami * scale),
+    kcal: Math.round(component.kcal * scale),
+    protein_g: round1(component.protein_g * scale),
+    uh_g: round1(component.uh_g * scale),
+    mast_g: round1(component.mast_g * scale),
+  }));
+}
+
+/**
  * The four micronutrient rules, shared verbatim by every prompt that fills the
  * meal schema (photo, photo+voice, label+voice, voice) so the model is told the
  * same thing everywhere -- most importantly that sodium is milligrams, not grams
@@ -198,6 +296,9 @@ Na slici je hrana/obrok. Proceni nutritivne vrednosti ZA KOLIČINU KOJA SE VIDI 
 Pravila:
 - Naziv na srpskom (latinica), kratko i konkretno (npr. "Ćevapi sa lepinjom i lukom").
 - "sastojci": glavne komponente koje prepoznaješ (npr. ["ćevapi", "lepinja", "crni luk"]).
+- "komponente": PRVO razbij obrok na delove (2–8 stavki), svaka sa "naziv", "grami", "kcal", "protein_g", "uh_g", "mast_g" za tu stavku (vrednosti za CELU tu stavku na slici). Svaka stavka mora biti nešto što se može zasebno dodati (npr. jaja, pavlaka, hleb — ne "začini").
+  - "kom_naziv" i "kom_grami": prirodna JEDINICA te stavke i masa JEDNOG komada — npr. jaja → "jaje" i 60, pavlaka → "kašika" i 15, hleb → "kriška" i 30, pirinač → "kašika" i 25. Ako stavka nema prirodnu jedinicu (npr. sos, ulje), stavi "" i 0.
+  - Tek onda saberi komponente u ukupne vrednosti; ukupno treba da bude zbir komponenti.
 - "procenjeni_grami": ukupna jestiva masa porcije koja se vidi, u gramima.
 - "kcal", "protein_g", "uh_g", "mast_g": UKUPNO za tu porciju (ne na 100 g).
 ${MICRO_PROMPT_RULES}

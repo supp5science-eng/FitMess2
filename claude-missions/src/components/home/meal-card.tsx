@@ -1,3 +1,4 @@
+import { LogAddMoreSheet } from "@/components/food/log-add-more-sheet";
 import { LogDeleteConfirm } from "@/components/food/log-delete-confirm";
 import { LogEditSheet } from "@/components/food/log-edit-sheet";
 import { findMatchingCommonUnit } from "@/lib/food/portions";
@@ -89,7 +90,12 @@ export function MealCard({
           <MacroStat label="Masti" grams={log.fat} tone="text-macro-fat" />
         </div>
       ) : null}
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
+        {/* "Dodaj još" leads: seconds are the common follow-up action on an
+            entry, while editing/deleting are corrections. Unlike "Izmeni" it
+            needs no `food` row -- it grows the entry from its own snapshot, so
+            it is available on AI meal entries too (which is the point). */}
+        <LogAddMoreSheet log={log} onSaved={onSaved} />
         {food ? (
           <LogEditSheet log={log} food={food} onSaved={onSaved} />
         ) : null}

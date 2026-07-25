@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 import { updateRulesAction, regenerateRulesAction } from "@/app/(app)/profil/pravila/actions";
 import { DayStructureGuidance } from "@/components/profil/day-structure-guidance";
@@ -104,6 +106,17 @@ export function RulesScreen({
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
+      {/* Every other Podešavanja sub-page carries this; without it the only
+          way off this screen was to close the app (there is no browser chrome
+          in an installed PWA). */}
+      <Link
+        href="/profil"
+        className="inline-flex items-center gap-1 self-start text-sm text-muted-foreground hover:text-foreground"
+      >
+        <ChevronLeft className="size-4" aria-hidden={true} />
+        Podešavanja
+      </Link>
+
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
           Tvoja pravila ishrane

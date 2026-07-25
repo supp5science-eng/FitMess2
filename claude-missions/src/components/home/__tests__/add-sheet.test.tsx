@@ -99,17 +99,30 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     );
   });
 
-  it("test_the_menu_offers_exactly_the_four_live_methods", () => {
+  it("test_the_menu_offers_exactly_the_five_live_methods", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
     const options = screen
       .getByTestId("add-sheet")
       .querySelectorAll('[data-testid^="add-sheet-option-"]');
-    expect(options.length).toBe(4);
+    expect(options.length).toBe(5);
     expect(options[options.length - 1]).toHaveAttribute(
       "data-testid",
       "add-sheet-option-deklaracija"
+    );
+  });
+
+  it("test_the_menu_offers_gric_for_the_small_stuff", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    expect(screen.getByTestId("add-sheet-option-gric")).toHaveAttribute(
+      "href",
+      "/dodaj/gric"
+    );
+    expect(screen.getByTestId("add-sheet-desc-gric")).toHaveTextContent(
+      "Sitnice — reci ih sve odjednom, bez slikanja"
     );
   });
 

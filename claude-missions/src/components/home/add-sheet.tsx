@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Camera, Mic, Plus, Target, UtensilsCrossed, X } from "lucide-react";
+import { Camera, Cookie, Mic, Plus, Target, UtensilsCrossed, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -70,6 +70,17 @@ const OPTIONS: AddSheetOption[] = [
     icon: Mic,
     href: "/dodaj/glas",
     description: "Izgovori vrednosti ili samo opiši obrok",
+  },
+  // "Gric" sits below the two spoken/photographed MEAL methods because it
+  // answers a different question: not "how do I log this meal accurately" but
+  // "how do I log this at all". A cucumber costs more to photograph than it is
+  // worth, so it goes unlogged and the day's total quietly reads too low.
+  {
+    key: "gric",
+    label: "Gric",
+    icon: Cookie,
+    href: "/dodaj/gric",
+    description: "Sitnice — reci ih sve odjednom, bez slikanja",
   },
   {
     key: "deklaracija",

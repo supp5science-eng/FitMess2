@@ -12,6 +12,12 @@ import {
   type CombinedMealEstimate,
 } from "@/lib/ai/combined-estimate";
 import {
+  GRIC_PROMPT,
+  GRIC_RESPONSE_SCHEMA,
+  gricEstimateSchema,
+  type GricEstimate,
+} from "@/lib/ai/gric-estimate";
+import {
   MEAL_PROMPT,
   MEAL_RESPONSE_SCHEMA,
   mealEstimateSchema,
@@ -414,6 +420,30 @@ export async function estimateMealFromAudio(
     process.env.GEMINI_VOICE_MODEL || VOICE_MODEL
   );
   const parsed = voiceMealSchema.safeParse(parseJson(text));
+  if (!parsed.success) {
+    throw new GeminiError("Gemini output did not match the expected shape");
+  }
+  return parsed.data;
+}
+
+/**
+ * "Gric" — one spoken clip -> a LIST of small items (see `gric-estimate.ts`).
+ * Separate from `estimateMealFromAudio` because the shapes differ: that one
+ * collapses a recording into a single meal, this one deliberately keeps the
+ * items apart so three snacks become three log rows.
+ */
+export async function estimateGricFromAudio(
+  base64Audio: string,
+  mimeType: string
+): Promise<GricEstimate> {
+  const text = await generateJsonFromAudio(
+    GRIC_PROMPT,
+    GRIC_RESPONSE_SCHEMA,
+    base64Audio,
+    mimeType,
+    process.env.GEMINI_VOICE_MODEL || VOICE_MODEL
+  );
+  const parsed = gricEstimateSchema.safeParse(parseJson(text));
   if (!parsed.success) {
     throw new GeminiError("Gemini output did not match the expected shape");
   }

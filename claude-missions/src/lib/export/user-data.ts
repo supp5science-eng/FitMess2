@@ -75,7 +75,13 @@ type UserOwnedTableConfig = {
   labelSr: string;
 };
 
-/** See "EXTENSION POINT" doc comment above. */
+/** See "EXTENSION POINT" doc comment above.
+ *
+ * Keeping this list current is the whole feature: the export's own
+ * `schema_note` promises the user "everything we store about you", so a table
+ * that lands without being appended here turns that promise into a false
+ * statement. Everything user-owned in `Database` is listed below -- when a new
+ * user-owned table lands, it belongs here in the same commit. */
 const USER_OWNED_TABLES: readonly UserOwnedTableConfig[] = [
   {
     key: "targets",
@@ -95,18 +101,48 @@ const USER_OWNED_TABLES: readonly UserOwnedTableConfig[] = [
     userColumn: "user_id",
     labelSr: "merenja težine",
   }, // F042
+  {
+    key: "waterIntake",
+    table: "water_intake",
+    userColumn: "user_id",
+    labelSr: "unos vode po danima",
+  },
+  {
+    key: "stepCounts",
+    table: "step_counts",
+    userColumn: "user_id",
+    labelSr: "koraci po danima",
+  },
+  {
+    key: "habitChecks",
+    table: "habit_checks",
+    userColumn: "user_id",
+    labelSr: "čekirane navike po danima",
+  },
   // --- Extension point: append future user-owned tables here as they land ---
   // { key: "conversations", table: "conversations", userColumn: "user_id", labelSr: "razgovori sa agentom i sažeci" }, // M6
 ];
 
 const PROFILE_LABEL_SR = "profil (lični podaci i podešavanja)";
-const RULES_LABEL_SR = "pravila ishrane";
+const RULES_LABEL_SR = "navike";
+const MEAL_PHOTOS_LABEL_SR = "slike obroka (podaci o slikama, bez same slike)";
+
+/** Postgres' "relation does not exist" code. A table listed above that hasn't
+ * been migrated onto this environment yet must not cost the user their whole
+ * export -- that section is reported as unavailable instead (see
+ * `UserExport.missing_sections`). Any OTHER read error still fails the export
+ * loudly, because it means we could not read data that IS there. */
+const UNDEFINED_TABLE_CODE = "42P01";
 
 export type UserExportAccount = { id: string; email: string | null };
 
 export type UserExport = {
   exported_at: string;
   schema_note: string;
+  /** Sections whose table isn't present in this environment yet (see
+   * `UNDEFINED_TABLE_CODE`). Empty on a healthy database -- listed explicitly
+   * so an export is never quietly short of a category. */
+  missing_sections: string[];
   account: UserExportAccount;
   profile: Record<string, unknown> | null;
   rules: EatingRuleJson[];
@@ -138,6 +174,36 @@ async function loadProfileAndRules(
 }
 
 /**
+ * Meal photos, WITHOUT the image bytes.
+ *
+ * `meal_photos.image_base64` holds the picture inline (see
+ * `0014_meal_photos.sql`), and a handful of them would turn a text export into
+ * a multi-megabyte file built entirely in the serverless function's memory.
+ * The rows themselves (which log, when, what type) are exported so nothing is
+ * hidden; the pictures are deliberately short-lived anyway -- a scheduled job
+ * deletes them after about a day, and the meal's nutrition data survives on
+ * the log row.
+ */
+async function loadMealPhotoMetadata(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<{ rows: unknown[]; missing: boolean }> {
+  const { data, error } = await supabase
+    .from("meal_photos")
+    .select("log_id, mime_type, created_at")
+    .eq("user_id", userId);
+
+  if (error) {
+    if (error.code === UNDEFINED_TABLE_CODE) return { rows: [], missing: true };
+    throw new ExportReadError(
+      `Failed to read meal_photos for export: ${error.message}`
+    );
+  }
+
+  return { rows: data ?? [], missing: false };
+}
+
+/**
  * Builds the complete GDPR export object for `userId`. `supabase` MUST be a
  * session-bound (RLS) client already scoped to `userId` -- this function
  * never elevates privileges and never accepts an admin client, and every
@@ -158,6 +224,7 @@ export async function collectUserExport(
 
   const sections: Record<string, unknown> = {};
   const includedLabels: string[] = [PROFILE_LABEL_SR, RULES_LABEL_SR];
+  const missingSections: string[] = [];
 
   for (const config of USER_OWNED_TABLES) {
     const { data, error } = await supabase
@@ -166,6 +233,10 @@ export async function collectUserExport(
       .eq(config.userColumn, userId);
 
     if (error) {
+      if (error.code === UNDEFINED_TABLE_CODE) {
+        missingSections.push(config.labelSr);
+        continue;
+      }
       throw new ExportReadError(
         `Failed to read ${config.table} for export: ${error.message}`
       );
@@ -175,13 +246,28 @@ export async function collectUserExport(
     includedLabels.push(config.labelSr);
   }
 
+  const photos = await loadMealPhotoMetadata(supabase, userId);
+  if (photos.missing) {
+    missingSections.push(MEAL_PHOTOS_LABEL_SR);
+  } else {
+    sections.mealPhotos = photos.rows;
+    includedLabels.push(MEAL_PHOTOS_LABEL_SR);
+  }
+
+  const missingNote =
+    missingSections.length > 0
+      ? ` Nedostupno u ovom izvozu: ${missingSections.join(", ")}.`
+      : "";
+
   return {
     exported_at: new Date().toISOString(),
     schema_note:
       `Ovaj izvoz sadrži sledeće kategorije tvojih podataka: ${includedLabels.join(", ")}. ` +
-      "Ne sadrži podatke drugih korisnika. Kako aplikacija bude dodavala nove vrste " +
-      "podataka (npr. dnevni unosi hrane, merenja težine, razgovori sa agentom), " +
-      "biće automatski uključene u ovaj izvoz.",
+      "Ne sadrži podatke drugih korisnika. Same slike obroka nisu uključene jer se " +
+      "automatski brišu otprilike dan po unosu — podaci o obroku (kalorije i makroi) " +
+      "ostaju u dnevnim unosima." +
+      missingNote,
+    missing_sections: missingSections,
     account,
     profile,
     rules,

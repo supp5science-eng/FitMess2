@@ -149,10 +149,10 @@ export default async function ProfilPage() {
 
       <SettingsGroup title="Podaci i privatnost">
         <SettingsLinkRow
-          href="/api/export"
-          external
+          href="/profil/moji-podaci"
           icon={Download}
-          label="Preuzmi moje podatke"
+          label="Moji podaci"
+          description="Vidi šta čuvamo o tebi i preuzmi kopiju"
         />
         <SettingsLinkRow
           href="/profil/privatnost"

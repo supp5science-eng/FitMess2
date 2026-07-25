@@ -236,18 +236,20 @@ describe.skipIf(!hasCredentials)(
       }
     });
 
-    it("test_AS_014_a_signed_out_request_is_rejected_with_a_serbian_error_and_no_data", async () => {
+    it("test_AS_014_a_signed_out_request_is_sent_back_to_the_page_with_no_data", async () => {
       const response = await GET(makeExportRequest(""));
 
-      expect(response.status).toBe(401);
+      // This route is reached by tapping a link, so a failure answers with a
+      // navigation back to `/profil/moji-podaci` (which renders the Serbian
+      // message) rather than painting a raw JSON envelope on screen.
+      expect(response.status).toBe(307);
+      expect(response.headers.get("location")).toMatch(
+        /\/profil\/moji-podaci\?greska=sesija$/
+      );
       expect(response.headers.get("content-disposition")).toBeNull();
 
-      const body = (await response.json()) as { ok: boolean; error_sr: string };
-      expect(body.ok).toBe(false);
-      expect(body.error_sr.length).toBeGreaterThan(0);
-      // Serbian, not a raw/technical message.
-      expect(body.error_sr).not.toMatch(/error|exception|stack/i);
-      expect(JSON.stringify(body)).not.toMatch(/profile|targets|rules/i);
+      const bodyText = await response.text();
+      expect(bodyText).not.toMatch(/profile|targets|rules/i);
     });
   }
 );

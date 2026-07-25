@@ -4,10 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 import { collectUserExport, ExportReadError } from "@/lib/export/user-data";
 import type { Database } from "@/lib/types/db";
 
-const SESSION_EXPIRED_ERROR_SR =
-  "Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.";
-const EXPORT_FAILED_ERROR_SR =
-  "Nije uspelo preuzimanje podataka. Pokušaj ponovo.";
+/** Where a failure sends the user back to. This route is reached by tapping a
+ * link, so a failed download used to paint the raw `{ok:false,error_sr}` JSON
+ * across the screen -- a redirect back to the page they came from, carrying a
+ * reason, is what a navigation is supposed to do. */
+const EXPORT_PAGE_PATH = "/profil/moji-podaci";
 
 /**
  * F018 / AS-014: GDPR self-serve data export -- "Preuzmi moje podatke" on
@@ -56,9 +57,8 @@ export async function GET(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (userError || !user) {
-    return NextResponse.json(
-      { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR },
-      { status: 401 }
+    return NextResponse.redirect(
+      new URL(`${EXPORT_PAGE_PATH}?greska=sesija`, request.url)
     );
   }
 
@@ -83,9 +83,8 @@ export async function GET(request: NextRequest) {
     } else {
       console.error("[F018 export] unexpected export failure:", err);
     }
-    return NextResponse.json(
-      { ok: false, error_sr: EXPORT_FAILED_ERROR_SR },
-      { status: 500 }
+    return NextResponse.redirect(
+      new URL(`${EXPORT_PAGE_PATH}?greska=1`, request.url)
     );
   }
 }

@@ -9,6 +9,7 @@ import { IntroCover } from "@/components/home/intro-cover";
 import { InstallOverlay } from "@/components/pwa/install-overlay";
 import { MacroBars } from "@/components/home/macro-bars";
 import { MicroCards } from "@/components/home/micro-cards";
+import type { MiniWeekDay } from "@/components/home/mini-week-bars";
 import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
 import { AdaptivePlanCard } from "@/components/home/adaptive-plan-card";
@@ -69,6 +70,8 @@ export function HomeScreen({
   initialSteps = 0,
   stepsGoal = DEFAULT_STEP_GOAL,
   waterGoal = waterGoalMl(null),
+  stepsWeek = [],
+  waterWeek = [],
   isToday = true,
 }: {
   initialLogs: LogWithFood[];
@@ -106,6 +109,11 @@ export function HomeScreen({
   // bodyweight (the same `waterGoalMl` the Analitika card uses).
   stepsGoal?: number;
   waterGoal?: number;
+  // The 7 days ending on `dayKey`, each as a share of its goal — the strip at
+  // the foot of the Koraci/Voda cards. Derived server-side by the SAME
+  // `computeStepsWeek`/`computeWaterWeek` the Analitika cards use.
+  stepsWeek?: MiniWeekDay[];
+  waterWeek?: MiniWeekDay[];
   // Whether `dayKey` is the current Belgrade day. Gates "Gric", which always
   // writes at `now()` and so has no meaning on a past day.
   isToday?: boolean;
@@ -335,42 +343,6 @@ export function HomeScreen({
                   </div>
                 ),
               },
-              // Koraci + Voda. Only when we know which day we're on -- both
-              // write to that day's row, same guard as before the move.
-              ...(dayKey
-                ? [
-                    {
-                      id: "aktivnost",
-                      labelSr: "Koraci i voda",
-                      content: (
-                        // Two cards, one each half of the page (2026-07-25).
-                        // Before this, three blocks sat in a `justify-between`
-                        // column: the page is as tall as the calorie page, so
-                        // the slack went into huge voids BETWEEN them, and the
-                        // separate "Preporučeni dnevni ciljevi" tiles repeated
-                        // the goal each card already prints. Now each card is
-                        // `flex-1` and centres its own content, so the spare
-                        // height lives INSIDE the cards -- no floating parts,
-                        // and the goal is stated once, on the card that logs
-                        // against it.
-                        <div className="home-body flex flex-1 flex-col gap-3">
-                          <StepsCard
-                            className="flex-1"
-                            dayKey={dayKey}
-                            initialSteps={initialSteps}
-                            goal={effectiveStepGoal}
-                          />
-                          <WaterButton
-                            className="flex-1"
-                            dayKey={dayKey}
-                            initialMl={initialWaterMl}
-                            goalMl={waterGoal}
-                          />
-                        </div>
-                      ),
-                    },
-                  ]
-                : []),
               {
                 id: "nutrijenti",
                 labelSr: "Vlakna, šećer, so i zasićene masti",
@@ -381,6 +353,41 @@ export function HomeScreen({
                   </div>
                 ),
               },
+              // Koraci + Voda, LAST (2026-07-25, the product owner's order):
+              // kalorije -> nutrijenti -> kretanje. Only when we know which day
+              // we're on -- both write to that day's row.
+              ...(dayKey
+                ? [
+                    {
+                      id: "aktivnost",
+                      labelSr: "Koraci i voda",
+                      content: (
+                        // Two self-sized cards, centred as a pair (2026-07-25).
+                        // Neither the page nor the cards stretch: the pager's
+                        // pages all share the tallest page's height, and every
+                        // earlier attempt to swallow that slack -- spreading the
+                        // blocks apart, then inflating the cards -- is what the
+                        // product owner (rightly) called a mess. The leftover
+                        // now breathes ABOVE and BELOW the pair, while the
+                        // cards' own 7-day strips earn most of the height back.
+                        <div className="home-body flex flex-1 flex-col justify-center gap-3">
+                          <StepsCard
+                            dayKey={dayKey}
+                            initialSteps={initialSteps}
+                            goal={effectiveStepGoal}
+                            week={stepsWeek}
+                          />
+                          <WaterButton
+                            dayKey={dayKey}
+                            initialMl={initialWaterMl}
+                            goalMl={waterGoal}
+                            week={waterWeek}
+                          />
+                        </div>
+                      ),
+                    },
+                  ]
+                : []),
             ]}
           />
         </div>

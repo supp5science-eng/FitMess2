@@ -4,6 +4,7 @@ import {
   screen,
   fireEvent,
   waitFor,
+  within,
   act,
 } from "@testing-library/react";
 
@@ -33,6 +34,42 @@ describe("StepsCard", () => {
   it("hides the 'goal reached' badge below the goal", () => {
     render(<StepsCard dayKey="2026-07-22" initialSteps={5000} />);
     expect(screen.queryByTestId("steps-goal-reached")).not.toBeInTheDocument();
+  });
+
+  it("spells the daily goal out instead of printing '0 / 10.000'", () => {
+    render(<StepsCard dayKey="2026-07-22" initialSteps={0} goal={10000} />);
+    expect(screen.getByTestId("steps-goal")).toHaveTextContent(
+      "Dnevni cilj: 10.000"
+    );
+  });
+
+  it("draws the 7-day strip and moves the viewed day's bar as steps are added", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      jsonResponse({ ok: true, data: { day: "2026-07-22", steps: 5000 } })
+    );
+
+    render(
+      <StepsCard
+        dayKey="2026-07-22"
+        initialSteps={0}
+        goal={10000}
+        week={[
+          { label: "Sub", pct: 1, isToday: false },
+          { label: "Ned", pct: 0, isToday: true },
+        ]}
+      />
+    );
+
+    const bars = screen.getByTestId("steps-week-bars");
+    expect(bars).toHaveTextContent("Sub");
+
+    fireEvent.click(screen.getByTestId("steps-quick-3000"));
+    // 5.000 of 10.000 => the viewed day's bar is now at half height.
+    await waitFor(() =>
+      expect(within(bars).getAllByTestId("mini-week-bar")[1]).toHaveStyle({
+        height: "50%",
+      })
+    );
   });
 
   it("a quick-add chip on the card posts its delta immediately, with no sheet", async () => {

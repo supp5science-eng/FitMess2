@@ -3,6 +3,10 @@
 import { Footprints, Minus, Plus, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import {
+  MiniWeekBars,
+  type MiniWeekDay,
+} from "@/components/home/mini-week-bars";
 import { ProgressRing } from "@/components/home/progress-ring";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
@@ -153,6 +157,7 @@ export function StepsCard({
   dayKey,
   initialSteps = 0,
   goal = DEFAULT_STEP_GOAL,
+  week = [],
   className,
 }: {
   /** Belgrade calendar day (`"YYYY-MM-DD"`) this card logs steps for. */
@@ -162,8 +167,10 @@ export function StepsCard({
   /** Recommended daily step goal the ring fills toward (defaults to the classic
    * 10k target `Analitika` uses, so home and analytics agree). */
   goal?: number;
-  /** Layout hook for the caller (the home pager gives Koraci/Voda equal halves
-   * of its page, so the card stretches instead of leaving dead space). */
+  /** The last 7 days vs the goal, for the strip at the foot of the card
+   * (server-derived by `computeStepsWeek`). Empty => the strip is not drawn. */
+  week?: MiniWeekDay[];
+  /** Layout hook for the caller. */
   className?: string;
 }) {
   const [totalSteps, setTotalSteps] = useState(initialSteps);
@@ -276,6 +283,11 @@ export function StepsCard({
 
   const resultSteps = Math.max(0, Math.min(MAX_STEPS, totalSteps + addSteps));
   const cardFraction = totalSteps / goal;
+  // The strip is server-derived, but the day being viewed has to move the
+  // moment a chip saves -- otherwise the ring updates and its own bar doesn't.
+  const liveWeek = week.map((day) =>
+    day.isToday ? { ...day, pct: goal > 0 ? totalSteps / goal : 0 } : day
+  );
   const sheetFraction = resultSteps / goal;
   const goalReached = totalSteps >= goal;
   const confirmLabel =
@@ -283,12 +295,13 @@ export function StepsCard({
 
   return (
     <div className={cn("flex flex-col", className)}>
-      {/* One card, two parts: the tappable summary row (opens the sheet for an
-          exact figure) and a row of one-tap presets that save immediately. The
-          card is a flex column so it can absorb the pager page's spare height
-          itself -- that is what killed the old "everything floating far apart"
-          look on the Koraci/Voda page (2026-07-25). */}
-      <div className="flex flex-1 flex-col justify-center gap-3 rounded-2xl border border-border bg-card px-4 py-4">
+      {/* One card, three stacked parts, each hugging its content -- the card is
+          NEVER stretched to fill the pager page (2026-07-25). Stretching it is
+          exactly what produced the reported "everything floats, huge holes"
+          look: the page is as tall as the calorie page, and the slack ended up
+          as dead air inside the card. The 7-day strip is what earns that height
+          honestly instead. */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-4">
         <button
           type="button"
           onClick={openSheet}
@@ -298,8 +311,8 @@ export function StepsCard({
         >
           <ProgressRing
             fraction={cardFraction}
-            size={62}
-            stroke={7}
+            size={58}
+            stroke={6}
             trackClassName="text-violet-500/15"
             gradient={STEPS_GRADIENT}
           >
@@ -320,16 +333,19 @@ export function StepsCard({
                 </span>
               ) : null}
             </span>
-            <span className="flex items-baseline gap-1.5">
-              <span
-                data-testid="steps-total"
-                className="text-2xl font-bold leading-none text-foreground tabular-nums"
-              >
-                {formatSteps(totalSteps)}
-              </span>
-              <span className="text-sm text-muted-foreground tabular-nums">
-                / {formatSteps(goal)}
-              </span>
+            <span
+              data-testid="steps-total"
+              className="text-2xl font-bold leading-none text-foreground tabular-nums"
+            >
+              {formatSteps(totalSteps)}
+            </span>
+            {/* Spelled out, not "0 / 10.000": the goal is a recommendation, and
+                the user asked for it to say so. */}
+            <span
+              data-testid="steps-goal"
+              className="text-xs text-muted-foreground"
+            >
+              Dnevni cilj: {formatSteps(goal)}
             </span>
           </span>
 
@@ -367,6 +383,14 @@ export function StepsCard({
             {errorMessage}
           </p>
         ) : null}
+
+        <MiniWeekBars
+          days={liveWeek}
+          testId="steps-week-bars"
+          barClassName="bg-violet-500"
+          trackClassName="bg-violet-500/10"
+          todayLabelClassName="text-violet-500"
+        />
       </div>
 
       {/* PORTALLED to <body> (2026-07-25): this card now lives inside the home

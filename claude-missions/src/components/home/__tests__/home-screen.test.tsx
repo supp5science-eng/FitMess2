@@ -124,8 +124,12 @@ describe("AS-047/AS-048/AS-049: HomeScreen renders the ring, bars, and meal list
     const movementPage = screen.getByTestId("intake-page-aktivnost");
     expect(screen.queryByTestId("daily-targets")).not.toBeInTheDocument();
     expect(movementPage).toContainElement(screen.getByTestId("steps-total"));
-    expect(movementPage).toHaveTextContent("10.000");
-    expect(screen.getByTestId("water-total")).toHaveTextContent("0 mL / 2,5 L");
+    expect(screen.getByTestId("steps-goal")).toHaveTextContent(
+      "Dnevni cilj: 10.000"
+    );
+    expect(screen.getByTestId("water-goal")).toHaveTextContent(
+      "Dnevni cilj: 2,5 L"
+    );
     expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
   });
 
@@ -346,7 +350,7 @@ describe("Gric: the quick-log button on the home screen", () => {
     );
   });
 
-  it("test_the_pager_has_three_pages_with_koraci_i_voda_in_the_middle", () => {
+  it("test_the_pager_has_three_pages_with_koraci_i_voda_last", () => {
     render(
       <HomeScreen
         initialLogs={[]}
@@ -361,8 +365,8 @@ describe("Gric: the quick-log button on the home screen", () => {
       .filter((region) => region.dataset.testid?.startsWith("intake-page-"));
     expect(pages.map((page) => page.dataset.testid)).toEqual([
       "intake-page-kalorije",
-      "intake-page-aktivnost",
       "intake-page-nutrijenti",
+      "intake-page-aktivnost",
     ]);
     expect(
       screen.getAllByRole("button", { name: /^Prikaži:/ })

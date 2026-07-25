@@ -17,10 +17,10 @@ import type { GoalType } from "@/lib/types/db";
 import { buildDateStrip } from "@/lib/home/date-strip";
 import { getLoggedDayKcals } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
-import { getStepsForDay } from "@/lib/steps/steps";
-import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
-import { getWaterMl } from "@/lib/water/water";
-import { waterGoalMl } from "@/lib/water/water-week";
+import { getStepsForDay, getStepsWeek } from "@/lib/steps/steps";
+import { computeStepsWeek, DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
+import { getWaterMl, getWaterWeek } from "@/lib/water/water";
+import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
 import { createClient } from "@/lib/supabase/server";
 
 const SR_MONTHS_SHORT = [
@@ -157,7 +157,19 @@ export default async function DanasPage({
   //  - fm_intro cookie: the one-time onboarding "ring hand-off" (plan-reveal
   //    drops it just before navigating here, see `plan-reveal.tsx`); only ever
   //    plays for today.
-  const [dayKcals, adaptivePlan, cookieStore, water, steps] = await Promise.all([
+  // The 7-day window the Koraci/Voda strips draw ends on the day being VIEWED
+  // (not always today), so a past day's card shows that day in context.
+  const selectedNoon = new Date(`${selectedKey}T12:00:00.000Z`);
+
+  const [
+    dayKcals,
+    adaptivePlan,
+    cookieStore,
+    water,
+    steps,
+    stepsWeekRows,
+    waterWeekRows,
+  ] = await Promise.all([
     getLoggedDayKcals(
       supabase,
       userId,
@@ -180,7 +192,35 @@ export default async function DanasPage({
     getWaterMl(supabase, userId, selectedKey),
     // Koraci: the selected day's step total. Same degrade-to-0 posture.
     getStepsForDay(supabase, userId, selectedKey),
+    // The 7 days ending on the selected one, for the mini strips at the foot of
+    // the Koraci/Voda cards. A failed read degrades to "no strip", never to a
+    // failed day render.
+    getStepsWeek(supabase, userId, selectedNoon),
+    getWaterWeek(supabase, userId, selectedNoon),
   ]);
+
+  const waterGoal = waterGoalMl(profileResult.data?.weight_kg ?? null);
+  // Map the two week models onto the strip's tiny shape (label + share of goal
+  // + which column is the viewed day) -- the same derivation Analitika uses, so
+  // the two screens can never disagree about a day.
+  const stepsWeek = computeStepsWeek(
+    stepsWeekRows.rows,
+    selectedNoon,
+    DEFAULT_STEP_GOAL
+  ).days.map((day) => ({
+    label: day.label,
+    pct: day.pct,
+    isToday: day.isToday,
+  }));
+  const waterWeek = computeWaterWeek(
+    waterWeekRows.rows,
+    selectedNoon,
+    waterGoal
+  ).days.map((day) => ({
+    label: day.label,
+    pct: waterGoal > 0 ? Math.min(1, day.ml / waterGoal) : 0,
+    isToday: day.isToday,
+  }));
 
   const days = buildDateStrip({
     now,
@@ -220,7 +260,9 @@ export default async function DanasPage({
       initialWaterMl={water.ml}
       initialSteps={steps.steps}
       stepsGoal={DEFAULT_STEP_GOAL}
-      waterGoal={waterGoalMl(profileResult.data?.weight_kg ?? null)}
+      waterGoal={waterGoal}
+      stepsWeek={stepsWeek}
+      waterWeek={waterWeek}
       isToday={isToday}
     />
   );

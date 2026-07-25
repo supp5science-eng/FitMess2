@@ -3,6 +3,10 @@
 import { GlassWater, Milk, Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 
+import {
+  MiniWeekBars,
+  type MiniWeekDay,
+} from "@/components/home/mini-week-bars";
 import { ProgressRing } from "@/components/home/progress-ring";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
@@ -67,6 +71,7 @@ export function WaterButton({
   dayKey,
   initialMl = 0,
   goalMl,
+  week = [],
   className,
 }: {
   /** Belgrade calendar day (`"YYYY-MM-DD"`) this button logs water for. */
@@ -74,11 +79,13 @@ export function WaterButton({
   /** The day's already-logged water total (ml), read server-side. */
   initialMl?: number;
   /** Recommended daily water goal (ml), from bodyweight — the SAME
-   * `waterGoalMl` the Analitika card uses. When set, the row shows progress
-   * toward it (total / goal + the ring's fill); omitted => just the total. */
+   * `waterGoalMl` the Analitika card uses. When set, the card states it as
+   * "Dnevni cilj" and the ring fills toward it; omitted => just the total. */
   goalMl?: number;
-  /** Layout hook for the caller (the home pager gives Koraci/Voda equal halves
-   * of its page, so the card stretches instead of leaving dead space). */
+  /** The last 7 days vs the goal, for the strip at the foot of the card
+   * (server-derived by `computeWaterWeek`). Empty => the strip is not drawn. */
+  week?: MiniWeekDay[];
+  /** Layout hook for the caller. */
   className?: string;
 }) {
   const [totalMl, setTotalMl] = useState(initialMl);
@@ -190,16 +197,23 @@ export function WaterButton({
   }
 
   const resultMl = Math.max(0, Math.min(MAX_ML, totalMl + addMl));
+  // The strip is server-derived, but the day being viewed has to move the moment
+  // a chip saves -- otherwise the ring updates and its own bar doesn't.
+  const liveWeek = week.map((day) =>
+    day.isToday
+      ? { ...day, pct: goalMl && goalMl > 0 ? totalMl / goalMl : 0 }
+      : day
+  );
   const confirmLabel =
     status === "saving" ? "Čuvanje..." : addMl < 0 ? "Ukloni" : "Dodaj";
 
   return (
     <div className={cn("flex flex-col", className)}>
-      {/* Same anatomy as the Koraci card (2026-07-25): a tappable summary row
-          with the progress ring, plus one-tap presets underneath. The card is a
-          flex column so it soaks up the pager page's spare height itself instead
-          of the page pushing its parts apart. */}
-      <div className="flex flex-1 flex-col justify-center gap-3 rounded-2xl border border-border bg-card px-4 py-4">
+      {/* Same anatomy as the Koraci card (2026-07-25): summary row, one-tap
+          presets, 7-day strip. The card hugs its content and is NEVER stretched
+          to fill the pager page -- stretching it is what produced the reported
+          "huge holes inside the cards". */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-4">
         <button
           type="button"
           onClick={openSheet}
@@ -211,8 +225,8 @@ export function WaterButton({
         >
           <ProgressRing
             fraction={goalMl ? totalMl / goalMl : 0}
-            size={62}
-            stroke={7}
+            size={58}
+            stroke={6}
             trackClassName="text-sky-500/15"
             gradient={WATER_GRADIENT}
           >
@@ -235,18 +249,20 @@ export function WaterButton({
             </span>
             <span
               data-testid="water-total"
-              className="flex items-baseline gap-1.5"
+              className="text-2xl font-bold leading-none text-foreground tabular-nums"
             >
-              <span className="text-2xl font-bold leading-none text-foreground tabular-nums">
-                {formatWaterSr(totalMl)}
-              </span>
-              {goalMl ? (
-                <span className="text-sm text-muted-foreground tabular-nums">
-                  {" / "}
-                  {formatWaterSr(goalMl)}
-                </span>
-              ) : null}
+              {formatWaterSr(totalMl)}
             </span>
+            {/* Spelled out, not "0 mL / 3,1 L": the goal is a recommendation,
+                and the user asked for it to say so. */}
+            {goalMl ? (
+              <span
+                data-testid="water-goal"
+                className="text-xs text-muted-foreground"
+              >
+                Dnevni cilj: {formatWaterSr(goalMl)}
+              </span>
+            ) : null}
           </span>
 
           <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
@@ -283,6 +299,14 @@ export function WaterButton({
             {errorMessage}
           </p>
         ) : null}
+
+        <MiniWeekBars
+          days={liveWeek}
+          testId="water-week-bars"
+          barClassName="bg-sky-400"
+          trackClassName="bg-sky-500/10"
+          todayLabelClassName="text-sky-400"
+        />
       </div>
 
       {/* PORTALLED to <body>: this button now lives inside the home pager's

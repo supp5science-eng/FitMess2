@@ -1,5 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  waitFor,
+  within,
+} from "@testing-library/react";
 
 import { WaterButton } from "@/components/home/water-button";
 
@@ -24,15 +30,21 @@ describe("WaterButton", () => {
     expect(screen.getByTestId("water-total")).toHaveTextContent("250 mL");
   });
 
-  it("shows the daily goal (total / goal) and a reached badge once met", () => {
+  it("spells the goal out as 'Dnevni cilj' and badges it once met", () => {
     render(<WaterButton dayKey="2026-07-22" initialMl={2500} goalMl={2500} />);
-    expect(screen.getByTestId("water-total")).toHaveTextContent("2,5 L / 2,5 L");
+    expect(screen.getByTestId("water-total")).toHaveTextContent("2,5 L");
+    expect(screen.getByTestId("water-goal")).toHaveTextContent(
+      "Dnevni cilj: 2,5 L"
+    );
     expect(screen.getByTestId("water-goal-reached")).toBeInTheDocument();
   });
 
   it("shows the goal but no reached badge below it", () => {
     render(<WaterButton dayKey="2026-07-22" initialMl={1000} goalMl={2500} />);
-    expect(screen.getByTestId("water-total")).toHaveTextContent("1 L / 2,5 L");
+    expect(screen.getByTestId("water-total")).toHaveTextContent("1 L");
+    expect(screen.getByTestId("water-goal")).toHaveTextContent(
+      "Dnevni cilj: 2,5 L"
+    );
     expect(
       screen.queryByTestId("water-goal-reached")
     ).not.toBeInTheDocument();
@@ -40,7 +52,38 @@ describe("WaterButton", () => {
 
   it("omits the goal entirely when none is provided", () => {
     render(<WaterButton dayKey="2026-07-22" initialMl={1250} />);
-    expect(screen.getByTestId("water-total")).not.toHaveTextContent("/");
+    expect(screen.getByTestId("water-total")).toHaveTextContent("1,25 L");
+    expect(screen.queryByTestId("water-goal")).not.toBeInTheDocument();
+  });
+
+  it("draws the 7-day strip and moves the viewed day's bar as water is added", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      jsonResponse({ ok: true, data: { day: "2026-07-22", ml: 1250 } })
+    );
+
+    render(
+      <WaterButton
+        dayKey="2026-07-22"
+        initialMl={0}
+        goalMl={2500}
+        week={[
+          { label: "Sub", pct: 0.5, isToday: false },
+          { label: "Ned", pct: 0, isToday: true },
+        ]}
+      />
+    );
+
+    const bars = screen.getByTestId("water-week-bars");
+    expect(bars).toHaveTextContent("Sub");
+    expect(bars).toHaveTextContent("Ned");
+
+    fireEvent.click(screen.getByTestId("water-quick-250"));
+    // 1250 of 2500 => the viewed day's bar is now at half height.
+    await waitFor(() =>
+      expect(
+        within(bars).getAllByTestId("mini-week-bar")[1]
+      ).toHaveStyle({ height: "50%" })
+    );
   });
 
   it("a quick-add chip on the card posts its delta immediately, with no sheet", async () => {

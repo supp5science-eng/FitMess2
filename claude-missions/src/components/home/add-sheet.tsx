@@ -3,17 +3,8 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import {
-  Barcode,
-  Camera,
-  Mic,
-  Plus,
-  Target,
-  UtensilsCrossed,
-  X,
-} from "lucide-react";
+import { Camera, Mic, Plus, Target, UtensilsCrossed, X } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 // F028 / AS-051: "From the home screen, starting any of the logging methods
@@ -29,22 +20,16 @@ import { cn } from "@/lib/utils";
 // (`HomeScreen`) can drop `<AddSheet />` in without managing any state
 // itself.
 //
-// Barcode scanning (F030/M4) is now real -- routes to `/dodaj/skener`. Both
-// photo flows (F062/F064/M7) are not built yet -- per the clarified scope,
-// those two options are still shown (not hidden) but ROUTE to a clear
-// Serbian "uskoro" (coming soon) placeholder page
-// (`/dodaj/uskoro/[metoda]`) rather than a broken 404 or a dead click. This
-// keeps the "at most 2 taps to START any method" promise literally true for
-// all four methods, and F062/F064 later only need to replace each
-// remaining `available: false` row's `href` with the real flow -- this
-// sheet's own structure does not change.
+// Every option in this menu is live: there are no "uskoro" (coming soon) rows
+// left, so the sheet no longer carries an `available` flag or a gray "Uskoro"
+// badge. If a future method needs to be announced before it is built, that
+// pattern comes back with it.
 
 interface AddSheetOption {
   key: string;
   label: string;
   icon: typeof Camera;
   href: string;
-  available: boolean;
   /** Optional muted helper line under the label. */
   description?: string;
   /** Optional teal highlight badge (e.g. "NAJTAČNIJE") -- also tints the row to
@@ -65,8 +50,11 @@ const OPTIONS: AddSheetOption[] = [
     label: "Prizma",
     icon: Target,
     href: "/dodaj/najtacnije",
-    available: true,
-    description: "Najtačnije: dva ugla + pitanja",
+    // Deliberately says what you GET, not how it works -- the guided two-angle
+    // mechanic is a surprise the flow itself reveals, and spelling it out here
+    // reads as effort ("two photos? questions?") before anyone has seen the
+    // payoff. The badge carries the promise; this line only invites.
+    description: "Vodimo te korak po korak",
     badge: "NAJTAČNIJE",
   },
   {
@@ -74,14 +62,12 @@ const OPTIONS: AddSheetOption[] = [
     label: "Slikaj obrok",
     icon: UtensilsCrossed,
     href: "/dodaj/obrok",
-    available: true,
   },
   {
     key: "glas",
     label: "Reci obrok",
     icon: Mic,
     href: "/dodaj/glas",
-    available: true,
     description: "Izgovori vrednosti ili samo opiši obrok",
   },
   {
@@ -89,20 +75,11 @@ const OPTIONS: AddSheetOption[] = [
     label: "Slikaj deklaraciju",
     icon: Camera,
     href: "/dodaj/deklaracija",
-    available: true,
   },
-  // Barcode scanning is de-prioritised for now (a barcode only yields
-  // per-100g label data the user is already photographing) -- kept last and
-  // routed to the "uskoro" placeholder instead of the live `/dodaj/skener`
-  // scanner. The scanner code stays in place; flip this row back when it
-  // returns.
-  {
-    key: "barkod",
-    label: "Skeniraj barkod",
-    icon: Barcode,
-    href: "/dodaj/uskoro/barkod",
-    available: false,
-  },
+  // Barcode scanning was dropped from this menu on purpose: a barcode only
+  // yields the per-100g label data the user is already photographing, and it
+  // sat here as a dead "Uskoro" row. The scanner code and its route
+  // (`/dodaj/skener`, still used by the admin food editor) stay in place.
 ];
 
 export function AddSheet() {
@@ -171,15 +148,7 @@ export function AddSheet() {
 
                 <div className="flex flex-col gap-2">
                   {OPTIONS.map(
-                    ({
-                      key,
-                      label,
-                      icon: Icon,
-                      href,
-                      available,
-                      description,
-                      badge,
-                    }) => (
+                    ({ key, label, icon: Icon, href, description, badge }) => (
                       <Link
                         key={key}
                         href={href}
@@ -188,7 +157,6 @@ export function AddSheet() {
                         className={cn(
                           "flex items-center gap-3 rounded-xl border border-border px-4 py-3.5 text-left text-sm font-medium text-foreground transition-colors",
                           "hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                          !available && "text-muted-foreground",
                           badge && "border-primary/40 bg-primary/5",
                         )}
                       >
@@ -217,13 +185,6 @@ export function AddSheet() {
                           >
                             {badge}
                           </span>
-                        ) : !available ? (
-                          <Badge
-                            variant="secondary"
-                            data-testid={`add-sheet-soon-badge-${key}`}
-                          >
-                            Uskoro
-                          </Badge>
                         ) : null}
                       </Link>
                     ),

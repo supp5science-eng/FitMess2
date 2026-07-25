@@ -39,9 +39,6 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
       obrok: "/dodaj/obrok",
       glas: "/dodaj/glas",
       deklaracija: "/dodaj/deklaracija",
-      // Barcode is de-prioritised -- routed to the "uskoro" placeholder, not
-      // the live scanner (which still exists at /dodaj/skener).
-      barkod: "/dodaj/uskoro/barkod",
     };
 
     for (const [key, href] of Object.entries(expectedHrefs)) {
@@ -54,21 +51,18 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     }
   });
 
-  it("test_the_active_methods_show_no_uskoro_badge_but_barcode_does", () => {
+  it("test_every_offered_method_is_live_so_no_uskoro_badge_remains", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    // Meal photo, voice and label photo are all live (no "Uskoro" badge).
-    for (const key of ["obrok", "glas", "deklaracija"]) {
+    // Every row in the menu is a working flow now, so the gray "Uskoro"
+    // (coming soon) badge should appear nowhere in the sheet.
+    for (const key of ["najtacnije", "obrok", "glas", "deklaracija"]) {
       expect(
         screen.queryByTestId(`add-sheet-soon-badge-${key}`)
       ).not.toBeInTheDocument();
     }
-
-    // Barcode is intentionally deferred and carries the "Uskoro" badge.
-    expect(
-      screen.getByTestId("add-sheet-soon-badge-barkod")
-    ).toBeInTheDocument();
+    expect(screen.getByTestId("add-sheet")).not.toHaveTextContent("Uskoro");
   });
 
   it("test_najtacnije_leads_the_menu_with_a_teal_highlight_badge", () => {
@@ -105,15 +99,18 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     );
   });
 
-  it("test_barcode_is_the_last_option_in_the_sheet", () => {
+  it("test_the_menu_offers_exactly_the_four_live_methods", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
     const options = screen
       .getByTestId("add-sheet")
       .querySelectorAll('[data-testid^="add-sheet-option-"]');
-    const lastOption = options[options.length - 1];
-    expect(lastOption).toHaveAttribute("data-testid", "add-sheet-option-barkod");
+    expect(options.length).toBe(4);
+    expect(options[options.length - 1]).toHaveAttribute(
+      "data-testid",
+      "add-sheet-option-deklaracija"
+    );
   });
 
   it("test_AS_051_the_photo_links_point_to_the_real_meal_and_label_flows", () => {
@@ -144,14 +141,15 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     ).not.toBeInTheDocument();
   });
 
-  it("test_the_barkod_link_points_to_the_uskoro_placeholder_while_deferred", () => {
+  it("test_barkod_is_no_longer_offered_in_the_add_menu", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    expect(screen.getByTestId("add-sheet-option-barkod")).toHaveAttribute(
-      "href",
-      "/dodaj/uskoro/barkod"
-    );
+    // Dropped on purpose: a barcode only yields the per-100g label data the
+    // user is already photographing. The scanner route itself still exists.
+    expect(
+      screen.queryByTestId("add-sheet-option-barkod")
+    ).not.toBeInTheDocument();
   });
 
 });

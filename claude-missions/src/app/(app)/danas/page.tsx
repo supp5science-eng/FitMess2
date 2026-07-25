@@ -12,6 +12,8 @@ import {
   computeCarryInFromLastWeek,
   type AdaptivePlan,
 } from "@/lib/home/adaptive";
+import { PLAN_INTRO_COOKIE } from "@/components/home/adaptive-plan-card";
+import type { GoalType } from "@/lib/types/db";
 import { buildDateStrip } from "@/lib/home/date-strip";
 import { getLoggedDayKcals } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
@@ -168,6 +170,7 @@ export default async function DanasPage({
           userId,
           result.data.target.daily_kcal,
           profileResult.data?.sex ?? "male",
+          result.data.target.goal,
           now
         )
       : Promise.resolve(null),
@@ -195,6 +198,13 @@ export default async function DanasPage({
   // onboarding completes, offer to install the PWA (the overlay itself
   // consumes the cookie + guards via localStorage, so it can never nag).
   const installPrompt = isToday && cookieStore.get("fm_install") != null;
+  // "Plan za danas je prilagođen" plays ONCE per day. The cookie holds the day
+  // key it last played for, so a new day re-arms it without any expiry games;
+  // the card itself writes the cookie the moment it starts.
+  const planIntro =
+    isToday &&
+    (adaptivePlan?.isAdjusted ?? false) &&
+    cookieStore.get(PLAN_INTRO_COOKIE)?.value !== todayKey;
 
   return (
     <HomeScreen
@@ -205,6 +215,7 @@ export default async function DanasPage({
       days={days}
       mealsHeading={isToday ? "Obroci danas" : `Obroci · ${shortDate(selectedKey)}`}
       adaptivePlan={adaptivePlan}
+      planIntro={planIntro}
       dayKey={selectedKey}
       initialWaterMl={water.ml}
       initialSteps={steps.steps}
@@ -225,6 +236,7 @@ async function getAdaptivePlan(
   userId: string,
   baseDailyTarget: number,
   sex: "male" | "female",
+  goal: GoalType | null,
   now: Date
 ): Promise<AdaptivePlan | null> {
   const thisWeek = getBelgradeWeekRange(now);
@@ -264,6 +276,7 @@ async function getAdaptivePlan(
     weekLogs: thisWeekResult.data ?? [],
     baseDailyTarget,
     sex,
+    goal,
     carryInKcal,
     now,
   });

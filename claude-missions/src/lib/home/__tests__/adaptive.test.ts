@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  MAX_TRAINING_SUGGESTION_KCAL,
   computeAdaptivePlan,
   computeCarryInFromLastWeek,
 } from "@/lib/home/adaptive";
+import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
 
 // Deterministic "now": Wednesday 2026-01-07 (week starts Monday 2026-01-05).
 // Mon = index 0, Tue = 1, Wed(today) = 2 -> elapsed 3, 5 days left.
@@ -45,7 +47,7 @@ describe("computeAdaptivePlan: redistribute an overshoot across the rest of the 
     expect(plan.adaptiveDailyTarget).toBe(1600);
   });
 
-  it("clamps at the safe floor and suggests activity for the part food can't cover", () => {
+  it("never cuts one day by more than the trim cap, however big the overshoot", () => {
     // Huge overshoot: Mon 8000 + Tue 3000 = 11000 before today.
     const plan = computeAdaptivePlan({
       weekLogs: [log(MON, 8000), log(TUE, 3000)],
@@ -53,11 +55,26 @@ describe("computeAdaptivePlan: redistribute an overshoot across the rest of the 
       sex: "male",
       now: WED,
     });
-    // remaining 3000 / 5 = 600/day ideal, below the 1400 male floor.
-    expect(plan.adaptiveDailyTarget).toBe(1400);
-    expect(plan.trainingSuggestionKcal).toBe(800); // 1400 - 600, rounded to 50
+    // remaining 3000 / 5 = 600/day "ideal" -- but a 25% cap on a 2000 base
+    // means today never goes below 1500, even though the floor is 1400.
+    expect(plan.adaptiveDailyTarget).toBe(1500);
+    expect(plan.trimmedKcal).toBe(500);
+    // The rest is NOT chased today: capped activity, remainder rolls to next
+    // week as ordinary carry-in.
+    expect(plan.trainingSuggestionKcal).toBe(MAX_TRAINING_SUGGESTION_KCAL);
     expect(plan.trainingWalkMinutes).toBeGreaterThan(0);
     expect(plan.isAdjusted).toBe(true);
+  });
+
+  it("keeps the sex floor binding when it is stricter than the trim cap", () => {
+    // Small base: 25% of 1600 is 1200, below the 1400 male floor -> floor wins.
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 6000), log(TUE, 6000)],
+      baseDailyTarget: 1600,
+      sex: "male",
+      now: WED,
+    });
+    expect(plan.adaptiveDailyTarget).toBe(1400);
   });
 
   it("stays at base when the week is on track (no adjustment)", () => {
@@ -91,9 +108,118 @@ describe("computeAdaptivePlan: redistribute an overshoot across the rest of the 
       carryInKcal: 2000,
       now: WED,
     });
-    // remaining 14000 - 6000 - 2000 = 6000 / 5 = 1200 -> below floor -> 1400.
-    expect(plan.adaptiveDailyTarget).toBe(1400);
-    expect(plan.trainingSuggestionKcal).toBe(200);
+    // remaining 14000 - 6000 - 2000 = 6000 / 5 = 1200 -> below the 1500 trim
+    // cap -> 1500, with the shortfall covered by capped activity.
+    expect(plan.adaptiveDailyTarget).toBe(1500);
+    expect(plan.trainingSuggestionKcal).toBe(MAX_TRAINING_SUGGESTION_KCAL);
+  });
+});
+
+describe("goal awareness: under-eating is only corrected upward where the goal is a number to HIT", () => {
+  const underEatenWeek = [log(MON, 1000), log(TUE, 1000)];
+
+  it("raises the remaining days on a bulk, so a missed day is not silently lost", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: underEatenWeek,
+      baseDailyTarget: 2000,
+      sex: "male",
+      goal: "gain",
+      now: WED,
+    });
+    // 14000 - 2000 = 12000 over 5 days = 2400 ideal, within the +20% cap.
+    expect(plan.adaptiveDailyTarget).toBe(2400);
+    expect(plan.liftedKcal).toBe(400);
+    expect(plan.trimmedKcal).toBe(0);
+    expect(plan.isAdjusted).toBe(true);
+  });
+
+  it("caps the lift so one skipped day cannot mandate a feast", () => {
+    const plan = computeAdaptivePlan({
+      // Nothing logged Mon/Tue at all on a bulk.
+      weekLogs: [],
+      baseDailyTarget: 2000,
+      sex: "male",
+      goal: "gain",
+      now: WED,
+    });
+    // Ideal would be 14000/5 = 2800; the +20% cap holds it at 2400.
+    expect(plan.adaptiveDailyTarget).toBe(2400);
+  });
+
+  it("corrects maintenance upward too -- maintaining also means hitting the number", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: underEatenWeek,
+      baseDailyTarget: 2000,
+      sex: "male",
+      goal: "maintain",
+      now: WED,
+    });
+    expect(plan.adaptiveDailyTarget).toBe(2400);
+  });
+
+  it.each(["lose", "tone"] as const)(
+    "leaves a cutting goal (%s) one-way: under-eating never raises the target",
+    (goal) => {
+      const plan = computeAdaptivePlan({
+        weekLogs: underEatenWeek,
+        baseDailyTarget: 2000,
+        sex: "male",
+        goal,
+        now: WED,
+      });
+      expect(plan.adaptiveDailyTarget).toBe(2000);
+      expect(plan.liftedKcal).toBe(0);
+      expect(plan.isAdjusted).toBe(false);
+    }
+  );
+
+  it("treats an unknown goal as a cutting goal (never guess someone into eating more)", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: underEatenWeek,
+      baseDailyTarget: 2000,
+      sex: "male",
+      goal: null,
+      now: WED,
+    });
+    expect(plan.adaptiveDailyTarget).toBe(2000);
+  });
+
+  it("still trims a bulk that overshot -- the lift is not a one-way street", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3000), log(TUE, 3000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      goal: "gain",
+      now: WED,
+    });
+    expect(plan.adaptiveDailyTarget).toBe(1600);
+    expect(plan.trimmedKcal).toBe(400);
+  });
+});
+
+describe("the activity suggestion and the step goal are one number, not two", () => {
+  it("raises the step goal to cover the kcal food can't", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 8000), log(TUE, 3000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      now: WED,
+    });
+    // 250 kcal of brisk walking ~= 5000 steps on top of the default goal.
+    expect(plan.trainingSuggestionKcal).toBe(250);
+    expect(plan.extraSteps).toBe(5000);
+    expect(plan.adaptiveStepGoal).toBe(DEFAULT_STEP_GOAL + 5000);
+  });
+
+  it("leaves the step goal alone when no activity is needed", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 2000), log(TUE, 2000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      now: WED,
+    });
+    expect(plan.extraSteps).toBe(0);
+    expect(plan.adaptiveStepGoal).toBe(DEFAULT_STEP_GOAL);
   });
 });
 

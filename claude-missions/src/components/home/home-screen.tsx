@@ -12,6 +12,7 @@ import { MacroBars } from "@/components/home/macro-bars";
 import { MicroCards } from "@/components/home/micro-cards";
 import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
+import { AdaptivePlanCard } from "@/components/home/adaptive-plan-card";
 import { StepsCard } from "@/components/home/steps-card";
 import { GricButton } from "@/components/home/gric-button";
 import { WaterButton } from "@/components/home/water-button";
@@ -68,6 +69,7 @@ export function HomeScreen({
   days = [],
   mealsHeading = "Obroci danas",
   adaptivePlan = null,
+  planIntro = false,
   dayKey,
   initialWaterMl = 0,
   initialSteps = 0,
@@ -95,6 +97,9 @@ export function HomeScreen({
   // why. Null/absent (past days, or a week that's on track) => the ring uses
   // the plain daily target, exactly as before.
   adaptivePlan?: AdaptivePlan | null;
+  // First visit of the day (server-decided via the `fm_plan` cookie): play the
+  // one-time "plan je prilagođen" reveal instead of rendering the calm card.
+  planIntro?: boolean;
   // Voda + Koraci: the Belgrade day this screen shows + that day's already-
   // logged water (ml) and steps. When `dayKey` is provided the "Koraci" card
   // and "Voda" button render below the daily-intake block. Omitted in unit
@@ -203,6 +208,15 @@ export function HomeScreen({
       ? adaptivePlan.adaptiveDailyTarget
       : (target?.daily_kcal ?? 0);
 
+  // The step goal follows the SAME plan (2026-07-25). When food alone cannot
+  // absorb an overshoot, the adaptive plan turns the remainder into movement --
+  // and that has to be the number the "Koraci" card counts toward, otherwise the
+  // app says "walk 50 minutes" in one place and "10.000 koraka" in another and
+  // means one thing by both.
+  const effectiveStepGoal = adaptivePlan?.isAdjusted
+    ? adaptivePlan.adaptiveStepGoal
+    : stepsGoal;
+
   // Second page (2026-07-25): fiber / sugar / sodium / saturated fat and the
   // health score. Both are pure functions of the SAME `logs` state the ring uses,
   // so an edit or delete updates all of it in one re-render, with no extra fetch
@@ -296,7 +310,11 @@ export function HomeScreen({
                       />
                     </div>
                     {adaptivePlan?.isAdjusted ? (
-                      <AdaptiveNote plan={adaptivePlan} />
+                      <AdaptivePlanCard
+                        plan={adaptivePlan}
+                        intro={planIntro}
+                        dayKey={dayKey}
+                      />
                     ) : null}
                     <div className="home-body">
                       <MacroBars
@@ -335,7 +353,7 @@ export function HomeScreen({
                           <StepsCard
                             dayKey={dayKey}
                             initialSteps={initialSteps}
-                            goal={stepsGoal}
+                            goal={effectiveStepGoal}
                           />
                           <WaterButton
                             dayKey={dayKey}
@@ -361,7 +379,7 @@ export function HomeScreen({
           />
           <DailyTargets
             kcal={targetKcal}
-            stepsGoal={stepsGoal}
+            stepsGoal={effectiveStepGoal}
             waterGoalMl={waterGoal}
           />
         </div>
@@ -505,35 +523,6 @@ function TargetTile({
  * absorb the overshoot without dropping below the safe floor, suggests a bit
  * of activity to cover the rest.
  */
-function AdaptiveNote({ plan }: { plan: AdaptivePlan }) {
-  return (
-    <div
-      data-testid="adaptive-note"
-      className="home-body rounded-2xl border border-border bg-muted/40 px-4 py-3.5 text-sm"
-    >
-      <p className="font-semibold text-foreground">Prilagođeno ove nedelje</p>
-      <p className="mt-0.5 text-muted-foreground">
-        Zbog ranijeg prekoračenja, današnji cilj je snižen na{" "}
-        <span data-testid="adaptive-note-target" className="font-medium text-foreground">
-          {plan.adaptiveDailyTarget} kcal
-        </span>{" "}
-        (redovni: {plan.baseDailyTarget}) — da se nedelja vrati na prag.
-      </p>
-      {plan.trainingSuggestionKcal > 0 ? (
-        <p
-          data-testid="adaptive-note-training"
-          className="mt-1.5 text-muted-foreground"
-        >
-          Preostalo pokrij aktivnošću:{" "}
-          <span className="font-medium text-foreground">
-            ~{plan.trainingSuggestionKcal} kcal
-          </span>{" "}
-          danas (≈ {plan.trainingWalkMinutes} min brzog hoda).
-        </p>
-      ) : null}
-    </div>
-  );
-}
 
 /**
  * The "Potrošeno | Preostalo" segmented toggle that drives the gauge + macros

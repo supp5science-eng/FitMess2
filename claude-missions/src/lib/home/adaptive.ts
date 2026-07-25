@@ -1,39 +1,85 @@
 /**
- * Adaptive daily target (2026-07-20 feature, "deo 2").
+ * Adaptive daily target (2026-07-20 feature, "deo 2"; reworked 2026-07-25).
  *
- * When a user goes over their daily limit, the remaining days of the CURRENT
- * week (Mon..Sun, the app's existing weekly-budget frame) absorb the overshoot
+ * When a user misses their daily limit, the remaining days of the CURRENT
+ * week (Mon..Sun, the app's existing weekly-budget frame) absorb the difference
  * so the week still lands on its budget -- "vraćanje na prag". Pure,
  * DB-free arithmetic (money-math rule), computed on the fly from this week's
  * logs; nothing is persisted.
  *
- * Model (all decisions confirmed with the product owner 2026-07-20):
- *  - Window: the rest of THIS week. remaining weekly allowance is spread evenly
- *    over the days left (including today).
- *  - Safety: the adjusted daily target is clamped to [floor, base] -- it never
- *    drops below the sex-specific kcal floor (no starving) and never rises
- *    ABOVE the base target (an under-eaten day is not turned into a licence to
- *    binge; only overshoots pull the target DOWN).
- *  - Overflow -> next week: whatever overshoot can't be absorbed within the
- *    floor this week is carried in as `carryInKcal` (computed by
- *    `computeCarryInFromLastWeek` from the immediately-previous week; a
- *    1-week lookback -- full multi-week compounding would need a persisted
- *    balance, deliberately out of scope for this on-the-fly version).
- *  - Training: the part that food genuinely cannot cover today (the daily need
- *    that falls below the floor) becomes an activity SUGGESTION, since the app
- *    has no workout-tracking system yet.
+ * Model:
+ *  - Window: the rest of THIS week. The remaining weekly allowance is spread
+ *    evenly over the days left (including today).
+ *  - Floor: never below the sex-specific kcal floor (no starving).
+ *  - Daily trim cap (2026-07-25): a single day is never cut by more than
+ *    `MAX_DAILY_TRIM_PCT` of the base target, no matter how big the overshoot.
+ *    Before this, a big Monday landing on a Sunday (1 day left) collapsed that
+ *    day straight to the floor and produced an hour-and-a-half walk suggestion
+ *    -- technically correct, practically ignored. Whatever the cap refuses to
+ *    trim simply leaves the week over budget, which the EXISTING carry-in
+ *    mechanism picks up next week; the spill needs no extra bookkeeping.
+ *  - Direction depends on the GOAL (2026-07-25). Cutting goals (`lose`,
+ *    `tone`) are one-way: an overshoot pulls the target DOWN, but under-eating
+ *    never pushes it up -- eating less than planned on a cut is not a debt to
+ *    repay. Goals that are about HITTING a number (`gain`, `maintain`) are
+ *    symmetric: under-eating on a bulk is a missed target, so the remaining
+ *    days rise (capped by `MAX_DAILY_LIFT_PCT`, so one skipped day cannot
+ *    mandate an absurd feast). Before this, a bulking user who under-ate was
+ *    silently told to keep eating the same amount, which works against the
+ *    very goal they chose.
+ *  - Activity: the part food genuinely cannot cover today becomes an activity
+ *    suggestion, expressed BOTH as kcal and as a raised step goal
+ *    (`adaptiveStepGoal`), so the note and the "Koraci" card say one thing
+ *    instead of two unrelated things. Capped at
+ *    `MAX_TRAINING_SUGGESTION_KCAL`; the rest rolls into next week like any
+ *    other untrimmed overshoot.
  */
 
 import { KCAL_FLOOR } from "@/lib/budget/engine";
+import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
 import { computeWeekSummary, type LogForWeek } from "@/lib/week/summary";
-import type { Sex } from "@/lib/types/db";
+import type { GoalType, Sex } from "@/lib/types/db";
 
 /** Rough kcal burned per minute of brisk walking, for the activity hint. */
 const BRISK_WALK_KCAL_PER_MIN = 5;
 
+/** Rough steps per kcal of brisk walking (~100 steps/min at ~5 kcal/min). */
+const STEPS_PER_KCAL = 20;
+
+/**
+ * The most a single day's target may be cut below base, as a fraction of base.
+ * Mirrors `MAX_DEFICIT_PCT` in the budget engine: the app already refuses to
+ * plan a deficit steeper than 25% of TDEE, so a redistribution that quietly
+ * imposed a steeper one would contradict the plan it is protecting.
+ */
+export const MAX_DAILY_TRIM_PCT = 0.25;
+
+/**
+ * The most a single day's target may be raised above base (`gain`/`maintain`
+ * only). Keeps "you under-ate on Monday" from turning Tuesday into a feast
+ * nobody will actually eat.
+ */
+export const MAX_DAILY_LIFT_PCT = 0.2;
+
+/**
+ * Ceiling on the activity suggestion. ~250 kcal is a brisk 50-minute walk --
+ * a real ask, still doable on a normal day. Anything beyond it is not "make it
+ * up today", it is next week's problem, and pretending otherwise is how a
+ * suggestion becomes noise.
+ */
+export const MAX_TRAINING_SUGGESTION_KCAL = 250;
+
+/** Goals measured by HITTING a number rather than staying under one. */
+const SYMMETRIC_GOALS: readonly GoalType[] = ["gain", "maintain"];
+
 /** Round a kcal amount to the nearest 50 for a friendly, non-fake-precise hint. */
 function roundTo50(value: number): number {
   return Math.round(value / 50) * 50;
+}
+
+/** Round a step count to the nearest 500 -- step goals are never precise. */
+function roundTo500(value: number): number {
+  return Math.round(value / 500) * 500;
 }
 
 export interface AdaptivePlan {
@@ -51,12 +97,20 @@ export interface AdaptivePlan {
   daysLeftIncludingToday: number;
   /** Debt carried in from the previous week (>= 0). */
   carryInKcal: number;
-  /** How much lower today's target is vs base (base - adaptive), >= 0. */
+  /** How much LOWER today's target is vs base (base - adaptive), >= 0. */
   trimmedKcal: number;
+  /** How much HIGHER today's target is vs base (adaptive - base), >= 0.
+   * Only ever non-zero for `gain`/`maintain`. */
+  liftedKcal: number;
   /** Suggested activity kcal for the part food can't cover today (0 if none). */
   trainingSuggestionKcal: number;
   /** Rough brisk-walk minutes matching `trainingSuggestionKcal` (0 if none). */
   trainingWalkMinutes: number;
+  /** Today's step goal: the default, raised to cover the activity suggestion.
+   * Equals `DEFAULT_STEP_GOAL` when no activity is needed. */
+  adaptiveStepGoal: number;
+  /** Extra steps above the default (0 when none) -- what the note announces. */
+  extraSteps: number;
 }
 
 export interface AdaptivePlanInput {
@@ -66,6 +120,10 @@ export interface AdaptivePlanInput {
   baseDailyTarget: number;
   /** The user's sex, for the safe kcal floor. */
   sex: Sex;
+  /** The user's goal (targets.goal). Decides whether under-eating is corrected
+   * upward. Missing/unknown is treated as a cutting goal (the safe default:
+   * never tell someone to eat more on a guess). */
+  goal?: GoalType | null;
   /** Debt carried from the previous week (>= 0); default 0. */
   carryInKcal?: number;
   /** "Now" (injectable for tests); defaults to the real clock at the call. */
@@ -93,12 +151,29 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
   const remainingAllowance = summary.weeklyBudget - spentBeforeToday - carryIn;
   const idealDaily = remainingAllowance / daysLeft;
 
-  // Clamp: never above base (no binge reward), never below the floor.
-  const adaptive = Math.round(Math.min(base, Math.max(floor, idealDaily)));
+  // Lower bound: the safety floor AND the daily trim cap, whichever binds
+  // first. Never below the floor, never a steeper one-day cut than the plan
+  // itself would ever prescribe.
+  const trimCapFloor = base * (1 - MAX_DAILY_TRIM_PCT);
+  const lowerBound = Math.max(floor, Math.min(base, trimCapFloor));
 
-  // The daily need that even the floor can't cover -> suggest activity.
-  const belowFloor = floor - idealDaily;
-  const trainingSuggestionKcal = belowFloor > 0 ? roundTo50(belowFloor) : 0;
+  // Upper bound: base for cutting goals (an under-eaten day is not a licence
+  // to binge); a capped lift for goals that are about hitting a number.
+  const allowsLift = SYMMETRIC_GOALS.includes(input.goal ?? "lose");
+  const upperBound = allowsLift ? Math.round(base * (1 + MAX_DAILY_LIFT_PCT)) : base;
+
+  const adaptive = Math.round(
+    Math.min(upperBound, Math.max(lowerBound, idealDaily))
+  );
+
+  // What even the lower bound can't absorb today -> activity, capped. The
+  // remainder is deliberately NOT chased: it leaves the week over budget and
+  // returns as next week's carry-in.
+  const uncovered = lowerBound - idealDaily;
+  const trainingSuggestionKcal =
+    uncovered > 0
+      ? Math.min(MAX_TRAINING_SUGGESTION_KCAL, roundTo50(uncovered))
+      : 0;
   const trainingWalkMinutes =
     trainingSuggestionKcal > 0
       ? Math.max(
@@ -107,8 +182,17 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
         )
       : 0;
 
+  // The same suggestion, expressed as the thing the home screen actually
+  // shows a goal for. One number, two places -- not two numbers.
+  const extraSteps =
+    trainingSuggestionKcal > 0
+      ? roundTo500(trainingSuggestionKcal * STEPS_PER_KCAL)
+      : 0;
+
   const trimmedKcal = Math.max(0, base - adaptive);
-  const isAdjusted = trimmedKcal > 0 || trainingSuggestionKcal > 0;
+  const liftedKcal = Math.max(0, adaptive - base);
+  const isAdjusted =
+    trimmedKcal > 0 || liftedKcal > 0 || trainingSuggestionKcal > 0;
 
   return {
     baseDailyTarget: base,
@@ -119,8 +203,11 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
     daysLeftIncludingToday: daysLeft,
     carryInKcal: carryIn,
     trimmedKcal,
+    liftedKcal,
     trainingSuggestionKcal,
     trainingWalkMinutes,
+    adaptiveStepGoal: DEFAULT_STEP_GOAL + extraSteps,
+    extraSteps,
   };
 }
 

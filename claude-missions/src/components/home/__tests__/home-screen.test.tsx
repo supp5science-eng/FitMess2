@@ -105,20 +105,27 @@ describe("AS-047/AS-048/AS-049: HomeScreen renders the ring, bars, and meal list
     expect(screen.getByTestId("meal-card-log-1")).toBeInTheDocument();
   });
 
-  it("shows recommended daily targets (kcal, steps, water) alongside the calorie result", () => {
+  it("shows the recommended step + water goals on the movement page, next to the cards that log them", () => {
+    // 2026-07-25: these two goals moved off a fixed row under the pager and onto
+    // the Koraci/Voda page itself. The kcal goal is NOT repeated here -- it is
+    // already the ring's own centre number (`home-ring-target`).
     render(
       <HomeScreen
         initialLogs={[]}
         target={makeTarget({ daily_kcal: 2000 })}
+        dayKey="2026-07-25"
         stepsGoal={10000}
         waterGoal={2500}
       />
     );
 
     const targets = screen.getByTestId("daily-targets");
-    expect(targets).toHaveTextContent("2000");
     expect(targets).toHaveTextContent("10.000");
     expect(targets).toHaveTextContent("2,5 L");
+    expect(screen.getByTestId("intake-page-aktivnost")).toContainElement(
+      targets
+    );
+    expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
   });
 });
 
@@ -227,8 +234,11 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     daysLeftIncludingToday: 5,
     carryInKcal: 0,
     trimmedKcal: 400,
+    liftedKcal: 0,
     trainingSuggestionKcal: 0,
     trainingWalkMinutes: 0,
+    adaptiveStepGoal: 10000,
+    extraSteps: 0,
   };
 
   it("test_the_ring_targets_the_adapted_number_and_a_note_explains_why", () => {
@@ -257,19 +267,24 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
         target={makeTarget({ daily_kcal: 2000 })}
         adaptivePlan={{
           ...adjustedPlan,
-          adaptiveDailyTarget: 1400,
-          trainingSuggestionKcal: 800,
-          trainingWalkMinutes: 160,
+          adaptiveDailyTarget: 1500,
+          trainingSuggestionKcal: 250,
+          trainingWalkMinutes: 50,
+          adaptiveStepGoal: 15000,
+          extraSteps: 5000,
         }}
       />
     );
 
     expect(screen.getByTestId("adaptive-note-training")).toHaveTextContent(
-      "~800 kcal"
+      "~250 kcal"
     );
     expect(screen.getByTestId("adaptive-note-training")).toHaveTextContent(
-      "160 min"
+      "50 min"
     );
+    // The suggestion and the step goal are the SAME number, not two unrelated
+    // asks: the walk shows up as a raised "Koraci" goal.
+    expect(screen.getByTestId("adaptive-note-steps")).toHaveTextContent("15.000");
   });
 
   it("test_no_note_and_base_target_when_the_week_is_on_track", () => {

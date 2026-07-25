@@ -68,10 +68,76 @@ const MEAL_MODEL = "gemini-3.6-flash";
 const VOICE_MODEL = "gemini-3.6-flash";
 const REQUEST_TIMEOUT_MS = 45_000;
 
-export class GeminiError extends Error {}
+/**
+ * Any failure talking to Gemini. Carries the HTTP `status` when there was one,
+ * so callers can tell "we are rate-limited / out of quota" (429) apart from a
+ * genuinely bad request -- the difference between "probaj za minut" and
+ * "nismo te razumeli", which the user experiences as two different apps.
+ */
+export class GeminiError extends Error {
+  readonly status?: number;
+
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
+}
+
+/** True when the failure was a rate limit / exhausted quota (HTTP 429). */
+export function isQuotaError(err: unknown): boolean {
+  return err instanceof GeminiError && err.status === 429;
+}
+
+/**
+ * The one Serbian sentence to show when the AI could not be reached because of
+ * quota. Deliberately does NOT invite an immediate retry: on 429 a retry is
+ * both useless and the thing that burns what little quota is left.
+ */
+export const AI_BUSY_ERROR_SR =
+  "AI trenutno ne stiže da obradi zahteve. Sačekaj minut pa probaj ponovo.";
+
+/**
+ * The Serbian message to show for a failed AI call: the quota sentence when the
+ * cause was a rate limit, otherwise the flow's own copy.
+ *
+ * Without this every quota failure surfaced as "Nismo uspeli da razumemo
+ * snimak" -- blaming the user's microphone for our billing, and inviting a
+ * retry that could only fail again and spend more of the quota that ran out.
+ */
+export function aiErrorSr(err: unknown, fallback: string): string {
+  return isQuotaError(err) ? AI_BUSY_ERROR_SR : fallback;
+}
+
+/**
+ * How hard the model is allowed to think before answering.
+ *
+ * Gemini 3.x thinks by default and bills those thoughts as OUTPUT tokens -- the
+ * expensive side -- so on a task that is really just READING (a spoken sentence,
+ * a nutrition table) the thinking can cost several times the answer itself and
+ * add seconds of latency for no gain. Measured on this project: `low` produced
+ * the same result with zero thought tokens, 4x faster.
+ *
+ * So: `low` for extraction, default (omitted) wherever the model genuinely has
+ * to reason -- estimating a portion from a photo, or adding up components.
+ *
+ * NOTE: the older `thinkingBudget: 0` is NOT a substitute; 3.6-flash rejects it
+ * with HTTP 400.
+ */
+type ThinkingLevel = "low";
+
+function thinkingConfig(level?: ThinkingLevel) {
+  return level ? { thinkingConfig: { thinkingLevel: level } } : {};
+}
 
 interface GeminiResponse {
   candidates?: { content?: { parts?: { text?: string }[] } }[];
+  /** Token accounting Google returns on every call. Logged, never shown. */
+  usageMetadata?: {
+    promptTokenCount?: number;
+    candidatesTokenCount?: number;
+    thoughtsTokenCount?: number;
+    totalTokenCount?: number;
+  };
 }
 
 /**
@@ -114,10 +180,33 @@ async function postGenerateContent(
 
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
-    throw new GeminiError(`Gemini ${response.status}: ${detail.slice(0, 300)}`);
+    throw new GeminiError(
+      `Gemini ${response.status}: ${detail.slice(0, 300)}`,
+      response.status
+    );
   }
 
   const json = (await response.json()) as GeminiResponse;
+
+  // What the call actually cost, straight from Google's own accounting. This
+  // is the only way to know the real price per meal -- token counts estimated
+  // by hand are guesses, and `thoughts` in particular (billed as OUTPUT, the
+  // expensive side) can quietly dwarf the answer itself. Grep `[gemini] usage`
+  // in the logs to price a feature.
+  const usage = json.usageMetadata;
+  if (usage) {
+    console.info(
+      "[gemini] usage:",
+      JSON.stringify({
+        model,
+        in: usage.promptTokenCount ?? 0,
+        out: usage.candidatesTokenCount ?? 0,
+        thoughts: usage.thoughtsTokenCount ?? 0,
+        total: usage.totalTokenCount ?? 0,
+      })
+    );
+  }
+
   const text = (json.candidates?.[0]?.content?.parts ?? [])
     .map((part) => part.text ?? "")
     .join("")
@@ -137,7 +226,8 @@ async function generateJsonFromImage(
   responseSchema: unknown,
   base64Image: string,
   mimeType: string,
-  modelOverride?: string
+  modelOverride?: string,
+  thinking?: ThinkingLevel
 ): Promise<string> {
   return postGenerateContent(
     {
@@ -154,6 +244,7 @@ async function generateJsonFromImage(
         responseMimeType: "application/json",
         responseSchema,
         temperature: 0.2,
+        ...thinkingConfig(thinking),
       },
     },
     modelOverride
@@ -170,7 +261,8 @@ async function generateJsonFromAudio(
   responseSchema: unknown,
   base64Audio: string,
   mimeType: string,
-  modelOverride?: string
+  modelOverride?: string,
+  thinking?: ThinkingLevel
 ): Promise<string> {
   return postGenerateContent(
     {
@@ -187,6 +279,7 @@ async function generateJsonFromAudio(
         responseMimeType: "application/json",
         responseSchema,
         temperature: 0.2,
+        ...thinkingConfig(thinking),
       },
     },
     modelOverride
@@ -444,7 +537,10 @@ export async function estimateMealFromAudio(
     VOICE_RESPONSE_SCHEMA,
     base64Audio,
     mimeType,
-    process.env.GEMINI_VOICE_MODEL || VOICE_MODEL
+    process.env.GEMINI_VOICE_MODEL || VOICE_MODEL,
+    // Listening to a sentence and writing down what it says is extraction, not
+    // reasoning -- thinking here only costs money and seconds.
+    "low"
   );
   const parsed = voiceMealSchema.safeParse(parseJson(text));
   if (!parsed.success) {
@@ -468,7 +564,10 @@ export async function estimateGricFromAudio(
     GRIC_RESPONSE_SCHEMA,
     base64Audio,
     mimeType,
-    process.env.GEMINI_VOICE_MODEL || VOICE_MODEL
+    process.env.GEMINI_VOICE_MODEL || VOICE_MODEL,
+    // Same as the voice flow: splitting a sentence into items is reading.
+    // Gric is also the one path where speed IS the feature.
+    "low"
   );
   const parsed = gricEstimateSchema.safeParse(parseJson(text));
   if (!parsed.success) {
@@ -486,7 +585,12 @@ export async function estimateLabelFromImage(
     LABEL_PROMPT,
     LABEL_RESPONSE_SCHEMA,
     base64Image,
-    mimeType
+    mimeType,
+    undefined,
+    // Reading a printed table. The numbers are on the picture; there is nothing
+    // to reason about. (`estimateMealFromImage` above deliberately keeps its
+    // thinking -- judging a portion from a photo is the opposite case.)
+    "low"
   );
   const parsed = labelEstimateSchema.safeParse(parseJson(text));
   if (!parsed.success) {

@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { estimateGricFromAudio } from "@/lib/ai/gemini";
+import { aiErrorSr, estimateGricFromAudio } from "@/lib/ai/gemini";
 import type { GricEstimate } from "@/lib/ai/gric-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
@@ -51,7 +51,7 @@ export async function estimateGricAction(
     console.error("[gric] estimate failed:", err);
     return {
       ok: false,
-      error_sr: "Nismo uspeli da razumemo snimak. Pokušaj ponovo.",
+      error_sr: aiErrorSr(err, "Nismo uspeli da razumemo snimak. Pokušaj ponovo."),
     };
   }
 }

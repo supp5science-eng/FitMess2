@@ -2,6 +2,7 @@
 
 import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
 import {
+  aiErrorSr,
   analyzePrizmaMeal,
   estimateMealFromImageAndVoice,
   finalizePrizmaMeal,
@@ -100,7 +101,7 @@ export async function estimateCombinedAction(
     console.error("[najtacnije] combined estimate failed:", err);
     return {
       ok: false,
-      error_sr: "Nismo uspeli da procenimo obrok. Pokušaj ponovo.",
+      error_sr: aiErrorSr(err, "Nismo uspeli da procenimo obrok. Pokušaj ponovo."),
     };
   }
 }
@@ -195,7 +196,7 @@ export async function analyzeMealAction(
     console.error("[najtacnije] analyze failed:", err);
     return {
       ok: false,
-      error_sr: "Nismo uspeli da analiziramo slike. Pokušaj ponovo.",
+      error_sr: aiErrorSr(err, "Nismo uspeli da analiziramo slike. Pokušaj ponovo."),
     };
   }
 }
@@ -246,7 +247,7 @@ export async function finalizeMealAction(
     console.error("[najtacnije] finalize failed:", err);
     return {
       ok: false,
-      error_sr: "Nismo uspeli da procenimo obrok. Pokušaj ponovo.",
+      error_sr: aiErrorSr(err, "Nismo uspeli da procenimo obrok. Pokušaj ponovo."),
     };
   }
 }

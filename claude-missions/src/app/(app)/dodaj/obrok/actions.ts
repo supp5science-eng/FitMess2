@@ -2,7 +2,7 @@
 
 import { z } from "zod";
 
-import { estimateMealFromImage } from "@/lib/ai/gemini";
+import { aiErrorSr, estimateMealFromImage } from "@/lib/ai/gemini";
 import type { MealEstimate } from "@/lib/ai/meal-estimate";
 import { estimateMealMicros } from "@/lib/ai/micro-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
@@ -50,7 +50,7 @@ export async function estimateMealAction(
     console.error("[F064 obrok] estimate failed:", err);
     return {
       ok: false,
-      error_sr: "Nismo uspeli da procenimo obrok. Pokušaj ponovo.",
+      error_sr: aiErrorSr(err, "Nismo uspeli da procenimo obrok. Pokušaj ponovo."),
     };
   }
 }

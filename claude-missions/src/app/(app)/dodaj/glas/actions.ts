@@ -1,6 +1,6 @@
 "use server";
 
-import { estimateMealFromAudio } from "@/lib/ai/gemini";
+import { aiErrorSr, estimateMealFromAudio } from "@/lib/ai/gemini";
 import type { VoiceMealEstimate } from "@/lib/ai/voice-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
@@ -53,7 +53,7 @@ export async function estimateVoiceMealAction(
     console.error("[glas] voice estimate failed:", err);
     return {
       ok: false,
-      error_sr: "Nismo uspeli da razumemo snimak. Pokušaj ponovo.",
+      error_sr: aiErrorSr(err, "Nismo uspeli da razumemo snimak. Pokušaj ponovo."),
     };
   }
 }

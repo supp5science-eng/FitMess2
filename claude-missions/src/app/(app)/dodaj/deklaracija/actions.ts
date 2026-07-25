@@ -1,6 +1,6 @@
 "use server";
 
-import { estimateLabelFromImage } from "@/lib/ai/gemini";
+import { aiErrorSr, estimateLabelFromImage } from "@/lib/ai/gemini";
 import type { LabelEstimate } from "@/lib/ai/label-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
@@ -49,8 +49,10 @@ export async function estimateLabelAction(
     console.error("[F063 deklaracija] estimate failed:", err);
     return {
       ok: false,
-      error_sr:
-        "Nismo uspeli da pročitamo deklaraciju. Uslikaj tabelu izbliza i pokušaj ponovo.",
+      error_sr: aiErrorSr(
+        err,
+        "Nismo uspeli da pročitamo deklaraciju. Uslikaj tabelu izbliza i pokušaj ponovo."
+      ),
     };
   }
 }

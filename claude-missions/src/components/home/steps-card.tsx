@@ -1,11 +1,13 @@
 "use client";
 
 import { Footprints, Minus, Plus, X } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { ProgressRing } from "@/components/home/progress-ring";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
 import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
+import { cn } from "@/lib/utils";
 
 // Koraci: an interactive step card on `/danas`. Steps are self-reported (a PWA
 // can't read a pedometer/HealthKit), so this is a manual "roughly how much did
@@ -33,6 +35,13 @@ const PRESETS: { steps: number; label: string; sub: string; emoji: string }[] = 
   { steps: 500, label: "Kratka", sub: "500", emoji: "🚶" },
   { steps: 1000, label: "Šetnja", sub: "1.000", emoji: "🚶‍♂️" },
   { steps: 3000, label: "Duga", sub: "3.000", emoji: "🏃" },
+];
+
+/** The violet arc, light -> dark (matches the "Koraci" accent used elsewhere). */
+const STEPS_GRADIENT: [string, string, string] = [
+  "#a78bfa",
+  "#8b5cf6",
+  "#6366f1",
 ];
 
 interface KoraciResponseBody {
@@ -140,74 +149,11 @@ function StepperButton({
   );
 }
 
-/** A circular progress ring with an iridescent violet gradient stroke. The
- * `fraction` (0..1) drives the fill; the caller places content in the centre. */
-function ProgressRing({
-  fraction,
-  size,
-  stroke,
-  children,
-}: {
-  fraction: number;
-  size: number;
-  stroke: number;
-  children?: React.ReactNode;
-}) {
-  const gradientId = useId();
-  const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(1, fraction));
-  const offset = c * (1 - clamped);
-
-  return (
-    <div
-      className="relative shrink-0"
-      style={{ width: size, height: size }}
-      aria-hidden="true"
-    >
-      <svg width={size} height={size} className="-rotate-90">
-        <defs>
-          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#a78bfa" />
-            <stop offset="55%" stopColor="#8b5cf6" />
-            <stop offset="100%" stopColor="#6366f1" />
-          </linearGradient>
-        </defs>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke="currentColor"
-          className="text-violet-500/15"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          fill="none"
-          stroke={`url(#${gradientId})`}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={c}
-          strokeDashoffset={offset}
-          style={{
-            transition: "stroke-dashoffset 0.45s cubic-bezier(0.2,0,0,1)",
-          }}
-        />
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        {children}
-      </div>
-    </div>
-  );
-}
-
 export function StepsCard({
   dayKey,
   initialSteps = 0,
   goal = DEFAULT_STEP_GOAL,
+  className,
 }: {
   /** Belgrade calendar day (`"YYYY-MM-DD"`) this card logs steps for. */
   dayKey: string;
@@ -216,6 +162,9 @@ export function StepsCard({
   /** Recommended daily step goal the ring fills toward (defaults to the classic
    * 10k target `Analitika` uses, so home and analytics agree). */
   goal?: number;
+  /** Layout hook for the caller (the home pager gives Koraci/Voda equal halves
+   * of its page, so the card stretches instead of leaving dead space). */
+  className?: string;
 }) {
   const [totalSteps, setTotalSteps] = useState(initialSteps);
   const [isOpen, setIsOpen] = useState(false);
@@ -225,6 +174,11 @@ export function StepsCard({
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     undefined
+  );
+  // One-tap quick-add straight from the card (no sheet). Own little status so a
+  // failed chip tap can't disturb the sheet's state, or vice versa.
+  const [quickStatus, setQuickStatus] = useState<"idle" | "saving" | "error">(
+    "idle"
   );
 
   function openSheet() {
@@ -259,32 +213,65 @@ export function StepsCard({
     setAddSteps(digits === "" ? 0 : clampDelta(Number(digits)));
   }
 
+  /**
+   * POSTs a signed delta to `/api/koraci`, which applies it to the day's total
+   * server-side and answers with the new total. Returns the new total, or the
+   * Serbian error to show. Shared by the sheet's "Dodaj" and the card's chips.
+   */
+  async function postDelta(
+    delta: number
+  ): Promise<{ steps: number } | { error: string }> {
+    try {
+      const response = await fetch("/api/koraci", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ day: dayKey, deltaSteps: delta }),
+      });
+      const body = (await response.json()) as KoraciResponseBody;
+
+      if (!response.ok || !body.ok || !body.data) {
+        return { error: body.error_sr || SAVE_FAILED_ERROR_SR };
+      }
+      return { steps: body.data.steps };
+    } catch {
+      return { error: SAVE_FAILED_ERROR_SR };
+    }
+  }
+
   async function onConfirm() {
     if (addSteps === 0) return;
 
     setStatus("saving");
     setErrorMessage(undefined);
-    try {
-      const response = await fetch("/api/koraci", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ day: dayKey, deltaSteps: addSteps }),
-      });
-      const body = (await response.json()) as KoraciResponseBody;
+    const result = await postDelta(addSteps);
 
-      if (!response.ok || !body.ok || !body.data) {
-        setStatus("error");
-        setErrorMessage(body.error_sr || SAVE_FAILED_ERROR_SR);
-        return;
-      }
-
-      setTotalSteps(body.data.steps);
-      setStatus("idle");
-      setIsOpen(false);
-    } catch {
+    if ("error" in result) {
       setStatus("error");
-      setErrorMessage(SAVE_FAILED_ERROR_SR);
+      setErrorMessage(result.error);
+      return;
     }
+
+    setTotalSteps(result.steps);
+    setStatus("idle");
+    setIsOpen(false);
+  }
+
+  /** Chip tap on the card: save the preset immediately, no sheet, no confirm. */
+  async function quickAdd(delta: number) {
+    if (quickStatus === "saving") return;
+
+    setQuickStatus("saving");
+    setErrorMessage(undefined);
+    const result = await postDelta(delta);
+
+    if ("error" in result) {
+      setQuickStatus("error");
+      setErrorMessage(result.error);
+      return;
+    }
+
+    setTotalSteps(result.steps);
+    setQuickStatus("idle");
   }
 
   const resultSteps = Math.max(0, Math.min(MAX_STEPS, totalSteps + addSteps));
@@ -295,49 +282,92 @@ export function StepsCard({
     status === "saving" ? "Čuvanje..." : addSteps < 0 ? "Ukloni" : "Dodaj";
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={openSheet}
-        data-testid="steps-open-button"
-        aria-label={`Koraci: ${totalSteps} od ${goal}. Dodaj korake.`}
-        className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card px-4 py-3.5 text-left transition-colors hover:bg-muted/40 active:translate-y-px"
-      >
-        <ProgressRing fraction={cardFraction} size={56} stroke={6}>
-          <Footprints className="size-5 text-violet-500" aria-hidden="true" />
-        </ProgressRing>
-
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="flex items-center gap-2">
-            <span className="text-base font-semibold text-foreground">
-              Koraci
-            </span>
-            {goalReached ? (
-              <span
-                data-testid="steps-goal-reached"
-                className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[0.7rem] font-semibold text-violet-500"
-              >
-                Cilj 🎉
-              </span>
-            ) : null}
-          </span>
-          <span className="text-sm text-muted-foreground">
-            cilj {formatSteps(goal)}
-          </span>
-        </span>
-
-        <span className="flex items-center gap-2.5">
-          <span
-            data-testid="steps-total"
-            className="text-lg font-bold text-foreground tabular-nums"
+    <div className={cn("flex flex-col", className)}>
+      {/* One card, two parts: the tappable summary row (opens the sheet for an
+          exact figure) and a row of one-tap presets that save immediately. The
+          card is a flex column so it can absorb the pager page's spare height
+          itself -- that is what killed the old "everything floating far apart"
+          look on the Koraci/Voda page (2026-07-25). */}
+      <div className="flex flex-1 flex-col justify-center gap-3 rounded-2xl border border-border bg-card px-4 py-4">
+        <button
+          type="button"
+          onClick={openSheet}
+          data-testid="steps-open-button"
+          aria-label={`Koraci: ${totalSteps} od ${goal}. Dodaj korake.`}
+          className="flex w-full items-center gap-3.5 text-left active:translate-y-px"
+        >
+          <ProgressRing
+            fraction={cardFraction}
+            size={62}
+            stroke={7}
+            trackClassName="text-violet-500/15"
+            gradient={STEPS_GRADIENT}
           >
-            {formatSteps(totalSteps)}
+            <Footprints className="size-5 text-violet-500" aria-hidden="true" />
+          </ProgressRing>
+
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-muted-foreground">
+                Koraci
+              </span>
+              {goalReached ? (
+                <span
+                  data-testid="steps-goal-reached"
+                  className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[0.7rem] font-semibold text-violet-500"
+                >
+                  Cilj 🎉
+                </span>
+              ) : null}
+            </span>
+            <span className="flex items-baseline gap-1.5">
+              <span
+                data-testid="steps-total"
+                className="text-2xl font-bold leading-none text-foreground tabular-nums"
+              >
+                {formatSteps(totalSteps)}
+              </span>
+              <span className="text-sm text-muted-foreground tabular-nums">
+                / {formatSteps(goal)}
+              </span>
+            </span>
           </span>
-          <span className="flex size-7 items-center justify-center rounded-full bg-violet-500/15 text-violet-500">
+
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-violet-500">
             <Plus className="size-4" aria-hidden="true" />
           </span>
-        </span>
-      </button>
+        </button>
+
+        {/* One-tap presets: the common case ("prošetao sam") is now a single tap
+            on the card, without opening the sheet at all. */}
+        <div data-testid="steps-quick-add" className="grid grid-cols-3 gap-2">
+          {PRESETS.map(({ steps, sub, emoji }) => (
+            <button
+              key={steps}
+              type="button"
+              disabled={quickStatus === "saving"}
+              onClick={() => quickAdd(steps)}
+              data-testid={`steps-quick-${steps}`}
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-background text-sm font-semibold text-foreground transition-colors hover:bg-muted/50 disabled:opacity-50 active:translate-y-px"
+            >
+              <span className="text-base leading-none" aria-hidden="true">
+                {emoji}
+              </span>
+              <span className="tabular-nums">+{sub}</span>
+            </button>
+          ))}
+        </div>
+
+        {quickStatus === "error" && errorMessage ? (
+          <p
+            role="alert"
+            data-testid="steps-quick-error"
+            className="text-center text-xs font-medium text-destructive"
+          >
+            {errorMessage}
+          </p>
+        ) : null}
+      </div>
 
       {/* PORTALLED to <body> (2026-07-25): this card now lives inside the home
           pager's horizontal scroll container, and iOS Safari is unreliable about
@@ -384,7 +414,13 @@ export function StepsCard({
                 pending delta, out of the goal. Fills as the user taps presets /
                 steppers — the interactive centrepiece. */}
             <div className="flex justify-center">
-              <ProgressRing fraction={sheetFraction} size={168} stroke={14}>
+              <ProgressRing
+                fraction={sheetFraction}
+                size={168}
+                stroke={14}
+                trackClassName="text-violet-500/15"
+                gradient={STEPS_GRADIENT}
+              >
                 <span className="flex flex-col items-center">
                   <span
                     data-testid="steps-sheet-total"

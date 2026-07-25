@@ -3,6 +3,7 @@
 import { GlassWater, Milk, Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 
+import { ProgressRing } from "@/components/home/progress-ring";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,13 @@ const PRESETS: { ml: number; label: string; sub: string; icon: typeof GlassWater
   { ml: 750, label: "+1 velika flaša", sub: "750 mL", icon: Milk },
 ];
 
+/** The sky arc, light -> dark (the "Voda" accent, mirroring Koraci's violet). */
+const WATER_GRADIENT: [string, string, string] = [
+  "#7dd3fc",
+  "#38bdf8",
+  "#0ea5e9",
+];
+
 interface VodaResponseBody {
   ok: boolean;
   error_sr?: string;
@@ -59,6 +67,7 @@ export function WaterButton({
   dayKey,
   initialMl = 0,
   goalMl,
+  className,
 }: {
   /** Belgrade calendar day (`"YYYY-MM-DD"`) this button logs water for. */
   dayKey: string;
@@ -66,8 +75,11 @@ export function WaterButton({
   initialMl?: number;
   /** Recommended daily water goal (ml), from bodyweight — the SAME
    * `waterGoalMl` the Analitika card uses. When set, the row shows progress
-   * toward it (total / goal + a slim bar); omitted => just the total. */
+   * toward it (total / goal + the ring's fill); omitted => just the total. */
   goalMl?: number;
+  /** Layout hook for the caller (the home pager gives Koraci/Voda equal halves
+   * of its page, so the card stretches instead of leaving dead space). */
+  className?: string;
 }) {
   const [totalMl, setTotalMl] = useState(initialMl);
   const [isOpen, setIsOpen] = useState(false);
@@ -77,6 +89,11 @@ export function WaterButton({
   const [status, setStatus] = useState<"idle" | "saving" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | undefined>(
     undefined
+  );
+  // One-tap quick-add straight from the card (no sheet). Own little status so a
+  // failed chip tap can't disturb the sheet's state, or vice versa.
+  const [quickStatus, setQuickStatus] = useState<"idle" | "saving" | "error">(
+    "idle"
   );
 
   function openSheet() {
@@ -111,32 +128,65 @@ export function WaterButton({
     setAddMl(digits === "" ? 0 : clampDelta(Number(digits)));
   }
 
+  /**
+   * POSTs a signed delta to `/api/voda`, which applies it to the day's total
+   * server-side and answers with the new total. Returns the new total, or the
+   * Serbian error to show. Shared by the sheet's "Dodaj" and the card's chips.
+   */
+  async function postDelta(
+    delta: number
+  ): Promise<{ ml: number } | { error: string }> {
+    try {
+      const response = await fetch("/api/voda", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ day: dayKey, deltaMl: delta }),
+      });
+      const body = (await response.json()) as VodaResponseBody;
+
+      if (!response.ok || !body.ok || !body.data) {
+        return { error: body.error_sr || SAVE_FAILED_ERROR_SR };
+      }
+      return { ml: body.data.ml };
+    } catch {
+      return { error: SAVE_FAILED_ERROR_SR };
+    }
+  }
+
   async function onConfirm() {
     if (addMl === 0) return;
 
     setStatus("saving");
     setErrorMessage(undefined);
-    try {
-      const response = await fetch("/api/voda", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ day: dayKey, deltaMl: addMl }),
-      });
-      const body = (await response.json()) as VodaResponseBody;
+    const result = await postDelta(addMl);
 
-      if (!response.ok || !body.ok || !body.data) {
-        setStatus("error");
-        setErrorMessage(body.error_sr || SAVE_FAILED_ERROR_SR);
-        return;
-      }
-
-      setTotalMl(body.data.ml);
-      setStatus("idle");
-      setIsOpen(false);
-    } catch {
+    if ("error" in result) {
       setStatus("error");
-      setErrorMessage(SAVE_FAILED_ERROR_SR);
+      setErrorMessage(result.error);
+      return;
     }
+
+    setTotalMl(result.ml);
+    setStatus("idle");
+    setIsOpen(false);
+  }
+
+  /** Chip tap on the card: save the preset immediately, no sheet, no confirm. */
+  async function quickAdd(delta: number) {
+    if (quickStatus === "saving") return;
+
+    setQuickStatus("saving");
+    setErrorMessage(undefined);
+    const result = await postDelta(delta);
+
+    if ("error" in result) {
+      setQuickStatus("error");
+      setErrorMessage(result.error);
+      return;
+    }
+
+    setTotalMl(result.ml);
+    setQuickStatus("idle");
   }
 
   const resultMl = Math.max(0, Math.min(MAX_ML, totalMl + addMl));
@@ -144,60 +194,96 @@ export function WaterButton({
     status === "saving" ? "Čuvanje..." : addMl < 0 ? "Ukloni" : "Dodaj";
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={openSheet}
-        data-testid="water-open-button"
-        className="flex w-full flex-col gap-2.5 rounded-2xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40 active:translate-y-px"
-      >
-        <span className="flex w-full items-center justify-between">
-          <span className="flex items-center gap-2.5">
-            <span className="flex size-9 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
-              <Milk className="size-5" aria-hidden="true" />
-            </span>
-            <span className="text-base font-semibold text-foreground">Voda</span>
-            {goalMl && totalMl >= goalMl ? (
-              <span
-                data-testid="water-goal-reached"
-                className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[0.7rem] font-semibold text-sky-400"
-              >
-                Cilj 🎉
+    <div className={cn("flex flex-col", className)}>
+      {/* Same anatomy as the Koraci card (2026-07-25): a tappable summary row
+          with the progress ring, plus one-tap presets underneath. The card is a
+          flex column so it soaks up the pager page's spare height itself instead
+          of the page pushing its parts apart. */}
+      <div className="flex flex-1 flex-col justify-center gap-3 rounded-2xl border border-border bg-card px-4 py-4">
+        <button
+          type="button"
+          onClick={openSheet}
+          data-testid="water-open-button"
+          aria-label={`Voda: ${formatWaterSr(totalMl)}${
+            goalMl ? ` od ${formatWaterSr(goalMl)}` : ""
+          }. Dodaj vodu.`}
+          className="flex w-full items-center gap-3.5 text-left active:translate-y-px"
+        >
+          <ProgressRing
+            fraction={goalMl ? totalMl / goalMl : 0}
+            size={62}
+            stroke={7}
+            trackClassName="text-sky-500/15"
+            gradient={WATER_GRADIENT}
+          >
+            <Milk className="size-5 text-sky-400" aria-hidden="true" />
+          </ProgressRing>
+
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-muted-foreground">
+                Voda
               </span>
-            ) : null}
-          </span>
-          <span className="flex items-center gap-2.5">
+              {goalMl && totalMl >= goalMl ? (
+                <span
+                  data-testid="water-goal-reached"
+                  className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[0.7rem] font-semibold text-sky-400"
+                >
+                  Cilj 🎉
+                </span>
+              ) : null}
+            </span>
             <span
               data-testid="water-total"
-              className="text-sm font-medium text-muted-foreground tabular-nums"
+              className="flex items-baseline gap-1.5"
             >
-              {formatWaterSr(totalMl)}
+              <span className="text-2xl font-bold leading-none text-foreground tabular-nums">
+                {formatWaterSr(totalMl)}
+              </span>
               {goalMl ? (
-                <span className="text-muted-foreground/60">
+                <span className="text-sm text-muted-foreground tabular-nums">
                   {" / "}
                   {formatWaterSr(goalMl)}
                 </span>
               ) : null}
             </span>
-            <span className="flex size-7 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
-              <Plus className="size-4" aria-hidden="true" />
-            </span>
           </span>
-        </span>
-        {goalMl ? (
-          <span
-            className="h-1.5 w-full overflow-hidden rounded-full bg-sky-500/10"
-            aria-hidden="true"
+
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-sky-500/15 text-sky-400">
+            <Plus className="size-4" aria-hidden="true" />
+          </span>
+        </button>
+
+        {/* One-tap presets: a glass of water is now a single tap on the card. */}
+        <div data-testid="water-quick-add" className="grid grid-cols-3 gap-2">
+          {PRESETS.map(({ ml, sub, icon: Icon }, index) => (
+            <button
+              key={ml}
+              type="button"
+              disabled={quickStatus === "saving"}
+              onClick={() => quickAdd(ml)}
+              data-testid={`water-quick-${ml}`}
+              className="flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-border bg-background text-sm font-semibold text-foreground transition-colors hover:bg-muted/50 disabled:opacity-50 active:translate-y-px"
+            >
+              <Icon
+                className={cn("shrink-0 text-sky-400", index === 2 ? "size-5" : "size-4")}
+                aria-hidden="true"
+              />
+              <span className="tabular-nums">+{sub.replace(" mL", "")}</span>
+            </button>
+          ))}
+        </div>
+
+        {quickStatus === "error" && errorMessage ? (
+          <p
+            role="alert"
+            data-testid="water-quick-error"
+            className="text-center text-xs font-medium text-destructive"
           >
-            <span
-              className="block h-full rounded-full bg-sky-400 transition-[width] duration-500"
-              style={{
-                width: `${Math.min(100, (totalMl / goalMl) * 100)}%`,
-              }}
-            />
-          </span>
+            {errorMessage}
+          </p>
         ) : null}
-      </button>
+      </div>
 
       {/* PORTALLED to <body>: this button now lives inside the home pager's
           horizontal scroll container, where iOS Safari cannot be trusted to keep

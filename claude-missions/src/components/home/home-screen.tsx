@@ -1,6 +1,5 @@
 "use client";
 
-import { Droplet, Footprints } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { DateStrip } from "@/components/home/date-strip";
@@ -23,14 +22,9 @@ import { computeDayTotals } from "@/lib/home/totals";
 import { computeHealthScore } from "@/lib/nutrition/health-score";
 import { computeMicroTotals, microTargetsForKcal } from "@/lib/nutrition/micro";
 import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
-import { formatWaterSr, waterGoalMl } from "@/lib/water/water-week";
+import { waterGoalMl } from "@/lib/water/water-week";
 import type { Log, Target } from "@/lib/types/db";
 import { cn } from "@/lib/utils";
-
-/** `10000` -> `"10.000"` (Serbian thousands separator). */
-function formatSteps(steps: number): string {
-  return String(steps).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
 
 // useLayoutEffect on the client (measure + cover before first paint), a no-op
 // useEffect on the server (avoids the SSR warning).
@@ -349,22 +343,25 @@ export function HomeScreen({
                       id: "aktivnost",
                       labelSr: "Koraci i voda",
                       content: (
-                        <div className="home-body flex flex-1 flex-col justify-between gap-2.5">
-                          {/* The recommended daily goals for steps + water now
-                              live HERE (2026-07-25), not in a separate row under
-                              the pager: this is the page about steps and water,
-                              so the goal and the way to log against it belong on
-                              the same screen. */}
-                          <MovementGoals
-                            stepsGoal={effectiveStepGoal}
-                            waterGoalMl={waterGoal}
-                          />
+                        // Two cards, one each half of the page (2026-07-25).
+                        // Before this, three blocks sat in a `justify-between`
+                        // column: the page is as tall as the calorie page, so
+                        // the slack went into huge voids BETWEEN them, and the
+                        // separate "Preporučeni dnevni ciljevi" tiles repeated
+                        // the goal each card already prints. Now each card is
+                        // `flex-1` and centres its own content, so the spare
+                        // height lives INSIDE the cards -- no floating parts,
+                        // and the goal is stated once, on the card that logs
+                        // against it.
+                        <div className="home-body flex flex-1 flex-col gap-3">
                           <StepsCard
+                            className="flex-1"
                             dayKey={dayKey}
                             initialSteps={initialSteps}
                             goal={effectiveStepGoal}
                           />
                           <WaterButton
+                            className="flex-1"
                             dayKey={dayKey}
                             initialMl={initialWaterMl}
                             goalMl={waterGoal}
@@ -435,83 +432,6 @@ export function HomeScreen({
           has fully settled, so the two moments never fight for attention. */}
       {installPrompt && !introActive ? <InstallOverlay /> : null}
     </main>
-  );
-}
-
-/**
- * "Preporučeni dnevni ciljevi" for the movement page: the step goal and the water
- * goal, side by side above the two cards that log against them.
- *
- * Moved here from a fixed row under the pager (2026-07-25, at the product owner's
- * request) — a goal belongs on the page where you act on it, and the kcal goal it
- * used to sit next to is already the ring's own centre number, so repeating it
- * was noise. Steps use the classic 10k; water is derived from bodyweight (the
- * SAME `waterGoalMl` the Analitika card uses), so the home recommendation and the
- * analytics goal can never disagree.
- */
-function MovementGoals({
-  stepsGoal,
-  waterGoalMl,
-}: {
-  stepsGoal: number;
-  waterGoalMl: number;
-}) {
-  return (
-    <div className="flex flex-col gap-2">
-      <h3 className="text-sm font-semibold text-muted-foreground">
-        Preporučeni dnevni ciljevi
-      </h3>
-      <div data-testid="daily-targets" className="grid grid-cols-2 gap-2.5">
-        <TargetTile
-          icon={<Footprints className="size-4" aria-hidden="true" />}
-          tone="text-violet-500"
-          chip="bg-violet-500/15"
-          label="Koraci"
-          value={formatSteps(stepsGoal)}
-        />
-        <TargetTile
-          icon={<Droplet className="size-4" aria-hidden="true" />}
-          tone="text-sky-400"
-          chip="bg-sky-500/15"
-          label="Voda"
-          value={formatWaterSr(waterGoalMl)}
-        />
-      </div>
-    </div>
-  );
-}
-
-function TargetTile({
-  icon,
-  tone,
-  chip,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  tone: string;
-  chip: string;
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex flex-col items-center gap-1 rounded-2xl border border-border bg-card px-2 py-3 text-center">
-      <span
-        className={cn(
-          "flex size-8 items-center justify-center rounded-full",
-          chip,
-          tone
-        )}
-      >
-        {icon}
-      </span>
-      <span className="text-[0.7rem] font-medium text-muted-foreground">
-        {label}
-      </span>
-      <span className="text-sm font-bold text-foreground tabular-nums">
-        {value}
-      </span>
-    </div>
   );
 }
 

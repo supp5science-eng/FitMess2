@@ -35,6 +35,41 @@ describe("StepsCard", () => {
     expect(screen.queryByTestId("steps-goal-reached")).not.toBeInTheDocument();
   });
 
+  it("a quick-add chip on the card posts its delta immediately, with no sheet", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      jsonResponse({ ok: true, data: { day: "2026-07-22", steps: 3000 } })
+    );
+
+    render(<StepsCard dayKey="2026-07-22" initialSteps={2000} />);
+    fireEvent.click(screen.getByTestId("steps-quick-1000"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("steps-total")).toHaveTextContent("3.000")
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/koraci",
+      expect.objectContaining({
+        body: JSON.stringify({ day: "2026-07-22", deltaSteps: 1000 }),
+      })
+    );
+    // The sheet was never involved.
+    expect(screen.queryByTestId("steps-sheet")).not.toBeInTheDocument();
+  });
+
+  it("shows a Serbian error next to the chips when a quick-add fails", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error("offline")
+    );
+
+    render(<StepsCard dayKey="2026-07-22" initialSteps={2000} />);
+    fireEvent.click(screen.getByTestId("steps-quick-500"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("steps-quick-error")).toBeInTheDocument()
+    );
+    expect(screen.getByTestId("steps-total")).toHaveTextContent("2.000");
+  });
+
   it("opens the sheet and quick-add presets accumulate into the pending amount", () => {
     render(<StepsCard dayKey="2026-07-22" initialSteps={0} />);
 

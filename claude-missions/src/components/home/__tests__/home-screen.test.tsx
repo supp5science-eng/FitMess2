@@ -105,10 +105,12 @@ describe("AS-047/AS-048/AS-049: HomeScreen renders the ring, bars, and meal list
     expect(screen.getByTestId("meal-card-log-1")).toBeInTheDocument();
   });
 
-  it("shows the recommended step + water goals on the movement page, next to the cards that log them", () => {
-    // 2026-07-25: these two goals moved off a fixed row under the pager and onto
-    // the Koraci/Voda page itself. The kcal goal is NOT repeated here -- it is
-    // already the ring's own centre number (`home-ring-target`).
+  it("states each daily goal once, on the Koraci/Voda card that logs against it", () => {
+    // 2026-07-25: the separate "Preporučeni dnevni ciljevi" tile row is GONE --
+    // it repeated the goal each card already prints, and the leftover height on
+    // that page pushed the three blocks far apart. The goal now lives on the
+    // card itself ("7.240 / 10.000"), and the kcal goal is not repeated at all:
+    // it is already the ring's own centre number (`home-ring-target`).
     render(
       <HomeScreen
         initialLogs={[]}
@@ -119,13 +121,29 @@ describe("AS-047/AS-048/AS-049: HomeScreen renders the ring, bars, and meal list
       />
     );
 
-    const targets = screen.getByTestId("daily-targets");
-    expect(targets).toHaveTextContent("10.000");
-    expect(targets).toHaveTextContent("2,5 L");
-    expect(screen.getByTestId("intake-page-aktivnost")).toContainElement(
-      targets
-    );
+    const movementPage = screen.getByTestId("intake-page-aktivnost");
+    expect(screen.queryByTestId("daily-targets")).not.toBeInTheDocument();
+    expect(movementPage).toContainElement(screen.getByTestId("steps-total"));
+    expect(movementPage).toHaveTextContent("10.000");
+    expect(screen.getByTestId("water-total")).toHaveTextContent("0 mL / 2,5 L");
     expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
+  });
+
+  it("puts one-tap quick-add presets on the Koraci and Voda cards", () => {
+    // The fastest path ("popio sam čašu vode", "prošetao sam") must not require
+    // opening a sheet -- a chip tap saves straight away.
+    render(
+      <HomeScreen
+        initialLogs={[]}
+        target={makeTarget()}
+        dayKey="2026-07-25"
+        stepsGoal={10000}
+        waterGoal={2500}
+      />
+    );
+
+    expect(screen.getByTestId("steps-quick-1000")).toBeInTheDocument();
+    expect(screen.getByTestId("water-quick-250")).toBeInTheDocument();
   });
 });
 

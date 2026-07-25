@@ -43,6 +43,40 @@ describe("WaterButton", () => {
     expect(screen.getByTestId("water-total")).not.toHaveTextContent("/");
   });
 
+  it("a quick-add chip on the card posts its delta immediately, with no sheet", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue(
+      jsonResponse({ ok: true, data: { day: "2026-07-22", ml: 750 } })
+    );
+
+    render(<WaterButton dayKey="2026-07-22" initialMl={500} goalMl={2500} />);
+    fireEvent.click(screen.getByTestId("water-quick-250"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("water-total")).toHaveTextContent("750 mL")
+    );
+    expect(global.fetch).toHaveBeenCalledWith(
+      "/api/voda",
+      expect.objectContaining({
+        body: JSON.stringify({ day: "2026-07-22", deltaMl: 250 }),
+      })
+    );
+    expect(screen.queryByTestId("water-sheet")).not.toBeInTheDocument();
+  });
+
+  it("shows a Serbian error next to the chips when a quick-add fails", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValue(
+      new Error("offline")
+    );
+
+    render(<WaterButton dayKey="2026-07-22" initialMl={500} goalMl={2500} />);
+    fireEvent.click(screen.getByTestId("water-quick-500"));
+
+    await waitFor(() =>
+      expect(screen.getByTestId("water-quick-error")).toBeInTheDocument()
+    );
+    expect(screen.getByTestId("water-total")).toHaveTextContent("500 mL");
+  });
+
   it("opens the sheet and quick-add presets accumulate into the amount", () => {
     render(<WaterButton dayKey="2026-07-22" initialMl={0} />);
 

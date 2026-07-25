@@ -45,7 +45,8 @@ describe("computeStepsWeek", () => {
     expect(week.days[5]!.reached).toBe(true); // 12000 >= 10000
 
     const monday = week.days.find((d) => d.dayKey === "2026-07-20")!;
-    expect(monday.longLabel).toBe("Ponedeljak");
+    // Older days name the date too -- the tap read-out has to say WHICH Monday.
+    expect(monday.longLabel).toBe("Ponedeljak, 20. jul");
   });
 
   it("averages over logged days and counts goal days + scale", () => {

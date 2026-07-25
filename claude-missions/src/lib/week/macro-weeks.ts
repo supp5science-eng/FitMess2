@@ -19,6 +19,7 @@
  *    null when there is no prior tracked data to compare against.
  */
 
+import { analyticsDayLabel } from "@/lib/analytics/day-label";
 import { belgradeWeekStartDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { WEEKDAY_LABELS_SR } from "@/lib/week/summary";
 
@@ -38,6 +39,8 @@ export interface MacroLogInput {
 export interface MacroDay {
   /** Short Serbian weekday label, "Pon".."Ned". */
   label: string;
+  /** Long label for the tap read-out: "Danas" / "Juče" / "Sreda, 22. jul". */
+  longLabel: string;
   /** Belgrade calendar day, `"YYYY-MM-DD"`. */
   dayKey: string;
   /** Total kcal logged that day (whole; the bar's height). */
@@ -46,6 +49,11 @@ export interface MacroDay {
   proteinKcal: number;
   carbsKcal: number;
   fatKcal: number;
+  /** The day's macro grams as logged (whole) -- what the tap read-out names.
+   * These are the RAW sums, not the proportionally-adjusted bar segments. */
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
   /** True if at least one log landed on this day. */
   logged: boolean;
   /** True if the day is still in the future (this week, not yet reached). */
@@ -131,11 +139,15 @@ export function computeMacroWeeks(
 
       return {
         label: WEEKDAY_LABELS_SR[weekdayIndex]!,
+        longLabel: analyticsDayLabel(dayKey, now),
         dayKey,
         totalKcal,
         proteinKcal,
         carbsKcal,
         fatKcal,
+        proteinG: Math.round(bucket?.protein ?? 0),
+        carbsG: Math.round(bucket?.carbs ?? 0),
+        fatG: Math.round(bucket?.fat ?? 0),
         logged: byDay.has(dayKey),
         isFuture: dayKey > todayKey,
       };

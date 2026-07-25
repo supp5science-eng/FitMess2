@@ -10,6 +10,7 @@
  * missing weight falls back to a flat 2.5 L.
  */
 
+import { analyticsDayLabel } from "@/lib/analytics/day-label";
 import { toBelgradeCalendarDay } from "@/lib/dates";
 import { WEEKDAY_LABELS_SR } from "@/lib/week/summary";
 
@@ -30,8 +31,12 @@ export interface WaterDay {
   dayKey: string;
   /** Short Serbian weekday label, "Pon".."Ned". */
   label: string;
+  /** Long label for the tap read-out: "Danas" / "Juče" / "Sreda, 22. jul". */
+  longLabel: string;
   ml: number;
   isToday: boolean;
+  /** This day vs the goal, 0..1 (the read-out's percentage). */
+  pct: number;
   /** True once this day met the goal. */
   reached: boolean;
 }
@@ -105,8 +110,10 @@ export function computeWaterWeek(
     return {
       dayKey,
       label: weekdayLabel(dayKey),
+      longLabel: analyticsDayLabel(dayKey, now),
       ml,
       isToday: dayKey === todayKey,
+      pct: goalMl > 0 ? Math.min(1, ml / goalMl) : 0,
       reached: ml >= goalMl,
     };
   });

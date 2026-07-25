@@ -26,6 +26,7 @@
  * habits you read as "the last week", not as a week that resets on Monday.
  */
 
+import { analyticsDayLabel } from "@/lib/analytics/day-label";
 import { toBelgradeCalendarDay } from "@/lib/dates";
 import {
   MICRO_KEYS,
@@ -61,6 +62,8 @@ export interface MicroWeekDay {
   dayKey: string;
   /** Short Serbian weekday label, "Pon".."Ned". */
   label: string;
+  /** Long label for the tap read-out: "Danas" / "Juče" / "Sreda, 22. jul". */
+  longLabel: string;
   isToday: boolean;
   /**
    * The day's amount for this nutrient, or `null` when the day has no logs or
@@ -202,6 +205,7 @@ export function computeMicroWeek(
       return {
         dayKey,
         label: weekdayLabel(dayKey),
+        longLabel: analyticsDayLabel(dayKey, now),
         isToday: dayKey === todayKey,
         value,
         inTarget:

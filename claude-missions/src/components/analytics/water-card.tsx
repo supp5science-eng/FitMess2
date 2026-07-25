@@ -1,10 +1,24 @@
-import { formatWaterSr, type WaterWeek } from "@/lib/water/water-week";
+"use client";
+
+import { useState } from "react";
+
+import { ChartHint, ChartReadout } from "@/components/analytics/chart-readout";
+import {
+  formatWaterSr,
+  type WaterDay,
+  type WaterWeek,
+} from "@/lib/water/water-week";
+import { cn } from "@/lib/utils";
 
 // Analitika "Voda" card: today's hydration vs a bodyweight-based goal (a sky
-// progress ring) plus a 7-day mini bar chart with a dashed goal line.
-// Presentational + server-renderable (no client JS); every number arrives
-// pre-computed from `computeWaterWeek`. Water is logged on `/danas`; this card
-// is the read-only overview. `null` => a calm "dopuni profil" state.
+// progress ring) plus a 7-day mini bar chart with a dashed goal line. Every
+// number arrives pre-computed from `computeWaterWeek`. Water is logged on
+// `/danas`; this card is the read-only overview. `null` => a calm "dopuni
+// profil" state.
+//
+// Client since 2026-07-25 for the tappable bars: each column is a real button
+// that names its day and its litres in the shared read-out, so a short bar is
+// answerable ("Utorak — 0,75 L, 30% cilja") instead of merely visible.
 
 const SKY = "#38BDF8"; // sky-400, matching the /danas water button accent
 
@@ -17,7 +31,16 @@ const CIRC = 2 * Math.PI * R;
 // Bar chart geometry.
 const CHART_H = 88;
 
+/** The read-out's second line: goal progress, or an honest "nothing logged". */
+function secondaryFor(day: WaterDay, goalMl: number): string {
+  if (day.ml === 0) return "Tog dana nije uneta voda.";
+  if (day.reached) return `Cilj (${formatWaterSr(goalMl)}) ispunjen 🎉`;
+  return `${Math.round(day.pct * 100)}% od cilja ${formatWaterSr(goalMl)}`;
+}
+
 export function WaterCard({ week }: { week: WaterWeek | null }) {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+
   if (!week) {
     return (
       <section className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-6">
@@ -29,6 +52,7 @@ export function WaterCard({ week }: { week: WaterWeek | null }) {
     );
   }
 
+  const selected = week.days.find((d) => d.dayKey === selectedKey) ?? null;
   const dashOffset = CIRC * (1 - week.pct);
   const hint = week.reachedToday
     ? "Cilj ispunjen 🎉"
@@ -112,21 +136,39 @@ export function WaterCard({ week }: { week: WaterWeek | null }) {
             style={{ bottom: `${(week.goalMl / week.maxMl) * 100}%` }}
           />
           <div className="absolute inset-0 flex items-end justify-between gap-1.5">
-            {week.days.map((d) => (
-              <div
-                key={d.dayKey}
-                className="flex h-full flex-1 flex-col items-center justify-end"
-              >
-                <div
-                  className="w-full max-w-[22px] rounded-md rounded-b-none"
-                  style={{
-                    height: `${(d.ml / week.maxMl) * 100}%`,
-                    backgroundColor: SKY,
-                    opacity: d.ml === 0 ? 0 : d.isToday ? 1 : 0.5,
-                  }}
-                />
-              </div>
-            ))}
+            {week.days.map((d) => {
+              const active = d.dayKey === selectedKey;
+              return (
+                <button
+                  key={d.dayKey}
+                  type="button"
+                  aria-label={`${d.longLabel}: ${formatWaterSr(d.ml)}`}
+                  aria-pressed={active}
+                  data-testid={`water-bar-${d.dayKey}`}
+                  onClick={() =>
+                    setSelectedKey((current) =>
+                      current === d.dayKey ? null : d.dayKey
+                    )
+                  }
+                  className={cn(
+                    "flex h-full flex-1 flex-col items-center justify-end rounded-md transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                    active ? "bg-foreground/[0.06]" : "bg-transparent"
+                  )}
+                >
+                  <span
+                    className="w-full max-w-[22px] rounded-md rounded-b-none"
+                    style={{
+                      height: `${(d.ml / week.maxMl) * 100}%`,
+                      backgroundColor: SKY,
+                      // A picked day always reads at full strength, so the bar
+                      // and the read-out below obviously belong together.
+                      opacity: d.ml === 0 ? 0 : d.isToday || active ? 1 : 0.5,
+                    }}
+                  />
+                </button>
+              );
+            })}
           </div>
         </div>
         <div className="mt-1.5 flex justify-between gap-1.5">
@@ -135,7 +177,7 @@ export function WaterCard({ week }: { week: WaterWeek | null }) {
               key={d.dayKey}
               className={
                 "flex-1 text-center text-[11px] " +
-                (d.isToday
+                (d.isToday || d.dayKey === selectedKey
                   ? "font-semibold text-foreground"
                   : "text-muted-foreground")
               }
@@ -145,6 +187,21 @@ export function WaterCard({ week }: { week: WaterWeek | null }) {
           ))}
         </div>
       </div>
+
+      {selected ? (
+        <ChartReadout
+          label={selected.longLabel}
+          primary={formatWaterSr(selected.ml)}
+          secondary={secondaryFor(selected, week.goalMl)}
+          accentColor={selected.reached ? SKY : undefined}
+          onClear={() => setSelectedKey(null)}
+          testId="water-readout"
+        />
+      ) : (
+        <ChartHint testId="water-hint">
+          Dodirni stubić da vidiš koliko si tog dana popio/la.
+        </ChartHint>
+      )}
 
       <p className="text-center text-[11px] text-muted-foreground">
         Nedeljni prosek: {formatWaterSr(week.weekAvgMl)} / dan

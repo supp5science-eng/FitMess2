@@ -63,6 +63,42 @@ describe("MicroWeekCard: the Analitika micronutrient card", () => {
     );
   });
 
+  it("names a tapped day and shows its exact amount", () => {
+    renderCard([
+      log("2026-07-22", 500, { fiber: 12 }),
+      log("2026-07-25", 500, { fiber: 30 }),
+    ]);
+
+    fireEvent.click(screen.getByTestId("micro-week-day-2026-07-22"));
+
+    const readout = screen.getByTestId("micro-week-readout");
+    expect(readout).toHaveTextContent("Sreda, 22. jul");
+    expect(readout).toHaveTextContent("12 g");
+    expect(readout).toHaveTextContent("Fali 16 g do cilja");
+  });
+
+  it("keeps the tapped day when the nutrient tab changes", () => {
+    renderCard([log("2026-07-22", 500, { fiber: 12, sodium: 3000 })]);
+
+    fireEvent.click(screen.getByTestId("micro-week-day-2026-07-22"));
+    fireEvent.click(screen.getByTestId("micro-week-tab-sodium"));
+
+    const readout = screen.getByTestId("micro-week-readout");
+    expect(readout).toHaveTextContent("Sreda, 22. jul");
+    expect(readout).toHaveTextContent("3.000 mg");
+    expect(readout).toHaveTextContent("700 mg preko granice");
+  });
+
+  it("explains a day it could not measure instead of showing a number", () => {
+    renderCard([log("2026-07-25", 500, { fiber: 30 })]);
+
+    fireEvent.click(screen.getByTestId("micro-week-day-2026-07-22"));
+
+    expect(screen.getByTestId("micro-week-readout")).toHaveTextContent(
+      "Nema dovoljno podataka"
+    );
+  });
+
   it("shows one calm empty state when nothing was logged", () => {
     renderCard([]);
 

@@ -1,12 +1,30 @@
-import type { IntakeNoteKind, IntakeTrend } from "@/lib/weight/intake-trend";
+"use client";
+
+import { useState } from "react";
+
+import {
+  ChartHint,
+  ChartReadout,
+  DayTapTargets,
+} from "@/components/analytics/chart-readout";
+import type {
+  IntakeNoteKind,
+  IntakeTrend,
+  IntakeTrendPoint,
+} from "@/lib/weight/intake-trend";
 
 // Analitika "Procena težine" card: an estimated weight trend drawn from calorie
 // intake (see `computeIntakeTrend`). Visual language borrowed from the app's
 // weight-trend chart but restyled to the clean reference: a smooth violet line
 // with hollow dots over a soft gradient, a divider, and a big estimated change
-// with a nutrition note. Presentational + server-renderable (no client JS);
-// every number arrives pre-computed. `null` trend => a calm "dopuni profil"
-// state (we can't estimate without TDEE + a current weight).
+// with a nutrition note. Every number arrives pre-computed; `null` trend => a
+// calm "dopuni profil" state (we can't estimate without TDEE + a current
+// weight).
+//
+// Client since 2026-07-25 only so the line is TAPPABLE: picking a day names it
+// and shows the estimate together with what was actually eaten that day, which
+// is the number that explains the slope. An untracked day says so instead of
+// pretending the flat stretch was a choice.
 
 const LINE = "#8B7CF6"; // violet accent, matching the reference design
 
@@ -39,7 +57,31 @@ function fmtChange(kg: number): string {
   return `${sign}${abs} kg`;
 }
 
+/** `82.4` -> `"82,4 kg"` (Serbian comma decimal). */
+function fmtKg(kg: number): string {
+  return `${kg.toLocaleString("sr-RS", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  })} kg`;
+}
+
+/** The read-out's second line: what was eaten that day, and how it moved the
+ * estimate. An untracked day is named as such -- never as "you ate 0". */
+function secondaryFor(point: IntakeTrendPoint): string {
+  if (!point.hasLog) return "Tog dana nema unetih obroka (računamo kao održavanje).";
+  const balance = point.balanceKcal;
+  const direction =
+    balance < 0 ? "manje od potrošnje" : balance > 0 ? "više od potrošnje" : "tačno na potrošnji";
+  return `Uneto ${point.intakeKcal.toLocaleString("sr-RS")} kcal · ${Math.abs(
+    balance
+  ).toLocaleString("sr-RS")} kcal ${direction}`;
+}
+
 export function IntakeTrendCard({ trend }: { trend: IntakeTrend | null }) {
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const selected =
+    trend?.points.find((p) => p.dayKey === selectedKey) ?? null;
+
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6">
       <div className="flex flex-col gap-0.5">
@@ -51,7 +93,38 @@ export function IntakeTrendCard({ trend }: { trend: IntakeTrend | null }) {
 
       {trend ? (
         <>
-          <Sparkline trend={trend} />
+          <div className="relative">
+            <Sparkline trend={trend} selectedKey={selectedKey} />
+            <DayTapTargets
+              days={trend.points}
+              selectedKey={selectedKey}
+              onSelect={(dayKey) =>
+                setSelectedKey((current) =>
+                  current === dayKey ? null : dayKey
+                )
+              }
+              ariaLabel={(day) => {
+                const point = trend.points.find(
+                  (p) => p.dayKey === day.dayKey
+                )!;
+                return `${day.longLabel}: procena ${fmtKg(point.estWeightKg)}`;
+              }}
+            />
+          </div>
+
+          {selected ? (
+            <ChartReadout
+              label={selected.longLabel}
+              primary={`Procena ${fmtKg(selected.estWeightKg)}`}
+              secondary={secondaryFor(selected)}
+              onClear={() => setSelectedKey(null)}
+              testId="intake-trend-readout"
+            />
+          ) : (
+            <ChartHint testId="intake-trend-hint">
+              Dodirni dan na liniji da vidiš procenu i šta si tada uneo/la.
+            </ChartHint>
+          )}
 
           <div className="h-px bg-border" />
 
@@ -80,7 +153,13 @@ export function IntakeTrendCard({ trend }: { trend: IntakeTrend | null }) {
   );
 }
 
-function Sparkline({ trend }: { trend: IntakeTrend }) {
+function Sparkline({
+  trend,
+  selectedKey,
+}: {
+  trend: IntakeTrend;
+  selectedKey: string | null;
+}) {
   const { points, minKg, maxKg } = trend;
   const span = Math.max(maxKg - minKg, 0.001);
 
@@ -97,6 +176,8 @@ function Sparkline({ trend }: { trend: IntakeTrend }) {
   const areaPath =
     `${linePath} L${coords[coords.length - 1]!.x.toFixed(1)},${VB_H} ` +
     `L${coords[0]!.x.toFixed(1)},${VB_H} Z`;
+
+  const selectedIndex = points.findIndex((p) => p.dayKey === selectedKey);
 
   return (
     <svg
@@ -123,18 +204,37 @@ function Sparkline({ trend }: { trend: IntakeTrend }) {
         strokeLinecap="round"
       />
 
-      {/* Hollow dots (fill = card so the line doesn't show through the center). */}
-      {coords.map((c, i) => (
-        <circle
-          key={points[i]!.dayKey}
-          cx={c.x}
-          cy={c.y}
-          r={4}
-          fill="var(--card)"
+      {/* A vertical guide drops from the picked day, tying the line to the
+          read-out below it. */}
+      {selectedIndex >= 0 ? (
+        <line
+          x1={coords[selectedIndex]!.x}
+          y1={0}
+          x2={coords[selectedIndex]!.x}
+          y2={VB_H}
           stroke={LINE}
-          strokeWidth={2.5}
+          strokeWidth={1}
+          strokeDasharray="3 3"
+          opacity={0.5}
         />
-      ))}
+      ) : null}
+
+      {/* Hollow dots (fill = card so the line doesn't show through the center);
+          the selected day fills in and grows. */}
+      {coords.map((c, i) => {
+        const active = i === selectedIndex;
+        return (
+          <circle
+            key={points[i]!.dayKey}
+            cx={c.x}
+            cy={c.y}
+            r={active ? 6 : 4}
+            fill={active ? LINE : "var(--card)"}
+            stroke={LINE}
+            strokeWidth={2.5}
+          />
+        );
+      })}
     </svg>
   );
 }

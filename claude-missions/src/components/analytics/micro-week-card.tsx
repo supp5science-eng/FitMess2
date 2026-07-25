@@ -3,12 +3,17 @@
 import { Beef, Candy, Soup, Wheat } from "lucide-react";
 import { useState } from "react";
 
+import { ChartHint, ChartReadout } from "@/components/analytics/chart-readout";
 import {
   formatMicroAmount,
   saltGramsFromSodiumMg,
   type MicroKey,
 } from "@/lib/nutrition/micro";
-import type { MicroNutrientWeek, MicroWeek } from "@/lib/nutrition/micro-week";
+import type {
+  MicroNutrientWeek,
+  MicroWeek,
+  MicroWeekDay,
+} from "@/lib/nutrition/micro-week";
 import { cn } from "@/lib/utils";
 
 // Analitika "Mikronutrijenti" card: the weekly counterpart to the four cards on
@@ -73,6 +78,9 @@ const CHART_HEIGHT = 132; // px
 
 export function MicroWeekCard({ week }: { week: MicroWeek | null }) {
   const [selected, setSelected] = useState<MicroKey>("fiber");
+  // The tapped day, shared across tabs: switching nutrient keeps the day and
+  // just re-reads it, which is exactly what "what was Wednesday like?" wants.
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
 
   if (!week || week.nutrients.length === 0) {
     return (
@@ -135,16 +143,32 @@ export function MicroWeekCard({ week }: { week: MicroWeek | null }) {
           se čim počneš da beležiš obroke.
         </p>
       ) : (
-        <NutrientBody nutrient={nutrient} />
+        <NutrientBody
+          nutrient={nutrient}
+          selectedDayKey={selectedDayKey}
+          onSelectDay={(dayKey) =>
+            setSelectedDayKey((current) => (current === dayKey ? null : dayKey))
+          }
+        />
       )}
     </section>
   );
 }
 
-function NutrientBody({ nutrient }: { nutrient: MicroNutrientWeek }) {
+function NutrientBody({
+  nutrient,
+  selectedDayKey,
+  onSelectDay,
+}: {
+  nutrient: MicroNutrientWeek;
+  selectedDayKey: string | null;
+  onSelectDay: (dayKey: string) => void;
+}) {
   const style = STYLE[nutrient.key];
   const { unit, kind, labelSr } = nutrient.spec;
   const over = nutrient.status === "over";
+  const selectedDay =
+    nutrient.days.find((d) => d.dayKey === selectedDayKey) ?? null;
 
   return (
     <>
@@ -206,10 +230,24 @@ function NutrientBody({ nutrient }: { nutrient: MicroNutrientWeek }) {
               // Past a ceiling the bar goes amber; short of the fiber goal it
               // just dims. Today always reads at full strength.
               const dayOver = !missing && kind === "limit" && !day.inTarget;
+              const active = day.dayKey === selectedDayKey;
               return (
-                <div
+                <button
                   key={day.dayKey}
-                  className="flex h-full flex-1 flex-col items-center justify-end"
+                  type="button"
+                  onClick={() => onSelectDay(day.dayKey)}
+                  aria-pressed={active}
+                  aria-label={`${day.longLabel}: ${
+                    missing
+                      ? "nema dovoljno podataka"
+                      : formatMicroAmount(day.value ?? 0, unit)
+                  }`}
+                  data-testid={`micro-week-day-${day.dayKey}`}
+                  className={cn(
+                    "flex h-full flex-1 flex-col items-center justify-end rounded-md transition-colors",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                    active ? "bg-foreground/[0.06]" : "bg-transparent"
+                  )}
                 >
                   {missing ? (
                     // No bar for a day we can't describe -- a short muted stub
@@ -229,11 +267,12 @@ function NutrientBody({ nutrient }: { nutrient: MicroNutrientWeek }) {
                           ((day.value ?? 0) / nutrient.chartMax) * 100
                         )}%`,
                         backgroundColor: dayOver ? OVER : style.color,
-                        opacity: day.isToday || day.inTarget ? 1 : 0.55,
+                        opacity:
+                          day.isToday || day.inTarget || active ? 1 : 0.55,
                       }}
                     />
                   )}
-                </div>
+                </button>
               );
             })}
           </div>
@@ -245,7 +284,7 @@ function NutrientBody({ nutrient }: { nutrient: MicroNutrientWeek }) {
               key={day.dayKey}
               className={cn(
                 "flex-1 text-center text-[11px]",
-                day.isToday
+                day.isToday || day.dayKey === selectedDayKey
                   ? "font-semibold text-foreground"
                   : day.value === null
                     ? "text-muted-foreground/50"
@@ -257,6 +296,30 @@ function NutrientBody({ nutrient }: { nutrient: MicroNutrientWeek }) {
           ))}
         </div>
       </div>
+
+      {/* Tap read-out: that day's real amount for the selected nutrient. */}
+      {selectedDay ? (
+        <ChartReadout
+          label={selectedDay.longLabel}
+          primary={
+            selectedDay.value === null
+              ? "Nema dovoljno podataka"
+              : `${formatMicroAmount(selectedDay.value, unit)} · ${labelSr.toLowerCase()}`
+          }
+          secondary={daySecondary(selectedDay, nutrient)}
+          accentColor={
+            selectedDay.value !== null && kind === "limit" && !selectedDay.inTarget
+              ? OVER
+              : undefined
+          }
+          onClear={() => onSelectDay(selectedDay.dayKey)}
+          testId="micro-week-readout"
+        />
+      ) : (
+        <ChartHint testId="micro-week-hint">
+          Dodirni stubić da vidiš tačnu vrednost tog dana.
+        </ChartHint>
+      )}
 
       {/* Footer: how the week went + an honest word about missing days */}
       <p
@@ -283,6 +346,29 @@ function NutrientBody({ nutrient }: { nutrient: MicroNutrientWeek }) {
       </p>
     </>
   );
+}
+
+/**
+ * The read-out's second line for one day: how it sat against the target, or --
+ * when we couldn't measure it -- how much of that day we actually know about.
+ * Saying "podaci pokrivaju 30% dana" is the honest version of a missing bar.
+ */
+function daySecondary(day: MicroWeekDay, nutrient: MicroNutrientWeek): string {
+  const { unit, kind } = nutrient.spec;
+  if (day.value === null) {
+    return day.coverage > 0
+      ? `Podaci pokrivaju samo ~${Math.round(day.coverage * 100)}% tog dana, pa ga ne računamo.`
+      : "Za taj dan nemamo podatke o ovom nutrijentu.";
+  }
+  const diff = Math.abs(day.value - nutrient.target);
+  if (kind === "goal") {
+    return day.inTarget
+      ? `Cilj (${formatMicroAmount(nutrient.target, unit)}) ispunjen 🎉`
+      : `Fali ${formatMicroAmount(diff, unit)} do cilja ${formatMicroAmount(nutrient.target, unit)}`;
+  }
+  return day.inTarget
+    ? `Ispod granice (${formatMicroAmount(nutrient.target, unit)})`
+    : `${formatMicroAmount(diff, unit)} preko granice ${formatMicroAmount(nutrient.target, unit)}`;
 }
 
 /** One plain Serbian sentence about where the week's average landed. */

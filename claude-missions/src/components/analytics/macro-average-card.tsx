@@ -2,13 +2,19 @@
 
 import { useState } from "react";
 
-import type { MacroWeek } from "@/lib/week/macro-weeks";
+import { ChartHint, ChartReadout } from "@/components/analytics/chart-readout";
+import type { MacroDay, MacroWeek } from "@/lib/week/macro-weeks";
 import { cn } from "@/lib/utils";
 
 // Analitika "Dnevni prosek kalorija" card. Headline average + week-over-week
 // change, a macro-stacked per-day bar chart (Pon..Ned), a macro legend, and a
 // week selector (Ova nedelja / Prošla / Pre 2 / Pre 3). Presentational: every
 // number arrives pre-computed from `computeMacroWeeks`.
+//
+// The bars are TAPPABLE (2026-07-25): each one is a button that names its day
+// and prints that day's kcal + macro grams in the shared read-out. Switching
+// weeks clears the selection -- a read-out from last week hanging over this
+// week's chart would be worse than none.
 
 // Macro colours: protein red, carbs amber, fats blue -- fixed semantic colours
 // (not the theme accent) so they read the same in light and dark. Bars stack
@@ -37,6 +43,7 @@ function niceScale(maxValue: number): { step: number; max: number } {
 
 export function MacroAverageCard({ weeks }: { weeks: MacroWeek[] }) {
   const [selected, setSelected] = useState(0);
+  const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const week = weeks[selected] ?? weeks[0];
 
   return (
@@ -45,7 +52,17 @@ export function MacroAverageCard({ weeks }: { weeks: MacroWeek[] }) {
         Dnevni prosek kalorija
       </h2>
 
-      {week ? <WeekBody week={week} /> : <EmptyBody />}
+      {week ? (
+        <WeekBody
+          week={week}
+          selectedDayKey={selectedDayKey}
+          onSelectDay={(dayKey) =>
+            setSelectedDayKey((current) => (current === dayKey ? null : dayKey))
+          }
+        />
+      ) : (
+        <EmptyBody />
+      )}
 
       {/* Week selector */}
       <div
@@ -61,7 +78,10 @@ export function MacroAverageCard({ weeks }: { weeks: MacroWeek[] }) {
               type="button"
               role="tab"
               aria-selected={active}
-              onClick={() => setSelected(i)}
+              onClick={() => {
+                setSelected(i);
+                setSelectedDayKey(null);
+              }}
               className={cn(
                 "flex-1 shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
@@ -79,8 +99,18 @@ export function MacroAverageCard({ weeks }: { weeks: MacroWeek[] }) {
   );
 }
 
-function WeekBody({ week }: { week: MacroWeek }) {
+function WeekBody({
+  week,
+  selectedDayKey,
+  onSelectDay,
+}: {
+  week: MacroWeek;
+  selectedDayKey: string | null;
+  onSelectDay: (dayKey: string) => void;
+}) {
   const hasData = week.loggedDaysCount > 0;
+  const selectedDay =
+    week.days.find((d) => d.dayKey === selectedDayKey) ?? null;
   const maxDay = Math.max(0, ...week.days.map((d) => d.totalKcal));
   const { step, max } = niceScale(maxDay);
   const gridValues: number[] = [];
@@ -130,7 +160,13 @@ function WeekBody({ week }: { week: MacroWeek }) {
             ))}
             <div className="absolute inset-0 flex items-end justify-between gap-1.5">
               {week.days.map((day) => (
-                <DayBar key={day.dayKey} day={day} max={max} />
+                <DayBar
+                  key={day.dayKey}
+                  day={day}
+                  max={max}
+                  active={day.dayKey === selectedDayKey}
+                  onSelect={() => onSelectDay(day.dayKey)}
+                />
               ))}
             </div>
           </div>
@@ -142,9 +178,11 @@ function WeekBody({ week }: { week: MacroWeek }) {
                 key={day.dayKey}
                 className={cn(
                   "flex-1 text-center text-[11px]",
-                  day.logged
-                    ? "font-medium text-foreground"
-                    : "text-muted-foreground"
+                  day.dayKey === selectedDayKey
+                    ? "font-semibold text-foreground"
+                    : day.logged
+                      ? "font-medium text-foreground"
+                      : "text-muted-foreground"
                 )}
               >
                 {day.label}
@@ -157,6 +195,27 @@ function WeekBody({ week }: { week: MacroWeek }) {
           Nema unetih obroka u ovoj nedelji.
         </p>
       )}
+
+      {/* Tap read-out: the picked day's real kcal + macro grams. */}
+      {hasData ? (
+        selectedDay ? (
+          <ChartReadout
+            label={selectedDay.longLabel}
+            primary={
+              selectedDay.logged
+                ? `${selectedDay.totalKcal.toLocaleString("sr-RS")} kcal`
+                : "Nema unosa"
+            }
+            secondary={macroLine(selectedDay)}
+            onClear={() => onSelectDay(selectedDay.dayKey)}
+            testId="macro-readout"
+          />
+        ) : (
+          <ChartHint testId="macro-hint">
+            Dodirni stubić da vidiš tačan unos tog dana.
+          </ChartHint>
+        )
+      ) : null}
 
       {/* Legend */}
       <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
@@ -178,14 +237,29 @@ function WeekBody({ week }: { week: MacroWeek }) {
   );
 }
 
-/** One day's macro-stacked bar. Segments (top→bottom: protein, carbs, fat) sit
- * inside a rounded, clipped wrapper whose height is the day's kcal share. */
+/** The read-out's second line: the day's macro grams, or why there are none. */
+function macroLine(day: MacroDay): string {
+  if (!day.logged) {
+    return day.isFuture
+      ? "Taj dan tek dolazi."
+      : "Tog dana nije unet nijedan obrok.";
+  }
+  return `P ${day.proteinG} g · UH ${day.carbsG} g · M ${day.fatG} g`;
+}
+
+/** One day's macro-stacked bar, as a button. Segments (top→bottom: protein,
+ * carbs, fat) sit inside a rounded, clipped wrapper whose height is the day's
+ * kcal share. */
 function DayBar({
   day,
   max,
+  active,
+  onSelect,
 }: {
-  day: MacroWeek["days"][number];
+  day: MacroDay;
   max: number;
+  active: boolean;
+  onSelect: () => void;
 }) {
   const share = (kcal: number) =>
     day.totalKcal > 0 ? `${(kcal / day.totalKcal) * 100}%` : "0%";
@@ -196,22 +270,38 @@ function DayBar({
     day.proteinKcal + day.carbsKcal + day.fatKcal === 0;
 
   return (
-    <div className="flex h-full flex-1 flex-col items-center justify-end">
-      <div
-        className="w-full max-w-[22px] overflow-hidden rounded-md"
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={active}
+      aria-label={`${day.longLabel}: ${
+        day.logged ? `${day.totalKcal} kcal` : "nema unosa"
+      }`}
+      data-testid={`macro-bar-${day.dayKey}`}
+      className={cn(
+        "flex h-full flex-1 flex-col items-center justify-end rounded-md transition-colors",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+        active ? "bg-foreground/[0.06]" : "bg-transparent"
+      )}
+    >
+      <span
+        className={cn(
+          "block w-full max-w-[22px] overflow-hidden rounded-md transition-opacity",
+          active ? "opacity-100" : undefined
+        )}
         style={{ height: `${(day.totalKcal / max) * 100}%` }}
       >
         {noMacros ? (
-          <div className="h-full w-full bg-muted-foreground/40" />
+          <span className="block h-full w-full bg-muted-foreground/40" />
         ) : (
           <>
-            <div style={{ height: share(day.proteinKcal), backgroundColor: MACRO.protein.color }} />
-            <div style={{ height: share(day.carbsKcal), backgroundColor: MACRO.carbs.color }} />
-            <div style={{ height: share(day.fatKcal), backgroundColor: MACRO.fat.color }} />
+            <span className="block" style={{ height: share(day.proteinKcal), backgroundColor: MACRO.protein.color }} />
+            <span className="block" style={{ height: share(day.carbsKcal), backgroundColor: MACRO.carbs.color }} />
+            <span className="block" style={{ height: share(day.fatKcal), backgroundColor: MACRO.fat.color }} />
           </>
         )}
-      </div>
-    </div>
+      </span>
+    </button>
   );
 }
 

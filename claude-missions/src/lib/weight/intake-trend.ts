@@ -20,6 +20,7 @@
  * untracked day never fabricates a change.
  */
 
+import { analyticsDayLabel } from "@/lib/analytics/day-label";
 import { KCAL_PER_KG_BODY_MASS } from "@/lib/budget/engine";
 import { toBelgradeCalendarDay } from "@/lib/dates";
 
@@ -35,8 +36,16 @@ export interface IntakeLogInput {
 export interface IntakeTrendPoint {
   /** Belgrade calendar day, `"YYYY-MM-DD"`. */
   dayKey: string;
+  /** Long label for the tap read-out: "Danas" / "Juče" / "Sreda, 22. jul". */
+  longLabel: string;
   /** Estimated weight (kg) on this day, anchored to today's real weight. */
   estWeightKg: number;
+  /** kcal logged that day (0 on an untracked day) -- what the read-out shows
+   * next to the estimate, so the line can be traced back to a real number. */
+  intakeKcal: number;
+  /** That day's energy balance (intake − TDEE); 0 on an untracked day, which
+   * is treated as maintenance rather than a fabricated deficit. */
+  balanceKcal: number;
   /** True if at least one log landed on this day. */
   hasLog: boolean;
   /** Horizontal position 0..1 across the 7-day window. */
@@ -159,7 +168,10 @@ export function computeIntakeTrend(
 
   const points: IntakeTrendPoint[] = dayKeys.map((dayKey, i) => ({
     dayKey,
+    longLabel: analyticsDayLabel(dayKey, now),
     estWeightKg: round1(estWeights[i]!),
+    intakeKcal: Math.round(byDay.get(dayKey)?.kcal ?? 0),
+    balanceKcal: Math.round(balances[i]!),
     hasLog: hasLog[i]!,
     x: i / (WINDOW_DAYS - 1),
   }));

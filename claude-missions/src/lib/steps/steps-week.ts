@@ -10,6 +10,7 @@
  * field yet -- we use the classic 10 000/day target.
  */
 
+import { analyticsDayLabel } from "@/lib/analytics/day-label";
 import { toBelgradeCalendarDay } from "@/lib/dates";
 import { WEEKDAY_LABELS_SR } from "@/lib/week/summary";
 
@@ -29,7 +30,8 @@ export interface StepsDay {
   dayKey: string;
   /** Short Serbian weekday label, "Pon".."Ned". */
   label: string;
-  /** Friendly long label: "Danas" / "Juče" / capitalized weekday. */
+  /** Friendly long label for the tap read-out: "Danas" / "Juče" / "Sreda, 22.
+   * jul" (shared across every Analitika chart, see `analyticsDayLabel`). */
   longLabel: string;
   steps: number;
   isToday: boolean;
@@ -65,16 +67,6 @@ function shiftDayKey(todayKey: string, deltaDays: number): string {
   );
 }
 
-function longLabelFor(dayKey: string, todayKey: string, yesterdayKey: string): string {
-  if (dayKey === todayKey) return "Danas";
-  if (dayKey === yesterdayKey) return "Juče";
-  const [year, month, day] = dayKey.split("-").map(Number);
-  const name = new Intl.DateTimeFormat("sr-Latn-RS", { weekday: "long" }).format(
-    new Date(Date.UTC(year!, month! - 1, day!))
-  );
-  return name.charAt(0).toUpperCase() + name.slice(1);
-}
-
 /**
  * Buckets the last 7 days of step rows into a fully-derived `StepsWeek`.
  * `now` defaults to the current instant; pass it for deterministic tests.
@@ -85,7 +77,6 @@ export function computeStepsWeek(
   goalSteps: number = DEFAULT_STEP_GOAL
 ): StepsWeek {
   const todayKey = toBelgradeCalendarDay(now);
-  const yesterdayKey = shiftDayKey(todayKey, -1);
   const dayKeys = Array.from({ length: WINDOW_DAYS }, (_, i) =>
     shiftDayKey(todayKey, -(WINDOW_DAYS - 1) + i)
   );
@@ -99,7 +90,7 @@ export function computeStepsWeek(
     return {
       dayKey,
       label: WEEKDAY_LABELS_SR[weekdayIndex(dayKey)]!,
-      longLabel: longLabelFor(dayKey, todayKey, yesterdayKey),
+      longLabel: analyticsDayLabel(dayKey, now),
       steps,
       isToday: dayKey === todayKey,
       reached: steps >= goalSteps,

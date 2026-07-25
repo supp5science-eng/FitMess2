@@ -4,6 +4,7 @@ import { GlassWater, Milk, Minus, Plus, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { sheetPortal } from "@/components/ui/sheet-portal";
 import { cn } from "@/lib/utils";
 
 // Voda: a compact water button on `/danas` that opens the "Unesi vodu" sheet.
@@ -198,7 +199,11 @@ export function WaterButton({
         ) : null}
       </button>
 
-      {isOpen ? (
+      {/* PORTALLED to <body>: this button now lives inside the home pager's
+          horizontal scroll container, where iOS Safari cannot be trusted to keep
+          a `position: fixed` overlay anchored to the viewport (see
+          `sheetPortal`). */}
+      {isOpen ? sheetPortal(
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-0 sm:items-center sm:px-6"
           data-testid="water-sheet-overlay"

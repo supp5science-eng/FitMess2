@@ -1,6 +1,6 @@
 "use client";
 
-import { Droplet, Flame, Footprints } from "lucide-react";
+import { Droplet, Footprints } from "lucide-react";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { DateStrip } from "@/components/home/date-strip";
@@ -350,6 +350,15 @@ export function HomeScreen({
                       labelSr: "Koraci i voda",
                       content: (
                         <div className="home-body flex flex-col gap-2.5">
+                          {/* The recommended daily goals for steps + water now
+                              live HERE (2026-07-25), not in a separate row under
+                              the pager: this is the page about steps and water,
+                              so the goal and the way to log against it belong on
+                              the same screen. */}
+                          <MovementGoals
+                            stepsGoal={effectiveStepGoal}
+                            waterGoalMl={waterGoal}
+                          />
                           <StepsCard
                             dayKey={dayKey}
                             initialSteps={initialSteps}
@@ -376,11 +385,6 @@ export function HomeScreen({
                 ),
               },
             ]}
-          />
-          <DailyTargets
-            kcal={targetKcal}
-            stepsGoal={effectiveStepGoal}
-            waterGoalMl={waterGoal}
           />
         </div>
       ) : (
@@ -435,34 +439,29 @@ export function HomeScreen({
 }
 
 /**
- * "Preporučeni dnevni ciljevi": the day's recommended targets shown together
- * with the calorie result — kcal (the ring's number), a step goal, and a water
- * goal — so the three read as one plan. Steps use the classic 10k; water is
- * derived from bodyweight (the SAME `waterGoalMl` the Analitika card uses), so
- * the home recommendation and the analytics goal always agree.
+ * "Preporučeni dnevni ciljevi" for the movement page: the step goal and the water
+ * goal, side by side above the two cards that log against them.
+ *
+ * Moved here from a fixed row under the pager (2026-07-25, at the product owner's
+ * request) — a goal belongs on the page where you act on it, and the kcal goal it
+ * used to sit next to is already the ring's own centre number, so repeating it
+ * was noise. Steps use the classic 10k; water is derived from bodyweight (the
+ * SAME `waterGoalMl` the Analitika card uses), so the home recommendation and the
+ * analytics goal can never disagree.
  */
-function DailyTargets({
-  kcal,
+function MovementGoals({
   stepsGoal,
   waterGoalMl,
 }: {
-  kcal: number;
   stepsGoal: number;
   waterGoalMl: number;
 }) {
   return (
-    <div className="home-body flex flex-col gap-2">
+    <div className="flex flex-col gap-2">
       <h3 className="text-sm font-semibold text-muted-foreground">
         Preporučeni dnevni ciljevi
       </h3>
-      <div data-testid="daily-targets" className="grid grid-cols-3 gap-2.5">
-        <TargetTile
-          icon={<Flame className="size-4" aria-hidden="true" />}
-          tone="text-amber-500"
-          chip="bg-amber-500/15"
-          label="Kalorije"
-          value={`${kcal}`}
-        />
+      <div data-testid="daily-targets" className="grid grid-cols-2 gap-2.5">
         <TargetTile
           icon={<Footprints className="size-4" aria-hidden="true" />}
           tone="text-violet-500"

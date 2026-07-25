@@ -4,6 +4,7 @@ import { Footprints, Minus, Plus, X } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { sheetPortal } from "@/components/ui/sheet-portal";
 import { DEFAULT_STEP_GOAL } from "@/lib/steps/steps-week";
 
 // Koraci: an interactive step card on `/danas`. Steps are self-reported (a PWA
@@ -338,7 +339,14 @@ export function StepsCard({
         </span>
       </button>
 
-      {isOpen ? (
+      {/* PORTALLED to <body> (2026-07-25): this card now lives inside the home
+          pager's horizontal scroll container, and iOS Safari is unreliable about
+          `position: fixed` inside a scroll container -- the sheet can end up
+          positioned against the container instead of the viewport, or clipped by
+          its overflow. Rendering it outside that subtree sidesteps the whole
+          class of problem; nothing else about the sheet changes (RTL's `screen`
+          queries still find it, since it queries the whole document). */}
+      {isOpen ? sheetPortal(
         <div
           className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 px-0 sm:items-center sm:px-6"
           data-testid="steps-sheet-overlay"

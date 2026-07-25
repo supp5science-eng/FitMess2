@@ -2,29 +2,7 @@
 
 import { useState } from "react";
 
-/**
- * Country dial codes offered on the signup phone field. Serbia (+381) is first
- * and the default; the rest are the neighbouring countries plus the common
- * Serbian-diaspora destinations, so most users find theirs without a huge list.
- * Flags are plain emoji (render natively on iOS, our only real target).
- */
-const COUNTRIES = [
-  { code: "+381", flag: "🇷🇸", name: "Srbija" },
-  { code: "+387", flag: "🇧🇦", name: "Bosna i Hercegovina" },
-  { code: "+382", flag: "🇲🇪", name: "Crna Gora" },
-  { code: "+385", flag: "🇭🇷", name: "Hrvatska" },
-  { code: "+389", flag: "🇲🇰", name: "Severna Makedonija" },
-  { code: "+386", flag: "🇸🇮", name: "Slovenija" },
-  { code: "+49", flag: "🇩🇪", name: "Nemačka" },
-  { code: "+43", flag: "🇦🇹", name: "Austrija" },
-  { code: "+41", flag: "🇨🇭", name: "Švajcarska" },
-  { code: "+33", flag: "🇫🇷", name: "Francuska" },
-  { code: "+39", flag: "🇮🇹", name: "Italija" },
-  { code: "+46", flag: "🇸🇪", name: "Švedska" },
-  { code: "+44", flag: "🇬🇧", name: "Velika Britanija" },
-  { code: "+1", flag: "🇺🇸", name: "SAD / Kanada" },
-  { code: "+61", flag: "🇦🇺", name: "Australija" },
-];
+import { DEFAULT_DIAL_CODE, DIAL_CODES } from "@/lib/auth/dial-codes";
 
 /**
  * Mandatory signup phone field: a country dial-code picker (native `<select>`,
@@ -45,11 +23,11 @@ export function PhoneField({ invalid }: { invalid?: true | undefined }) {
       <div className="auth-phone">
         <select
           name="phone_cc"
-          defaultValue="+381"
+          defaultValue={DEFAULT_DIAL_CODE}
           className="auth-input auth-phone-cc"
           aria-label="Pozivni broj države"
         >
-          {COUNTRIES.map((country) => (
+          {DIAL_CODES.map((country) => (
             <option key={`${country.code} ${country.name}`} value={country.code}>
               {country.flag} {country.code}
             </option>

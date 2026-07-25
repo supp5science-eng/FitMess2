@@ -84,8 +84,10 @@ export default async function ProfilPage() {
           label="Email"
           value={email ?? "—"}
         />
+        {/* `/profil/telefon`, NOT `/telefon`: the latter is the first-run
+            capture gate (empty field, no way back, exits to /danas). */}
         <SettingsLinkRow
-          href="/telefon"
+          href="/profil/telefon"
           icon={Phone}
           label="Broj telefona"
           value={phone ?? "Dodaj"}

@@ -36,11 +36,12 @@ interface AddSheetOption {
    * "NAJBRŽE"). Two methods carry one, so they need different weights -- see
    * `badgeTone`. */
   badge?: string;
-  /** How loudly the badge is drawn. "accent" = teal badge + a tinted row, the
-   * one method the menu actively recommends. "neutral" = quiet outlined badge,
-   * no row tint: it labels the row without competing with the accent one.
-   * Defaults to "neutral" so only a deliberate choice can shout. */
-  badgeTone?: "accent" | "neutral";
+  /** How loudly the row is drawn. Both badged methods get a teal tint so they
+   * read as a matched pair standing apart from the plain rows -- but the two
+   * tints are deliberately far apart in strength, not neighbouring shades:
+   * "accent" (Prizma) is the one the menu recommends, "soft" only whispers.
+   * Defaults to "soft" so only a deliberate choice can shout. */
+  badgeTone?: "accent" | "soft";
 }
 
 // "Pretraži" (catalog search) and "Dodaj proizvod" (manual product create) were
@@ -180,6 +181,7 @@ export function AddSheet() {
                       badgeTone,
                     }) => {
                       const isAccent = Boolean(badge) && badgeTone === "accent";
+                      const isSoft = Boolean(badge) && !isAccent;
 
                       return (
                         <Link
@@ -190,13 +192,19 @@ export function AddSheet() {
                           className={cn(
                             "flex items-center gap-3 rounded-xl border border-border px-4 py-3.5 text-left text-sm font-medium text-foreground transition-colors",
                             "hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                            isAccent && "border-primary/40 bg-primary/5",
+                            // Deliberately a wide gap, not neighbouring shades:
+                            // if the two tints were close the eye would read
+                            // them as the same weight and the hierarchy would
+                            // be lost.
+                            isAccent && "border-primary/60 bg-primary/15",
+                            isSoft && "border-primary/20 bg-primary/[0.04]",
                           )}
                         >
                           <Icon
                             className={cn(
                               "size-5 shrink-0",
                               isAccent && "text-primary",
+                              isSoft && "text-primary/50",
                             )}
                             aria-hidden="true"
                           />
@@ -214,12 +222,12 @@ export function AddSheet() {
                           {badge ? (
                             <span
                               data-testid={`add-sheet-badge-${key}`}
-                              data-tone={isAccent ? "accent" : "neutral"}
+                              data-tone={isAccent ? "accent" : "soft"}
                               className={cn(
                                 "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide",
                                 isAccent
-                                  ? "border-primary/40 bg-primary/10 text-primary"
-                                  : "border-border bg-muted/40 text-muted-foreground",
+                                  ? "border-primary/50 bg-primary/20 text-primary"
+                                  : "border-primary/25 bg-primary/[0.06] text-muted-foreground",
                               )}
                             >
                               {badge}

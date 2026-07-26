@@ -92,12 +92,12 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    // Prizma = most accurate, "Slikaj obrok" = fastest. Both are labeled so the
-    // trade-off is visible, but only Prizma gets the teal accent; this one is
-    // quiet so the two badges don't compete for the same eye.
+    // Prizma = most accurate, "Slikaj obrok" = fastest. Both are labeled AND
+    // both carry a teal tint so they read as a matched pair, but this one is
+    // only a whisper of it -- Prizma stays the visibly louder of the two.
     const badge = screen.getByTestId("add-sheet-badge-obrok");
     expect(badge).toHaveTextContent("NAJBRŽE");
-    expect(badge).toHaveAttribute("data-tone", "neutral");
+    expect(badge).toHaveAttribute("data-tone", "soft");
     expect(screen.getByTestId("add-sheet-desc-obrok")).toHaveTextContent(
       "Jedna slika i gotovo"
     );

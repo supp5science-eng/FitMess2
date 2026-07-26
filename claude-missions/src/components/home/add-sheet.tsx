@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Camera, Cookie, Mic, Plus, Target, UtensilsCrossed, X } from "lucide-react";
+import { Camera, Cookie, Plus, Target, UtensilsCrossed, X } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -32,9 +32,15 @@ interface AddSheetOption {
   href: string;
   /** Optional muted helper line under the label. */
   description?: string;
-  /** Optional teal highlight badge (e.g. "NAJTAČNIJE") -- also tints the row to
-   * gently pull the eye toward the recommended method. */
+  /** Optional short badge naming what this method is BEST at ("NAJTAČNIJE" /
+   * "NAJBRŽE"). Two methods carry one, so they need different weights -- see
+   * `badgeTone`. */
   badge?: string;
+  /** How loudly the badge is drawn. "accent" = teal badge + a tinted row, the
+   * one method the menu actively recommends. "neutral" = quiet outlined badge,
+   * no row tint: it labels the row without competing with the accent one.
+   * Defaults to "neutral" so only a deliberate choice can shout. */
+  badgeTone?: "accent" | "neutral";
 }
 
 // "Pretraži" (catalog search) and "Dodaj proizvod" (manual product create) were
@@ -57,24 +63,28 @@ const OPTIONS: AddSheetOption[] = [
     // it outside this row, back it with a real benchmark first.
     description: "92% tačnost procene kalorija",
     badge: "NAJTAČNIJE",
+    badgeTone: "accent",
   },
+  // The other half of the pair: Prizma buys accuracy with effort, this one buys
+  // speed with a single tap of the shutter. Naming both makes the trade-off the
+  // menu's actual content -- you pick by what you need right now, not by
+  // guessing what the labels mean.
   {
     key: "obrok",
     label: "Slikaj obrok",
     icon: UtensilsCrossed,
     href: "/dodaj/obrok",
+    description: "Jedna slika i gotovo",
+    badge: "NAJBRŽE",
   },
-  {
-    key: "glas",
-    label: "Reci obrok",
-    icon: Mic,
-    href: "/dodaj/glas",
-    description: "Izgovori vrednosti ili samo opiši obrok",
-  },
-  // "Gric" sits below the two spoken/photographed MEAL methods because it
-  // answers a different question: not "how do I log this meal accurately" but
-  // "how do I log this at all". A cucumber costs more to photograph than it is
-  // worth, so it goes unlogged and the day's total quietly reads too low.
+  // "Reci obrok" (`/dodaj/glas`) was removed from this menu: "Gric" below
+  // already covers speaking your food, and two microphone rows just made people
+  // stop and compare. The route still exists, it is simply no longer offered.
+  //
+  // "Gric" sits below the two photographed MEAL methods because it answers a
+  // different question: not "how do I log this meal accurately" but "how do I
+  // log this at all". A cucumber costs more to photograph than it is worth, so
+  // it goes unlogged and the day's total quietly reads too low.
   {
     key: "gric",
     label: "Gric",
@@ -160,46 +170,64 @@ export function AddSheet() {
 
                 <div className="flex flex-col gap-2">
                   {OPTIONS.map(
-                    ({ key, label, icon: Icon, href, description, badge }) => (
-                      <Link
-                        key={key}
-                        href={href}
-                        onClick={close}
-                        data-testid={`add-sheet-option-${key}`}
-                        className={cn(
-                          "flex items-center gap-3 rounded-xl border border-border px-4 py-3.5 text-left text-sm font-medium text-foreground transition-colors",
-                          "hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-                          badge && "border-primary/40 bg-primary/5",
-                        )}
-                      >
-                        <Icon
+                    ({
+                      key,
+                      label,
+                      icon: Icon,
+                      href,
+                      description,
+                      badge,
+                      badgeTone,
+                    }) => {
+                      const isAccent = Boolean(badge) && badgeTone === "accent";
+
+                      return (
+                        <Link
+                          key={key}
+                          href={href}
+                          onClick={close}
+                          data-testid={`add-sheet-option-${key}`}
                           className={cn(
-                            "size-5 shrink-0",
-                            badge && "text-primary",
+                            "flex items-center gap-3 rounded-xl border border-border px-4 py-3.5 text-left text-sm font-medium text-foreground transition-colors",
+                            "hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+                            isAccent && "border-primary/40 bg-primary/5",
                           )}
-                          aria-hidden="true"
-                        />
-                        <span className="flex flex-1 flex-col">
-                          <span>{label}</span>
-                          {description ? (
+                        >
+                          <Icon
+                            className={cn(
+                              "size-5 shrink-0",
+                              isAccent && "text-primary",
+                            )}
+                            aria-hidden="true"
+                          />
+                          <span className="flex flex-1 flex-col">
+                            <span>{label}</span>
+                            {description ? (
+                              <span
+                                data-testid={`add-sheet-desc-${key}`}
+                                className="text-xs font-normal text-muted-foreground"
+                              >
+                                {description}
+                              </span>
+                            ) : null}
+                          </span>
+                          {badge ? (
                             <span
-                              data-testid={`add-sheet-desc-${key}`}
-                              className="text-xs font-normal text-muted-foreground"
+                              data-testid={`add-sheet-badge-${key}`}
+                              data-tone={isAccent ? "accent" : "neutral"}
+                              className={cn(
+                                "shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold tracking-wide",
+                                isAccent
+                                  ? "border-primary/40 bg-primary/10 text-primary"
+                                  : "border-border bg-muted/40 text-muted-foreground",
+                              )}
                             >
-                              {description}
+                              {badge}
                             </span>
                           ) : null}
-                        </span>
-                        {badge ? (
-                          <span
-                            data-testid={`add-sheet-badge-${key}`}
-                            className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary"
-                          >
-                            {badge}
-                          </span>
-                        ) : null}
-                      </Link>
-                    ),
+                        </Link>
+                      );
+                    },
                   )}
                 </div>
               </div>

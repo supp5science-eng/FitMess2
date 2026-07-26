@@ -37,7 +37,7 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
       // "Pretraži" and "Dodaj proizvod" were removed from this menu (the app is
       // photo/voice-first); their routes still exist but are no longer offered.
       obrok: "/dodaj/obrok",
-      glas: "/dodaj/glas",
+      gric: "/dodaj/gric",
       deklaracija: "/dodaj/deklaracija",
     };
 
@@ -57,7 +57,7 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
 
     // Every row in the menu is a working flow now, so the gray "Uskoro"
     // (coming soon) badge should appear nowhere in the sheet.
-    for (const key of ["najtacnije", "obrok", "glas", "deklaracija"]) {
+    for (const key of ["najtacnije", "obrok", "gric", "deklaracija"]) {
       expect(
         screen.queryByTestId(`add-sheet-soon-badge-${key}`)
       ).not.toBeInTheDocument();
@@ -78,35 +78,57 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
       "add-sheet-option-najtacnije"
     );
 
-    // Carries the highlight badge (not the gray "Uskoro" one).
-    expect(screen.getByTestId("add-sheet-badge-najtacnije")).toHaveTextContent(
-      "NAJTAČNIJE"
-    );
+    // Carries the highlight badge (not the gray "Uskoro" one), drawn in the
+    // loud teal "accent" tone -- it is the one method the menu recommends.
+    const badge = screen.getByTestId("add-sheet-badge-najtacnije");
+    expect(badge).toHaveTextContent("NAJTAČNIJE");
+    expect(badge).toHaveAttribute("data-tone", "accent");
     expect(
       screen.queryByTestId("add-sheet-soon-badge-najtacnije")
     ).not.toBeInTheDocument();
   });
 
-  it("test_the_voice_option_links_to_the_reci_obrok_flow_with_its_note", () => {
+  it("test_slikaj_obrok_is_badged_as_the_fastest_method_in_the_quiet_tone", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
-    const option = screen.getByTestId("add-sheet-option-glas");
-    expect(option.tagName).toBe("A");
-    expect(option).toHaveAttribute("href", "/dodaj/glas");
-    expect(screen.getByTestId("add-sheet-desc-glas")).toHaveTextContent(
-      "Izgovori vrednosti ili samo opiši obrok"
+    // Prizma = most accurate, "Slikaj obrok" = fastest. Both are labeled so the
+    // trade-off is visible, but only Prizma gets the teal accent; this one is
+    // quiet so the two badges don't compete for the same eye.
+    const badge = screen.getByTestId("add-sheet-badge-obrok");
+    expect(badge).toHaveTextContent("NAJBRŽE");
+    expect(badge).toHaveAttribute("data-tone", "neutral");
+    expect(screen.getByTestId("add-sheet-desc-obrok")).toHaveTextContent(
+      "Jedna slika i gotovo"
     );
+
+    // Second in the menu, directly under Prizma.
+    const options = screen
+      .getByTestId("add-sheet")
+      .querySelectorAll('[data-testid^="add-sheet-option-"]');
+    expect(options[1]).toHaveAttribute("data-testid", "add-sheet-option-obrok");
   });
 
-  it("test_the_menu_offers_exactly_the_five_live_methods", () => {
+  it("test_reci_obrok_is_no_longer_offered_in_the_add_menu", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    // Removed on purpose: "Gric" already covers speaking your food, so a second
+    // microphone row only made people stop and compare. The route still exists.
+    expect(
+      screen.queryByTestId("add-sheet-option-glas")
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("add-sheet")).not.toHaveTextContent("Reci obrok");
+  });
+
+  it("test_the_menu_offers_exactly_the_four_live_methods", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
     const options = screen
       .getByTestId("add-sheet")
       .querySelectorAll('[data-testid^="add-sheet-option-"]');
-    expect(options.length).toBe(5);
+    expect(options.length).toBe(4);
     expect(options[options.length - 1]).toHaveAttribute(
       "data-testid",
       "add-sheet-option-deklaracija"

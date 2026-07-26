@@ -17,12 +17,20 @@ function setMediaDevices(value: unknown) {
 
 /** A stream whose tracks record whether they were stopped -- that stop is what
  * turns the phone's camera indicator back off. */
-function fakeStream() {
-  const track = { stop: vi.fn() };
-  return {
-    stream: { getTracks: () => [track] } as unknown as MediaStream,
-    track,
+function fakeStream({
+  zoom,
+}: { zoom?: { min: number; max: number } } = {}) {
+  const track = {
+    stop: vi.fn(),
+    applyConstraints: vi.fn().mockResolvedValue(undefined),
+    getCapabilities: () => (zoom ? { zoom } : {}),
+    getSettings: () => (zoom ? { zoom: 1 } : {}),
   };
+  const stream = {
+    getTracks: () => [track],
+    getVideoTracks: () => [track],
+  } as unknown as MediaStream;
+  return { stream, track };
 }
 
 function renderCamera(overrides: Partial<React.ComponentProps<typeof CameraCapture>> = {}) {
@@ -120,6 +128,49 @@ describe("CameraCapture", () => {
     // Leaving the track running keeps the phone's camera indicator lit after
     // the user has moved on, which reads as the app spying on them.
     expect(track.stop).toHaveBeenCalled();
+  });
+
+  it("test_lens_stops_are_offered_when_the_phone_reports_real_zoom", async () => {
+    const { stream, track } = fakeStream({ zoom: { min: 0.5, max: 2 } });
+    setMediaDevices({
+      getUserMedia: vi.fn().mockResolvedValue(stream),
+      enumerateDevices: vi.fn().mockResolvedValue([]),
+    });
+
+    renderCamera();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("camera-lenses")).toBeInTheDocument();
+    });
+    expect(screen.getByTestId("camera-lens-0.5x")).toBeInTheDocument();
+
+    screen.getByTestId("camera-lens-2x").click();
+    await waitFor(() => {
+      expect(track.applyConstraints).toHaveBeenCalledWith({
+        advanced: [{ zoom: 2 }],
+      });
+    });
+  });
+
+  it("test_no_lens_switcher_on_a_phone_that_offers_no_real_choice", async () => {
+    // A single fixed lens and no zoom capability. Rendering "0.5x / 1x" here
+    // would be buttons that do nothing -- worse than not offering them.
+    const { stream } = fakeStream();
+    setMediaDevices({
+      getUserMedia: vi.fn().mockResolvedValue(stream),
+      enumerateDevices: vi
+        .fn()
+        .mockResolvedValue([
+          { kind: "videoinput", deviceId: "b", label: "Back Camera" },
+        ]),
+    });
+
+    renderCamera();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("camera-capture")).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("camera-lenses")).not.toBeInTheDocument();
   });
 
   it("test_a_failed_shot_is_explained_on_top_of_the_viewfinder", async () => {

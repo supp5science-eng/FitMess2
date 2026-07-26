@@ -3,6 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ImageUp, Loader2, X } from "lucide-react";
 
+import {
+  activeLensKey,
+  buildLensOptions,
+  type LensOption,
+} from "@/lib/camera/lenses";
+
+import { cn } from "@/lib/utils";
+
 /**
  * A live, in-app camera viewfinder with a shutter button.
  *
@@ -92,6 +100,14 @@ export function CameraCapture({
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<Status>("starting");
   const [reason, setReason] = useState<string>(GENERIC_SR);
+  // Lens/zoom stops this phone can actually honour, discovered from the live
+  // track (see `buildLensOptions`). Empty on devices that offer no real choice,
+  // and then no switcher is rendered at all.
+  const [lenses, setLenses] = useState<LensOption[]>([]);
+  // `deviceId` needs a fresh stream (the iOS lens-switching path); `zoom` is
+  // applied to the running track (the Android path). Only one is ever set.
+  const [deviceId, setDeviceId] = useState<string | undefined>(undefined);
+  const [zoom, setZoom] = useState<number | undefined>(undefined);
   // Brief white wash on the shutter, so a tap reads as "photo taken" even
   // before the next screen renders.
   const [flashing, setFlashing] = useState(false);
@@ -123,11 +139,17 @@ export function CameraCapture({
           // The rear camera, at a resolution good enough to read a plate.
           // `ideal` (not `exact`) so a device that can't honour it still gives
           // us a stream rather than throwing OverconstrainedError.
-          video: {
-            facingMode: { ideal: "environment" },
-            width: { ideal: 1920 },
-            height: { ideal: 1080 },
-          },
+          //
+          // Once the user picks a lens, `deviceId` takes over -- and THAT one
+          // is `exact`, because a lens button that quietly falls back to a
+          // different lens is worse than an error we can report.
+          video: deviceId
+            ? { deviceId: { exact: deviceId } }
+            : {
+                facingMode: { ideal: "environment" },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 },
+              },
           audio: false,
         });
       } catch (error) {
@@ -150,6 +172,37 @@ export function CameraCapture({
       // precisely because its <video> only mounted after the status flipped.
       if (videoRef.current) videoRef.current.srcObject = stream;
       setStatus("live");
+
+      // What this phone can offer is only knowable from a LIVE track: the zoom
+      // capability comes off the track itself, and `enumerateDevices` only
+      // fills in camera labels once permission has been granted -- before that
+      // every label is an empty string and nothing can be classified.
+      const track = stream.getVideoTracks()[0];
+      // `zoom` is real but still outside the standard lib typings (it is the
+      // Android/Chromium path; Safari omits it entirely), so it is read through
+      // a narrow local shape rather than a lib-wide declaration merge.
+      const capabilities = track.getCapabilities?.() as
+        | { zoom?: { min: number; max: number } }
+        | undefined;
+      const zoomRange = capabilities?.zoom ?? null;
+
+      let devices: MediaDeviceInfo[] = [];
+      try {
+        devices = await mediaDevices.enumerateDevices();
+      } catch {
+        // Not fatal -- it only costs us the lens switcher.
+      }
+      if (cancelled) return;
+
+      setLenses(buildLensOptions({ devices, zoom: zoomRange }));
+      if (zoomRange) {
+        const settings = (
+          track as MediaStreamTrack & {
+            getSettings?: () => { zoom?: number };
+          }
+        ).getSettings?.();
+        setZoom(settings?.zoom ?? 1);
+      }
     }
 
     void start();
@@ -158,7 +211,33 @@ export function CameraCapture({
       cancelled = true;
       stopStream();
     };
-  }, [stopStream]);
+    // `deviceId` restarts the stream on another physical lens; zoom does not
+    // (it is applied to the running track).
+  }, [stopStream, deviceId]);
+
+  async function selectLens(option: LensOption) {
+    if (option.deviceId !== undefined) {
+      // Restarting the stream is the only way to change physical lens. The
+      // effect's cleanup stops the old track first, which matters on iOS: it
+      // will not hand out a second camera while one is still open.
+      setStatus("starting");
+      setDeviceId(option.deviceId);
+      return;
+    }
+    if (option.zoom === undefined) return;
+
+    const track = streamRef.current?.getVideoTracks()[0];
+    if (!track) return;
+    try {
+      await track.applyConstraints({
+        advanced: [{ zoom: option.zoom }],
+      } as unknown as MediaTrackConstraints);
+      setZoom(option.zoom);
+    } catch {
+      // The stop was advertised by the device's own capabilities, so a failure
+      // here is unexpected -- but a dead tap beats a broken viewfinder.
+    }
+  }
 
   function capture() {
     const video = videoRef.current;
@@ -258,6 +337,39 @@ export function CameraCapture({
         <p className="relative mx-auto mb-5 max-w-[22rem] rounded-full bg-black/45 px-4 py-2 text-center text-sm text-white/90 backdrop-blur-sm">
           {hint}
         </p>
+      ) : null}
+
+      {/* Lens stops, phone-camera style. Rendered only when the device reports
+          stops it can really honour -- see `buildLensOptions`. */}
+      {lenses.length > 1 ? (
+        <div
+          data-testid="camera-lenses"
+          role="group"
+          aria-label="Sočivo"
+          className="relative mx-auto mb-4 flex items-center gap-1 rounded-full bg-black/45 p-1 backdrop-blur-sm"
+        >
+          {lenses.map((option) => {
+            const isActive =
+              activeLensKey(lenses, { deviceId, zoom }) === option.key;
+            return (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => void selectLens(option)}
+                aria-pressed={isActive}
+                data-testid={`camera-lens-${option.label}`}
+                className={cn(
+                  "flex size-11 items-center justify-center rounded-full text-xs font-semibold transition-colors",
+                  isActive
+                    ? "bg-white text-black"
+                    : "text-white/85 hover:bg-white/15"
+                )}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
       ) : null}
 
       {/* Bottom bar: shutter in the middle, library on the side. */}

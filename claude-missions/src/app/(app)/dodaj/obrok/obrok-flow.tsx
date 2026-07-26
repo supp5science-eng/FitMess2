@@ -1,11 +1,12 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useRef, useState } from "react";
+import { type ChangeEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Camera, ImageUp, Loader2, Sparkles } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
+import { CameraCapture } from "@/components/camera/camera-capture";
 import {
   scaleMealComponents,
   scaleMealMicros,
@@ -47,28 +48,17 @@ function blobToBase64(blob: Blob): Promise<string> {
 
 export function ObrokFlow() {
   const router = useRouter();
-  // Two separate inputs so each intent is unambiguous:
-  //  - cameraInputRef has `capture="environment"`, so a tap opens the phone's
-  //    native rear camera DIRECTLY (with its own 0.5x/1x lens + zoom controls),
-  //    never the "take photo or choose file" chooser.
+  // Two fallback inputs, used only when the live camera can't run:
+  //  - cameraInputRef has `capture="environment"`, so a tap hands off to the
+  //    phone's own camera app.
   //  - uploadInputRef has NO `capture`, so it opens the photo library / files
-  //    for a picture taken earlier.
+  //    for a picture taken earlier. This one is also reachable FROM the live
+  //    viewfinder, since "I already have a photo" is a normal thing to want.
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   // The captured photo, kept so we can store a small display thumbnail with the
   // log on save (the full image goes to Gemini for the estimate, separately).
   const capturedFileRef = useRef<File | null>(null);
-  // Best-effort: try to open the camera the moment we land here, so "Slikaj
-  // obrok" feels like it goes straight to the camera. Browsers that require a
-  // fresh user gesture (notably iOS Safari) will ignore this no-op and the user
-  // taps the big camera button instead -- so it enhances where allowed and
-  // degrades to one tap everywhere else. Fires once per mount.
-  const autoOpenedRef = useRef(false);
-  useEffect(() => {
-    if (autoOpenedRef.current) return;
-    autoOpenedRef.current = true;
-    cameraInputRef.current?.click();
-  }, []);
 
   const [phase, setPhase] = useState<Phase>("capture");
   const [error, setError] = useState<string | null>(null);
@@ -251,30 +241,48 @@ export function ObrokFlow() {
         />
       ) : null}
 
+      {/* The camera IS the screen: landing here opens the live viewfinder
+          straight away, so "Slikaj obrok" is one tap (the shutter) rather than
+          a chooser screen and then a tap. The old chooser lives on as the
+          fallback, for when the camera is denied or unavailable. */}
       {phase === "capture" ? (
-        <div className="flex flex-col gap-3">
-          <button
-            type="button"
-            onClick={() => cameraInputRef.current?.click()}
-            className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-background px-6 py-12 text-center transition-colors hover:bg-muted"
-          >
-            <Camera className="size-9 text-primary" aria-hidden="true" />
-            <span className="text-base font-medium text-foreground">
-              Otvori kameru
-            </span>
-            <span className="text-sm text-muted-foreground">
-              AI će proceniti kalorije i makronutrijente
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => uploadInputRef.current?.click()}
-            className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-          >
-            <ImageUp className="size-4" aria-hidden="true" />
-            Otpremi postojeću sliku
-          </button>
-        </div>
+        <CameraCapture
+          onCapture={(file) => void handlePhoto(file)}
+          onCancel={() => router.push("/danas")}
+          onPickFromLibrary={() => uploadInputRef.current?.click()}
+          hint="Uslikaj ceo tanjir odozgo"
+          // A failed estimate drops back here; the message has to ride on the
+          // viewfinder, which covers the page's own error slot.
+          notice={error}
+          fallback={(reason) => (
+            <div className="flex flex-col gap-3">
+              <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                {reason}
+              </p>
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-background px-6 py-12 text-center transition-colors hover:bg-muted"
+              >
+                <Camera className="size-9 text-primary" aria-hidden="true" />
+                <span className="text-base font-medium text-foreground">
+                  Otvori kameru
+                </span>
+                <span className="text-sm text-muted-foreground">
+                  AI će proceniti kalorije i makronutrijente
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => uploadInputRef.current?.click()}
+                className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <ImageUp className="size-4" aria-hidden="true" />
+                Otpremi postojeću sliku
+              </button>
+            </div>
+          )}
+        />
       ) : null}
 
       {phase === "estimating" ? (
@@ -377,7 +385,7 @@ export function ObrokFlow() {
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => cameraInputRef.current?.click()}
+                onClick={() => setPhase("capture")}
                 disabled={phase === "saving"}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
               >

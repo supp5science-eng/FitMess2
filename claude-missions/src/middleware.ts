@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { isCrawlerPath, isCrawlerUserAgent } from "@/lib/device/is-crawler";
 import { isMobileUserAgent } from "@/lib/device/is-mobile";
 import {
   decideRouteAccess,
@@ -47,12 +48,29 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // `/robots.txt` and `/sitemap.xml` must be reachable by every client. They
+  // are generated pages (not static assets), so the matcher below does not
+  // exclude them and the phone gate was 307-ing them to `/samo-za-telefon` --
+  // which is why fitmess.app never showed up in Google. Serve them raw, with
+  // no gate and no session work.
+  if (isCrawlerPath(request.nextUrl.pathname)) {
+    return NextResponse.next();
+  }
+
   // Phone-only gate (runs before any auth/session work). FitMess is designed
   // and shipped for phones only: non-mobile visitors are redirected to the
   // "open it on your phone" gate for EVERY route, before the requested page
   // executes, so desktop never triggers the app's data fetching. Mobile
   // visitors who land on the gate URL are bounced back into the app.
-  const isMobile = isMobileUserAgent(request.headers.get("user-agent"));
+  //
+  // Search-engine crawlers are exempt: Google's robots/sitemap/verification
+  // fetchers and the desktop Googlebot variant all send a UA with no mobile
+  // token, so the gate above used to hide the entire site from indexing. They
+  // are served exactly what a phone visitor is served -- the gate is skipped,
+  // nothing else about the response changes, so this is not cloaking.
+  const userAgent = request.headers.get("user-agent");
+  const isMobile =
+    isMobileUserAgent(userAgent) || isCrawlerUserAgent(userAgent);
   const onGate = request.nextUrl.pathname === PHONE_ONLY_PATH;
 
   if (!isMobile && !onGate) {

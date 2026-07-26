@@ -167,6 +167,19 @@ export interface PrizmaAnalysis {
   /** Which dial the user should see, and what one unit of this food weighs. */
   posuda: Vessel;
   jedinica: PortionUnit;
+  /**
+   * The plate/bowl size the model measured, and whether it got there from the
+   * reference object or just assumed a standard plate.
+   *
+   * MEASUREMENT ONLY — nothing computes from this yet. It exists because plate
+   * size is the largest error source left in the whole method and it is
+   * currently invisible: area goes with the square of the diameter, so a 22 cm
+   * plate read as 30 cm inflates every coverage-based mass by ~85%, and neither
+   * we nor the user would ever see it happen. Logging the number tells us
+   * whether the fork is actually doing its job before we build a calibration
+   * step for a problem that may already be solved.
+   */
+  razmera: { cm: number | null; poReferenci: boolean };
   /** Clarifying questions, ranked by kcal at stake. May legitimately be empty. */
   pitanja: PrizmaQuestion[];
   /** The model's own inventory of the plate (may be empty). */
@@ -256,6 +269,17 @@ export function parsePrizmaAnalysis(
       ? obj.naziv.trim().slice(0, 80)
       : "";
 
+  // Bounded to sizes a plate or bowl can actually be, so one wild reading
+  // cannot make the logs unreadable.
+  const cmRaw = Number(obj.tanjir_cm);
+  const razmera = {
+    cm:
+      Number.isFinite(cmRaw) && cmRaw >= 10 && cmRaw <= 45
+        ? Math.round(cmRaw)
+        : null,
+    poReferenci: obj.razmera_po_referenci === true,
+  };
+
   const ugao = {
     treba: obj.treba_ugao === true,
     zasto:
@@ -271,7 +295,7 @@ export function parsePrizmaAnalysis(
     .filter((q) => q.opcije.length >= 2)
     .sort((a, b) => b.uticaj_kcal - a.uticaj_kcal);
 
-  const base = { naziv, posuda, jedinica, vidim: seen, ugao };
+  const base = { naziv, posuda, jedinica, razmera, vidim: seen, ugao };
 
   // No question is a good outcome, not a failure: the dial already carries the
   // portion, so a plate the model reads cleanly has nothing left worth asking.
@@ -328,6 +352,12 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
     },
     naziv: { type: "STRING" },
     posuda: { type: "STRING", enum: ["ravan", "dubok", "komadi"] },
+    // Measured BEFORE the unit mass in `propertyOrdering`: the model has to
+    // commit to a plate size first, so the mass it then writes follows from a
+    // stated measurement instead of the measurement being back-filled to
+    // justify a round number.
+    tanjir_cm: { type: "NUMBER" },
+    razmera_po_referenci: { type: "BOOLEAN" },
     jedinica_naziv: { type: "STRING" },
     jedinica_grami: { type: "NUMBER" },
     pitanja: {
@@ -360,11 +390,20 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
     treba_ugao: { type: "BOOLEAN" },
     ugao_zasto: { type: "STRING" },
   },
-  required: ["vidim", "naziv", "posuda", "jedinica_naziv", "jedinica_grami"],
+  required: [
+    "vidim",
+    "naziv",
+    "posuda",
+    "tanjir_cm",
+    "jedinica_naziv",
+    "jedinica_grami",
+  ],
   propertyOrdering: [
     "vidim",
     "naziv",
     "posuda",
+    "tanjir_cm",
+    "razmera_po_referenci",
     "jedinica_naziv",
     "jedinica_grami",
     "pitanja",
@@ -475,17 +514,23 @@ U "vidim" navedi svaku komponentu obroka posebno, i za SVAKU odredi svoju sigurn
 U "nejasno" napiši KONKRETNO šta te koči kod te stavke (npr. "ne vidim dno tanjira ispod mesa", "ne razaznajem je li pohovano ili grilovano"). Ostavi prazno kad je stavka jasna.
 U "naziv" upiši kratak naziv celog jela na srpskom (npr. "Piletina sa pirinčem").
 
-KORAK 2 — ODREDI OBLIK ("posuda") I MASU JEDNE JEDINICE.
-Ovo je najvažniji deo: od njega zavisi kako će korisnik moći da opiše količinu.
+KORAK 2 — IZMERI POSUDU.
+PRE nego što odrediš bilo kakvu masu, izmeri prečnik tanjira/posude i upiši ga u "tanjir_cm". Ovo je najveći izvor greške u celoj proceni: površina raste sa KVADRATOM prečnika, pa tanjir od 22 cm i tanjir od 30 cm nose skoro dvostruko različitu količinu hrane iako na slici izgledaju isto.
+- Ako pored tanjira postoji referentni objekat (viljuška ~19–20 cm, kašika ~19 cm, kartica 8,56 cm), IZMERI po njemu i upiši "razmera_po_referenci": true.
+- Ako referentnog objekta nema, uzmi standard (plitki tanjir ≈ 26 cm, duboki ≈ 22 cm, činija ≈ 16 cm) i upiši "razmera_po_referenci": false.
+Vrednost mora biti u opsegu 10–45 cm.
+
+KORAK 3 — ODREDI OBLIK ("posuda") I MASU JEDNE JEDINICE.
+Ovo je najvažniji deo: od njega zavisi kako će korisnik moći da opiše količinu. Masu jedinice računaj za posudu koju si upravo izmerio, ne za neku prosečnu.
 - "ravan" — hrana je raspoređena po ravnom tanjiru (meso sa prilogom, sarma, pečenje, salata). Korisnik će reći KOLIKI DEO TANJIRA je pokriven i KOLIKO JE VISOKO nagomilano.
-  → "jedinica_naziv": "pun tanjir <hrane>"; "jedinica_grami": koliko bi GRAMA bilo kad bi CEO tanjir bio pokriven baš ovom hranom u sloju debljine jednog prsta (~1,5 cm). Za tipičan tanjir mesa sa prilogom to je 300–450 g; za laganu salatu 120–200 g; za gusto pečenje 450–600 g.
+  → "jedinica_naziv": "pun tanjir <hrane>"; "jedinica_grami": koliko bi GRAMA bilo kad bi CEO tanjir bio pokriven baš ovom hranom u sloju debljine jednog prsta (~1,5 cm). Za STANDARDNI tanjir od 26 cm to je 300–450 g za meso sa prilogom, 120–200 g za laganu salatu, 450–600 g za gusto pečenje — pa to skaliraj sa kvadratom odnosa prečnika (tanjir od 30 cm nosi ~33% više od tanjira od 26 cm, tanjir od 22 cm ~28% manje).
 - "dubok" — hrana je u dubokoj posudi i meri se dubinom (čorba, supa, pasulj, gulaš, jogurt sa musli, sladoled u činiji). Korisnik će reći DOKLE JE NAPUNJENO.
   → "jedinica_naziv": "puna posuda"; "jedinica_grami": koliko GRAMA ove hrane staje u tu posudu kad je puna do vrha (duboki tanjir čorbe ≈ 350–400 g, veća činija ≈ 500–600 g).
 - "komadi" — hrana se prirodno broji, a ne razmazuje (palačinke, pica parčad, sendvič, ćevapi, krofne, jaja, voće). Korisnik će reći KOLIKO KOMADA.
   → "jedinica_naziv": naziv JEDNOG komada u jednini ("palačinka", "parče pice", "ćevap"); "jedinica_grami": masa JEDNOG takvog komada (palačinka ≈ 60 g, parče pice ≈ 110 g, ćevap ≈ 25 g, jaje ≈ 60 g).
 Kad se dvoumiš između "ravan" i "komadi": ako bi čovek prirodno rekao „pojeo sam tri", to je "komadi".
 
-KORAK 3 — PITAJ SAMO ONO ŠTO SI SAM OZNAČIO KAO NEJASNO.
+KORAK 4 — PITAJ SAMO ONO ŠTO SI SAM OZNAČIO KAO NEJASNO.
 Pitanja izvedi ISKLJUČIVO iz stavki sa "srednja"/"niska" sigurnošću. Najviše ${MAX_QUESTIONS}. Nijedno pitanje nije sasvim u redu — prazna lista je ispravan odgovor kad je tanjir jasan.
 - OBAVEZNO: u "stavka" upiši TAČAN naziv stavke iz "vidim" na koju se pitanje odnosi. Pitanje bez stavke iz "vidim" se odbacuje.
 - STROGO ZABRANJENO: pitati KOLIKO je hrane, koliko je pojedeno, ili KAKO JE PRIPREMLJENO (na ulju/pohovano/kuvano). Korisnik na oba ta pitanja odgovara sam, u sledećem koraku. Ako ih ipak postaviš, samo si mu potrošio vreme.
@@ -498,7 +543,7 @@ Pitanja izvedi ISKLJUČIVO iz stavki sa "srednja"/"niska" sigurnošću. Najviše
 - "vise_odgovora": true samo kad više odgovora može da važi istovremeno.
 - Pitanja i opcije na srpskom (latinica).
 
-KORAK 4 — TREBA LI TI JOŠ JEDAN UGAO?
+KORAK 5 — TREBA LI TI JOŠ JEDAN UGAO?
 Postavi "treba_ugao": true SAMO ako postoji nešto što se odozgo fizički ne može videti, a jako menja procenu — npr. hrana je nagomilana pa ne vidiš šta je ispod, ili je posuda neprozirna pa ne znaš koliko je duboka. U "ugao_zasto" napiši to jednom rečenicom, korisniku ("Ne vidim šta je ispod mesa."). U svim ostalim slučajevima "treba_ugao": false — dodatna slika košta korisnika vremena i mnogi zbog nje odustanu.
 
 ${NUTRITION_ANCHORS}
@@ -512,7 +557,7 @@ U "vidim" navedi šta si očitao (npr. "kcal na 100 g", "ukupna masa pakovanja")
 U "naziv" upiši naziv proizvoda ako se vidi, inače kratak opis.
 
 KORAK 2 — POPUNI OBAVEZNA POLJA OBLIKA.
-Deklaracija nema oblik porcije, pa uvek vrati: "posuda": "ravan", "jedinica_naziv": "ceo proizvod", "jedinica_grami": ukupna masa pakovanja u gramima ako se vidi, inače 100. "treba_ugao": false.
+Deklaracija nema oblik porcije, pa uvek vrati: "posuda": "ravan", "jedinica_naziv": "ceo proizvod", "jedinica_grami": ukupna masa pakovanja u gramima ako se vidi, inače 100. "tanjir_cm": 26, "razmera_po_referenci": false, "treba_ugao": false.
 
 KORAK 3 — PITAJ ONO ŠTO FALI.
 Sa deklaracije čitaš vrednosti na 100 g, ali ti gotovo uvek fali KOLIKO je proizvod ukupno težak i KOLIKO je pojedeno. Ovde je to dozvoljeno i poželjno pitati. Najviše ${MAX_QUESTIONS} kratka pitanja sa 2–4 ponuđena odgovora.

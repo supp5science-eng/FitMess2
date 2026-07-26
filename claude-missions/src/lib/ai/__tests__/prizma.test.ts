@@ -178,6 +178,30 @@ describe("parsePrizmaAnalysis — vessel and unit", () => {
   });
 });
 
+describe("parsePrizmaAnalysis — measured scale", () => {
+  it("keeps the measured diameter and how it was arrived at", () => {
+    const result = parsePrizmaAnalysis(
+      { tanjir_cm: 26, razmera_po_referenci: true },
+      "obrok"
+    );
+    expect(result.razmera).toEqual({ cm: 26, poReferenci: true });
+  });
+
+  it("rejects a diameter no plate can have", () => {
+    // A wild reading here would silently inflate every coverage-based mass,
+    // and would also make the logs useless for judging whether the fork works.
+    expect(parsePrizmaAnalysis({ tanjir_cm: 200 }, "obrok").razmera.cm).toBeNull();
+    expect(parsePrizmaAnalysis({ tanjir_cm: 3 }, "obrok").razmera.cm).toBeNull();
+    expect(parsePrizmaAnalysis({}, "obrok").razmera.cm).toBeNull();
+  });
+
+  it("only counts the reference object when the model says it used one", () => {
+    expect(
+      parsePrizmaAnalysis({ tanjir_cm: 26 }, "obrok").razmera.poReferenci
+    ).toBe(false);
+  });
+});
+
 describe("parsePrizmaAnalysis — the extra angle", () => {
   it("asks for one only when the model explicitly says so", () => {
     const asked = parsePrizmaAnalysis(

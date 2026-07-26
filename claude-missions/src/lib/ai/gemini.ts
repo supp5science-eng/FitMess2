@@ -473,6 +473,12 @@ export async function analyzePrizmaMeal(
     JSON.stringify({
       naziv: analysis.naziv,
       posuda: analysis.posuda,
+      // Plate size is the biggest error source left and the only one nobody
+      // can see: if these come back all over the place for ordinary plates,
+      // the fork is not doing its job and the user needs a way to correct it.
+      razmera: `${analysis.razmera.cm ?? "?"}cm${
+        analysis.razmera.poReferenci ? " (referenca)" : " (procena)"
+      }`,
       jedinica: `${analysis.jedinica.naziv}=${analysis.jedinica.grami}g`,
       ugao: analysis.ugao.treba,
       source: analysis.source,

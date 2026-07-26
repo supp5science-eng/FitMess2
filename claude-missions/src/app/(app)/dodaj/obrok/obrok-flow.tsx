@@ -3,7 +3,14 @@
 import { type ChangeEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Camera, ImageUp, Loader2, Sparkles } from "lucide-react";
+import {
+  Camera,
+  ImageUp,
+  Loader2,
+  Pencil,
+  Sparkles,
+  Target,
+} from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
 import { CameraCapture } from "@/components/camera/camera-capture";
@@ -14,6 +21,17 @@ import {
 } from "@/lib/ai/meal-estimate";
 import { downscaleImage } from "@/lib/image/downscale";
 import { estimateMealAction, logMealAction } from "./actions";
+
+// "Slikaj obrok" — the FASTEST way to log a meal, and the deliberate opposite
+// of Prizma.
+//
+// The two methods are a matched pair and the menu names the trade: Prizma buys
+// accuracy with effort (a portion dial, the AI's own questions), this one buys
+// speed with a single tap of the shutter. That only holds if this flow stays
+// genuinely short, so the result screen leads with the ANSWER -- one card, one
+// button -- and keeps every edit field folded away behind "Ispravi". Someone
+// who wants to correct four macros by hand did not come here for speed; someone
+// who wants a better number is pointed at Prizma instead of being handed a form.
 
 type Phase = "capture" | "estimating" | "confirm" | "saving";
 
@@ -63,6 +81,9 @@ export function ObrokFlow() {
   const [phase, setPhase] = useState<Phase>("capture");
   const [error, setError] = useState<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // The edit fields start folded: this is the fast path, so the default
+  // interaction is "read the number, tap Dodaj".
+  const [isEditing, setIsEditing] = useState(false);
 
   const [estimate, setEstimate] = useState<MealEstimate | null>(null);
   // Per-100g reference derived from the AI estimate, so editing grams rescales
@@ -79,6 +100,7 @@ export function ObrokFlow() {
 
   async function handlePhoto(file: File) {
     setError(null);
+    setIsEditing(false);
     capturedFileRef.current = file;
     setPreviewUrl((prev) => {
       if (prev) URL.revokeObjectURL(prev);
@@ -237,7 +259,10 @@ export function ObrokFlow() {
         <img
           src={previewUrl}
           alt="Tvoj obrok"
-          className="max-h-64 w-full rounded-2xl object-cover"
+          // Small on purpose: on the fast path the photo is confirmation that
+          // the right thing was shot, not the content. A tall image pushed the
+          // answer -- the whole reason this screen exists -- below the fold.
+          className="max-h-40 w-full rounded-2xl object-cover"
         />
       ) : null}
 
@@ -303,68 +328,104 @@ export function ObrokFlow() {
             <span>{CONFIDENCE_LABEL[estimate.sigurnost]}</span>
           </div>
 
-          {estimate.sastojci.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {estimate.sastojci.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
-                >
-                  {item}
+          {/* The answer, first and whole. Everything editable is folded away
+              behind "Ispravi" -- reading a card and tapping once is the entire
+              point of this method. */}
+          <div className="flex flex-col gap-3 rounded-2xl border border-border bg-muted/40 px-5 py-5">
+            <div className="flex items-baseline justify-between gap-3">
+              <span className="min-w-0 flex-1 truncate text-lg font-semibold text-foreground">
+                {name || "Obrok"}
+              </span>
+              <span className="shrink-0 text-sm text-muted-foreground">
+                {grams} g
+              </span>
+            </div>
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-4xl font-semibold tracking-tight text-foreground tabular-nums">
+                {Math.round(nutrition.kcal)}
+              </span>
+              <span className="text-base text-muted-foreground">kcal</span>
+            </div>
+            <div className="flex gap-4 text-sm text-muted-foreground">
+              <span>
+                P{" "}
+                <strong className="font-medium text-foreground">
+                  {round1(nutrition.protein)}
+                </strong>
+              </span>
+              <span>
+                UH{" "}
+                <strong className="font-medium text-foreground">
+                  {round1(nutrition.carbs)}
+                </strong>
+              </span>
+              <span>
+                M{" "}
+                <strong className="font-medium text-foreground">
+                  {round1(nutrition.fat)}
+                </strong>
+              </span>
+            </div>
+            {estimate.sastojci.length > 0 ? (
+              <p className="text-xs text-muted-foreground">
+                {estimate.sastojci.join(" · ")}
+              </p>
+            ) : null}
+          </div>
+
+          {isEditing ? (
+            <div className="flex flex-col gap-4">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-foreground">Naziv</span>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                />
+              </label>
+
+              <label className="flex flex-col gap-1.5">
+                <span className="text-sm font-medium text-foreground">
+                  Gramaža (g)
                 </span>
-              ))}
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  value={grams === 0 ? "" : grams}
+                  onChange={(event) =>
+                    handleGramsChange(Math.max(0, Number(event.target.value) || 0))
+                  }
+                  className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                />
+              </label>
+
+              <div className="grid grid-cols-2 gap-3">
+                <MacroField
+                  label="Kalorije"
+                  value={nutrition.kcal}
+                  decimals={0}
+                  onChange={(v) => setNutrition((n) => ({ ...n, kcal: v }))}
+                />
+                <MacroField
+                  label="Protein (g)"
+                  value={nutrition.protein}
+                  onChange={(v) => setNutrition((n) => ({ ...n, protein: v }))}
+                />
+                <MacroField
+                  label="Ugljeni hidrati (g)"
+                  value={nutrition.carbs}
+                  onChange={(v) => setNutrition((n) => ({ ...n, carbs: v }))}
+                />
+                <MacroField
+                  label="Masti (g)"
+                  value={nutrition.fat}
+                  onChange={(v) => setNutrition((n) => ({ ...n, fat: v }))}
+                />
+              </div>
             </div>
           ) : null}
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-foreground">Naziv</span>
-            <input
-              type="text"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-          </label>
-
-          <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-foreground">
-              Gramaža (g)
-            </span>
-            <input
-              type="number"
-              inputMode="numeric"
-              min={1}
-              value={grams === 0 ? "" : grams}
-              onChange={(event) =>
-                handleGramsChange(Math.max(0, Number(event.target.value) || 0))
-              }
-              className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-          </label>
-
-          <div className="grid grid-cols-2 gap-3">
-            <MacroField
-              label="Kalorije"
-              value={nutrition.kcal}
-              decimals={0}
-              onChange={(v) => setNutrition((n) => ({ ...n, kcal: v }))}
-            />
-            <MacroField
-              label="Protein (g)"
-              value={nutrition.protein}
-              onChange={(v) => setNutrition((n) => ({ ...n, protein: v }))}
-            />
-            <MacroField
-              label="Ugljeni hidrati (g)"
-              value={nutrition.carbs}
-              onChange={(v) => setNutrition((n) => ({ ...n, carbs: v }))}
-            />
-            <MacroField
-              label="Masti (g)"
-              value={nutrition.fat}
-              onChange={(v) => setNutrition((n) => ({ ...n, fat: v }))}
-            />
-          </div>
 
           {estimate.napomena ? (
             <p className="text-xs text-muted-foreground">{estimate.napomena}</p>
@@ -385,6 +446,15 @@ export function ObrokFlow() {
             <div className="flex gap-2">
               <button
                 type="button"
+                onClick={() => setIsEditing((on) => !on)}
+                disabled={phase === "saving"}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
+              >
+                <Pencil className="size-4" aria-hidden="true" />
+                {isEditing ? "Sakrij" : "Ispravi"}
+              </button>
+              <button
+                type="button"
                 onClick={() => setPhase("capture")}
                 disabled={phase === "saving"}
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
@@ -392,21 +462,20 @@ export function ObrokFlow() {
                 <Camera className="size-4" aria-hidden="true" />
                 Slikaj ponovo
               </button>
-              <button
-                type="button"
-                onClick={() => uploadInputRef.current?.click()}
-                disabled={phase === "saving"}
-                className="flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
-              >
-                <ImageUp className="size-4" aria-hidden="true" />
-                Otpremi drugu
-              </button>
             </div>
           </div>
 
-          <p className="text-center text-xs text-muted-foreground">
-            AI procena je približna — proveri i doteraj po potrebi.
-          </p>
+          {/* The escape hatch to the accurate method. A photo alone cannot
+              weigh food, so when the number looks wrong the answer is not a
+              form to type into -- it is the flow that asks the questions this
+              one skips. */}
+          <Link
+            href="/dodaj/najtacnije"
+            className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Target className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            Ne deluje tačno? Probaj Prizmu
+          </Link>
         </div>
       ) : null}
     </main>

@@ -5,41 +5,61 @@
  * gathers rows and the current instant, this decides, exactly like the rest of
  * the app keeps its money-math in testable pure functions.
  *
- * v1 has one reminder: **"danas nisi ništa uneo"**. The product rule (the owner
- * chose "smart, skip when not needed") is that it must never fire at someone
- * who is already logging, and never twice in a day:
+ * v2 (2026-07-26) ships TWO daily reminders instead of one conditional one:
  *
- *   1. the reminder is on,
- *   2. their chosen Belgrade wall-clock time has PASSED today,
- *   3. …but by no more than `MAX_LATE_MINUTES` — a 12:00 reminder landing at
- *      22:30 because the scheduler hiccuped is worse than not sending it,
- *   4. the day has zero logs,
- *   5. it has not already gone out today (`no_log_last_sent`).
+ *   * morning — "log your breakfast", at the user's chosen time
+ *   * evening — the recap, which reports how much budget is left
  *
- * (3) and (5) together are what make the cron safely re-runnable: run it twice
+ * Neither is skipped because the user has been logging. That is the whole
+ * point of the change: v1's single reminder only fired on a day with ZERO
+ * logs, so the people using the app daily never saw it. What the evening
+ * reminder has to SAY still depends on the day (see `eveningPayload`) — but
+ * whether it is sent does not.
+ *
+ * A reminder is due when:
+ *
+ *   1. it is on,
+ *   2. its Belgrade wall-clock time has PASSED today,
+ *   3. …but by no more than `MAX_LATE_MINUTES` — a 10:00 reminder landing at
+ *      18:30 because the scheduler hiccuped is worse than not sending it,
+ *   4. it has not already gone out today (`*_last_sent`).
+ *
+ * (3) and (4) together are what make the cron safely re-runnable: run it twice
  * in the same quarter-hour and the second run sends nothing.
  */
 
 /** How long after the chosen time a missed reminder may still be sent. */
 export const MAX_LATE_MINUTES = 120;
 
+/** The two scheduled reminders. Each is independently switchable and timed. */
+export type ReminderKind = "morning" | "evening";
+
+export const REMINDER_KINDS: readonly ReminderKind[] = ["morning", "evening"];
+
 export interface ReminderSettingsRow {
   user_id: string;
-  no_log_enabled: boolean;
+  morning_enabled: boolean;
   /** Belgrade wall clock, `"HH:MM"` or `"HH:MM:SS"` (Postgres `time`). */
-  no_log_time: string;
+  morning_time: string;
   /** Belgrade calendar day (`"YYYY-MM-DD"`) it last fired, if ever. */
-  no_log_last_sent: string | null;
+  morning_last_sent: string | null;
+  evening_enabled: boolean;
+  evening_time: string;
+  evening_last_sent: string | null;
 }
 
 export interface DueInput {
   settings: readonly ReminderSettingsRow[];
-  /** User ids that already have at least one log on `todayKey`. */
-  usersWithLogsToday: ReadonlySet<string>;
   /** Belgrade calendar day the run is happening on, `"YYYY-MM-DD"`. */
   todayKey: string;
   /** Minutes since Belgrade midnight, right now. */
   nowMinutes: number;
+}
+
+/** One reminder that should go out in this run. */
+export interface DueReminder {
+  userId: string;
+  kind: ReminderKind;
 }
 
 /** `"12:30"` / `"12:30:00"` -> 750. Returns null for anything unparseable. */
@@ -61,27 +81,53 @@ export function timeToMinutes(value: string): number | null {
   return hours * 60 + minutes;
 }
 
-/** The user ids whose "nisi ništa uneo" reminder is due in this run. */
-export function usersDueForNoLogReminder({
+/** The one row's fields for a given reminder, so the rule below is written
+ * once instead of once per kind. */
+function fieldsFor(
+  row: ReminderSettingsRow,
+  kind: ReminderKind
+): { enabled: boolean; time: string; lastSent: string | null } {
+  return kind === "morning"
+    ? {
+        enabled: row.morning_enabled,
+        time: row.morning_time,
+        lastSent: row.morning_last_sent,
+      }
+    : {
+        enabled: row.evening_enabled,
+        time: row.evening_time,
+        lastSent: row.evening_last_sent,
+      };
+}
+
+/** Every reminder due in this run, as (user, kind) pairs. A single user can
+ * appear twice only if their two times fall in the same window — which the
+ * settings screen allows but nobody sensible configures. */
+export function remindersDue({
   settings,
-  usersWithLogsToday,
   todayKey,
   nowMinutes,
-}: DueInput): string[] {
-  return settings
-    .filter((row) => {
-      if (!row.no_log_enabled) return false;
-      // Already reminded today: never nag twice, and this is what makes a
-      // re-run of the cron a no-op.
-      if (row.no_log_last_sent === todayKey) return false;
-      // They are logging — the reminder has nothing to say.
-      if (usersWithLogsToday.has(row.user_id)) return false;
+}: DueInput): DueReminder[] {
+  const due: DueReminder[] = [];
 
-      const due = timeToMinutes(row.no_log_time);
-      if (due === null) return false;
+  for (const row of settings) {
+    for (const kind of REMINDER_KINDS) {
+      const { enabled, time, lastSent } = fieldsFor(row, kind);
 
-      const late = nowMinutes - due;
-      return late >= 0 && late <= MAX_LATE_MINUTES;
-    })
-    .map((row) => row.user_id);
+      if (!enabled) continue;
+      // Already sent today: never nag twice, and this is what makes a re-run
+      // of the cron a no-op.
+      if (lastSent === todayKey) continue;
+
+      const at = timeToMinutes(time);
+      if (at === null) continue;
+
+      const late = nowMinutes - at;
+      if (late >= 0 && late <= MAX_LATE_MINUTES) {
+        due.push({ userId: row.user_id, kind });
+      }
+    }
+  }
+
+  return due;
 }

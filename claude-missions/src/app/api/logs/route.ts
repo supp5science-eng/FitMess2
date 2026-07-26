@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { after, NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 
+import { grantFullDayAward } from "@/lib/awards/grant";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { fillFoodMicrosIfMissing } from "@/lib/food/micro-fill";
 import { createLogFromPortion } from "@/lib/food/portions";
@@ -144,6 +145,13 @@ export async function POST(request: NextRequest) {
     if (food.fiber_100g === null || food.fiber_100g === undefined) {
       after(() => fillFoodMicrosIfMissing(food.id));
     }
+
+    // Nagrade (2026-07-26): this insert may have been the day's THIRD meal,
+    // which earns the "pun dan" award and its celebration push. Also after the
+    // response — logging a meal must never get slower because it might also be
+    // a trophy — and `grantFullDayAward` swallows its own failures, so a missed
+    // award can never turn a saved log into an error.
+    after(() => grantFullDayAward(supabase, userId));
 
     return NextResponse.json({ ok: true, data: result.data }, { status: 200 });
   } catch (err) {

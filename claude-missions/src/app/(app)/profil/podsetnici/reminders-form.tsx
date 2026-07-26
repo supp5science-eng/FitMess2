@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, BellOff, Check, Send, Smartphone } from "lucide-react";
+import { Check, Moon, Send, Smartphone, Sun, Trophy } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -12,28 +12,36 @@ import {
 } from "@/lib/push/client";
 import { cn } from "@/lib/utils";
 
-import { saveNoLogReminderAction } from "./actions";
+import { saveRemindersAction, type ReminderPreferences } from "./actions";
 
 // The Podsetnici screen's interactive half.
 //
 // Order of operations matters here and is easy to get wrong: the browser
 // permission and the saved preference are TWO different things, and a user can
-// have one without the other (allowed notifications but reminder off; reminder
-// on but later revoked permission in iOS settings). So the switch drives BOTH —
-// turning it on subscribes the device AND saves the row; turning it off does
-// the reverse — and the screen re-reads the browser's own state on mount so it
-// can never claim reminders are on when the OS has muted them.
+// have one without the other (allowed notifications but reminders off; reminders
+// on but later revoked permission in iOS settings). So the switches drive BOTH —
+// turning the first one on subscribes the device AND saves the row; turning the
+// last one off does the reverse — and the screen re-reads the browser's own
+// state on mount so it can never claim reminders are on when the OS has muted
+// them.
+//
+// v2 (2026-07-26) has three switches sharing ONE device subscription: the
+// morning nudge, the evening recap, and the earned "pun dan" trophy. The
+// subscription is not per-reminder — it belongs to the device — so it is armed
+// the moment anything is switched on and released only when everything is off.
 //
 // Everything the environment cannot do is said plainly instead of failing
 // silently: an iPhone in a Safari tab is told to install the app, a blocked
 // permission is told where to unblock it.
 
-/** Quarter-hour options through the day. Kept to sensible waking hours: this
- * reminder is about "you haven't eaten-and-logged yet today". */
+/** Half-hour options through the day. Kept to waking hours: these reminders are
+ * about the day you are living, not the one you are sleeping through. */
 const TIME_OPTIONS: string[] = (() => {
   const out: string[] = [];
-  for (let hour = 7; hour <= 21; hour += 1) {
-    for (const minute of ["00", "30"]) out.push(`${String(hour).padStart(2, "0")}:${minute}`);
+  for (let hour = 6; hour <= 23; hour += 1) {
+    for (const minute of ["00", "30"]) {
+      out.push(`${String(hour).padStart(2, "0")}:${minute}`);
+    }
   }
   return out;
 })();
@@ -48,19 +56,22 @@ type Status =
  * inside this component, so there is nothing to subscribe to. */
 const noopSubscribe = () => () => {};
 
+function fallbackTime(value: string, fallback: string): string {
+  return TIME_OPTIONS.includes(value) ? value : fallback;
+}
+
 export function RemindersForm({
-  initialEnabled,
-  initialTime,
+  initial,
   vapidPublicKey,
 }: {
-  initialEnabled: boolean;
-  initialTime: string;
+  initial: ReminderPreferences;
   vapidPublicKey: string;
 }) {
-  const [enabled, setEnabled] = useState(initialEnabled);
-  const [time, setTime] = useState(
-    TIME_OPTIONS.includes(initialTime) ? initialTime : "12:00"
-  );
+  const [preferences, setPreferences] = useState<ReminderPreferences>({
+    ...initial,
+    morningTime: fallbackTime(initial.morningTime, "10:00"),
+    eveningTime: fallbackTime(initial.eveningTime, "20:00"),
+  });
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [testStatus, setTestStatus] = useState<Status>({ kind: "idle" });
 
@@ -90,6 +101,12 @@ export function RemindersForm({
   const blocked = permission === "denied";
   const canArm = environment === "ready" && !missingKey && !blocked;
 
+  const anyOn =
+    preferences.morningEnabled ||
+    preferences.eveningEnabled ||
+    preferences.awardEnabled;
+  const busy = status.kind === "working";
+
   // Exactly one explanation, most-blocking first: an iPhone in a Safari tab
   // cannot act on "unblock notifications" advice, and a device with no Push API
   // cannot act on either.
@@ -109,22 +126,34 @@ export function RemindersForm({
             ? "missing-key"
             : null;
 
-  async function toggle(next: boolean) {
+  /**
+   * Applies a change to the preferences, arming or releasing the device
+   * subscription as the "is anything on?" answer flips.
+   *
+   * Subscribing FIRST and saving second matters: if the permission prompt is
+   * dismissed there must be no saved row claiming a reminder the device can
+   * never deliver.
+   */
+  async function apply(next: ReminderPreferences) {
+    const wasOn = anyOn;
+    const willBeOn =
+      next.morningEnabled || next.eveningEnabled || next.awardEnabled;
+
     setStatus({ kind: "working" });
     setTestStatus({ kind: "idle" });
 
-    if (next) {
+    if (willBeOn && !wasOn) {
       const subscribed = await enablePush(vapidPublicKey);
       setGrantedNow(notificationPermission());
       if (!subscribed.ok) {
         setStatus({ kind: "error", message: subscribed.message });
         return;
       }
-    } else {
+    } else if (!willBeOn && wasOn) {
       await disablePush();
     }
 
-    const saved = await saveNoLogReminderAction(next, time);
+    const saved = await saveRemindersAction(next);
     if (!saved.ok) {
       setStatus({
         kind: "error",
@@ -133,24 +162,8 @@ export function RemindersForm({
       return;
     }
 
-    setEnabled(next);
+    setPreferences(next);
     setStatus({ kind: "saved" });
-  }
-
-  async function changeTime(next: string) {
-    setTime(next);
-    if (!enabled) return;
-
-    setStatus({ kind: "working" });
-    const saved = await saveNoLogReminderAction(true, next);
-    setStatus(
-      saved.ok
-        ? { kind: "saved" }
-        : {
-            kind: "error",
-            message: saved.error_sr ?? "Nešto je pošlo naopako.",
-          }
-    );
   }
 
   async function sendTest() {
@@ -182,76 +195,49 @@ export function RemindersForm({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* The one switch. */}
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
-        <div className="flex items-start gap-3">
-          <span
-            className={cn(
-              "flex size-10 shrink-0 items-center justify-center rounded-full",
-              enabled
-                ? "bg-primary/15 text-primary"
-                : "bg-muted text-muted-foreground"
-            )}
-          >
-            {enabled ? (
-              <Bell className="size-5" aria-hidden="true" />
-            ) : (
-              <BellOff className="size-5" aria-hidden="true" />
-            )}
-          </span>
+        <ReminderRow
+          icon={<Sun className="size-5" aria-hidden="true" />}
+          title="Jutarnji podsetnik"
+          description="Podseti me da upišem doručak."
+          testId="reminder-morning"
+          enabled={preferences.morningEnabled}
+          disabled={busy || (!preferences.morningEnabled && !canArm)}
+          onToggle={(value) => apply({ ...preferences, morningEnabled: value })}
+          time={preferences.morningTime}
+          onTimeChange={(value) =>
+            apply({ ...preferences, morningTime: value, morningEnabled: true })
+          }
+          timeDisabled={busy}
+        />
 
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-base font-semibold text-foreground">
-              Podsetnik za unos
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {"„Danas još nisi ništa uneo” — stiže samo ako je dan prazan."}
-            </span>
-          </div>
+        <ReminderRow
+          className="border-t border-border pt-3"
+          icon={<Moon className="size-5" aria-hidden="true" />}
+          title="Večernji pregled"
+          description="Koliko ti je kalorija ostalo i šta si upisao."
+          testId="reminder-evening"
+          enabled={preferences.eveningEnabled}
+          disabled={busy || (!preferences.eveningEnabled && !canArm)}
+          onToggle={(value) => apply({ ...preferences, eveningEnabled: value })}
+          time={preferences.eveningTime}
+          onTimeChange={(value) =>
+            apply({ ...preferences, eveningTime: value, eveningEnabled: true })
+          }
+          timeDisabled={busy}
+        />
 
-          <button
-            type="button"
-            role="switch"
-            aria-checked={enabled}
-            aria-label="Podsetnik za unos"
-            data-testid="reminder-toggle"
-            disabled={status.kind === "working" || (!enabled && !canArm)}
-            onClick={() => toggle(!enabled)}
-            className={cn(
-              "relative mt-1 h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40",
-              enabled ? "bg-primary" : "bg-muted-foreground/30"
-            )}
-          >
-            <span
-              className={cn(
-                "absolute top-0.5 size-6 rounded-full bg-white shadow transition-[left]",
-                enabled ? "left-[1.375rem]" : "left-0.5"
-              )}
-              aria-hidden="true"
-            />
-          </button>
-        </div>
-
-        {/* Time picker: a native <select>, which is the iOS wheel — the same
-            choice the onboarding wizard settled on. */}
-        <label className="flex items-center justify-between gap-3 border-t border-border pt-3">
-          <span className="text-sm font-medium text-foreground">
-            Vreme podsetnika
-          </span>
-          <select
-            value={time}
-            data-testid="reminder-time"
-            disabled={status.kind === "working"}
-            onChange={(event) => changeTime(event.target.value)}
-            className="min-h-11 rounded-xl border border-border bg-background px-3 text-base font-semibold text-foreground"
-          >
-            {TIME_OPTIONS.map((option) => (
-              <option key={option} value={option}>
-                {option}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* No time picker: this one is earned, not scheduled. */}
+        <ReminderRow
+          className="border-t border-border pt-3"
+          icon={<Trophy className="size-5" aria-hidden="true" />}
+          title="Nagrada za pun dan"
+          description="Javi mi kad upišem treći obrok."
+          testId="reminder-award"
+          enabled={preferences.awardEnabled}
+          disabled={busy || (!preferences.awardEnabled && !canArm)}
+          onToggle={(value) => apply({ ...preferences, awardEnabled: value })}
+        />
       </div>
 
       {/* What the environment can and cannot do — said out loud, but ONE
@@ -275,7 +261,7 @@ export function RemindersForm({
           <span>
             Na iPhone-u notifikacije rade samo kad je FitMess dodat na početni
             ekran. Otvori Podeli → {"„Dodaj na početni ekran”"}, pa uključi
-            podsetnik iz instalirane aplikacije.
+            podsetnike iz instalirane aplikacije.
           </span>
         </p>
       ) : null}
@@ -318,7 +304,7 @@ export function RemindersForm({
 
       {/* "Does it actually work?" — without this the user has to wait until the
           scheduled time to learn anything. */}
-      {enabled ? (
+      {anyOn ? (
         <div className="flex flex-col gap-2">
           <Button
             type="button"
@@ -352,6 +338,104 @@ export function RemindersForm({
             </p>
           ) : null}
         </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** One reminder: icon, name, switch, and — for the scheduled ones — a time.
+ * The time picker is a native `<select>`, which is the iOS wheel: the same
+ * choice the onboarding wizard settled on. */
+function ReminderRow({
+  icon,
+  title,
+  description,
+  testId,
+  enabled,
+  disabled,
+  onToggle,
+  time,
+  onTimeChange,
+  timeDisabled,
+  className,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  testId: string;
+  enabled: boolean;
+  disabled: boolean;
+  onToggle: (value: boolean) => void;
+  time?: string;
+  onTimeChange?: (value: string) => void;
+  timeDisabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex flex-col gap-3", className)}>
+      <div className="flex items-start gap-3">
+        <span
+          className={cn(
+            "flex size-10 shrink-0 items-center justify-center rounded-full",
+            enabled
+              ? "bg-primary/15 text-primary"
+              : "bg-muted text-muted-foreground"
+          )}
+        >
+          {icon}
+        </span>
+
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <span className="text-base font-semibold text-foreground">
+            {title}
+          </span>
+          <span className="text-sm text-muted-foreground">{description}</span>
+        </div>
+
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-label={title}
+          data-testid={`${testId}-toggle`}
+          disabled={disabled}
+          onClick={() => onToggle(!enabled)}
+          className={cn(
+            "relative mt-1 h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-40",
+            enabled ? "bg-primary" : "bg-muted-foreground/30"
+          )}
+        >
+          <span
+            className={cn(
+              "absolute top-0.5 size-6 rounded-full bg-white shadow transition-[left]",
+              enabled ? "left-[1.375rem]" : "left-0.5"
+            )}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+
+      {/* The time only exists while the reminder does — a picker for something
+          switched off is a control that does nothing. */}
+      {time && onTimeChange && enabled ? (
+        <label className="flex items-center justify-between gap-3 pl-13">
+          <span className="text-sm font-medium text-muted-foreground">
+            Vreme
+          </span>
+          <select
+            value={time}
+            data-testid={`${testId}-time`}
+            disabled={timeDisabled}
+            onChange={(event) => onTimeChange(event.target.value)}
+            className="min-h-11 rounded-xl border border-border bg-background px-3 text-base font-semibold text-foreground"
+          >
+            {TIME_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
+              </option>
+            ))}
+          </select>
+        </label>
       ) : null}
     </div>
   );

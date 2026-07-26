@@ -569,27 +569,40 @@ export interface Database {
       reminder_settings: {
         Row: {
           user_id: string;
-          no_log_enabled: boolean;
+          morning_enabled: boolean;
           /** Belgrade wall-clock time, `"HH:MM:SS"` (a Postgres `time`). */
-          no_log_time: string;
+          morning_time: string;
           /** Belgrade calendar day it last fired (`"YYYY-MM-DD"`), or null. */
-          no_log_last_sent: string | null;
+          morning_last_sent: string | null;
+          evening_enabled: boolean;
+          evening_time: string;
+          evening_last_sent: string | null;
+          /** The earned "pun dan" push, independent of the scheduled two. */
+          award_enabled: boolean;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           user_id: string;
-          no_log_enabled?: boolean;
-          no_log_time?: string;
-          no_log_last_sent?: string | null;
+          morning_enabled?: boolean;
+          morning_time?: string;
+          morning_last_sent?: string | null;
+          evening_enabled?: boolean;
+          evening_time?: string;
+          evening_last_sent?: string | null;
+          award_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           user_id?: string;
-          no_log_enabled?: boolean;
-          no_log_time?: string;
-          no_log_last_sent?: string | null;
+          morning_enabled?: boolean;
+          morning_time?: string;
+          morning_last_sent?: string | null;
+          evening_enabled?: boolean;
+          evening_time?: string;
+          evening_last_sent?: string | null;
+          award_enabled?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -598,6 +611,37 @@ export interface Database {
             foreignKeyName: "reminder_settings_user_id_fkey";
             columns: ["user_id"];
             isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      awards: {
+        Row: {
+          user_id: string;
+          /** Belgrade calendar day the award was earned for, `"YYYY-MM-DD"`. */
+          day: string;
+          /** Award identifier; `"pun-dan"` is the only one so far. */
+          kind: string;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          day: string;
+          kind?: string;
+          created_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          day?: string;
+          kind?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "awards_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
             referencedRelation: "users";
             referencedColumns: ["id"];
           },

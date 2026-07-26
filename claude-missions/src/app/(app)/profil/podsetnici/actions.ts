@@ -6,9 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 // Podsetnici: saving the user's own reminder preferences.
 //
 // A server action rather than another API route because nothing but this page
-// writes these two fields, and the page is already a form — the route layer
-// exists for `/api/podsetnici/*`, which the SERVICE WORKER and the cron talk to
-// and which therefore cannot be actions.
+// writes these fields, and the page is already a form — the route layer exists
+// for `/api/podsetnici/*`, which the SERVICE WORKER and the cron talk to and
+// which therefore cannot be actions.
 //
 // Writes go through the session client, so `reminder_settings_*_own` RLS is the
 // thing enforcing "own row"; the explicit `user_id` is just what upsert needs.
@@ -24,16 +24,29 @@ export interface SaveReminderResult {
   error_sr?: string;
 }
 
+/** Everything the screen can change, in one write — the two scheduled
+ * reminders plus the earned award push. Sent whole rather than per-field so a
+ * half-applied screen is not representable. */
+export interface ReminderPreferences {
+  morningEnabled: boolean;
+  morningTime: string;
+  eveningEnabled: boolean;
+  eveningTime: string;
+  awardEnabled: boolean;
+}
+
 /** `"HH:MM"` on the quarter hour, 00:00–23:45. */
 function isValidTime(value: string): boolean {
   return /^([01]\d|2[0-3]):(00|15|30|45)$/.test(value);
 }
 
-export async function saveNoLogReminderAction(
-  enabled: boolean,
-  time: string
+export async function saveRemindersAction(
+  preferences: ReminderPreferences
 ): Promise<SaveReminderResult> {
-  if (!isValidTime(time)) {
+  if (
+    !isValidTime(preferences.morningTime) ||
+    !isValidTime(preferences.eveningTime)
+  ) {
     return { ok: false, error_sr: INVALID_TIME_ERROR_SR };
   }
 
@@ -47,11 +60,15 @@ export async function saveNoLogReminderAction(
   const { error } = await supabase.from("reminder_settings").upsert(
     {
       user_id: userId,
-      no_log_enabled: enabled,
-      no_log_time: `${time}:00`,
-      // Turning the reminder ON (or moving its time) clears the once-a-day
-      // guard, so a user who enables it at 11:50 for 12:00 still gets today's.
-      no_log_last_sent: null,
+      morning_enabled: preferences.morningEnabled,
+      morning_time: `${preferences.morningTime}:00`,
+      evening_enabled: preferences.eveningEnabled,
+      evening_time: `${preferences.eveningTime}:00`,
+      award_enabled: preferences.awardEnabled,
+      // Turning a reminder ON (or moving its time) clears the once-a-day
+      // guard, so a user who enables it at 09:50 for 10:00 still gets today's.
+      morning_last_sent: null,
+      evening_last_sent: null,
     },
     { onConflict: "user_id" }
   );

@@ -4,38 +4,56 @@ import { ChevronLeft } from "lucide-react";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
+import type { ReminderPreferences } from "./actions";
 import { RemindersForm } from "./reminders-form";
 
-// `/profil/podsetnici` — the Podsetnici screen (2026-07-25).
+// `/profil/podsetnici` — the Podsetnici screen (2026-07-25, reworked 2026-07-26).
 //
-// v1 ships exactly one reminder, on the product owner's call: **"danas nisi
-// ništa uneo"**, sent at a chosen time and only when the day really is empty.
-// One switch, one time, one "does it even work?" button — everything else this
-// feature could grow into is a column in `reminder_settings`, not a rewrite.
+// v1 shipped one conditional reminder ("danas nisi ništa uneo") that only fired
+// on a day with ZERO logs — which meant the people actually using the app never
+// saw it. v2 is two DAILY reminders that arrive regardless (a morning nudge and
+// an evening recap), plus the earned "pun dan" trophy push.
 //
 // Server Component: reads the saved row (auth is already guaranteed by
 // middleware) and hands it to the client form, which owns the parts only the
 // browser knows — permission state, whether this window can subscribe at all,
 // and the actual Push subscription.
 
+/** What a user who has never touched this screen gets. Both reminders default
+ * ON: someone opening the screen came here to be reminded, and the switches are
+ * right there to say otherwise. */
+const DEFAULTS: ReminderPreferences = {
+  morningEnabled: true,
+  morningTime: "10:00",
+  eveningEnabled: true,
+  eveningTime: "20:00",
+  awardEnabled: true,
+};
+
 export default async function PodsetniciPage() {
   const supabase = await createClient();
   const userId = await getCurrentUserId(supabase);
 
-  let enabled = false;
-  let time = "12:00";
+  let preferences = DEFAULTS;
 
   if (userId) {
     const { data } = await supabase
       .from("reminder_settings")
-      .select("no_log_enabled, no_log_time")
+      .select(
+        "morning_enabled, morning_time, evening_enabled, evening_time, award_enabled"
+      )
       .eq("user_id", userId)
       .maybeSingle();
 
     if (data) {
-      enabled = data.no_log_enabled;
-      // Postgres hands back "HH:MM:SS"; the picker speaks "HH:MM".
-      time = data.no_log_time.slice(0, 5);
+      preferences = {
+        morningEnabled: data.morning_enabled,
+        // Postgres hands back "HH:MM:SS"; the picker speaks "HH:MM".
+        morningTime: data.morning_time.slice(0, 5),
+        eveningEnabled: data.evening_enabled,
+        eveningTime: data.evening_time.slice(0, 5),
+        awardEnabled: data.award_enabled,
+      };
     }
   }
 
@@ -54,14 +72,13 @@ export default async function PodsetniciPage() {
           Podsetnici
         </h1>
         <p className="text-sm text-muted-foreground">
-          Jedan podsetnik, i to samo kad ima smisla: ako do izabranog vremena
-          nisi uneo nijedan obrok, javimo ti se. Ako si već beležio — ćutimo.
+          Dva puta dnevno: ujutru da upišeš doručak, uveče koliko ti je ostalo.
+          I jednom kad zaslužiš — kad upišeš treći obrok.
         </p>
       </div>
 
       <RemindersForm
-        initialEnabled={enabled}
-        initialTime={time}
+        initial={preferences}
         vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
       />
     </main>

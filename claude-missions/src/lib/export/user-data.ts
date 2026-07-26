@@ -125,6 +125,12 @@ const USER_OWNED_TABLES: readonly UserOwnedTableConfig[] = [
     userColumn: "user_id",
     labelSr: "podešavanja podsetnika",
   }, // 0021 (Podsetnici)
+  {
+    key: "awards",
+    table: "awards",
+    userColumn: "user_id",
+    labelSr: "osvojene značke po danima",
+  }, // 0022 (Nagrade)
   // `push_subscriptions` is deliberately NOT exported: its rows are live device
   // CREDENTIALS (endpoint + p256dh/auth keys), not something the user told us
   // about themselves. Putting them in a downloadable file only creates a way to

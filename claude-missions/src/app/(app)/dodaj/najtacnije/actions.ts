@@ -8,7 +8,13 @@ import {
   finalizePrizmaMeal,
   type CombinedVariant,
   type ImagePart,
+  type UserPortion,
 } from "@/lib/ai/gemini";
+import {
+  isPrepMethod,
+  PORTION_MAX_G,
+  PORTION_MIN_G,
+} from "@/lib/ai/portion";
 import {
   REFERENCE_OBJECTS,
   type PrizmaAnalysis,
@@ -121,6 +127,7 @@ async function readImages(
       images: ImagePart[];
       variant: PrizmaVariant;
       reference: ReferenceObject;
+      portion: UserPortion;
     }
   | { ok: false; error_sr: string }
 > {
@@ -172,7 +179,20 @@ async function readImages(
     ? (refRaw as ReferenceObject)
     : "nista";
 
-  return { ok: true, images, variant, reference };
+  // The user's own portion call, made while standing over the plate. Clamped to
+  // the dial's own range rather than trusted: this arrives from a form, and a
+  // nonsense mass would be handed straight to the model as a scale anchor.
+  const gramsRaw = Number(formData.get("procena_grama"));
+  const grams =
+    Number.isFinite(gramsRaw) && gramsRaw > 0
+      ? Math.min(Math.max(Math.round(gramsRaw), PORTION_MIN_G), PORTION_MAX_G)
+      : null;
+  const prepRaw = formData.get("priprema");
+  const prep = isPrepMethod(prepRaw) ? prepRaw : null;
+  const portion: UserPortion =
+    grams == null && prep == null ? null : { grams, prep };
+
+  return { ok: true, images, variant, reference, portion };
 }
 
 /**
@@ -189,7 +209,8 @@ export async function analyzeMealAction(
     const data = await analyzePrizmaMeal(
       read.images,
       read.variant,
-      read.reference
+      read.reference,
+      read.portion
     );
     return { ok: true, data };
   } catch (err) {
@@ -240,7 +261,8 @@ export async function finalizeMealAction(
       answers || null,
       audioPart,
       read.variant,
-      read.reference
+      read.reference,
+      read.portion
     );
     return { ok: true, data };
   } catch (err) {

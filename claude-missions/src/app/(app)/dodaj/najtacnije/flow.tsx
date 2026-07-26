@@ -20,7 +20,14 @@ import {
 } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
+import { PortionDial } from "@/components/ai/portion-dial";
 import { ShotGuide } from "@/components/ai/shot-guide";
+import {
+  PORTION_DEFAULT_G,
+  PREP_LABELS,
+  PREP_METHODS,
+  type PrepMethod,
+} from "@/lib/ai/portion";
 import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
 import {
   DONT_KNOW_LABEL,
@@ -42,6 +49,7 @@ import { analyzeMealAction, finalizeMealAction } from "./actions";
 // in the order that actually moves the number:
 //
 //   guide -> shot 1 (top-down)  ->  what's beside the plate?
+//         -> how much / how cooked (the user's own call)
 //   guide -> shot 2 (45°)       ->  AI's own questions  ->  itemised result
 //
 // The two guides are motion graphics rather than instructions because nobody
@@ -54,6 +62,7 @@ type Phase =
   | "mode"
   | "guide1"
   | "review1"
+  | "portion" // meal mode only: the user's own mass + cooking call
   | "guide2"
   | "review2"
   | "capture" // label mode only: plain multi-shot capture
@@ -165,6 +174,11 @@ export function NajtacnijeFlow() {
   const [issues, setIssues] = useState<PhotoIssue[][]>([]);
   const [reference, setReference] = useState<ReferenceObject | null>(null);
   const [confirmSkipShot, setConfirmSkipShot] = useState(false);
+
+  // The user's own portion call. `userGrams` always has a value (the dial opens
+  // on a full plate); `prep` starts unset so the choice is deliberate.
+  const [userGrams, setUserGrams] = useState(PORTION_DEFAULT_G);
+  const [prep, setPrep] = useState<PrepMethod | null>(null);
 
   // AI questions + the user's tapped answers (index-aligned to `questions`).
   const [questions, setQuestions] = useState<PrizmaQuestion[]>([]);
@@ -360,6 +374,11 @@ export function NajtacnijeFlow() {
     blobs.forEach((b, i) => fd.append("slike", b, `obrok-${i}.jpg`));
     fd.append("tip", mode);
     fd.append("referenca", reference ?? "nista");
+    // Meal mode only -- a nutrition label has no portion to estimate.
+    if (mode === "obrok") {
+      fd.append("procena_grama", String(userGrams));
+      if (prep) fd.append("priprema", prep);
+    }
   }
 
   function applyEstimate(est: CombinedMealEstimate) {
@@ -763,14 +782,90 @@ export function NajtacnijeFlow() {
           <button
             type="button"
             disabled={reference === null}
-            onClick={() => {
-              if (readSkipGuides()) openCamera("review2");
-              else setPhase("guide2");
-            }}
+            onClick={() => setPhase("portion")}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground disabled:opacity-60"
           >
-            Dalje — druga slika
+            Dalje
           </button>
+        </div>
+      ) : null}
+
+      {/* --- The one thing the camera can't do -------------------------- */}
+      {phase === "portion" ? (
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-1.5">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
+              Koliko otprilike ima?
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Slika vidi ŠTA je na tanjiru, ali ne i koliko toga ima. Ti to vidiš
+              — reci grubo, ja ću odatle da izračunam tačno.
+            </p>
+          </div>
+
+          {/* Their own photo, right above the dial: the whole point of asking
+              here rather than before the shot is that they can compare. */}
+          {previews[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={previews[0]}
+              alt="Tvoja slika obroka"
+              className="max-h-36 w-full rounded-2xl object-cover"
+            />
+          ) : null}
+
+          <PortionDial grams={userGrams} onChange={setUserGrams} />
+
+          <div className="flex flex-col gap-2.5">
+            <span className="text-base font-medium text-foreground">
+              Kako je pripremljeno?
+            </span>
+            <p className="-mt-1 text-xs text-muted-foreground">
+              Mast se ne vidi na slici, a nosi najviše kalorija — kašika ulja je
+              126 kcal.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {PREP_METHODS.map((method) => {
+                const on = prep === method;
+                return (
+                  <button
+                    key={method}
+                    type="button"
+                    onClick={() => setPrep(method)}
+                    className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors ${
+                      on
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {on ? <Check className="size-3.5" aria-hidden="true" /> : null}
+                    {PREP_LABELS[method]}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              disabled={prep === null}
+              onClick={() => {
+                if (readSkipGuides()) openCamera("review2");
+                else setPhase("guide2");
+              }}
+              className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground disabled:opacity-60"
+            >
+              Dalje — druga slika
+            </button>
+            <button
+              type="button"
+              onClick={() => setPhase("review1")}
+              className="rounded-xl px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+            >
+              Nazad
+            </button>
+          </div>
         </div>
       ) : null}
 
@@ -789,7 +884,7 @@ export function NajtacnijeFlow() {
           cta="Otvori kameru"
           onStart={() => openCamera("review2")}
           onDismissGuides={dismissGuides}
-          onBack={() => setPhase("review1")}
+          onBack={() => setPhase("portion")}
           footer={
             confirmSkipShot ? (
               <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-4">
@@ -1153,6 +1248,21 @@ export function NajtacnijeFlow() {
             <Sparkles className="size-4" aria-hidden="true" />
             <span>{CONFIDENCE_LABEL[estimate.sigurnost]}</span>
           </div>
+
+          {/* Their guess against ours. Shown because it makes the work visible
+              -- and because seeing the two numbers side by side is the only way
+              anyone ever calibrates their eye for a portion. */}
+          {mode === "obrok" ? (
+            <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm">
+              <span className="text-muted-foreground">
+                Tvoja procena: <strong className="font-semibold text-foreground">{userGrams} g</strong>
+              </span>
+              <span className="text-muted-foreground">·</span>
+              <span className="text-muted-foreground">
+                Naša: <strong className="font-semibold text-primary">{grams} g</strong>
+              </span>
+            </div>
+          ) : null}
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-foreground">Naziv</span>

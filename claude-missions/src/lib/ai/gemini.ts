@@ -29,6 +29,7 @@ import {
   voiceMealSchema,
   type VoiceMealEstimate,
 } from "@/lib/ai/voice-estimate";
+import { describeUserPortion, type PrepMethod } from "@/lib/ai/portion";
 import {
   describeShots,
   PRIZMA_ANALYZE_LABEL_PROMPT,
@@ -406,6 +407,13 @@ function imageInlineParts(images: ImagePart[]): Array<Record<string, unknown>> {
 }
 
 /**
+ * What the user told us before the second shot: roughly how much food, and how
+ * it was cooked. Null on the label flow (a nutrition table has no portion) and
+ * for anyone who somehow reaches the call without the step.
+ */
+export type UserPortion = { grams: number | null; prep: PrepMethod | null } | null;
+
+/**
  * Prizma step 1 (ANALYZE): 1–5 photos of the same meal (or nutrition label) ->
  * EITHER clarifying questions (each with tappable options) OR, when already
  * confident, a final estimate. Defensive parse (`parsePrizmaAnalysis`) never
@@ -415,7 +423,8 @@ function imageInlineParts(images: ImagePart[]): Array<Record<string, unknown>> {
 export async function analyzePrizmaMeal(
   images: ImagePart[],
   variant: PrizmaVariant = "obrok",
-  reference: ReferenceObject = "nista"
+  reference: ReferenceObject = "nista",
+  portion: UserPortion = null
 ): Promise<PrizmaAnalysis> {
   const isLabel = variant === "deklaracija";
   const parts: Array<Record<string, unknown>> = [
@@ -425,6 +434,8 @@ export async function analyzePrizmaMeal(
   // label flow is just reading a table, so it gets neither.
   if (!isLabel) {
     parts.push({ text: describeShots(images.length, reference) });
+    const said = describeUserPortion(portion?.grams ?? null, portion?.prep ?? null);
+    if (said) parts.push({ text: said });
   }
   parts.push(...imageInlineParts(images));
 
@@ -482,7 +493,8 @@ export async function finalizePrizmaMeal(
   answersText: string | null,
   audio: { base64: string; mimeType: string } | null,
   variant: PrizmaVariant = "obrok",
-  reference: ReferenceObject = "nista"
+  reference: ReferenceObject = "nista",
+  portion: UserPortion = null
 ): Promise<CombinedMealEstimate> {
   const isLabel = variant === "deklaracija";
   const parts: Array<Record<string, unknown>> = [
@@ -490,6 +502,8 @@ export async function finalizePrizmaMeal(
   ];
   if (!isLabel) {
     parts.push({ text: describeShots(images.length, reference) });
+    const said = describeUserPortion(portion?.grams ?? null, portion?.prep ?? null);
+    if (said) parts.push({ text: said });
   }
   parts.push(...imageInlineParts(images));
 

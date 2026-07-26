@@ -555,6 +555,25 @@ export async function finalizePrizmaMeal(
   if (corrections.length > 0) {
     console.warn("[prizma] reconciled estimate:", corrections.join("; "));
   }
+
+  // The four micros are nullable and silently so: if the model quietly stops
+  // filling them, nothing breaks and nothing complains -- the second home page
+  // just goes blank for Prizma meals, which is exactly how they went missing
+  // here in the first place.
+  console.info(
+    "[prizma] finalize:",
+    JSON.stringify({
+      grami: estimate.procenjeni_grami,
+      kcal: estimate.kcal,
+      mikro: {
+        vlakna: estimate.vlakna_g,
+        secer: estimate.secer_g,
+        natrijum: estimate.natrijum_mg,
+        zasicene: estimate.zasicene_g,
+      },
+    })
+  );
+
   return estimate;
 }
 

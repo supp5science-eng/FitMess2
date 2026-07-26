@@ -103,3 +103,64 @@ describe("reconcileEstimate", () => {
     expect(out.procenjeni_grami).toBeGreaterThanOrEqual(1);
   });
 });
+
+describe("reconcileEstimate — micronutrients follow the mass", () => {
+  /** A plate whose breakdown says it is much lighter than the headline mass. */
+  const overstated = () =>
+    estimate({
+      procenjeni_grami: 600,
+      kcal: 900,
+      protein_g: 60,
+      uh_g: 90,
+      mast_g: 40,
+      vlakna_g: 12,
+      secer_g: 20,
+      natrijum_mg: 1200,
+      zasicene_g: 10,
+      // Sums to 480 g -- inside the 70-135% band, so the breakdown is treated
+      // as covering the whole plate and its numbers win.
+      komponente: [
+        {
+          naziv: "piletina",
+          grami: 240,
+          kcal: 260,
+          protein_g: 48,
+          uh_g: 0,
+          mast_g: 7,
+        },
+        {
+          naziv: "pirinač",
+          grami: 240,
+          kcal: 300,
+          protein_g: 6,
+          uh_g: 66,
+          mast_g: 1,
+        },
+      ],
+    });
+
+  it("rescales the micros when the breakdown rewrites the plate's mass", () => {
+    const { estimate: out, corrections } = reconcileEstimate(overstated());
+    expect(corrections.length).toBeGreaterThan(0);
+    // 600 g -> 480 g, so four fifths of everything the model attributed to it.
+    expect(out.procenjeni_grami).toBe(480);
+    expect(out.natrijum_mg).toBe(960);
+    expect(out.vlakna_g).toBe(9.6);
+  });
+
+  it("leaves the micros alone when the mass didn't change", () => {
+    const { estimate: out } = reconcileEstimate(
+      estimate({ vlakna_g: 7, natrijum_mg: 500 })
+    );
+    expect(out.vlakna_g).toBe(7);
+    expect(out.natrijum_mg).toBe(500);
+  });
+
+  it("keeps unknown micros unknown at any mass", () => {
+    const { estimate: out } = reconcileEstimate(
+      estimate({ ...overstated(), vlakna_g: null, natrijum_mg: null })
+    );
+    expect(out.vlakna_g).toBeNull();
+    expect(out.natrijum_mg).toBeNull();
+  });
+});

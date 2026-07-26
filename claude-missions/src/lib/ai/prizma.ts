@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { CONFIDENCE_VALUES } from "@/lib/ai/meal-estimate";
+import { CONFIDENCE_VALUES, MICRO_PROMPT_RULES } from "@/lib/ai/meal-estimate";
 import {
   isVessel,
   normaliseUnit,
@@ -450,6 +450,15 @@ export const PRIZMA_FINALIZE_RESPONSE_SCHEMA = {
     protein_g: { type: "NUMBER" },
     uh_g: { type: "NUMBER" },
     mast_g: { type: "NUMBER" },
+    // The four micros the second home page runs on. They were missing here
+    // while every other add-flow asked for them, which meant the app's most
+    // accurate method was also the only one that logged NOTHING to the
+    // micronutrient page -- a user who only used Prizma saw it permanently
+    // empty.
+    vlakna_g: { type: "NUMBER" },
+    secer_g: { type: "NUMBER" },
+    natrijum_mg: { type: "NUMBER" },
+    zasicene_g: { type: "NUMBER" },
     sigurnost: { type: "STRING", enum: [...CONFIDENCE_VALUES] },
     napomena: { type: "STRING" },
   },
@@ -461,6 +470,10 @@ export const PRIZMA_FINALIZE_RESPONSE_SCHEMA = {
     "protein_g",
     "uh_g",
     "mast_g",
+    "vlakna_g",
+    "secer_g",
+    "natrijum_mg",
+    "zasicene_g",
     "sigurnost",
   ],
   propertyOrdering: [
@@ -472,6 +485,10 @@ export const PRIZMA_FINALIZE_RESPONSE_SCHEMA = {
     "protein_g",
     "uh_g",
     "mast_g",
+    "vlakna_g",
+    "secer_g",
+    "natrijum_mg",
+    "zasicene_g",
     "sigurnost",
     "napomena",
   ],
@@ -594,6 +611,7 @@ Pravila za izlaz:
 - "komponente": svaka sa nazivom, gramima, kcal i makroima. 2–8 stavki.
 - "procenjeni_grami": ukupna POJEDENA masa (zbir grama komponenti).
 - "kcal", "protein_g", "uh_g", "mast_g": UKUPNO (zbir komponenti), ne na 100 g.
+${MICRO_PROMPT_RULES}
 - Proveri: 4×protein + 4×uh + 9×mast mora da odgovara kcal (±10%).
 - "sigurnost": "visoka" samo kad je hrana jasno prepoznata, referenca jasna i korisnikov opis oblika potpun; inače niže.
 - "napomena": kratko objasni ključne pretpostavke.
@@ -613,6 +631,8 @@ Pravila:
 - "komponente": jedna stavka — sam proizvod sa pojedenom masom i vrednostima.
 - "procenjeni_grami": POJEDENA masa u gramima.
 - "kcal", "protein_g", "uh_g", "mast_g": UKUPNO za pojedenu porciju.
+- Ako deklaracija navodi vlakna, šećere, so/natrijum ili zasićene masti, pročitaj ih sa tabele i skaliraj isto kao makroe; ako ih nema, proceni po vrsti proizvoda.
+${MICRO_PROMPT_RULES}
 - "sigurnost": "visoka" kad su i deklaracija i količina jasni; inače niže.
 - "napomena": kratko (npr. "125 g od 250 g paketa").
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;

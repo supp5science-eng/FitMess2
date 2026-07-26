@@ -125,6 +125,18 @@ export function reconcileEstimate(estimate: MealEstimate): ReconcileResult {
       ? "srednja"
       : estimate.sigurnost;
 
+  // When step 1 rewrote the plate's mass from the breakdown, the micros still
+  // describe the mass the model originally claimed -- so they have to travel
+  // with it. Without this, a 600 g plate corrected to 400 g keeps 600 g worth
+  // of sodium, and the micronutrient page reports salt the user never ate.
+  // Unknown stays unknown at any mass.
+  const massFactor =
+    estimate.procenjeni_grami > 0 && procenjeni_grami !== estimate.procenjeni_grami
+      ? procenjeni_grami / estimate.procenjeni_grami
+      : 1;
+  const scaleMicro = (value: number | null) =>
+    value == null ? null : round1(value * massFactor);
+
   return {
     estimate: {
       ...estimate,
@@ -133,6 +145,10 @@ export function reconcileEstimate(estimate: MealEstimate): ReconcileResult {
       protein_g: round1(protein_g),
       uh_g: round1(uh_g),
       mast_g: round1(mast_g),
+      vlakna_g: scaleMicro(estimate.vlakna_g),
+      secer_g: scaleMicro(estimate.secer_g),
+      natrijum_mg: scaleMicro(estimate.natrijum_mg),
+      zasicene_g: scaleMicro(estimate.zasicene_g),
       sigurnost,
     },
     corrections,

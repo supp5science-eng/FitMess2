@@ -38,7 +38,7 @@ import {
   type PrizmaQuestion,
   type ReferenceObject,
 } from "@/lib/ai/prizma";
-import type { MealComponent } from "@/lib/ai/meal-estimate";
+import { scaleMealMicros, type MealComponent } from "@/lib/ai/meal-estimate";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import { downscaleImage } from "@/lib/image/downscale";
 import { inspectPhoto, type PhotoIssue } from "@/lib/image/quality";
@@ -616,6 +616,14 @@ export function NajtacnijeFlow() {
       }
     }
 
+    // 0017 micronutrients, rescaled to the portion actually confirmed -- the
+    // same treatment every other add-flow gives them. Prizma skipped this
+    // entirely, so the app's most accurate method was the only one that wrote
+    // nothing to the micronutrient page.
+    const micros = estimate
+      ? scaleMealMicros(estimate, grams)
+      : { fiber: null, sugar: null, sodium: null, satFat: null };
+
     const result = await logMealAction(
       {
         name,
@@ -624,6 +632,10 @@ export function NajtacnijeFlow() {
         protein: nutrition.protein,
         carbs: nutrition.carbs,
         fat: nutrition.fat,
+        fiber: micros.fiber,
+        sugar: micros.sugar,
+        sodium: micros.sodium,
+        satFat: micros.satFat,
         // 0019: the breakdown the user just reviewed (and possibly struck lines
         // from) rides along onto the log row, so "Dodaj još" can later offer
         // seconds of a single part without another photo session.

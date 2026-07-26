@@ -1,19 +1,18 @@
 /*
- * Prizma "koliko ima" — the portion dial.
+ * Prizma "koliko ima" — the portion dial, in three shapes.
  *
  * A photo cannot weigh food, and the model's single largest error is mass. The
  * user standing over the plate CAN bound it, but not in grams: ask for a number
  * and everyone types 300 because it is round, which is worse than no answer
  * because a wrong prior drags the estimate with it.
  *
- * So the input is a plate, not a number field. Dragging grows a real mound of
- * food and the gram figure follows, which means the user commits to a PICTURE
- * they can compare against what is in front of them and reads the grams off it.
- * Over time that also teaches gram intuition, which nothing else in the app does.
+ * So the input is a picture of the food, not a number field, and which picture
+ * depends on the food: a plate you cover, a bowl you fill, or pieces you count.
+ * Dragging changes the drawing and the gram figure follows, which means the
+ * user matches a SHAPE to what is in front of them and reads the grams off it.
  *
- * The mound scales as the cube root of mass on purpose: volume goes with the
- * cube of a linear dimension, so uniform scaling by cbrt(g/max) makes the
- * drawing grow the way real food does. A linear scale looks wrong at both ends.
+ * All motion is transform-only so it stays smooth on a phone, and parks
+ * instantly under `prefers-reduced-motion`.
  */
 
 .pd {
@@ -42,7 +41,7 @@
   height: auto;
 }
 
-/* --- plate, fork, mound --------------------------------------------------- */
+/* --- flat plate ----------------------------------------------------------- */
 
 .pd-plate-rim {
   fill: none;
@@ -52,15 +51,6 @@
 
 .pd-plate-face {
   fill: color-mix(in srgb, var(--foreground, #e8f3ef) 7%, transparent);
-}
-
-/* The fork stays put at real size: it is the same ~19-20 cm scale anchor the
-   capture guide teaches, so the mound is always read against something known. */
-.pd-fork {
-  fill: none;
-  stroke: color-mix(in srgb, var(--foreground, #e8f3ef) 34%, transparent);
-  stroke-width: 2;
-  stroke-linecap: round;
 }
 
 .pd-mound {
@@ -77,7 +67,71 @@
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* --- the readout ---------------------------------------------------------- */
+/* --- deep bowl ------------------------------------------------------------ */
+
+.pd-bowl {
+  fill: none;
+  stroke: color-mix(in srgb, var(--foreground, #e8f3ef) 30%, transparent);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+}
+
+.pd-fill {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pd-fill-body {
+  fill: var(--brand, #17d1a8);
+  opacity: 0.88;
+}
+
+.pd-fill-top {
+  fill: color-mix(in srgb, #fff 60%, transparent);
+  opacity: 0.4;
+}
+
+/* --- countable pieces ----------------------------------------------------- */
+
+.pd-piece {
+  animation: pd-pop 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: center;
+}
+
+.pd-piece-body {
+  fill: var(--brand, #17d1a8);
+  opacity: 0.9;
+}
+
+.pd-piece-shadow {
+  fill: color-mix(in srgb, var(--foreground, #e8f3ef) 12%, transparent);
+}
+
+.pd-piece-more {
+  fill: color-mix(in srgb, var(--foreground, #e8f3ef) 60%, transparent);
+  font-size: 15px;
+  font-weight: 600;
+  text-anchor: middle;
+}
+
+@keyframes pd-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* --- shared: fork, readout ------------------------------------------------ */
+
+.pd-fork {
+  fill: none;
+  stroke: color-mix(in srgb, var(--foreground, #e8f3ef) 34%, transparent);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
 
 .pd-readout {
   position: absolute;
@@ -180,7 +234,7 @@
   display: flex;
   justify-content: space-between;
   gap: 6px;
-  margin-top: -6px;
+  margin-top: -8px;
 }
 
 .pd-anchor {
@@ -199,9 +253,97 @@
   font-weight: 600;
 }
 
+/* --- height chips --------------------------------------------------------- */
+
+.pd-heights {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pd-heights-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--foreground, #e8f3ef);
+}
+
+.pd-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pd-chip {
+  border-radius: 999px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  background: var(--background, transparent);
+  padding: 8px 14px;
+  font-size: 14px;
+  color: var(--foreground, #e8f3ef);
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease;
+}
+
+.pd-chip[data-on="true"] {
+  border-color: var(--primary, #17d1a8);
+  background: var(--primary, #17d1a8);
+  color: var(--primary-foreground, #04140f);
+  font-weight: 600;
+}
+
+/* --- piece stepper -------------------------------------------------------- */
+
+.pd-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 18px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.14));
+  padding: 8px;
+}
+
+.pd-stepper button {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 48px;
+  border-radius: 14px;
+  border: 0;
+  background: color-mix(in srgb, var(--foreground, #e8f3ef) 8%, transparent);
+  color: var(--foreground, #e8f3ef);
+  cursor: pointer;
+}
+
+.pd-stepper button:disabled {
+  opacity: 0.35;
+}
+
+.pd-stepper-value {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.15;
+  font-size: 24px;
+  font-weight: 650;
+  color: var(--foreground, #e8f3ef);
+  font-variant-numeric: tabular-nums;
+}
+
+.pd-stepper-value small {
+  font-size: 13px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--foreground, #e8f3ef) 60%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .pd-mound,
-  .pd-mound-hi {
+  .pd-mound-hi,
+  .pd-fill {
     transition: none;
+  }
+
+  .pd-piece {
+    animation: none;
   }
 }

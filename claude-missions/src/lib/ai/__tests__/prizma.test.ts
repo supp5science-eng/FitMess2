@@ -20,17 +20,14 @@ function seen(stavka: string, sigurnost: "niska" | "srednja" | "visoka") {
   return { stavka, sigurnost, nejasno: "" };
 }
 
-describe("parsePrizmaAnalysis", () => {
+describe("parsePrizmaAnalysis — questions", () => {
   it("orders questions by how much they move the estimate", () => {
     const result = parsePrizmaAnalysis(
       {
-        status: "pitanja",
         pitanja: [question("malo", 40), question("puno", 280), question("srednje", 120)],
       },
       "obrok"
     );
-    expect(result.status).toBe("pitanja");
-    if (result.status !== "pitanja") return;
     expect(result.pitanja.map((q) => q.pitanje)).toEqual([
       "puno",
       "srednje",
@@ -41,7 +38,6 @@ describe("parsePrizmaAnalysis", () => {
   it("keeps only the highest-impact questions", () => {
     const result = parsePrizmaAnalysis(
       {
-        status: "pitanja",
         pitanja: [
           question("a", 10),
           question("b", 20),
@@ -52,7 +48,6 @@ describe("parsePrizmaAnalysis", () => {
       },
       "obrok"
     );
-    if (result.status !== "pitanja") return;
     expect(result.pitanja).toHaveLength(MAX_QUESTIONS);
     expect(result.pitanja[0].pitanje).toBe("e");
   });
@@ -60,7 +55,6 @@ describe("parsePrizmaAnalysis", () => {
   it("drops questions that don't offer a real choice", () => {
     const result = parsePrizmaAnalysis(
       {
-        status: "pitanja",
         pitanja: [
           { ...question("jedna opcija", 500), opcije: ["Samo ovo"] },
           question("prava", 100),
@@ -68,22 +62,22 @@ describe("parsePrizmaAnalysis", () => {
       },
       "obrok"
     );
-    if (result.status !== "pitanja") return;
     expect(result.pitanja).toHaveLength(1);
     expect(result.pitanja[0].pitanje).toBe("prava");
   });
 
-  it("falls back to the portion question instead of dead-ending", () => {
-    const result = parsePrizmaAnalysis({ status: "pitanja", pitanja: [] }, "obrok");
-    if (result.status !== "pitanja") return;
-    expect(result.pitanja).toHaveLength(1);
-    expect(result.pitanja[0].opcije.length).toBeGreaterThanOrEqual(2);
+  it("treats no question as a clean result, not a failure", () => {
+    // The dial carries the portion now, so there is nothing we must ask. The
+    // old code invented a stock "Koliko si pojeo?" here, which is exactly the
+    // generic-feeling question users complained about.
+    const result = parsePrizmaAnalysis({ pitanja: [] }, "obrok");
+    expect(result.pitanja).toEqual([]);
+    expect(result.source).toBe("none");
   });
 
   it("keeps only questions bound to an item the model was unsure about", () => {
     const result = parsePrizmaAnalysis(
       {
-        status: "pitanja",
         vidim: [seen("pileće belo", "visoka"), seen("sos ispod mesa", "niska")],
         pitanja: [
           // Highest impact, but about something it says it sees clearly.
@@ -93,7 +87,6 @@ describe("parsePrizmaAnalysis", () => {
       },
       "obrok"
     );
-    if (result.status !== "pitanja") return;
     expect(result.source).toBe("derived");
     expect(result.pitanja.map((q) => q.pitanje)).toEqual([
       "Pavlaka ili majonez?",
@@ -103,13 +96,11 @@ describe("parsePrizmaAnalysis", () => {
   it("matches the item loosely, ignoring case and diacritics", () => {
     const result = parsePrizmaAnalysis(
       {
-        status: "pitanja",
         vidim: [seen("Pileće belo meso", "srednja")],
         pitanja: [question("Kako je spremljeno?", 200, "pilece belo")],
       },
       "obrok"
     );
-    if (result.status !== "pitanja") return;
     expect(result.source).toBe("derived");
     expect(result.pitanja).toHaveLength(1);
   });
@@ -117,7 +108,6 @@ describe("parsePrizmaAnalysis", () => {
   it("cuts template questions down to one when none is bound to doubt", () => {
     const result = parsePrizmaAnalysis(
       {
-        status: "pitanja",
         vidim: [seen("pasulj", "visoka")],
         pitanja: [
           question("Šta si jeo?", 100),
@@ -127,10 +117,7 @@ describe("parsePrizmaAnalysis", () => {
       },
       "obrok"
     );
-    if (result.status !== "pitanja") return;
     expect(result.source).toBe("unbound");
-    // Only the most valuable one survives -- three unearned questions is the
-    // complaint we are fixing.
     expect(result.pitanja.map((q) => q.pitanje)).toEqual([
       "Kako je pripremljeno?",
     ]);
@@ -138,63 +125,76 @@ describe("parsePrizmaAnalysis", () => {
 
   it("lets questions through untouched when no inventory came back", () => {
     const result = parsePrizmaAnalysis(
-      {
-        status: "pitanja",
-        pitanja: [question("a", 100), question("b", 200)],
-      },
+      { pitanja: [question("a", 100), question("b", 200)] },
       "obrok"
     );
-    if (result.status !== "pitanja") return;
     expect(result.source).toBe("unverified");
     expect(result.pitanja).toHaveLength(2);
   });
+});
 
-  it("names the food in the fallback question when it knows what it saw", () => {
+describe("parsePrizmaAnalysis — vessel and unit", () => {
+  it("takes the model's vessel call and its mass for one unit", () => {
     const result = parsePrizmaAnalysis(
       {
-        status: "pitanja",
-        vidim: [seen("pasulj", "niska"), seen("hleb", "srednja")],
+        naziv: "Palačinke",
+        posuda: "komadi",
+        jedinica_naziv: "palačinka",
+        jedinica_grami: 62,
         pitanja: [],
       },
       "obrok"
     );
-    if (result.status !== "pitanja") return;
-    expect(result.source).toBe("fallback");
-    expect(result.pitanja[0].pitanje).toBe("Koliko si pojeo — pasulj i hleb?");
+    expect(result.naziv).toBe("Palačinke");
+    expect(result.posuda).toBe("komadi");
+    expect(result.jedinica).toEqual({ naziv: "palačinka", grami: 62 });
   });
 
-  it("still asks the plain portion question with no inventory at all", () => {
-    const result = parsePrizmaAnalysis({ status: "pitanja", pitanja: [] }, "obrok");
-    if (result.status !== "pitanja") return;
-    expect(result.pitanja[0].pitanje).toBe("Koliko si pojeo?");
+  it("falls back to an ordinary plate when the model says nothing usable", () => {
+    const result = parsePrizmaAnalysis({}, "obrok");
+    expect(result.posuda).toBe("ravan");
+    expect(result.jedinica.grami).toBeGreaterThan(0);
+    expect(result.pitanja).toEqual([]);
   });
 
-  it("passes a confident estimate straight through", () => {
+  it("clamps an absurd unit mass instead of handing it to the dial", () => {
+    // One pancake is not five kilograms; letting this through would scale the
+    // user's every drag into nonsense.
     const result = parsePrizmaAnalysis(
-      {
-        status: "procena",
-        naziv: "Pileća supa",
-        procenjeni_grami: 300,
-        kcal: 180,
-        protein_g: 12,
-        uh_g: 14,
-        mast_g: 7,
-        sigurnost: "visoka",
-      },
+      { posuda: "komadi", jedinica_naziv: "palačinka", jedinica_grami: 5000 },
       "obrok"
     );
-    expect(result.status).toBe("procena");
-    if (result.status !== "procena") return;
-    expect(result.estimate.naziv).toBe("Pileća supa");
+    expect(result.jedinica.grami).toBeLessThanOrEqual(600);
   });
 
-  it("asks rather than returning a malformed estimate", () => {
-    const result = parsePrizmaAnalysis(
-      { status: "procena", pitanja: [question("koliko", 200)] },
+  it("ignores an unknown vessel name", () => {
+    const result = parsePrizmaAnalysis({ posuda: "tanjirčić" }, "obrok");
+    expect(result.posuda).toBe("ravan");
+  });
+
+  it("forces the label flow onto the plain dial", () => {
+    const result = parsePrizmaAnalysis({ posuda: "dubok" }, "deklaracija");
+    expect(result.posuda).toBe("ravan");
+  });
+});
+
+describe("parsePrizmaAnalysis — the extra angle", () => {
+  it("asks for one only when the model explicitly says so", () => {
+    const asked = parsePrizmaAnalysis(
+      { treba_ugao: true, ugao_zasto: "Ne vidim šta je ispod mesa." },
       "obrok"
     );
-    // No usable estimate fields -> must degrade to questions, not garbage.
-    expect(result.status).toBe("pitanja");
+    expect(asked.ugao).toEqual({
+      treba: true,
+      zasto: "Ne vidim šta je ispod mesa.",
+    });
+  });
+
+  it("defaults to not asking — a photo everyone must take is the costly step", () => {
+    expect(parsePrizmaAnalysis({}, "obrok").ugao.treba).toBe(false);
+    expect(parsePrizmaAnalysis({ treba_ugao: "da" }, "obrok").ugao.treba).toBe(
+      false
+    );
   });
 });
 
@@ -202,14 +202,18 @@ describe("describeShots", () => {
   it("names both viewpoints when two angles were captured", () => {
     const text = describeShots(2, "viljuska");
     expect(text).toContain("ODOZGO");
-    expect(text).toContain("45");
+    expect(text).toContain("UGLOM");
     expect(text).toContain("VILJUŠKA");
   });
 
-  it("warns the model when only one angle exists", () => {
+  it("points the model at the user's description when there is one photo", () => {
+    // One shot is the normal case now, so this must not read as a degraded
+    // input: telling the model to lower its confidence would make it hedge
+    // against information it actually has.
     const text = describeShots(1, "nista");
-    expect(text).toContain("SAMO JEDNA");
-    expect(text).toContain("snizi sigurnost");
+    expect(text).toContain("JEDNA slika");
+    expect(text).toContain("korisnikov opis oblika");
+    expect(text).not.toContain("snizi sigurnost");
   });
 
   it("mentions the extra angles beyond the required two", () => {

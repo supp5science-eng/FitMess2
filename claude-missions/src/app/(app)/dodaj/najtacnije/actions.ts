@@ -11,9 +11,18 @@ import {
   type UserPortion,
 } from "@/lib/ai/gemini";
 import {
+  COUNT_MAX,
+  COUNT_MIN,
+  COVERAGE_MAX,
+  COVERAGE_MIN,
+  HEIGHT_LEVELS,
   isPrepMethod,
-  PORTION_MAX_G,
-  PORTION_MIN_G,
+  isVessel,
+  LEVEL_MAX,
+  LEVEL_MIN,
+  normaliseUnit,
+  type HeightLevel,
+  type PortionGeometry,
 } from "@/lib/ai/portion";
 import {
   REFERENCE_OBJECTS,
@@ -179,20 +188,62 @@ async function readImages(
     ? (refRaw as ReferenceObject)
     : "nista";
 
-  // The user's own portion call, made while standing over the plate. Clamped to
-  // the dial's own range rather than trusted: this arrives from a form, and a
-  // nonsense mass would be handed straight to the model as a scale anchor.
-  const gramsRaw = Number(formData.get("procena_grama"));
-  const grams =
-    Number.isFinite(gramsRaw) && gramsRaw > 0
-      ? Math.min(Math.max(Math.round(gramsRaw), PORTION_MIN_G), PORTION_MAX_G)
-      : null;
-  const prepRaw = formData.get("priprema");
-  const prep = isPrepMethod(prepRaw) ? prepRaw : null;
-  const portion: UserPortion =
-    grams == null && prep == null ? null : { grams, prep };
+  return { ok: true, images, variant, reference, portion: readPortion(formData) };
+}
 
-  return { ok: true, images, variant, reference, portion };
+const clamp = (n: number, min: number, max: number) =>
+  Math.min(Math.max(n, min), max);
+
+/**
+ * The user's own portion call, made while standing over the plate. Everything
+ * here is re-clamped rather than trusted: it arrives from a form, and a
+ * nonsense coverage or unit mass would be handed straight to the model as the
+ * scale anchor for the whole estimate.
+ */
+function readPortion(formData: FormData): UserPortion {
+  const vesselRaw = formData.get("posuda");
+  if (!isVessel(vesselRaw)) return null;
+
+  const num = (key: string) => Number(formData.get(key));
+  let geometry: PortionGeometry;
+
+  if (vesselRaw === "dubok") {
+    const level = num("nivo");
+    if (!Number.isFinite(level)) return null;
+    geometry = { vessel: "dubok", level: clamp(level, LEVEL_MIN, LEVEL_MAX) };
+  } else if (vesselRaw === "komadi") {
+    const count = num("komada");
+    if (!Number.isFinite(count)) return null;
+    geometry = {
+      vessel: "komadi",
+      count: Math.round(clamp(count, COUNT_MIN, COUNT_MAX)),
+    };
+  } else {
+    const coverage = num("pokrivenost");
+    if (!Number.isFinite(coverage)) return null;
+    const heightRaw = formData.get("visina");
+    const height = HEIGHT_LEVELS.includes(heightRaw as HeightLevel)
+      ? (heightRaw as HeightLevel)
+      : "prst";
+    geometry = {
+      vessel: "ravan",
+      coverage: clamp(coverage, COVERAGE_MIN, COVERAGE_MAX),
+      height,
+    };
+  }
+
+  const prepRaw = formData.get("priprema");
+  return {
+    geometry,
+    // `normaliseUnit` bounds the mass the model gave us for one unit of this
+    // food -- the client sends it back, so it must be re-checked here.
+    unit: normaliseUnit(
+      vesselRaw,
+      formData.get("jedinica_naziv"),
+      formData.get("jedinica_grami")
+    ),
+    prep: isPrepMethod(prepRaw) ? prepRaw : null,
+  };
 }
 
 /**
@@ -206,12 +257,7 @@ export async function analyzeMealAction(
   if (!read.ok) return read;
 
   try {
-    const data = await analyzePrizmaMeal(
-      read.images,
-      read.variant,
-      read.reference,
-      read.portion
-    );
+    const data = await analyzePrizmaMeal(read.images, read.variant, read.reference);
     return { ok: true, data };
   } catch (err) {
     console.error("[najtacnije] analyze failed:", err);

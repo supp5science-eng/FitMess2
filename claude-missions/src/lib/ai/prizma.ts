@@ -1,30 +1,48 @@
 import { z } from "zod";
 
+import { CONFIDENCE_VALUES } from "@/lib/ai/meal-estimate";
 import {
-  CONFIDENCE_VALUES,
-  mealEstimateSchema,
-  type MealEstimate,
-} from "@/lib/ai/meal-estimate";
+  isVessel,
+  normaliseUnit,
+  type PortionUnit,
+  type Vessel,
+} from "@/lib/ai/portion";
 
-// Prizma v3 — the highest-accuracy path, built around one idea: a photo
-// cannot weigh food, so stop pretending it can and go get the missing facts.
+// Prizma v5 — the highest-accuracy path, built around one idea: a photo cannot
+// weigh food, so stop pretending it can and go get the missing facts from the
+// only party who has them.
 //
-// Three things carry the accuracy, in order of how much they matter:
+// The split of labour is the whole design:
 //
-//  1. TWO FIXED ANGLES. Top-down gives width, a 45° shot gives height. Neither
-//     alone bounds volume; together they do. The UI guides the user into both.
-//  2. A REFERENCE OBJECT. The real blocker is metric scale -- the model cannot
-//     tell a 20 cm plate from a 30 cm one. A fork is ~19-20 cm and standardised
-//     across Europe, so laying one beside the plate gives the same anchor a
-//     depth sensor would, for free.
-//  3. QUESTIONS DERIVED FROM DOUBT. The model first inventories what it sees
-//     with per-item confidence and a kcal-at-stake figure, and questions are
-//     generated only for the items it is unsure about, ordered by how much
-//     they move the number. That is what keeps "Koliko si pojeo?" from firing
-//     when two angles already answer it.
+//   ANALYZE  (1 photo)  -- the model RECOGNISES: what food, what shape of
+//                          vessel, what one unit of it weighs, and what it is
+//                          still unsure about. It does not estimate anything.
+//   the user            -- describes the SHAPE (how much of the plate, how
+//                          full the bowl, how many pieces) and the cooking
+//                          method, and answers the model's own questions.
+//   FINALIZE (same photo + answers) -- does the arithmetic and itemises.
 //
-// Step 2 (FINALIZE) then returns an itemised breakdown, which `reconcile.ts`
-// checks arithmetically and the result screen shows to the user.
+// Three things carry the accuracy:
+//
+//  1. GEOMETRY FROM THE USER, DENSITY FROM THE MODEL. Nobody can name a portion
+//     in grams; everybody can see that the rice covers half the plate. The
+//     model supplies what a full plate of THIS food weighs, and the dial
+//     multiplies. That replaces the old mandatory 45° shot, which existed only
+//     to bound height -- the same variable the dial now asks about directly,
+//     at a fraction of the drop-off.
+//  2. A REFERENCE OBJECT. The remaining blocker is metric scale -- the model
+//     cannot tell a 20 cm plate from a 30 cm one. A fork is ~19-20 cm and
+//     standardised across Europe, so laying one beside the plate gives the same
+//     anchor a depth sensor would, for free.
+//  3. QUESTIONS DERIVED FROM DOUBT. The model inventories what it sees with
+//     per-item confidence, and questions are generated only for the items it is
+//     unsure about, ranked by kcal at stake. Portion and preparation are struck
+//     from that list because the dial already answered them -- so the slots go
+//     to what is genuinely unknown.
+//
+// A second angle is still available, but only when the model says it would
+// change the answer (something hidden under the food, an opaque sauce). It is
+// one of its questions now, not a step everyone pays for.
 
 /** What the user laid beside the plate, so the model knows the exact size of
  * its scale anchor instead of guessing what the object is. */
@@ -63,17 +81,22 @@ export function describeShots(count: number, reference: ReferenceObject): string
   if (count >= 2) {
     lines.push(
       "Slika 1 je snimljena PRAVO ODOZGO (vidi se površina i širina porcije).",
-      "Slika 2 je snimljena POD UGLOM ~45° (vidi se VISINA/debljina porcije)."
+      "Slika 2 je snimljena POD UGLOM (vidi se VISINA/debljina porcije i šta je ispod)."
     );
     if (count > 2) {
       lines.push(`Ostale slike (${count - 2}) su dodatni uglovi istog obroka.`);
     }
     lines.push(
-      "Spoji širinu sa prve i visinu sa druge slike da proceniš ZAPREMINU, pa iz zapremine masu."
+      "Spoji širinu sa prve i visinu sa druge slike da proveriš zapreminu."
     );
   } else {
+    // One photo is the normal case now, not a degraded one: the height that the
+    // 45° shot used to carry arrives from the user's own description of the
+    // shape. Saying "you are missing an angle, lower your confidence" here
+    // would make the model hedge against information it actually has.
     lines.push(
-      "Dostupna je SAMO JEDNA slika (korisnik nije snimio drugi ugao), pa se visina/debljina porcije ne vidi pouzdano. Budi oprezniji sa masom i snizi sigurnost."
+      "Snimljena je JEDNA slika, PRAVO ODOZGO (vidi se površina i širina porcije).",
+      "Visinu/debljinu porcije ne vidiš sa nje — nju ti daje korisnikov opis oblika (niže u poruci). Njemu veruj za količinu."
     );
   }
   lines.push(REFERENCE_HINTS[reference]);
@@ -120,65 +143,45 @@ export type PrizmaSeenItem = z.infer<typeof prizmaSeenItemSchema>;
  *                   keep only the single highest-impact one.
  *  - `unverified` — no inventory came back, so there was nothing to check
  *                   against; the questions pass through as before.
- *  - `fallback`   — nothing usable at all; the built-in portion question.
+ *  - `none`       — no usable question at all. A legitimate outcome now: the
+ *                   dial carries the portion, so a plate the model reads
+ *                   cleanly needs nothing asked about it. (Before the dial this
+ *                   had to degrade into a stock "Koliko si pojeo?", which is
+ *                   exactly the generic-feeling question users complained about.)
  */
 export type PrizmaQuestionSource =
   | "derived"
   | "unbound"
   | "unverified"
-  | "fallback";
-
-/** Analysis outcome: EITHER clarifying questions OR (already confident) a final
- * estimate in the shared meal shape. */
-export type PrizmaAnalysis =
-  | {
-      status: "pitanja";
-      pitanja: PrizmaQuestion[];
-      /** The model's own inventory of the plate (may be empty). */
-      vidim: PrizmaSeenItem[];
-      source: PrizmaQuestionSource;
-    }
-  | { status: "procena"; estimate: MealEstimate };
-
-export type PrizmaVariant = "obrok" | "deklaracija";
+  | "none";
 
 /**
- * Last-resort question when the model gives us neither a usable estimate nor a
- * usable question. It only fires on a malformed response, so the flow degrades
- * instead of dead-ending.
- *
- * It is still the portion question -- that is the one thing always worth
- * knowing -- but when we DO have the model's inventory it names the food, so
- * even the fallback reads as "about your plate" rather than a stock line.
+ * What the ANALYZE call returns. Note what is NOT here: an estimate. This step
+ * recognises and nothing else -- the arithmetic belongs to FINALIZE, after the
+ * user has described the portion, and splitting the two is what stops the model
+ * from committing to a mass before it has been told the shape.
  */
-function defaultPortionQuestion(
-  variant: PrizmaVariant,
-  seen: PrizmaSeenItem[]
-): PrizmaQuestion {
-  const named = seen
-    .map((item) => item.stavka)
-    .filter(Boolean)
-    .slice(0, 2)
-    .join(" i ");
-
-  return variant === "deklaracija"
-    ? {
-        stavka: "",
-        pitanje: "Koliko si pojeo?",
-        opcije: ["Ceo proizvod", "Otprilike pola", "Trećinu", "Dve kašike"],
-        zasto: named ? `Ne vidim koliko je pojedeno od: ${named}.` : "",
-        uticaj_kcal: 0,
-        vise_odgovora: false,
-      }
-    : {
-        stavka: named,
-        pitanje: named ? `Koliko si pojeo — ${named}?` : "Koliko si pojeo?",
-        opcije: ["Sve", "Otprilike pola", "Manje od pola", "Više od pola"],
-        zasto: named ? "Ne mogu pouzdano da procenim količinu sa slike." : "",
-        uticaj_kcal: 0,
-        vise_odgovora: false,
-      };
+export interface PrizmaAnalysis {
+  /** Best short name for the dish, used to label the dial. */
+  naziv: string;
+  /** Which dial the user should see, and what one unit of this food weighs. */
+  posuda: Vessel;
+  jedinica: PortionUnit;
+  /** Clarifying questions, ranked by kcal at stake. May legitimately be empty. */
+  pitanja: PrizmaQuestion[];
+  /** The model's own inventory of the plate (may be empty). */
+  vidim: PrizmaSeenItem[];
+  source: PrizmaQuestionSource;
+  /**
+   * Whether a second angle would actually change the answer -- something hidden
+   * under the food, or a depth the top-down shot cannot bound. Asked for only
+   * when true, because a photo everyone must take is the most expensive thing
+   * in the flow and the dial already covers the common case.
+   */
+  ugao: { treba: boolean; zasto: string };
 }
+
+export type PrizmaVariant = "obrok" | "deklaracija";
 
 /** Lowercase + strip Serbian diacritics, so "Pileće belo" matches "pilece belo". */
 function normalise(text: string): string {
@@ -219,9 +222,9 @@ function isDerivedFromDoubt(
 
 /**
  * Defensively turn Gemini's raw analysis JSON into a typed `PrizmaAnalysis`.
- * Never throws: a malformed estimate falls through to questions, malformed
- * questions are dropped, and if nothing usable is left we ask the one thing we
- * always need (the eaten amount), so the flow can never dead-end.
+ * Never throws: malformed questions are dropped one by one, a missing or absurd
+ * unit mass falls back to an ordinary plate, and an empty question list is a
+ * perfectly good result rather than a dead end.
  *
  * Surviving questions are ordered by kcal at stake and cut to `MAX_QUESTIONS`,
  * so when the model over-asks the user still only sees what actually matters.
@@ -238,17 +241,26 @@ export function parsePrizmaAnalysis(
     .map((item) => prizmaSeenItemSchema.safeParse(item))
     .flatMap((result) => (result.success ? [result.data] : []));
 
-  if (obj.status === "procena") {
-    const est = mealEstimateSchema.safeParse(obj);
-    // `mealEstimateSchema` is all-`.catch()`, so it succeeds on nearly any
-    // input -- an empty "procena" would parse into a 0 kcal / 1 g meal and be
-    // logged as fact. Require the estimate to actually say something before we
-    // skip the questions.
-    if (est.success && est.data.kcal > 0 && est.data.procenjeni_grami > 1) {
-      return { status: "procena", estimate: est.data };
-    }
-    // Otherwise fall through and ask rather than return a hollow number.
-  }
+  // A nutrition label has no shape to describe, so it always gets the simple
+  // "how much of the package" dial.
+  const posuda: Vessel =
+    variant === "deklaracija"
+      ? "ravan"
+      : isVessel(obj.posuda)
+        ? obj.posuda
+        : "ravan";
+  const jedinica = normaliseUnit(posuda, obj.jedinica_naziv, obj.jedinica_grami);
+
+  const naziv =
+    typeof obj.naziv === "string" && obj.naziv.trim()
+      ? obj.naziv.trim().slice(0, 80)
+      : "";
+
+  const ugao = {
+    treba: obj.treba_ugao === true,
+    zasto:
+      typeof obj.ugao_zasto === "string" ? obj.ugao_zasto.trim().slice(0, 160) : "",
+  };
 
   // Parse question-by-question: one malformed entry must not take the usable
   // ones down with it (which `z.array(...).safeParse` would do).
@@ -259,23 +271,20 @@ export function parsePrizmaAnalysis(
     .filter((q) => q.opcije.length >= 2)
     .sort((a, b) => b.uticaj_kcal - a.uticaj_kcal);
 
+  const base = { naziv, posuda, jedinica, vidim: seen, ugao };
+
+  // No question is a good outcome, not a failure: the dial already carries the
+  // portion, so a plate the model reads cleanly has nothing left worth asking.
   if (parsed.length === 0) {
-    return {
-      status: "pitanja",
-      pitanja: [defaultPortionQuestion(variant, seen)],
-      vidim: seen,
-      source: "fallback",
-    };
+    return { ...base, pitanja: [], source: "none" };
   }
 
   // With no inventory there is nothing to check the questions against, so they
-  // pass through as before -- a missing `vidim` is our blind spot, not the
-  // user's problem.
+  // pass through -- a missing `vidim` is our blind spot, not the user's problem.
   if (seen.length === 0) {
     return {
-      status: "pitanja",
+      ...base,
       pitanja: parsed.slice(0, MAX_QUESTIONS),
-      vidim: seen,
       source: "unverified",
     };
   }
@@ -283,30 +292,24 @@ export function parsePrizmaAnalysis(
   const derived = parsed.filter((q) => isDerivedFromDoubt(q, seen));
   if (derived.length > 0) {
     return {
-      status: "pitanja",
+      ...base,
       pitanja: derived.slice(0, MAX_QUESTIONS),
-      vidim: seen,
       source: "derived",
     };
   }
 
   // The model inventoried the plate and then asked about none of it -- template
-  // questions. Rather than three of them, keep the single most valuable one:
-  // dropping them all would only push the user into the generic fallback, and
-  // asking three questions that weren't earned is exactly the complaint.
-  return {
-    status: "pitanja",
-    pitanja: parsed.slice(0, 1),
-    vidim: seen,
-    source: "unbound",
-  };
+  // questions. Keep only the single most valuable one: asking three questions
+  // that weren't earned is exactly the complaint we are fixing.
+  return { ...base, pitanja: parsed.slice(0, 1), source: "unbound" };
 }
 
 // The JSON schema for the ANALYSIS call. `vidim` comes FIRST in
 // `propertyOrdering` on purpose: the model must inventory the plate item by
-// item, with its own confidence per item, before it is allowed to write
-// questions or an estimate. Questions then fall out of the low-confidence
-// items instead of being pulled from a template.
+// item, with its own confidence per item, before it is allowed to classify or
+// to write questions. Questions then fall out of the low-confidence items
+// instead of being pulled from a template, and the vessel/unit call is made
+// with the food already named.
 export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -323,7 +326,10 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
         propertyOrdering: ["stavka", "sigurnost", "nejasno"],
       },
     },
-    status: { type: "STRING", enum: ["pitanja", "procena"] },
+    naziv: { type: "STRING" },
+    posuda: { type: "STRING", enum: ["ravan", "dubok", "komadi"] },
+    jedinica_naziv: { type: "STRING" },
+    jedinica_grami: { type: "NUMBER" },
     pitanja: {
       type: "ARRAY",
       items: {
@@ -351,30 +357,19 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
         ],
       },
     },
-    naziv: { type: "STRING" },
-    sastojci: { type: "ARRAY", items: { type: "STRING" } },
-    procenjeni_grami: { type: "NUMBER" },
-    kcal: { type: "NUMBER" },
-    protein_g: { type: "NUMBER" },
-    uh_g: { type: "NUMBER" },
-    mast_g: { type: "NUMBER" },
-    sigurnost: { type: "STRING", enum: [...CONFIDENCE_VALUES] },
-    napomena: { type: "STRING" },
+    treba_ugao: { type: "BOOLEAN" },
+    ugao_zasto: { type: "STRING" },
   },
-  required: ["vidim", "status"],
+  required: ["vidim", "naziv", "posuda", "jedinica_naziv", "jedinica_grami"],
   propertyOrdering: [
     "vidim",
-    "status",
-    "pitanja",
     "naziv",
-    "sastojci",
-    "procenjeni_grami",
-    "kcal",
-    "protein_g",
-    "uh_g",
-    "mast_g",
-    "sigurnost",
-    "napomena",
+    "posuda",
+    "jedinica_naziv",
+    "jedinica_grami",
+    "pitanja",
+    "treba_ugao",
+    "ugao_zasto",
   ],
 } as const;
 
@@ -467,32 +462,44 @@ Kućne mere:
 
 // --- ANALYSIS prompts (step 1) --------------------------------------------
 
-export const PRIZMA_ANALYZE_PROMPT = `Ti si iskusan nutricionista koji procenjuje obroke sa fotografija.
+export const PRIZMA_ANALYZE_PROMPT = `Ti si iskusan nutricionista. Dobijaš fotografiju obroka snimljenu ODOZGO.
+
+TVOJ ZADATAK JE DA PREPOZNAŠ, NE DA PROCENIŠ.
+Koliko je hrane reći će ti sam korisnik u sledećem koraku — on stoji nad tanjirom i vidi ono što ti ne vidiš. Ti mu spremaš alat kojim će to reći i pitaš ga samo ono što ni on ni slika još nisu rekli. NE računaj kalorije ovde.
 
 KORAK 1 — POPIŠI ŠTA VIDIŠ.
 U "vidim" navedi svaku komponentu obroka posebno, i za SVAKU odredi svoju sigurnost:
-- "visoka" = jasno vidiš i šta je i koliko ga ima
-- "srednja" = znaš šta je, ali ti količina ili priprema nije sigurna
-- "niska" = ne razaznaješ šta je, ili ti ključan podatak nedostaje
+- "visoka" = jasno vidiš šta je
+- "srednja" = znaš otprilike šta je, ali ti priprema ili sastav nisu sigurni
+- "niska" = ne razaznaješ šta je
 U "nejasno" napiši KONKRETNO šta te koči kod te stavke (npr. "ne vidim dno tanjira ispod mesa", "ne razaznajem je li pohovano ili grilovano"). Ostavi prazno kad je stavka jasna.
+U "naziv" upiši kratak naziv celog jela na srpskom (npr. "Piletina sa pirinčem").
 
-KORAK 2 — PITAJ SAMO ONO ŠTO SI SAM OZNAČIO KAO NEJASNO.
-Pitanja izvedi ISKLJUČIVO iz stavki sa "srednja"/"niska" sigurnošću. Najviše ${MAX_QUESTIONS}.
+KORAK 2 — ODREDI OBLIK ("posuda") I MASU JEDNE JEDINICE.
+Ovo je najvažniji deo: od njega zavisi kako će korisnik moći da opiše količinu.
+- "ravan" — hrana je raspoređena po ravnom tanjiru (meso sa prilogom, sarma, pečenje, salata). Korisnik će reći KOLIKI DEO TANJIRA je pokriven i KOLIKO JE VISOKO nagomilano.
+  → "jedinica_naziv": "pun tanjir <hrane>"; "jedinica_grami": koliko bi GRAMA bilo kad bi CEO tanjir bio pokriven baš ovom hranom u sloju debljine jednog prsta (~1,5 cm). Za tipičan tanjir mesa sa prilogom to je 300–450 g; za laganu salatu 120–200 g; za gusto pečenje 450–600 g.
+- "dubok" — hrana je u dubokoj posudi i meri se dubinom (čorba, supa, pasulj, gulaš, jogurt sa musli, sladoled u činiji). Korisnik će reći DOKLE JE NAPUNJENO.
+  → "jedinica_naziv": "puna posuda"; "jedinica_grami": koliko GRAMA ove hrane staje u tu posudu kad je puna do vrha (duboki tanjir čorbe ≈ 350–400 g, veća činija ≈ 500–600 g).
+- "komadi" — hrana se prirodno broji, a ne razmazuje (palačinke, pica parčad, sendvič, ćevapi, krofne, jaja, voće). Korisnik će reći KOLIKO KOMADA.
+  → "jedinica_naziv": naziv JEDNOG komada u jednini ("palačinka", "parče pice", "ćevap"); "jedinica_grami": masa JEDNOG takvog komada (palačinka ≈ 60 g, parče pice ≈ 110 g, ćevap ≈ 25 g, jaje ≈ 60 g).
+Kad se dvoumiš između "ravan" i "komadi": ako bi čovek prirodno rekao „pojeo sam tri", to je "komadi".
+
+KORAK 3 — PITAJ SAMO ONO ŠTO SI SAM OZNAČIO KAO NEJASNO.
+Pitanja izvedi ISKLJUČIVO iz stavki sa "srednja"/"niska" sigurnošću. Najviše ${MAX_QUESTIONS}. Nijedno pitanje nije sasvim u redu — prazna lista je ispravan odgovor kad je tanjir jasan.
 - OBAVEZNO: u "stavka" upiši TAČAN naziv stavke iz "vidim" na koju se pitanje odnosi. Pitanje bez stavke iz "vidim" se odbacuje.
-- Ako su sve stavke "visoka" — NE postavljaj nijedno pitanje, nego idi na KORAK 3.
-- IMENUJ hranu u samom pitanju umesto uopštene kategorije: "Sos ispod mesa — pavlaka ili majonez?" je dobro, "Kako je pripremljeno?" nije.
-- STROGO ZABRANJENO: pitanje na koje slike već odgovaraju. Ako se sa dva ugla vidi koliko je hrane, NE pitaj koliko je pojedeno.
-- STROGO ZABRANJENO: opšta pitanja po šablonu ("Šta si jeo?", "Da li je zdravo?", "Kako je spremljeno?" bez imena jela).
-- Svako pitanje mora da menja procenu za bar 40 kcal. U "uticaj_kcal" napiši koliko kcal otprilike visi o tom odgovoru (razlika između najskuplje i najjeftinije opcije).
+- STROGO ZABRANJENO: pitati KOLIKO je hrane, koliko je pojedeno, ili KAKO JE PRIPREMLJENO (na ulju/pohovano/kuvano). Korisnik na oba ta pitanja odgovara sam, u sledećem koraku. Ako ih ipak postaviš, samo si mu potrošio vreme.
+- STROGO ZABRANJENO: opšta pitanja po šablonu ("Šta si jeo?", "Da li je zdravo?").
+- IMENUJ hranu u pitanju: "Sos ispod mesa — pavlaka ili majonez?" je dobro, "Kakav je sos?" nije.
+- Pitaj ono što ni slika ni gramaža ne rešavaju: koji je tačno sastojak (koje meso, koji sir), ima li nečega ISPOD ili UNUTRA, ima li dresinga/sosa/šećera koji se ne vidi.
+- Svako pitanje mora da menja procenu za bar 40 kcal. U "uticaj_kcal" napiši koliko kcal otprilike visi o odgovoru (razlika između najskuplje i najjeftinije opcije).
 - U "zasto" napiši kratko šta tačno na TOJ stavci ne možeš da razaznaš. To se prikazuje korisniku.
-- "opcije": 2–4 konkretna, kratka odgovora (npr. "Grilovano", "Na ulju", "Pohovano", "U rerni"). NE dodaj "Ne znam" ni "Nešto drugo" — to dodaje aplikacija.
-- "vise_odgovora": true samo kad više odgovora može da važi istovremeno (npr. koji sve prilozi).
+- "opcije": 2–4 konkretna kratka odgovora. NE dodaj "Ne znam" ni "Nešto drugo" — to dodaje aplikacija.
+- "vise_odgovora": true samo kad više odgovora može da važi istovremeno.
 - Pitanja i opcije na srpskom (latinica).
-- Bolje jedno pitanje koje zaista menja procenu nego tri pitanja da bi ih bilo tri.
-Vrati "status": "pitanja".
 
-KORAK 3 — ILI PROCENI ODMAH.
-Ako su SVE stavke u "vidim" sigurnosti "visoka", preskoči pitanja: vrati "status": "procena" i popuni polja procene (UKUPNO za pojedenu porciju, ne na 100 g).
+KORAK 4 — TREBA LI TI JOŠ JEDAN UGAO?
+Postavi "treba_ugao": true SAMO ako postoji nešto što se odozgo fizički ne može videti, a jako menja procenu — npr. hrana je nagomilana pa ne vidiš šta je ispod, ili je posuda neprozirna pa ne znaš koliko je duboka. U "ugao_zasto" napiši to jednom rečenicom, korisniku ("Ne vidim šta je ispod mesa."). U svim ostalim slučajevima "treba_ugao": false — dodatna slika košta korisnika vremena i mnogi zbog nje odustanu.
 
 ${NUTRITION_ANCHORS}
 
@@ -502,17 +509,17 @@ export const PRIZMA_ANALYZE_LABEL_PROMPT = `Dobijaš 1–5 FOTOGRAFIJA nutritivn
 
 KORAK 1 — POPIŠI ŠTA VIDIŠ.
 U "vidim" navedi šta si očitao (npr. "kcal na 100 g", "ukupna masa pakovanja") sa sigurnošću za svaku stavku, i u "nejasno" šta ne možeš da pročitaš.
+U "naziv" upiši naziv proizvoda ako se vidi, inače kratak opis.
 
-KORAK 2 — PITAJ ONO ŠTO FALI.
-Sa deklaracije čitaš vrednosti na 100 g, ali ti gotovo uvek fali KOLIKO je proizvod ukupno težak i KOLIKO je pojedeno. Postavi najviše ${MAX_QUESTIONS} kratka pitanja sa 2–4 ponuđena odgovora.
+KORAK 2 — POPUNI OBAVEZNA POLJA OBLIKA.
+Deklaracija nema oblik porcije, pa uvek vrati: "posuda": "ravan", "jedinica_naziv": "ceo proizvod", "jedinica_grami": ukupna masa pakovanja u gramima ako se vidi, inače 100. "treba_ugao": false.
+
+KORAK 3 — PITAJ ONO ŠTO FALI.
+Sa deklaracije čitaš vrednosti na 100 g, ali ti gotovo uvek fali KOLIKO je proizvod ukupno težak i KOLIKO je pojedeno. Ovde je to dozvoljeno i poželjno pitati. Najviše ${MAX_QUESTIONS} kratka pitanja sa 2–4 ponuđena odgovora.
 - OBAVEZNO: u "stavka" upiši naziv stavke iz "vidim" na koju se pitanje odnosi.
 - U "uticaj_kcal" napiši koliko kcal visi o odgovoru; u "zasto" šta ti nedostaje.
 - NE dodaj "Ne znam" ni "Nešto drugo" u opcije — to dodaje aplikacija.
 - Pitanja i opcije na srpskom (latinica).
-Vrati "status": "pitanja".
-
-KORAK 3 — ILI PROCENI ODMAH.
-Ako se i ukupna masa i pojedena količina jasno vide — vrati "status": "procena" sa poljima procene (UKUPNO za pojedenu porciju, skalirano sa vrednosti na 100 g).
 
 Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;
 
@@ -529,7 +536,8 @@ POSTUPAK — obavezno ovim redom:
 4. Tek onda saberi komponente u ukupne vrednosti. Ukupno MORA biti zbir komponenti.
 
 Kako da čitaš izvore:
-- Slike govore ŠTA je na tanjiru i koliko ga ima (širina sa prve, visina sa druge).
+- Slika govori ŠTA je na tanjiru i kako je raspoređeno.
+- KOLIKO ga ima govori korisnikov opis oblika (pokrivenost tanjira i visina sloja, napunjenost posude, ili broj komada) — to je tvoja glavna razmera za masu, jer korisnik stoji nad tanjirom i vidi ono što slika ne prenosi.
 - Korisnikovi odgovori nose ono što se sa slike ne vidi (priprema, mast, sastav) — njima veruj iznad svoje pretpostavke.
 - Ako je korisnik odgovorio "${DONT_KNOW_LABEL}", uzmi NAJVEROVATNIJU varijantu za takav obrok kod nas i spusti "sigurnost".
 - Ako se slike i odgovori kose, veruj odgovorima i to kratko spomeni u "napomena".
@@ -542,7 +550,7 @@ Pravila za izlaz:
 - "procenjeni_grami": ukupna POJEDENA masa (zbir grama komponenti).
 - "kcal", "protein_g", "uh_g", "mast_g": UKUPNO (zbir komponenti), ne na 100 g.
 - Proveri: 4×protein + 4×uh + 9×mast mora da odgovara kcal (±10%).
-- "sigurnost": "visoka" samo kad su oba ugla snimljena, referenca jasna i odgovori potpuni.
+- "sigurnost": "visoka" samo kad je hrana jasno prepoznata, referenca jasna i korisnikov opis oblika potpun; inače niže.
 - "napomena": kratko objasni ključne pretpostavke.
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;
 

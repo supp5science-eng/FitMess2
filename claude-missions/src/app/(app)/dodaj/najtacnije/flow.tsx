@@ -22,13 +22,16 @@ import {
 import { AiThinking } from "@/components/ai/ai-thinking";
 import { PortionDial } from "@/components/ai/portion-dial";
 import { ShotGuide } from "@/components/ai/shot-guide";
+import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
 import {
-  PORTION_DEFAULT_G,
+  defaultGeometry,
+  portionGrams,
   PREP_LABELS,
   PREP_METHODS,
+  type PortionGeometry,
+  type PortionUnit,
   type PrepMethod,
 } from "@/lib/ai/portion";
-import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
 import {
   DONT_KNOW_LABEL,
   OTHER_LABEL,
@@ -42,32 +45,34 @@ import { inspectPhoto, type PhotoIssue } from "@/lib/image/quality";
 import { logMealAction } from "../obrok/actions";
 import { analyzeMealAction, finalizeMealAction } from "./actions";
 
-// Prizma v3 — the guided two-angle flow.
+// Prizma v5 — the guided high-accuracy flow.
 //
 // The accuracy of every other add-flow is capped by one thing: a photo cannot
-// weigh food. This screen's job is to go and get what the photo is missing,
-// in the order that actually moves the number:
+// weigh food. This screen's job is to go and get what the photo is missing, in
+// the order that actually moves the number:
 //
-//   guide -> shot 1 (top-down)  ->  what's beside the plate?
-//         -> how much / how cooked (the user's own call)
-//   guide -> shot 2 (45°)       ->  AI's own questions  ->  itemised result
+//   guide -> shot (top-down) -> what's beside the plate?
+//         -> AI recognises the food  ->  ONE screen: how much + how cooked +
+//            the AI's own questions  ->  itemised result
 //
-// The two guides are motion graphics rather than instructions because nobody
-// reads a paragraph before taking a photo, and the whole feature collapses if
-// the second angle doesn't happen. The reference object (a fork, ~19-20 cm)
-// is what gives the model metric scale -- the one thing a depth sensor would
-// have provided and a phone camera can't.
+// The recognition call happens BEFORE we ask anything, which is what lets the
+// question fit the food: a soup gets "how full is the bowl", pancakes get "how
+// many", a plate gets "how much of it, how high". Asking everyone about the
+// same mound was the flaw in the first version.
+//
+// A second angle used to be mandatory. It existed to bound HEIGHT -- exactly
+// the variable the dial now asks about directly -- so it is offered only when
+// the model says something is hidden that it would actually reveal. A photo
+// every user must take is the most expensive step in the flow.
 
 type Phase =
   | "mode"
   | "guide1"
   | "review1"
-  | "portion" // meal mode only: the user's own mass + cooking call
-  | "guide2"
-  | "review2"
+  | "guide2" // optional extra angle, only when it would change the answer
   | "capture" // label mode only: plain multi-shot capture
   | "analyzing"
-  | "questions"
+  | "estimate" // the dial + the AI's questions, on one screen
   | "finalizing"
   | "confirm"
   | "saving";
@@ -173,12 +178,15 @@ export function NajtacnijeFlow() {
   const [previews, setPreviews] = useState<string[]>([]);
   const [issues, setIssues] = useState<PhotoIssue[][]>([]);
   const [reference, setReference] = useState<ReferenceObject | null>(null);
-  const [confirmSkipShot, setConfirmSkipShot] = useState(false);
 
-  // The user's own portion call. `userGrams` always has a value (the dial opens
-  // on a full plate); `prep` starts unset so the choice is deliberate.
-  const [userGrams, setUserGrams] = useState(PORTION_DEFAULT_G);
+  // What the model recognised, and the portion the user then described. The
+  // unit mass comes from the model (it knows densities); the geometry comes
+  // from the user (they can see the plate). Grams are the product of the two.
+  const [dish, setDish] = useState("");
+  const [geometry, setGeometry] = useState<PortionGeometry | null>(null);
+  const [unit, setUnit] = useState<PortionUnit | null>(null);
   const [prep, setPrep] = useState<PrepMethod | null>(null);
+  const [angleAsk, setAngleAsk] = useState<string | null>(null);
 
   // AI questions + the user's tapped answers (index-aligned to `questions`).
   const [questions, setQuestions] = useState<PrizmaQuestion[]>([]);
@@ -239,14 +247,19 @@ export function NajtacnijeFlow() {
     // Any new photo invalidates the cached downscales.
     downscaledRef.current = null;
 
+    // Object URLs are minted OUTSIDE the state updaters on purpose. React
+    // invokes an updater twice in development, so creating a URL (or setting
+    // other state) inside one produced two previews for a single photo -- and
+    // leaked the first one, since only the second was ever revoked.
     if (replaceAt != null) {
       const file = picked[0];
       if (!file) return;
+      const url = URL.createObjectURL(file);
       setPreviews((urls) => {
         const old = urls[replaceAt];
         if (old) URL.revokeObjectURL(old);
         const copy = urls.slice();
-        copy[replaceAt] = URL.createObjectURL(file);
+        copy[replaceAt] = url;
         return copy;
       });
       setFiles((prev) => {
@@ -256,18 +269,14 @@ export function NajtacnijeFlow() {
       });
       void checkPhoto(file, replaceAt);
     } else {
-      setFiles((prev) => {
-        const room = MAX_IMAGES - prev.length;
-        if (room <= 0) return prev;
-        const added = picked.slice(0, room);
-        const startIndex = prev.length;
-        setPreviews((urls) => [
-          ...urls,
-          ...added.map((f) => URL.createObjectURL(f)),
-        ]);
-        added.forEach((f, i) => void checkPhoto(f, startIndex + i));
-        return [...prev, ...added];
-      });
+      const room = MAX_IMAGES - files.length;
+      if (room <= 0) return;
+      const added = picked.slice(0, room);
+      const startIndex = files.length;
+      const urls = added.map((f) => URL.createObjectURL(f));
+      setFiles((prev) => [...prev, ...added]);
+      setPreviews((prev) => [...prev, ...urls]);
+      added.forEach((f, i) => void checkPhoto(f, startIndex + i));
     }
 
     if (next) setPhase(next);
@@ -374,11 +383,22 @@ export function NajtacnijeFlow() {
     blobs.forEach((b, i) => fd.append("slike", b, `obrok-${i}.jpg`));
     fd.append("tip", mode);
     fd.append("referenca", reference ?? "nista");
-    // Meal mode only -- a nutrition label has no portion to estimate.
-    if (mode === "obrok") {
-      fd.append("procena_grama", String(userGrams));
-      if (prep) fd.append("priprema", prep);
+  }
+
+  /** The portion the user described, in the shape the server re-validates. */
+  function appendPortion(fd: FormData) {
+    if (mode !== "obrok" || !geometry || !unit) return;
+    fd.append("posuda", geometry.vessel);
+    if (geometry.vessel === "dubok") fd.append("nivo", String(geometry.level));
+    else if (geometry.vessel === "komadi")
+      fd.append("komada", String(geometry.count));
+    else {
+      fd.append("pokrivenost", String(geometry.coverage));
+      fd.append("visina", geometry.height);
     }
+    fd.append("jedinica_naziv", unit.naziv);
+    fd.append("jedinica_grami", String(unit.grami));
+    if (prep) fd.append("priprema", prep);
   }
 
   function applyEstimate(est: CombinedMealEstimate) {
@@ -417,25 +437,24 @@ export function NajtacnijeFlow() {
       const result = await analyzeMealAction(fd);
       if (!result.ok) {
         setError(result.error_sr);
-        setPhase(mode === "deklaracija" ? "capture" : "review2");
+        setPhase(mode === "deklaracija" ? "capture" : "review1");
         return;
       }
 
-      if (result.data.status === "procena") {
-        // Every item read clearly — nothing worth asking about.
-        applyEstimate(result.data.estimate);
-        return;
-      }
-
-      setQuestions(result.data.pitanja);
-      setAnswers(result.data.pitanja.map(() => []));
+      const data = result.data;
+      setDish(data.naziv);
+      setUnit(data.jedinica);
+      setGeometry(defaultGeometry(data.posuda));
+      setAngleAsk(data.ugao.treba ? data.ugao.zasto || "" : null);
+      setQuestions(data.pitanja);
+      setAnswers(data.pitanja.map(() => []));
       setNote("");
       wavBlobRef.current = null;
       setRecordedSeconds(null);
-      setPhase("questions");
+      setPhase("estimate");
     } catch {
       setError("Nismo uspeli da analiziramo. Pokušaj ponovo.");
-      setPhase(mode === "deklaracija" ? "capture" : "review2");
+      setPhase(mode === "deklaracija" ? "capture" : "review1");
     }
   }
 
@@ -464,7 +483,12 @@ export function NajtacnijeFlow() {
   const allTapped =
     questions.length > 0 && questions.every((_, i) => (answers[i]?.length ?? 0) > 0);
   const hasVoiceOrText = wavBlobRef.current != null || note.trim().length > 0;
-  const canFinalize = questions.length > 0 && (allTapped || hasVoiceOrText);
+  // No question is a legitimate outcome now that the dial carries the portion,
+  // so an empty list must not block the button.
+  const questionsAnswered =
+    questions.length === 0 || allTapped || hasVoiceOrText;
+  const canFinalize =
+    questionsAnswered && (mode === "deklaracija" || prep !== null);
   // "Nešto drugo" only means something once they've actually said what.
   const needsDetail = questions.some(
     (_, i) => (answers[i] ?? []).includes(OTHER_LABEL)
@@ -481,7 +505,11 @@ export function NajtacnijeFlow() {
   }
 
   async function handleFinalize() {
-    if (!canFinalize) {
+    if (mode === "obrok" && prep === null) {
+      setError("Izaberi kako je pripremljeno — to najviše menja kalorije.");
+      return;
+    }
+    if (!questionsAnswered) {
       setError("Odgovori na pitanja — tapni opcije ili odgovori glasom.");
       return;
     }
@@ -495,6 +523,7 @@ export function NajtacnijeFlow() {
       const blobs = await downscaledBlobs();
       const fd = new FormData();
       appendImages(fd, blobs);
+      appendPortion(fd);
       fd.append("odgovori", buildAnswersText());
       if (wavBlobRef.current) {
         fd.append("audio", wavBlobRef.current, "odgovor.wav");
@@ -503,13 +532,13 @@ export function NajtacnijeFlow() {
       const result = await finalizeMealAction(fd);
       if (!result.ok) {
         setError(result.error_sr);
-        setPhase("questions");
+        setPhase("estimate");
         return;
       }
       applyEstimate(result.data);
     } catch {
       setError("Nismo uspeli da procenimo. Pokušaj ponovo.");
-      setPhase("questions");
+      setPhase("estimate");
     }
   }
 
@@ -611,6 +640,8 @@ export function NajtacnijeFlow() {
   }
 
   const shotIssues = (index: number) => issues[index] ?? [];
+  const guessedGrams =
+    geometry && unit ? portionGrams(geometry, unit) : null;
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
@@ -668,8 +699,8 @@ export function NajtacnijeFlow() {
       {phase === "mode" ? (
         <div className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">
-            Dve slike iz dva ugla i par pitanja — zato je ovo najtačnija procena
-            u aplikaciji.
+            Slikaš jednom, kažeš koliko ima i odgovoriš na par pitanja — zato je
+            ovo najtačnija procena u aplikaciji.
           </p>
           <button
             type="button"
@@ -680,7 +711,7 @@ export function NajtacnijeFlow() {
             <span className="flex flex-col">
               <span className="text-base font-medium text-foreground">Obrok</span>
               <span className="text-sm text-muted-foreground">
-                Vodimo te kroz dva ugla pa AI pita šta mu nije jasno
+                Slikaj tanjir pa nam reci koliko ima
               </span>
             </span>
           </button>
@@ -705,12 +736,11 @@ export function NajtacnijeFlow() {
         </div>
       ) : null}
 
-      {/* --- Guide 1: straight down ------------------------------------- */}
+      {/* --- Guide: straight down ---------------------------------------- */}
       {phase === "guide1" ? (
         <GuideStep
-          step={1}
           title="Slikaj pravo odozgo"
-          subtitle="Tako vidim koliko je hrane po širini tanjira."
+          subtitle="Tako vidim šta je na tanjiru i kako je raspoređeno."
           variant="top"
           tips={[
             "Stavi viljušku ili kašiku PORED tanjira — po njoj merim veličinu",
@@ -724,11 +754,9 @@ export function NajtacnijeFlow() {
         />
       ) : null}
 
-      {/* --- Review 1 + reference object -------------------------------- */}
+      {/* --- Review + reference object ------------------------------------ */}
       {phase === "review1" ? (
         <div className="flex flex-col gap-5">
-          <StepBadge step={1} label="Slika odozgo" />
-
           {previews[0] ? (
             <div className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -782,99 +810,23 @@ export function NajtacnijeFlow() {
           <button
             type="button"
             disabled={reference === null}
-            onClick={() => setPhase("portion")}
+            onClick={() => void handleAnalyze()}
             className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground disabled:opacity-60"
           >
+            <Sparkles className="size-5" aria-hidden="true" />
             Dalje
           </button>
         </div>
       ) : null}
 
-      {/* --- The one thing the camera can't do -------------------------- */}
-      {phase === "portion" ? (
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-1.5">
-            <h2 className="text-xl font-semibold tracking-tight text-foreground">
-              Koliko otprilike ima?
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              Slika vidi ŠTA je na tanjiru, ali ne i koliko toga ima. Ti to vidiš
-              — reci grubo, ja ću odatle da izračunam tačno.
-            </p>
-          </div>
-
-          {/* Their own photo, right above the dial: the whole point of asking
-              here rather than before the shot is that they can compare. */}
-          {previews[0] ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={previews[0]}
-              alt="Tvoja slika obroka"
-              className="max-h-36 w-full rounded-2xl object-cover"
-            />
-          ) : null}
-
-          <PortionDial grams={userGrams} onChange={setUserGrams} />
-
-          <div className="flex flex-col gap-2.5">
-            <span className="text-base font-medium text-foreground">
-              Kako je pripremljeno?
-            </span>
-            <p className="-mt-1 text-xs text-muted-foreground">
-              Mast se ne vidi na slici, a nosi najviše kalorija — kašika ulja je
-              126 kcal.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {PREP_METHODS.map((method) => {
-                const on = prep === method;
-                return (
-                  <button
-                    key={method}
-                    type="button"
-                    onClick={() => setPrep(method)}
-                    className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors ${
-                      on
-                        ? "border-primary bg-primary text-primary-foreground"
-                        : "border-border bg-background text-foreground hover:bg-muted"
-                    }`}
-                  >
-                    {on ? <Check className="size-3.5" aria-hidden="true" /> : null}
-                    {PREP_LABELS[method]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              disabled={prep === null}
-              onClick={() => {
-                if (readSkipGuides()) openCamera("review2");
-                else setPhase("guide2");
-              }}
-              className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground disabled:opacity-60"
-            >
-              Dalje — druga slika
-            </button>
-            <button
-              type="button"
-              onClick={() => setPhase("review1")}
-              className="rounded-xl px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-              Nazad
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {/* --- Guide 2: the 45° angle ------------------------------------- */}
+      {/* --- The extra angle: only when the model says it would help ------ */}
       {phase === "guide2" ? (
         <GuideStep
-          step={2}
-          title="Sad malo iz ugla"
-          subtitle="Odozgo se vidi širina, iz ugla visina. Zajedno mi daju količinu."
+          title="Još jedna slika, iz ugla"
+          subtitle={
+            angleAsk ||
+            "Odozgo se ne vidi šta je ispod — iz ugla se vidi i visina."
+          }
           variant="angle"
           tips={[
             "Viljuška neka ostane PORED tanjira, kao na prvoj slici",
@@ -882,108 +834,10 @@ export function NajtacnijeFlow() {
             "Isti tanjir — ne pomeraj hranu",
           ]}
           cta="Otvori kameru"
-          onStart={() => openCamera("review2")}
+          onStart={() => openCamera("estimate")}
           onDismissGuides={dismissGuides}
-          onBack={() => setPhase("portion")}
-          footer={
-            confirmSkipShot ? (
-              <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-4">
-                <div className="flex gap-2.5">
-                  <TriangleAlert
-                    className="size-5 shrink-0 text-amber-500"
-                    aria-hidden="true"
-                  />
-                  <p className="text-sm text-foreground">
-                    Bez drugog ugla ne vidim koliko je jelo visoko, pa procena
-                    zna da promaši i za trećinu. Preporuka je da ipak slikaš.
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirmSkipShot(false);
-                      openCamera("review2");
-                    }}
-                    className="rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
-                  >
-                    Dobro, slikaću
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setConfirmSkipShot(false);
-                      void handleAnalyze();
-                    }}
-                    className="rounded-xl px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-                  >
-                    Ipak nastavi sa jednom slikom
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setConfirmSkipShot(true)}
-                className="rounded-xl px-6 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground"
-              >
-                Nemam drugu sliku
-              </button>
-            )
-          }
+          onBack={() => setPhase("estimate")}
         />
-      ) : null}
-
-      {/* --- Review 2: both angles, extra angles optional --------------- */}
-      {phase === "review2" ? (
-        <div className="flex flex-col gap-5">
-          <StepBadge step={2} label="Spremno za analizu" />
-
-          <div className="grid grid-cols-3 gap-2.5">
-            {previews.map((url, i) => (
-              <div key={url} className="relative aspect-square">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={url}
-                  alt={`Slika ${i + 1}`}
-                  className="size-full rounded-xl object-cover"
-                />
-                <span className="absolute bottom-1 left-1 rounded-full bg-background/85 px-2 py-0.5 text-[10px] font-medium text-foreground backdrop-blur">
-                  {i === 0 ? "odozgo" : i === 1 ? "45°" : `ugao ${i + 1}`}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => removePhoto(i)}
-                  aria-label={`Ukloni sliku ${i + 1}`}
-                  className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-foreground text-background shadow"
-                >
-                  <X className="size-3.5" aria-hidden="true" />
-                </button>
-              </div>
-            ))}
-            {files.length < MAX_IMAGES ? (
-              <button
-                type="button"
-                onClick={() => openCamera("review2")}
-                aria-label="Dodaj još jedan ugao"
-                className="grid aspect-square place-items-center rounded-xl border border-dashed border-border text-muted-foreground transition-colors hover:bg-muted"
-              >
-                <Camera className="size-6" aria-hidden="true" />
-              </button>
-            ) : null}
-          </div>
-
-          <PhotoWarning issues={shotIssues(1)} />
-
-          <button
-            type="button"
-            onClick={() => void handleAnalyze()}
-            className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground"
-          >
-            <Sparkles className="size-5" aria-hidden="true" />
-            Analiziraj
-          </button>
-        </div>
       ) : null}
 
       {/* --- Label mode: plain capture ---------------------------------- */}
@@ -1071,18 +925,19 @@ export function NajtacnijeFlow() {
 
       {phase === "analyzing" ? (
         <AiThinking
-          title="Gledam tvoje slike…"
+          title="Gledam tvoj tanjir…"
           lines={[
             "Prepoznajem šta je na tanjiru…",
-            "Merim porciju po viljušci…",
-            "Spajam širinu i visinu…",
-            "Spremam pitanja ako nešto nije jasno…",
+            "Merim tanjir po viljušci…",
+            "Spremam ti klizač za količinu…",
+            "Gledam šta mi još nije jasno…",
           ]}
         />
       ) : null}
 
-      {phase === "questions" ? (
-        <div className="flex flex-col gap-5">
+      {/* --- One screen: how much, how cooked, and what AI can't see ------ */}
+      {phase === "estimate" ? (
+        <div className="flex flex-col gap-6">
           {previews.length > 0 ? (
             <div className="flex gap-2 overflow-x-auto">
               {previews.map((url, i) => (
@@ -1097,105 +952,189 @@ export function NajtacnijeFlow() {
             </div>
           ) : null}
 
-          <div className="flex items-center gap-2 text-sm text-primary">
-            <Sparkles className="size-4" aria-hidden="true" />
-            <span>Ovo ne mogu da vidim sa slike</span>
-          </div>
+          {mode === "obrok" && geometry && unit ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                  {dish ? `${dish} — koliko ima?` : "Koliko otprilike ima?"}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  Vidim šta je na tanjiru, ali ne i koliko toga ima. Ti to vidiš
+                  — reci grubo, ja ću odatle da izračunam.
+                </p>
+              </div>
 
-          <div className="flex flex-col gap-6">
-            {questions.map((q, qi) => {
-              const selected = answers[qi] ?? [];
-              // The escape hatches are appended by us, not the model.
-              const options = [...q.opcije, DONT_KNOW_LABEL, OTHER_LABEL];
-              return (
-                <div key={qi} className="flex flex-col gap-2.5">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span className="text-base font-medium text-foreground">
-                        {q.pitanje}
-                      </span>
-                      {q.vise_odgovora ? (
-                        <span className="shrink-0 text-xs text-muted-foreground">
-                          može više
-                        </span>
-                      ) : null}
-                    </div>
-                    {/* Why this question exists, in the AI's own words — so it
-                        reads as "I looked at YOUR plate", not a checklist. */}
-                    {q.zasto ? (
-                      <span className="text-xs text-muted-foreground">
-                        {q.zasto}
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {options.map((option) => {
-                      const on = selected.includes(option);
-                      const isEscape =
-                        option === DONT_KNOW_LABEL || option === OTHER_LABEL;
-                      return (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() =>
-                            toggleOption(qi, option, q.vise_odgovora)
-                          }
-                          className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors ${
-                            on
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : isEscape
-                                ? "border-dashed border-border bg-background text-muted-foreground hover:bg-muted"
-                                : "border-border bg-background text-foreground hover:bg-muted"
-                          }`}
-                        >
-                          {on ? <Check className="size-3.5" aria-hidden="true" /> : null}
-                          {option}
-                        </button>
-                      );
-                    })}
-                  </div>
+              <PortionDial
+                geometry={geometry}
+                unit={unit}
+                onChange={setGeometry}
+              />
+
+              <div className="flex flex-col gap-2.5">
+                <span className="text-base font-medium text-foreground">
+                  Kako je pripremljeno?
+                </span>
+                <p className="-mt-1 text-xs text-muted-foreground">
+                  Mast se ne vidi na slici, a nosi najviše kalorija — kašika ulja
+                  je 126 kcal.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {PREP_METHODS.map((method) => {
+                    const on = prep === method;
+                    return (
+                      <button
+                        key={method}
+                        type="button"
+                        onClick={() => setPrep(method)}
+                        className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors ${
+                          on
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-border bg-background text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        {on ? <Check className="size-3.5" aria-hidden="true" /> : null}
+                        {PREP_LABELS[method]}
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            </div>
+          ) : null}
 
-          {/* Voice/text: the way out when the chips don't cover it. */}
-          <div className="flex flex-col gap-2 rounded-2xl border border-border bg-muted/40 px-4 py-4">
-            <span className="text-sm font-medium text-foreground">
-              {needsDetail ? "Reci šta je bilo" : "…ili odgovori glasom na sve"}
-            </span>
-            {!isRecording ? (
-              <button
-                type="button"
-                onClick={() => void startRecording()}
-                className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              >
-                <Mic className="size-5 text-primary" aria-hidden="true" />
-                {recordedSeconds != null
-                  ? `Snimljeno (${recordedSeconds}s) — snimi ponovo`
-                  : "Reci glasom"}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void stopRecording()}
-                className="flex items-center justify-center gap-2 rounded-xl bg-destructive px-6 py-3 text-sm font-semibold text-destructive-foreground animate-pulse"
-              >
-                <Square className="size-4 fill-current" aria-hidden="true" />
-                Snimam… {formatSeconds(seconds)} — zaustavi
-              </button>
-            )}
-            {recordedSeconds != null && !isRecording ? (
-              <p className="text-xs text-primary">Snimak spreman ✓</p>
-            ) : null}
-            <textarea
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              rows={2}
-              placeholder="…ili dopiši nešto (opciono)"
-              className="mt-1 rounded-xl border border-border bg-background px-4 py-2.5 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            />
-          </div>
+          {/* The second angle, offered only when the model says something is
+              hidden that it would actually reveal. */}
+          {angleAsk !== null && files.length < MAX_IMAGES ? (
+            <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-4">
+              <p className="text-sm text-foreground">
+                {angleAsk || "Odozgo ne vidim šta je ispod."} Jedna slika iz ugla
+                bi to rešila.
+              </p>
+              <div className="flex flex-col gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPhase("guide2")}
+                  className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
+                >
+                  <Camera className="size-4" aria-hidden="true" />
+                  Slikaj iz ugla
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAngleAsk(null)}
+                  className="rounded-xl px-6 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Preskoči
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {questions.length > 0 ? (
+            <div className="flex flex-col gap-5">
+              <div className="flex items-center gap-2 text-sm text-primary">
+                <Sparkles className="size-4" aria-hidden="true" />
+                <span>Ovo ne mogu da vidim sa slike</span>
+              </div>
+
+              <div className="flex flex-col gap-6">
+                {questions.map((q, qi) => {
+                  const selected = answers[qi] ?? [];
+                  // The escape hatches are appended by us, not the model.
+                  const options = [...q.opcije, DONT_KNOW_LABEL, OTHER_LABEL];
+                  return (
+                    <div key={qi} className="flex flex-col gap-2.5">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="text-base font-medium text-foreground">
+                            {q.pitanje}
+                          </span>
+                          {q.vise_odgovora ? (
+                            <span className="shrink-0 text-xs text-muted-foreground">
+                              može više
+                            </span>
+                          ) : null}
+                        </div>
+                        {/* Why this question exists, in the AI's own words — so
+                            it reads as "I looked at YOUR plate", not a checklist. */}
+                        {q.zasto ? (
+                          <span className="text-xs text-muted-foreground">
+                            {q.zasto}
+                          </span>
+                        ) : null}
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {options.map((option) => {
+                          const on = selected.includes(option);
+                          const isEscape =
+                            option === DONT_KNOW_LABEL || option === OTHER_LABEL;
+                          return (
+                            <button
+                              key={option}
+                              type="button"
+                              onClick={() =>
+                                toggleOption(qi, option, q.vise_odgovora)
+                              }
+                              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors ${
+                                on
+                                  ? "border-primary bg-primary text-primary-foreground"
+                                  : isEscape
+                                    ? "border-dashed border-border bg-background text-muted-foreground hover:bg-muted"
+                                    : "border-border bg-background text-foreground hover:bg-muted"
+                              }`}
+                            >
+                              {on ? (
+                                <Check className="size-3.5" aria-hidden="true" />
+                              ) : null}
+                              {option}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Voice/text: the way out when the chips don't cover it. */}
+              <div className="flex flex-col gap-2 rounded-2xl border border-border bg-muted/40 px-4 py-4">
+                <span className="text-sm font-medium text-foreground">
+                  {needsDetail ? "Reci šta je bilo" : "…ili odgovori glasom na sve"}
+                </span>
+                {!isRecording ? (
+                  <button
+                    type="button"
+                    onClick={() => void startRecording()}
+                    className="flex items-center justify-center gap-2 rounded-xl border border-border bg-background px-6 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                  >
+                    <Mic className="size-5 text-primary" aria-hidden="true" />
+                    {recordedSeconds != null
+                      ? `Snimljeno (${recordedSeconds}s) — snimi ponovo`
+                      : "Reci glasom"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => void stopRecording()}
+                    className="flex items-center justify-center gap-2 rounded-xl bg-destructive px-6 py-3 text-sm font-semibold text-destructive-foreground animate-pulse"
+                  >
+                    <Square className="size-4 fill-current" aria-hidden="true" />
+                    Snimam… {formatSeconds(seconds)} — zaustavi
+                  </button>
+                )}
+                {recordedSeconds != null && !isRecording ? (
+                  <p className="text-xs text-primary">Snimak spreman ✓</p>
+                ) : null}
+                <textarea
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  rows={2}
+                  placeholder="…ili dopiši nešto (opciono)"
+                  className="mt-1 rounded-xl border border-border bg-background px-4 py-2.5 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                />
+              </div>
+            </div>
+          ) : null}
 
           <div className="flex flex-col gap-2">
             <button
@@ -1205,13 +1144,11 @@ export function NajtacnijeFlow() {
               className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground disabled:opacity-60"
             >
               <Sparkles className="size-5" aria-hidden="true" />
-              Nastavi
+              Izračunaj
             </button>
             <button
               type="button"
-              onClick={() =>
-                setPhase(mode === "deklaracija" ? "capture" : "review2")
-              }
+              onClick={() => setPhase(mode === "deklaracija" ? "capture" : "review1")}
               disabled={isRecording}
               className="rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
             >
@@ -1225,7 +1162,7 @@ export function NajtacnijeFlow() {
         <AiThinking
           title="Računam tvoju porciju…"
           lines={[
-            "Spajam slike i tvoje odgovore…",
+            "Spajam sliku i tvoje odgovore…",
             "Razlažem obrok na sastojke…",
             "Sabiram makronutrijente…",
             "Skoro gotovo…",
@@ -1249,17 +1186,21 @@ export function NajtacnijeFlow() {
             <span>{CONFIDENCE_LABEL[estimate.sigurnost]}</span>
           </div>
 
-          {/* Their guess against ours. Shown because it makes the work visible
-              -- and because seeing the two numbers side by side is the only way
-              anyone ever calibrates their eye for a portion. */}
-          {mode === "obrok" ? (
+          {/* Their reading against ours. Shown because it makes the work
+              visible -- and because seeing the two numbers side by side is the
+              only way anyone ever calibrates their eye for a portion. */}
+          {mode === "obrok" && guessedGrams != null ? (
             <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm">
               <span className="text-muted-foreground">
-                Tvoja procena: <strong className="font-semibold text-foreground">{userGrams} g</strong>
+                Tvoja procena:{" "}
+                <strong className="font-semibold text-foreground">
+                  {guessedGrams} g
+                </strong>
               </span>
               <span className="text-muted-foreground">·</span>
               <span className="text-muted-foreground">
-                Naša: <strong className="font-semibold text-primary">{grams} g</strong>
+                Naša:{" "}
+                <strong className="font-semibold text-primary">{grams} g</strong>
               </span>
             </div>
           ) : null}
@@ -1394,21 +1335,8 @@ export function NajtacnijeFlow() {
   );
 }
 
-/** Small "1 / 2" pill that keeps the two-shot flow legible. */
-function StepBadge({ step, label }: { step: number; label: string }) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="rounded-full bg-primary/15 px-2.5 py-1 text-xs font-semibold text-primary">
-        {step} / 2
-      </span>
-      <span className="text-sm text-muted-foreground">{label}</span>
-    </div>
-  );
-}
-
-/** One of the two teaching screens: animation, what to do, why, and the CTA. */
+/** One of the teaching screens: animation, what to do, why, and the CTA. */
 function GuideStep({
-  step,
   title,
   subtitle,
   variant,
@@ -1417,9 +1345,7 @@ function GuideStep({
   onStart,
   onDismissGuides,
   onBack,
-  footer,
 }: {
-  step: number;
   title: string;
   subtitle: string;
   variant: "top" | "angle";
@@ -1428,12 +1354,9 @@ function GuideStep({
   onStart: () => void;
   onDismissGuides: () => void;
   onBack: () => void;
-  footer?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-5">
-      <StepBadge step={step} label={step === 1 ? "Prva slika" : "Druga slika"} />
-
       <ShotGuide variant={variant} />
 
       <div className="flex flex-col gap-1.5">
@@ -1461,7 +1384,6 @@ function GuideStep({
           <Camera className="size-5" aria-hidden="true" />
           {cta}
         </button>
-        {footer}
         <div className="flex items-center justify-between gap-3 pt-1">
           <button
             type="button"

@@ -29,7 +29,12 @@ import {
   voiceMealSchema,
   type VoiceMealEstimate,
 } from "@/lib/ai/voice-estimate";
-import { describeUserPortion, type PrepMethod } from "@/lib/ai/portion";
+import {
+  describePortion,
+  type PortionGeometry,
+  type PortionUnit,
+  type PrepMethod,
+} from "@/lib/ai/portion";
 import {
   describeShots,
   PRIZMA_ANALYZE_LABEL_PROMPT,
@@ -407,35 +412,36 @@ function imageInlineParts(images: ImagePart[]): Array<Record<string, unknown>> {
 }
 
 /**
- * What the user told us before the second shot: roughly how much food, and how
- * it was cooked. Null on the label flow (a nutrition table has no portion) and
- * for anyone who somehow reaches the call without the step.
+ * What the user told us about the portion: the shape they described, the mass
+ * anchor the model gave us for that food, and how it was cooked. Null on the
+ * ANALYZE call (which runs before they have answered) and on the label flow.
  */
-export type UserPortion = { grams: number | null; prep: PrepMethod | null } | null;
+export type UserPortion = {
+  geometry: PortionGeometry;
+  unit: PortionUnit;
+  prep: PrepMethod | null;
+} | null;
 
 /**
- * Prizma step 1 (ANALYZE): 1–5 photos of the same meal (or nutrition label) ->
- * EITHER clarifying questions (each with tappable options) OR, when already
- * confident, a final estimate. Defensive parse (`parsePrizmaAnalysis`) never
- * throws — a malformed response degrades to the "how much did you eat?"
- * question so the flow can't dead-end. Uses the meal model.
+ * Prizma step 1 (ANALYZE): the top-down photo -> what the food IS, which shape
+ * of dial fits it, what one unit of it weighs, and the few things the model
+ * still cannot tell. It deliberately does NOT estimate: the portion arrives
+ * from the user afterwards, and a model that has already committed to a mass
+ * argues with them instead of using them. Defensive parse never throws.
  */
 export async function analyzePrizmaMeal(
   images: ImagePart[],
   variant: PrizmaVariant = "obrok",
-  reference: ReferenceObject = "nista",
-  portion: UserPortion = null
+  reference: ReferenceObject = "nista"
 ): Promise<PrizmaAnalysis> {
   const isLabel = variant === "deklaracija";
   const parts: Array<Record<string, unknown>> = [
     { text: isLabel ? PRIZMA_ANALYZE_LABEL_PROMPT : PRIZMA_ANALYZE_PROMPT },
   ];
-  // Angles and a scale anchor only mean something for a plate of food; the
+  // Viewpoint and a scale anchor only mean something for a plate of food; the
   // label flow is just reading a table, so it gets neither.
   if (!isLabel) {
     parts.push({ text: describeShots(images.length, reference) });
-    const said = describeUserPortion(portion?.grams ?? null, portion?.prep ?? null);
-    if (said) parts.push({ text: said });
   }
   parts.push(...imageInlineParts(images));
 
@@ -458,25 +464,26 @@ export async function analyzePrizmaMeal(
   const analysis = parsePrizmaAnalysis(parseJson(text), variant);
 
   // Server-side trace, never shown to the user. "The questions feel generic"
-  // has three very different causes (a template answer, a malformed one, or an
-  // honestly repetitive plate) and they are indistinguishable from the UI --
-  // this line is how we tell them apart in the logs.
-  if (analysis.status === "pitanja") {
-    console.info(
-      "[prizma] analyze:",
-      JSON.stringify({
-        source: analysis.source,
-        vidim: analysis.vidim.map((i) => `${i.stavka}:${i.sigurnost}`),
-        pitanja: analysis.pitanja.map((q) => ({
-          stavka: q.stavka,
-          pitanje: q.pitanje,
-          kcal: q.uticaj_kcal,
-        })),
-      })
-    );
-  } else {
-    console.info("[prizma] analyze: confident estimate, no questions");
-  }
+  // has several very different causes (a template answer, a malformed one, or
+  // an honestly clear plate) and they are indistinguishable from the UI -- this
+  // line is how we tell them apart in the logs. The vessel call is logged too:
+  // a soup classed as "ravan" hands the user the wrong dial entirely.
+  console.info(
+    "[prizma] analyze:",
+    JSON.stringify({
+      naziv: analysis.naziv,
+      posuda: analysis.posuda,
+      jedinica: `${analysis.jedinica.naziv}=${analysis.jedinica.grami}g`,
+      ugao: analysis.ugao.treba,
+      source: analysis.source,
+      vidim: analysis.vidim.map((i) => `${i.stavka}:${i.sigurnost}`),
+      pitanja: analysis.pitanja.map((q) => ({
+        stavka: q.stavka,
+        pitanje: q.pitanje,
+        kcal: q.uticaj_kcal,
+      })),
+    })
+  );
 
   return analysis;
 }
@@ -502,7 +509,11 @@ export async function finalizePrizmaMeal(
   ];
   if (!isLabel) {
     parts.push({ text: describeShots(images.length, reference) });
-    const said = describeUserPortion(portion?.grams ?? null, portion?.prep ?? null);
+    const said = describePortion(
+      portion?.geometry ?? null,
+      portion?.unit ?? null,
+      portion?.prep ?? null
+    );
     if (said) parts.push({ text: said });
   }
   parts.push(...imageInlineParts(images));

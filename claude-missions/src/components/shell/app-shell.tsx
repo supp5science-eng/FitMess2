@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { AppNavBar } from "@/components/shell/app-nav-bar";
 import { AccountsSync } from "@/components/auth/accounts-sync";
+import { InstallNudge } from "@/components/pwa/install-nudge";
 
 /**
  * F005: app-wide mobile-first shell.
@@ -86,6 +87,9 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Keeps the on-device multi-account registry (and the active account's
           rotating token) up to date wherever a signed-in user is. */}
       <AccountsSync />
+      {/* Asks browser-tab users to install the app, once per visit. Self-gating
+          (silent when already installed, on a repeat visit, or mid-logging). */}
+      <InstallNudge />
     </div>
   );
 }

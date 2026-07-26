@@ -5,15 +5,26 @@ import { useEffect, useRef, useState } from "react";
 import "./install-overlay.css";
 
 /**
- * The one-time, post-onboarding "install FitMess" moment.
+ * The "install FitMess" moment. Two gates, one overlay (`mode`):
  *
- * Shown as a full-screen overlay on `/danas`, exactly once, right after the
- * user has finished the whole journey (upitnik → registration → plan reveal →
- * ring hand-off intro) — the point of maximum investment, when "sad kad sam
- * sve završio, daj da instaliram" lands best. The trigger is the short-lived
- * `fm_install` cookie dropped by the plan reveal; this component CONSUMES it
- * on mount and additionally guards with localStorage, so the overlay can
- * never nag twice.
+ * - `onboarding` (default) — the one-time, post-onboarding moment on `/danas`,
+ *   right after the user has finished the whole journey (upitnik →
+ *   registration → plan reveal → ring hand-off intro): the point of maximum
+ *   investment, when "sad kad sam sve završio, daj da instaliram" lands best.
+ *   Triggered by the short-lived `fm_install` cookie dropped by the plan
+ *   reveal; this component CONSUMES it on mount and guards with localStorage,
+ *   so that moment can never replay.
+ *
+ * - `revisit` — the recurring nudge for people still using FitMess in a
+ *   browser tab. Mounted app-wide (`InstallNudge` in the app shell) and shown
+ *   again on each fresh visit, because a single install pitch converts a
+ *   fraction of people and the rest keep paying the "find the tab" tax
+ *   forever. Gated by `VISIT_GAP_MS` since the last showing, so it appears
+ *   once per visit — never twice in one sitting, never on a reload.
+ *
+ * Both gates stand down permanently once the app is actually installed
+ * (`display-mode: standalone`, or an `appinstalled` event we recorded), so
+ * nobody is ever asked to install something they already have.
  *
  * It adapts to what the device can actually do:
  *  - Android / Chrome with a captured `beforeinstallprompt`: the primary CTA
@@ -36,11 +47,35 @@ import "./install-overlay.css";
 
 const INSTALL_COOKIE = "fm_install";
 const SEEN_KEY = "fm_install_seen";
+/** When the overlay was last shown (either gate). Both write it, both read it,
+ * so the post-onboarding moment and the recurring nudge can never stack up on
+ * the same visit. */
+const SHOWN_AT_KEY = "fm_install_shown_at";
+/** Set once an `appinstalled` event is seen. There is no API to ask "is this
+ * site already installed?" from inside a browser tab, so remembering the one
+ * moment the browser DOES tell us is the only way to stop nagging someone who
+ * installed the app and later opened a stale tab. */
+const INSTALLED_KEY = "fm_installed";
 const STEP_MS = 2600;
 const OUT_MS = 360;
 
+/** How long after the last showing counts as a NEW visit. The brief is "every
+ * time they leave and come back" — this is the one knob that says how literally
+ * to take that. 30 min is short enough that a genuine return trip (morning →
+ * lunch → evening) gets asked again, and long enough that a reload, a tab
+ * switch, or a walk through the "+" flows never re-triggers it mid-sitting. */
+const VISIT_GAP_MS = 30 * 60 * 1000;
+
+/** The post-onboarding moment lands right after the ring hand-off settles; the
+ * revisit nudge waits a little longer so the app paints and the user sees their
+ * day FIRST -- a modal over a blank screen reads as breakage, not as an offer. */
+const ONBOARDING_DELAY_MS = 700;
+const REVISIT_DELAY_MS = 2600;
+
 type Platform = "ios" | "android";
 type Stage = "guide" | "installed";
+/** Which gate decides whether this overlay shows. See the file comment. */
+export type InstallOverlayMode = "onboarding" | "revisit";
 
 // Minimal shape of the (still non-standard) beforeinstallprompt event.
 interface BeforeInstallPromptEvent extends Event {
@@ -92,7 +127,49 @@ function prefersReducedMotion(): boolean {
   );
 }
 
-export function InstallOverlay() {
+/** localStorage can throw (Safari private mode, blocked storage). Every read
+ * degrades to "no record", every write is best-effort: worst case the overlay
+ * shows a little more often than intended, which beats crashing the shell. */
+function readStore(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function writeStore(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Best effort only.
+  }
+}
+
+/** True once the app is installed on this device, by either signal we have. */
+function alreadyInstalled(): boolean {
+  return isStandalone() || readStore(INSTALLED_KEY) === "1";
+}
+
+function markShownNow(): void {
+  writeStore(SHOWN_AT_KEY, String(Date.now()));
+}
+
+/** Has enough time passed since the last showing to call this a new visit? */
+function isNewVisit(): boolean {
+  const raw = readStore(SHOWN_AT_KEY);
+  if (raw === null) return true;
+  const last = Number(raw);
+  // A corrupt value must not lock the nudge out forever.
+  if (!Number.isFinite(last)) return true;
+  return Date.now() - last >= VISIT_GAP_MS;
+}
+
+export function InstallOverlay({
+  mode = "onboarding",
+}: {
+  mode?: InstallOverlayMode;
+} = {}) {
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [platform, setPlatform] = useState<Platform>("android");
@@ -104,41 +181,62 @@ export function InstallOverlay() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
   const reducedRef = useRef(false);
 
-  // One-shot gating + capability detection. Consumes the fm_install cookie
-  // unconditionally (even when we end up not showing) so a refresh never
-  // resurrects the prompt.
+  // Gating + capability detection. The onboarding gate consumes the fm_install
+  // cookie unconditionally (even when we end up not showing) so a refresh never
+  // resurrects that one-shot moment.
   useEffect(() => {
-    try {
-      document.cookie = `${INSTALL_COOKIE}=; path=/; max-age=0; samesite=lax`;
-    } catch {
-      // Blocked cookies only mean we rely on the localStorage guard below.
+    if (mode === "onboarding") {
+      try {
+        document.cookie = `${INSTALL_COOKIE}=; path=/; max-age=0; samesite=lax`;
+      } catch {
+        // Blocked cookies only mean we rely on the localStorage guard below.
+      }
     }
 
-    let seen = false;
-    try {
-      seen = window.localStorage.getItem(SEEN_KEY) === "1";
-    } catch {
-      seen = false;
-    }
-    if (seen || isStandalone()) return;
-    try {
-      window.localStorage.setItem(SEEN_KEY, "1");
-    } catch {
-      // Best effort — the consumed cookie already prevents the common replay.
+    // Never ask someone to install what they already installed -- checked
+    // first, before either gate's own bookkeeping.
+    if (alreadyInstalled()) return;
+
+    if (mode === "onboarding") {
+      // One-shot: this exact moment (right after finishing onboarding) fires
+      // once per device, ever.
+      if (readStore(SEEN_KEY) === "1") return;
+    } else if (!isNewVisit()) {
+      // Recurring, but only once per visit: a reload, a trip through the "+"
+      // flows, or the onboarding overlay that just ran all land inside the gap.
+      return;
     }
 
     reducedRef.current = prefersReducedMotion();
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPlatform(detectPlatform());
 
-    // A short beat after the ring hand-off has settled, rise in.
-    const show = window.setTimeout(() => setVisible(true), 700);
+    // The "we asked" bookkeeping is written when the overlay ACTUALLY rises,
+    // never up here when we merely decide to. Writing it at decision time
+    // burns the slot on any mount that gets torn down before the delay
+    // elapses -- React's development double-mount, or the user tapping into a
+    // logging flow within the first couple of seconds -- and the re-mounted
+    // gate then reads its own record, concludes "already asked", and goes
+    // quiet. The result is a prompt that silently never shows.
+    const show = window.setTimeout(
+      () => {
+        if (mode === "onboarding") writeStore(SEEN_KEY, "1");
+        markShownNow();
+        setVisible(true);
+      },
+      mode === "onboarding" ? ONBOARDING_DELAY_MS : REVISIT_DELAY_MS
+    );
 
     const onBeforeInstall = (event: Event) => {
       event.preventDefault();
       setDeferred(event as BeforeInstallPromptEvent);
     };
-    const onInstalled = () => setStage("installed");
+    const onInstalled = () => {
+      // Remember it: this is the only moment a browser ever tells us the app
+      // got installed, and it is what stops the nudge for good.
+      writeStore(INSTALLED_KEY, "1");
+      setStage("installed");
+    };
     window.addEventListener("beforeinstallprompt", onBeforeInstall);
     window.addEventListener("appinstalled", onInstalled);
     return () => {
@@ -146,7 +244,7 @@ export function InstallOverlay() {
       window.removeEventListener("beforeinstallprompt", onBeforeInstall);
       window.removeEventListener("appinstalled", onInstalled);
     };
-  }, []);
+  }, [mode]);
 
   // Auto-advance the walkthrough while the guide is up (looping). Under
   // reduced motion — or once the user has tapped a step (`paused`) — we hold
@@ -178,6 +276,9 @@ export function InstallOverlay() {
       await deferred.prompt();
       const choice = await deferred.userChoice;
       if (choice.outcome === "accepted") {
+        // Belt and braces with the `appinstalled` listener: whichever signal
+        // arrives first retires the nudge for good.
+        writeStore(INSTALLED_KEY, "1");
         setStage("installed");
         window.setTimeout(close, 2200);
       }

@@ -27,6 +27,13 @@ declare global {
       CIRCLE = 0,
     }
 
+    /** A pixel offset used to anchor a {@link Symbol} (e.g. the beam's apex). */
+    class Point {
+      constructor(x: number, y: number);
+      x: number;
+      y: number;
+    }
+
     interface Symbol {
       path: SymbolPath | string;
       scale?: number;
@@ -35,6 +42,10 @@ declare global {
       strokeColor?: string;
       strokeOpacity?: number;
       strokeWeight?: number;
+      /** Degrees clockwise the symbol is rotated (drives the heading beam). */
+      rotation?: number;
+      /** The position within the symbol that sits on the marker's LatLng. */
+      anchor?: Point;
     }
 
     // A single entry of a Maps JSON style array. Loosely typed on purpose.
@@ -106,6 +117,7 @@ declare global {
     class Marker {
       constructor(options?: MarkerOptions);
       setPosition(latLng: LatLngLiteral): void;
+      setIcon(icon: Symbol | string): void;
       setMap(map: Map | null): void;
     }
 
@@ -113,6 +125,74 @@ declare global {
       constructor();
       extend(latLng: LatLngLiteral): void;
       isEmpty(): boolean;
+    }
+
+    /** A resolved coordinate object (the shape Directions/Geocoder return);
+     * `lat()`/`lng()` are methods, unlike the plain `LatLngLiteral` we pass in. */
+    interface LatLng {
+      lat(): number;
+      lng(): number;
+    }
+
+    // ---- Geocoder (destination search → a single lat/lng) -----------------
+
+    interface GeocoderRequest {
+      address?: string;
+      bounds?: LatLngBounds;
+      region?: string;
+    }
+
+    interface GeocoderGeometry {
+      location: LatLng;
+    }
+
+    interface GeocoderResult {
+      formatted_address: string;
+      geometry: GeocoderGeometry;
+    }
+
+    interface GeocoderResponse {
+      results: GeocoderResult[];
+    }
+
+    class Geocoder {
+      constructor();
+      geocode(request: GeocoderRequest): Promise<GeocoderResponse>;
+    }
+
+    // ---- Directions (a walked route to the goal) --------------------------
+
+    enum TravelMode {
+      WALKING = "WALKING",
+    }
+
+    interface DirectionsRequest {
+      origin: LatLngLiteral;
+      destination: LatLngLiteral;
+      travelMode: TravelMode | string;
+    }
+
+    interface DirectionsLegDistance {
+      value: number;
+      text: string;
+    }
+
+    interface DirectionsLeg {
+      distance?: DirectionsLegDistance;
+    }
+
+    interface DirectionsRoute {
+      overview_path: LatLng[];
+      legs: DirectionsLeg[];
+    }
+
+    interface DirectionsResult {
+      routes: DirectionsRoute[];
+    }
+
+    class DirectionsService {
+      constructor();
+      route(request: DirectionsRequest): Promise<DirectionsResult>;
     }
   }
 

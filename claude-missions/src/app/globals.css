@@ -91,6 +91,18 @@
   --gauge-grad-2: #0ea5e9;
   --gauge-grad-3: #0a6fae;
   --gauge-track: color-mix(in srgb, #0ea5e9 14%, transparent);
+  /* Niz (streak) accent -- a warm amber->orange, its own thing beside the
+     teal/violet/sky feature accents. LIGHT theme DEEPENS it (orange-500/600):
+     the pale amber that pops on the dark ground washes out on white, so the
+     arc, dots and hint get a richer orange that holds its contrast here. Same
+     per-theme approach as `--gauge-grad-*` above. */
+  --streak-1: #fb923c;
+  --streak-2: #f97316;
+  --streak-3: #ea580c;
+  --streak-accent: #ea580c;
+  --streak-soft: color-mix(in srgb, #ea580c 14%, transparent);
+  --streak-line: color-mix(in srgb, #ea580c 55%, transparent);
+  --streak-glow: rgba(234, 88, 12, 0.28);
   --chart-1: #0a0c0b;
   --chart-2: #646b6f;
   --chart-3: #8a9095;
@@ -176,6 +188,15 @@
   --gauge-grad-2: #17d1a8;
   --gauge-grad-3: #2a9fd1;
   --gauge-track: color-mix(in srgb, #17d1a8 18%, transparent);
+  /* Niz (streak) accent, DARK theme: the brighter amber->orange that pops on
+     the near-black ground. */
+  --streak-1: #fbbf24;
+  --streak-2: #fb923c;
+  --streak-3: #f97316;
+  --streak-accent: #fb923c;
+  --streak-soft: color-mix(in srgb, #f97316 18%, transparent);
+  --streak-line: color-mix(in srgb, #fb923c 55%, transparent);
+  --streak-glow: rgba(249, 115, 22, 0.4);
   --chart-1: #17d1a8;
   --chart-2: #6fd9c4;
   --chart-3: #a6b0ab;

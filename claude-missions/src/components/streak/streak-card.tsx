@@ -75,7 +75,7 @@ export function StreakCard({
         fraction={progressToNext}
         size={64}
         stroke={6}
-        trackClassName="text-orange-500/15"
+        trackClassName="text-[var(--streak-soft)]"
         gradient={FLAME_GRADIENT}
       >
         <Flame
@@ -83,11 +83,11 @@ export function StreakCard({
           strokeWidth={2.25}
           className={cn(
             "size-6",
-            hasStreak ? "text-orange-500" : "text-muted-foreground"
+            hasStreak ? "text-[var(--streak-accent)]" : "text-muted-foreground"
           )}
           style={
             hasStreak
-              ? { filter: "drop-shadow(0 0 6px rgba(249,115,22,0.4))" }
+              ? { filter: "drop-shadow(0 0 6px var(--streak-glow))" }
               : undefined
           }
         />
@@ -100,7 +100,7 @@ export function StreakCard({
           </span>
           {loggedToday ? (
             <span
-              className="text-[0.7rem] font-semibold text-orange-500"
+              className="text-[0.7rem] font-semibold text-[var(--streak-accent)]"
               aria-hidden="true"
             >
               · danas ✓

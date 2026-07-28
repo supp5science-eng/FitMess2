@@ -47,13 +47,13 @@ export function StreakDots({
             className={cn(
               "size-3.5 rounded-full transition-colors",
               day.logged
-                ? "bg-orange-500"
+                ? "bg-[var(--streak-accent)]"
                 : day.isToday
-                  ? "border-2 border-dashed border-orange-400/60"
+                  ? "border-2 border-dashed border-[var(--streak-line)]"
                   : "border border-border bg-transparent",
               day.logged &&
                 day.isToday &&
-                "ring-2 ring-orange-500/30 ring-offset-1 ring-offset-card"
+                "ring-2 ring-[var(--streak-line)] ring-offset-1 ring-offset-card"
             )}
           />
           {showLabels ? (

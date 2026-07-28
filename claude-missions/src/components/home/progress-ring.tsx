@@ -45,9 +45,15 @@ export function ProgressRing({
       <svg width={size} height={size} className="-rotate-90">
         <defs>
           <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={gradient[0]} />
-            <stop offset="55%" stopColor={gradient[1]} />
-            <stop offset="100%" stopColor={gradient[2]} />
+            {/* `style` (not the `stop-color` attribute): a caller may pass CSS
+                custom properties (e.g. the themed `var(--streak-*)` stops), and
+                `var()` resolves in the CSS `stop-color` property but silently
+                fails inside a plain SVG attribute -- the same technique the
+                calorie ring uses. Plain hex stops (Koraci/Voda) work either
+                way. */}
+            <stop offset="0%" style={{ stopColor: gradient[0] }} />
+            <stop offset="55%" style={{ stopColor: gradient[1] }} />
+            <stop offset="100%" style={{ stopColor: gradient[2] }} />
           </linearGradient>
         </defs>
         <circle

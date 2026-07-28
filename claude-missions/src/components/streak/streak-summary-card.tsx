@@ -50,18 +50,20 @@ export function StreakSummaryCard({ streak }: { streak: StreakSummary }) {
           fraction={progressToNext}
           size={108}
           stroke={9}
-          trackClassName="text-orange-500/15"
+          trackClassName="text-[var(--streak-soft)]"
           gradient={FLAME_GRADIENT}
         >
           <Flame
             aria-hidden="true"
             strokeWidth={2.25}
             className={
-              hasStreak ? "size-8 text-orange-500" : "size-8 text-muted-foreground"
+              hasStreak
+                ? "size-8 text-[var(--streak-accent)]"
+                : "size-8 text-muted-foreground"
             }
             style={
               hasStreak
-                ? { filter: "drop-shadow(0 0 8px rgba(249,115,22,0.4))" }
+                ? { filter: "drop-shadow(0 0 8px var(--streak-glow))" }
                 : undefined
             }
           />
@@ -91,7 +93,7 @@ export function StreakSummaryCard({ streak }: { streak: StreakSummary }) {
 
           <span
             className="mt-1 text-[13px] font-medium"
-            style={{ color: hasStreak ? "#f97316" : undefined }}
+            style={{ color: hasStreak ? "var(--streak-accent)" : undefined }}
           >
             {hint}
           </span>
@@ -120,9 +122,12 @@ function Header() {
       <span
         aria-hidden="true"
         className="flex size-8 items-center justify-center rounded-full"
-        style={{ backgroundColor: "rgba(249,115,22,0.15)" }}
+        style={{ backgroundColor: "var(--streak-soft)" }}
       >
-        <Flame className="size-4 text-orange-500" strokeWidth={2.25} />
+        <Flame
+          className="size-4 text-[var(--streak-accent)]"
+          strokeWidth={2.25}
+        />
       </span>
       <h2 className="text-lg font-semibold text-foreground">Niz</h2>
       <span className="ml-auto text-xs text-muted-foreground">

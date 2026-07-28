@@ -134,30 +134,58 @@ declare global {
       lng(): number;
     }
 
-    // ---- Geocoder (destination search → a single lat/lng) -----------------
+    // ---- Dynamic library import + Places (New) autocomplete ---------------
 
-    interface GeocoderRequest {
-      address?: string;
-      bounds?: LatLngBounds;
-      region?: string;
-    }
+    function importLibrary(libraryName: "places"): Promise<places.PlacesLibrary>;
+    function importLibrary(libraryName: string): Promise<unknown>;
 
-    interface GeocoderGeometry {
-      location: LatLng;
-    }
+    namespace places {
+      /** Groups the billable keystrokes of one search until a pick. */
+      class AutocompleteSessionToken {}
 
-    interface GeocoderResult {
-      formatted_address: string;
-      geometry: GeocoderGeometry;
-    }
+      interface FormattableText {
+        text: string;
+      }
 
-    interface GeocoderResponse {
-      results: GeocoderResult[];
-    }
+      interface AutocompleteRequest {
+        input: string;
+        sessionToken?: AutocompleteSessionToken;
+        includedRegionCodes?: string[];
+        language?: string;
+        region?: string;
+        origin?: LatLngLiteral;
+      }
 
-    class Geocoder {
-      constructor();
-      geocode(request: GeocoderRequest): Promise<GeocoderResponse>;
+      interface PlacePrediction {
+        placeId: string;
+        text: FormattableText;
+        mainText?: FormattableText;
+        secondaryText?: FormattableText;
+        toPlace(): Place;
+      }
+
+      class AutocompleteSuggestion {
+        static fetchAutocompleteSuggestions(
+          request: AutocompleteRequest
+        ): Promise<{ suggestions: AutocompleteSuggestion[] }>;
+        placePrediction: PlacePrediction | null;
+      }
+
+      interface FetchFieldsRequest {
+        fields: string[];
+      }
+
+      class Place {
+        location?: LatLng | null;
+        formattedAddress?: string | null;
+        fetchFields(request: FetchFieldsRequest): Promise<{ place: Place }>;
+      }
+
+      /** The subset of the "places" library this app imports. */
+      interface PlacesLibrary {
+        AutocompleteSuggestion: typeof AutocompleteSuggestion;
+        AutocompleteSessionToken: typeof AutocompleteSessionToken;
+      }
     }
 
     // ---- Directions (a walked route to the goal) --------------------------

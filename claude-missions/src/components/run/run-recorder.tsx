@@ -29,6 +29,11 @@ import {
   distanceToGoalM,
   formatDistanceShort,
 } from "@/lib/run/geo";
+import {
+  fetchGoalSuggestions,
+  resolveGoal,
+  type GoalSuggestion,
+} from "@/lib/run/places-search";
 import { formatDuration, formatPace } from "@/lib/run/pace";
 import { computeRunSummary } from "@/lib/run/summary";
 import { cn } from "@/lib/utils";
@@ -78,13 +83,16 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
   const [query, setQuery] = useState("");
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [results, setResults] = useState<google.maps.GeocoderResult[]>([]);
+  const [suggestions, setSuggestions] = useState<GoalSuggestion[]>([]);
   const [goal, setGoal] = useState<Goal | null>(null);
   const [plannedRoute, setPlannedRoute] = useState<
     google.maps.LatLngLiteral[] | null
   >(null);
   const [routeNote, setRouteNote] = useState<string | null>(null);
   const routedGoalRef = useRef<string | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Guards against a slow earlier keystroke's results landing after a newer one.
+  const reqIdRef = useRef(0);
 
   const { status, points, elapsedMs } = recorder;
   const isActive = status === "recording" || status === "paused";
@@ -174,47 +182,73 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
     };
   }, [goal, myLocation]);
 
-  async function runSearch(event: React.FormEvent) {
-    event.preventDefault();
-    const q = query.trim();
-    if (!q) return;
-    setSearching(true);
+  // Drop the pending autocomplete timer if the screen unmounts mid-type.
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  // Live autocomplete: debounce keystrokes, then fetch predictions. A request
+  // id drops any stale (out-of-order) response so the list always matches the
+  // latest input.
+  function handleQueryChange(value: string) {
+    setQuery(value);
     setSearchError(null);
-    setResults([]);
-    try {
-      await loadGoogleMaps();
-      const geocoder = new google.maps.Geocoder();
-      const { results: found } = await geocoder.geocode({
-        address: q,
-        region: "rs",
-      });
-      setResults(found.slice(0, 5));
-      if (found.length === 0) {
-        setSearchError("Ništa nije nađeno za tu pretragu.");
-      }
-    } catch {
-      setSearchError(
-        "Pretraga trenutno ne radi. Proveri da je Geocoding API uključen na Maps ključu."
-      );
-    } finally {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    const trimmed = value.trim();
+    if (trimmed.length < 2) {
+      setSuggestions([]);
       setSearching(false);
+      return;
+    }
+    setSearching(true);
+    debounceRef.current = setTimeout(() => {
+      const id = ++reqIdRef.current;
+      fetchGoalSuggestions(trimmed)
+        .then((found) => {
+          if (id === reqIdRef.current) setSuggestions(found);
+        })
+        .catch(() => {
+          if (id !== reqIdRef.current) return;
+          setSuggestions([]);
+          setSearchError(
+            "Pretraga ne radi. Uključi „Places API (New)” na Maps ključu."
+          );
+        })
+        .finally(() => {
+          if (id === reqIdRef.current) setSearching(false);
+        });
+    }, 250);
+  }
+
+  async function selectSuggestion(suggestion: GoalSuggestion) {
+    try {
+      const resolved = await resolveGoal(suggestion);
+      setGoal({ location: resolved.location, label: resolved.label });
+      routedGoalRef.current = null;
+      setPlannedRoute(null);
+      setRouteNote(null);
+      closeSearch();
+    } catch {
+      setSearchError("Ne mogu da otvorim tu lokaciju, probaj drugu.");
     }
   }
 
-  function selectResult(result: google.maps.GeocoderResult) {
-    setGoal({
-      location: {
-        lat: result.geometry.location.lat(),
-        lng: result.geometry.location.lng(),
-      },
-      label: result.formatted_address,
-    });
-    routedGoalRef.current = null;
-    setPlannedRoute(null);
-    setRouteNote(null);
+  function onSearchSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    // Enter picks the top suggestion — no free-text geocoding fallback.
+    if (suggestions[0]) void selectSuggestion(suggestions[0]);
+  }
+
+  function closeSearch() {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     setSearchOpen(false);
-    setResults([]);
+    setSuggestions([]);
     setQuery("");
+    setSearching(false);
+    setSearchError(null);
   }
 
   function clearGoal() {
@@ -492,11 +526,11 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
         )}
       </div>
 
-      {/* Destination search sheet. */}
+      {/* Destination search sheet — live autocomplete. */}
       {searchOpen && (
         <div
           className="absolute inset-0 z-30 flex items-end bg-black/50"
-          onClick={() => setSearchOpen(false)}
+          onClick={closeSearch}
         >
           <div
             className="w-full rounded-t-3xl border-t border-border bg-card p-5"
@@ -508,54 +542,65 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
               Pretraži cilj
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Nađi destinaciju i mapa će iscrtati rutu do nje.
+              Kucaj i biraj iz predloga — mapa iscrta rutu do cilja.
             </p>
-            <form onSubmit={runSearch} className="mt-3 flex items-center gap-2">
+            <form
+              onSubmit={onSearchSubmit}
+              className="mt-3 flex items-center gap-2"
+            >
               <input
                 type="text"
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => handleQueryChange(event.target.value)}
                 placeholder="npr. Ada Ciganlija, Kalemegdan…"
                 autoFocus
+                autoComplete="off"
                 className="h-12 flex-1 rounded-xl border border-border bg-background px-4 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
               />
               <button
                 type="submit"
-                disabled={searching || query.trim().length === 0}
-                aria-label="Pretraži"
+                disabled={suggestions.length === 0}
+                aria-label="Izaberi prvi predlog"
                 className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-50"
               >
                 <Search className="size-5" aria-hidden="true" />
               </button>
             </form>
 
-            {searching && (
-              <p className="mt-3 text-sm text-muted-foreground">Tražim…</p>
-            )}
-            {searchError && (
-              <p className="mt-3 text-sm text-muted-foreground">{searchError}</p>
-            )}
-
-            {results.length > 0 && (
-              <ul className="mt-3 flex flex-col gap-1.5">
-                {results.map((result, index) => (
-                  <li key={`${result.formatted_address}-${index}`}>
+            {suggestions.length > 0 && (
+              <ul className="mt-3 flex max-h-72 flex-col gap-1.5 overflow-y-auto">
+                {suggestions.map((suggestion) => (
+                  <li key={suggestion.placeId}>
                     <button
                       type="button"
-                      onClick={() => selectResult(result)}
+                      onClick={() => selectSuggestion(suggestion)}
                       className="flex w-full items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-left hover:bg-accent"
                     >
                       <Flag
                         className="size-4 shrink-0 text-primary"
                         aria-hidden="true"
                       />
-                      <span className="min-w-0 truncate text-sm text-foreground">
-                        {result.formatted_address}
+                      <span className="flex min-w-0 flex-col">
+                        <span className="truncate text-sm text-foreground">
+                          {suggestion.primary}
+                        </span>
+                        {suggestion.secondary && (
+                          <span className="truncate text-xs text-muted-foreground">
+                            {suggestion.secondary}
+                          </span>
+                        )}
                       </span>
                     </button>
                   </li>
                 ))}
               </ul>
+            )}
+
+            {searching && suggestions.length === 0 && (
+              <p className="mt-3 text-sm text-muted-foreground">Tražim…</p>
+            )}
+            {searchError && (
+              <p className="mt-3 text-sm text-muted-foreground">{searchError}</p>
             )}
           </div>
         </div>

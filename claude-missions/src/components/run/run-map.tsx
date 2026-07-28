@@ -27,19 +27,35 @@ const DEFAULT_CENTER: google.maps.LatLngLiteral = { lat: 44.8176, lng: 20.4633 }
 const TILT_3D = 47;
 
 /**
- * A calm, label-free running style we own entirely in code — so the map stays
- * clutter-free (no cafés, shops, or street names crowding the runner) no matter
- * how the Google Cloud console is set up. Deep-indigo ground, muted lavender
- * roads, dim water, and parks in a quiet green — the palette of the reference
- * running map, tuned to sit under the app's dark, teal-accented controls.
+ * A calm running style we own entirely in code — so the map stays clutter-free
+ * (no cafés or shops crowding the runner) no matter how the Google Cloud
+ * console is set up. Deep-indigo ground, muted lavender roads, dim water, parks
+ * in a quiet green — the palette of the reference running map, under the app's
+ * dark, teal-accented controls.
  *
- * Every text label is turned off globally (there is no name to read while you
- * run), then POI pins are removed and only parks are re-lit as geometry.
+ * Businesses/POI pins and transit are removed, but the names people orient by
+ * are kept: main-street labels (arterials + highways) and neighbourhood/place
+ * names stay on and legible; only minor local-street labels are dropped so the
+ * map reads clean without leaving the runner lost.
  */
 const CLEAN_MAP_STYLE: google.maps.MapTypeStyle[] = [
   { elementType: "geometry", stylers: [{ color: GROUND_COLOR }] },
-  { elementType: "labels", stylers: [{ visibility: "off" }] },
+  // Labels we keep: calm lavender text with a dark halo so it reads on indigo.
+  { elementType: "labels.text.fill", stylers: [{ color: "#aeb4dd" }] },
+  { elementType: "labels.text.stroke", stylers: [{ color: "#171b30" }] },
+  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
+  // Businesses & transit stay gone — that was the clutter.
   { featureType: "poi", stylers: [{ visibility: "off" }] },
+  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  // Keep neighbourhood/city names for orientation; drop borders + parcel noise.
+  { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
+  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
+  {
+    featureType: "administrative.neighborhood",
+    elementType: "labels",
+    stylers: [{ visibility: "on" }],
+  },
+  // Parks as quiet green geometry.
   {
     featureType: "poi.park",
     elementType: "geometry",
@@ -50,18 +66,29 @@ const CLEAN_MAP_STYLE: google.maps.MapTypeStyle[] = [
     elementType: "geometry.fill",
     stylers: [{ color: "#2b315a" }],
   },
+  // Roads: lavender geometry; keep ONLY main-street names (drop local labels).
   { featureType: "road", elementType: "geometry", stylers: [{ color: "#3a4168" }] },
+  { featureType: "road.local", elementType: "labels", stylers: [{ visibility: "off" }] },
   {
     featureType: "road.arterial",
     elementType: "geometry",
     stylers: [{ color: "#434d7d" }],
   },
   {
+    featureType: "road.arterial",
+    elementType: "labels",
+    stylers: [{ visibility: "on" }],
+  },
+  {
     featureType: "road.highway",
     elementType: "geometry",
     stylers: [{ color: "#4d5891" }],
   },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
+  {
+    featureType: "road.highway",
+    elementType: "labels",
+    stylers: [{ visibility: "on" }],
+  },
   { featureType: "water", elementType: "geometry", stylers: [{ color: "#151b33" }] },
 ];
 

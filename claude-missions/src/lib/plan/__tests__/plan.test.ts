@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
+import { HEALTHY_MEALS } from "@/lib/plan/healthy-meals";
 import { computeMealPlan, planProgress, type PlanTarget } from "@/lib/plan/plan";
+
+const DORUCAK_NAME = HEALTHY_MEALS.find((m) => m.slot === "dorucak")!.nameSr;
+const GLAVNI_NAME = HEALTHY_MEALS.find((m) => m.slot === "glavni")!.nameSr;
 
 const TARGET: PlanTarget = {
   dailyKcal: 2000,
@@ -91,5 +95,41 @@ describe("computeMealPlan", () => {
     for (const slot of plan.slots) {
       expect(slot.suggestions[0]!.macros.proteinG).toBeGreaterThanOrEqual(20);
     }
+  });
+});
+
+describe("logged-suggestion coverage", () => {
+  it("marks a meal done once its suggestion is logged, even below the protein threshold", () => {
+    // Only 20 g protein logged (well below any cumulative threshold), but the
+    // logged NAME matches a curated doručak meal -> that meal is covered.
+    const p = planProgress({
+      target: TARGET,
+      consumed: { kcal: 400, proteinG: 20, carbsG: 40, fatG: 12 },
+      loggedMealNames: [DORUCAK_NAME],
+    });
+    expect(p.mealsDone).toBe(1);
+  });
+
+  it("computeMealPlan drops suggestions for the logged slot only", () => {
+    const plan = computeMealPlan({
+      target: TARGET,
+      consumed: NOTHING_EATEN,
+      loggedMealNames: [GLAVNI_NAME],
+    });
+    const glavni = plan.slots.find((s) => s.slot === "glavni")!;
+    const dorucak = plan.slots.find((s) => s.slot === "dorucak")!;
+    expect(glavni.done).toBe(true);
+    expect(glavni.suggestions).toHaveLength(0);
+    expect(dorucak.done).toBe(false);
+    expect(dorucak.suggestions.length).toBeGreaterThan(0);
+  });
+
+  it("ignores logged names that are not curated meals", () => {
+    const p = planProgress({
+      target: TARGET,
+      consumed: NOTHING_EATEN,
+      loggedMealNames: ["Pljeskavica sa kajmakom"],
+    });
+    expect(p.mealsDone).toBe(0);
   });
 });

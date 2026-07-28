@@ -376,3 +376,22 @@ export const HEALTHY_MEALS: MealTemplate[] = [
 export function mealsForSlot(slot: MealSlot): MealTemplate[] {
   return HEALTHY_MEALS.filter((meal) => meal.slot === slot);
 }
+
+/** Normalise a meal name for matching (trim + lowercase). */
+function normalizeName(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+const TEMPLATE_BY_NAME = new Map(
+  HEALTHY_MEALS.map((meal) => [normalizeName(meal.nameSr), meal] as const)
+);
+
+/**
+ * The slot a logged meal belongs to, if its name matches a curated template --
+ * how the plan knows a suggested meal was actually logged (the /predlog "Dodaj
+ * u dnevnik" writes the template's `nameSr` verbatim). Returns null for any
+ * other food, so ordinary logging is unaffected.
+ */
+export function slotForLoggedName(name: string): MealSlot | null {
+  return TEMPLATE_BY_NAME.get(normalizeName(name))?.slot ?? null;
+}

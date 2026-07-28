@@ -23,6 +23,7 @@
  */
 
 import type { MacroVector, MealSlot, ScaledMeal, DietTag } from "@/lib/plan/healthy-meals";
+import { slotForLoggedName } from "@/lib/plan/healthy-meals";
 import { rankSuggestionsForSlot } from "@/lib/plan/suggest";
 
 /** The user's daily targets this plan is built against. */
@@ -37,10 +38,24 @@ export interface MealPlanInput {
   target: PlanTarget;
   /** Today's consumed totals so far (from `computeDayTotals`). */
   consumed: MacroVector;
+  /** Names of today's logged entries. A logged entry whose name matches a
+   * curated template marks that template's slot as covered -- so a suggestion
+   * you added via "Dodaj u dnevnik" flips to done immediately. */
+  loggedMealNames?: string[];
   /** Dietary tags to avoid in suggestions (v1: usually empty). */
   avoidTags?: DietTag[];
   /** Ranked suggestions kept per meal, for the "Promeni" swap (default 4). */
   suggestionsPerSlot?: number;
+}
+
+/** The set of slots already covered by a logged suggestion (name match). */
+function coveredSlotsFrom(names: string[]): Set<MealSlot> {
+  const covered = new Set<MealSlot>();
+  for (const name of names) {
+    const slot = slotForLoggedName(name);
+    if (slot) covered.add(slot);
+  }
+  return covered;
 }
 
 /** One suggested meal within the day's plan. */
@@ -128,6 +143,7 @@ function sharesFor(proteinTargetG: number): SlotShare[] {
 export function planProgress(input: {
   target: PlanTarget;
   consumed: MacroVector;
+  loggedMealNames?: string[];
 }): {
   suggestedCount: number;
   mealsDone: number;
@@ -141,15 +157,19 @@ export function planProgress(input: {
   const consumedProteinG = Math.max(0, input.consumed.proteinG);
 
   const shares = sharesFor(proteinTargetG);
+  const covered = coveredSlotsFrom(input.loggedMealNames ?? []);
 
-  // Cumulative protein thresholds decide "done" per meal, monotonically.
+  // A meal is done when its suggestion was logged (name match) OR the day's
+  // consumed protein has reached its cumulative protein target (covers protein
+  // hit via the user's own foods). Cumulative thresholds are monotonic.
   let cumulativeProtein = 0;
   let mealsDone = 0;
   let reservedKcalForUncovered = 0;
 
   for (const share of shares) {
     cumulativeProtein += share.proteinShare * proteinTargetG;
-    const done = consumedProteinG >= cumulativeProtein;
+    const done =
+      covered.has(share.slot) || consumedProteinG >= cumulativeProtein;
     if (done) {
       mealsDone += 1;
     } else {
@@ -181,12 +201,14 @@ export function computeMealPlan(input: MealPlanInput): MealPlan {
   const consumedProteinG = Math.max(0, input.consumed.proteinG);
   const shares = sharesFor(proteinTargetG);
   const limit = input.suggestionsPerSlot ?? 4;
+  const covered = coveredSlotsFrom(input.loggedMealNames ?? []);
 
   let cumulativeProtein = 0;
   const usedTemplateIds: string[] = [];
   const slots: MealSlotPlan[] = shares.map((share, index) => {
     cumulativeProtein += share.proteinShare * proteinTargetG;
-    const done = consumedProteinG >= cumulativeProtein;
+    const done =
+      covered.has(share.slot) || consumedProteinG >= cumulativeProtein;
 
     const targetKcal = roundKcal(share.kcalShare * dailyKcal);
     const targetProteinG = Math.round(share.proteinShare * proteinTargetG);
@@ -214,7 +236,11 @@ export function computeMealPlan(input: MealPlanInput): MealPlan {
     };
   });
 
-  const progress = planProgress({ target: input.target, consumed: input.consumed });
+  const progress = planProgress({
+    target: input.target,
+    consumed: input.consumed,
+    loggedMealNames: input.loggedMealNames,
+  });
 
   return {
     suggestedCount: shares.length,

@@ -66,9 +66,10 @@ export function MealPlanScreen({ plan }: { plan: MealPlan }) {
         setSavingId(null);
         return;
       }
-      // Land back on /danas so the ring, macros and progress are fresh (the
-      // App Router re-reads this dynamic page's server data on navigation).
-      router.push("/danas");
+      // Stay on /predlog and re-read the server data: the just-logged meal now
+      // matches its slot, so it flips to a checked "done" row in place (and the
+      // free-room + protein bar update). No navigation away.
+      setSavingId(null);
       router.refresh();
     } catch {
       setError("Nismo uspeli da sačuvamo unos. Pokušaj ponovo.");

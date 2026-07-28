@@ -766,20 +766,6 @@ export function NajtacnijeFlow() {
               </span>
             </span>
           </button>
-
-          {/* The only upload entry point someone who dismissed the guides ever
-              sees -- their "Obrok" tap goes straight to the camera. */}
-          <button
-            type="button"
-            onClick={() => {
-              setMode("obrok");
-              openGallery("review1");
-            }}
-            className="mt-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-          >
-            <ImageUp className="size-4" aria-hidden="true" />
-            Već imaš sliku? Otpremi je
-          </button>
         </div>
       ) : null}
 

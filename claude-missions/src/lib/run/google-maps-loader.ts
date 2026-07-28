@@ -19,6 +19,12 @@ export function googleMapsApiKey(): string | undefined {
   return process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || undefined;
 }
 
+/** The Vector map id (Cloud-configured) that enables 3D buildings + tilt, or
+ * `undefined` when unset — the map then falls back to a dark-styled raster. */
+export function googleMapsMapId(): string | undefined {
+  return process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || undefined;
+}
+
 /**
  * Resolve once `window.google.maps` is available, loading the script on first
  * call. Rejects when there is no API key or the script fails to load. Safe to

@@ -3,8 +3,8 @@ import Link from "next/link";
 import { MealPlanScreen } from "@/components/plan/meal-plan-screen";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { computeDayTotals } from "@/lib/home/totals";
-import { getTodayData } from "@/lib/home/today";
 import { computeMealPlan } from "@/lib/plan/plan";
+import { getPlanData } from "@/lib/plan/read";
 import { createClient } from "@/lib/supabase/server";
 
 // "Šta da jedeš danas" (2026-07-28): `/predlog` -- the detail screen behind the
@@ -30,7 +30,7 @@ export default async function PredlogPage() {
     );
   }
 
-  const result = await getTodayData(supabase, userId);
+  const result = await getPlanData(supabase, userId);
 
   if (result.error || !result.data) {
     return (
@@ -68,6 +68,8 @@ export default async function PredlogPage() {
       carbsG: totals.carbs,
       fatG: totals.fat,
     },
+    // A logged suggestion (name match) flips its meal to "done" immediately.
+    loggedMealNames: logs.map((log) => log.name),
   });
 
   return <MealPlanScreen plan={plan} />;

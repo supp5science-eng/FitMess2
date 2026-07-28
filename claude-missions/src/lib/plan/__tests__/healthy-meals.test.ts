@@ -6,6 +6,7 @@ import {
   MIN_SCALE,
   mealsForSlot,
   scaleMeal,
+  slotForLoggedName,
   templateMacros,
 } from "@/lib/plan/healthy-meals";
 
@@ -68,6 +69,13 @@ describe("scaleMeal", () => {
     expect(oats.grams).toBeGreaterThanOrEqual(5);
     // 50 g * 0.65 floor = 32.5 -> nearest 5
     expect(oats.grams).toBe(Math.max(5, Math.round((50 * MIN_SCALE) / 5) * 5));
+  });
+
+  it("matches a logged meal name back to its slot (case-insensitive)", () => {
+    const dorucak = HEALTHY_MEALS.find((m) => m.slot === "dorucak")!;
+    expect(slotForLoggedName(dorucak.nameSr)).toBe("dorucak");
+    expect(slotForLoggedName(`  ${dorucak.nameSr.toUpperCase()}  `)).toBe("dorucak");
+    expect(slotForLoggedName("Nešto sasvim drugo")).toBeNull();
   });
 
   it("recomputes macros from the scaled grams (no drift)", () => {

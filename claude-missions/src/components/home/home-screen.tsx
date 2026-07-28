@@ -231,9 +231,10 @@ export function HomeScreen({
               carbsG: totals.carbs,
               fatG: totals.fat,
             },
+            loggedMealNames: logs.map((log) => log.name),
           })
         : null,
-    [isToday, target, totals]
+    [isToday, target, totals, logs]
   );
 
   // The kcal number the whole block is measured against: the adapted target when

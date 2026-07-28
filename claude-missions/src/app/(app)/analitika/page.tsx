@@ -14,6 +14,8 @@ import { getStepsWeek } from "@/lib/steps/steps";
 import { resolveStepGoal } from "@/lib/steps/step-goal";
 import { getCustomStepGoal } from "@/lib/steps/step-goal-read";
 import { computeStepsWeek } from "@/lib/steps/steps-week";
+import { getLoggedDayKeys } from "@/lib/streak/read-streak";
+import { computeStreak } from "@/lib/streak/streak";
 import { createClient } from "@/lib/supabase/server";
 import { getWaterWeek } from "@/lib/water/water";
 import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
@@ -58,6 +60,7 @@ export default async function NedeljaPage() {
     stepsResult,
     profileResult,
     customStepGoal,
+    streakDays,
   ] = await Promise.all([
     getWeekData(supabase, userId, now),
     getMealHistory(supabase, userId, now),
@@ -80,6 +83,9 @@ export default async function NedeljaPage() {
     // Cilj koraka: read on its own so a missing column can't take the profile
     // read down with it (see `src/lib/steps/step-goal-read.ts`).
     getCustomStepGoal(supabase, userId),
+    // Niz: the Belgrade days the user logged a meal on (trailing window), for
+    // the streak card. Degrades to an empty set on a read error.
+    getLoggedDayKeys(supabase, userId, now),
   ]);
 
   if (result.error) {
@@ -244,6 +250,10 @@ export default async function NedeljaPage() {
       <MealHistory recentGroups={recentGroups} olderGroups={olderGroups} />
     ) : null;
 
+  // Niz: derived purely from the logged-day set (money-math rule). The SAME
+  // computation the home screen runs, so the two screens can never disagree.
+  const streak = computeStreak([...streakDays], toBelgradeCalendarDay(now));
+
   return (
     <WeeklyDashboard
       bmi={bmi}
@@ -252,6 +262,7 @@ export default async function NedeljaPage() {
       intakeTrend={intakeTrend}
       waterWeek={waterWeek}
       stepsWeek={stepsWeek}
+      streak={streak}
       footer={footer}
     />
   );

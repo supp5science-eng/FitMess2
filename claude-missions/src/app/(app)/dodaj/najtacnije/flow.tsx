@@ -156,6 +156,9 @@ export function NajtacnijeFlow() {
   const router = useRouter();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
+  // Same as the upload input, minus `multiple`: the meal flow reviews one shot
+  // at a time, so it must come back with exactly one file per pick.
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   // Downscaled blobs of the captured photos, cached so we don't re-encode them
   // between the analyze and finalize calls.
   const downscaledRef = useRef<Blob[] | null>(null);
@@ -232,6 +235,16 @@ export function NajtacnijeFlow() {
     nextPhaseRef.current = next;
     setError(null);
     cameraInputRef.current?.click();
+  }
+
+  /** Pick an existing photo instead of taking one. A meal photographed an hour
+   * ago is the same input to the model as one taken now -- the flow only cares
+   * that a picture arrives, so it lands on exactly the same phase. */
+  function openGallery(next: Phase, replaceIndex: number | null = null) {
+    retakeIndexRef.current = replaceIndex;
+    nextPhaseRef.current = next;
+    setError(null);
+    galleryInputRef.current?.click();
   }
 
   async function handleAddPhotos(event: ChangeEvent<HTMLInputElement>) {
@@ -698,6 +711,14 @@ export function NajtacnijeFlow() {
         className="sr-only"
         onChange={handleAddPhotos}
       />
+      {/* Library: one existing photo, for a meal that's already been shot. */}
+      <input
+        ref={galleryInputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={handleAddPhotos}
+      />
 
       {error ? (
         <p
@@ -745,6 +766,20 @@ export function NajtacnijeFlow() {
               </span>
             </span>
           </button>
+
+          {/* The only upload entry point someone who dismissed the guides ever
+              sees -- their "Obrok" tap goes straight to the camera. */}
+          <button
+            type="button"
+            onClick={() => {
+              setMode("obrok");
+              openGallery("review1");
+            }}
+            className="mt-1 flex items-center justify-center gap-2 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ImageUp className="size-4" aria-hidden="true" />
+            Već imaš sliku? Otpremi je
+          </button>
         </div>
       ) : null}
 
@@ -761,6 +796,7 @@ export function NajtacnijeFlow() {
           ]}
           cta="Jasno — otvori kameru"
           onStart={() => openCamera("review1")}
+          onUpload={() => openGallery("review1")}
           onDismissGuides={dismissGuides}
           onBack={() => setPhase("mode")}
         />
@@ -777,14 +813,26 @@ export function NajtacnijeFlow() {
                 alt="Slika odozgo"
                 className="max-h-56 w-full rounded-2xl object-cover"
               />
-              <button
-                type="button"
-                onClick={() => openCamera("review1", 0)}
-                className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full bg-background/85 px-3 py-2 text-xs font-medium text-foreground backdrop-blur"
-              >
-                <RotateCcw className="size-3.5" aria-hidden="true" />
-                Slikaj ponovo
-              </button>
+              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+                {/* An uploaded photo needs a way back to the library --
+                    "Slikaj ponovo" alone would trap them in the camera. */}
+                <button
+                  type="button"
+                  onClick={() => openGallery("review1", 0)}
+                  aria-label="Izaberi drugu sliku"
+                  className="grid size-9 place-items-center rounded-full bg-background/85 text-foreground backdrop-blur"
+                >
+                  <ImageUp className="size-4" aria-hidden="true" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openCamera("review1", 0)}
+                  className="flex items-center gap-1.5 rounded-full bg-background/85 px-3 py-2 text-xs font-medium text-foreground backdrop-blur"
+                >
+                  <RotateCcw className="size-3.5" aria-hidden="true" />
+                  Slikaj ponovo
+                </button>
+              </div>
             </div>
           ) : null}
 
@@ -792,7 +840,7 @@ export function NajtacnijeFlow() {
 
           <div className="flex flex-col gap-2.5">
             <span className="text-base font-medium text-foreground">
-              Šta si stavio pored tanjira?
+              Ima li nečega pored tanjira?
             </span>
             <p className="-mt-1 text-xs text-muted-foreground">
               Po tome merim koliko je tanjir velik — bez toga samo pogađam.
@@ -847,6 +895,7 @@ export function NajtacnijeFlow() {
           ]}
           cta="Otvori kameru"
           onStart={() => openCamera("estimate")}
+          onUpload={() => openGallery("estimate")}
           onDismissGuides={dismissGuides}
           onBack={() => setPhase("estimate")}
         />
@@ -1355,6 +1404,7 @@ function GuideStep({
   tips,
   cta,
   onStart,
+  onUpload,
   onDismissGuides,
   onBack,
 }: {
@@ -1364,6 +1414,7 @@ function GuideStep({
   tips: string[];
   cta: string;
   onStart: () => void;
+  onUpload: () => void;
   onDismissGuides: () => void;
   onBack: () => void;
 }) {
@@ -1395,6 +1446,16 @@ function GuideStep({
         >
           <Camera className="size-5" aria-hidden="true" />
           {cta}
+        </button>
+        {/* The guide teaches the shot; someone who already has it shouldn't
+            have to stage the meal again to use this flow. */}
+        <button
+          type="button"
+          onClick={onUpload}
+          className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <ImageUp className="size-4" aria-hidden="true" />
+          Otpremi postojeću sliku
         </button>
         <div className="flex items-center justify-between gap-3 pt-1">
           <button

@@ -72,7 +72,7 @@ export default async function RunDetailPage({
       </section>
 
       <div className="rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-center text-sm text-accent-foreground">
-        +{run.calories} kcal vraćeno u tvoj dnevni budžet
+        Sagorelo {run.calories} kcal — svaka čast! 💚
       </div>
 
       <RunSplits splits={splits} />

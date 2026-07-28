@@ -48,7 +48,7 @@ export default async function TrcanjePage() {
           Trčanje
         </h1>
         <p className="text-sm text-muted-foreground">
-          Snimi trčanje i vrati istrčane kalorije u svoj dnevni budžet.
+          Snimi rutu i prati kilometražu, tempo i sagorele kalorije.
         </p>
       </header>
 

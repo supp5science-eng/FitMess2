@@ -1,6 +1,8 @@
 /**
- * Trčanje (F-runs): pure calorie arithmetic for a run — the number that folds
- * back into the day's calorie budget on `/danas` and `/analitika`.
+ * Trčanje (F-runs): pure calorie arithmetic for a run — how many kcal the run
+ * burned, shown on the recording + summary screens. It stays a standalone run
+ * stat (a product decision): it is NOT folded into the food calorie budget on
+ * `/danas`/`/analitika`, which tracks intake separately.
  *
  * Running energy cost is dominated by distance and body mass, not speed: to a
  * good approximation you burn a near-constant amount of energy per kilogram per

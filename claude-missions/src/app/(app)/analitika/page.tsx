@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { MealHistory } from "@/components/analytics/meal-history";
+import { RunHistoryList } from "@/components/run/run-history-list";
 import { WeeklyDashboard } from "@/components/weekly/weekly-dashboard";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { bmr, tdee } from "@/lib/budget/engine";
@@ -245,10 +246,22 @@ export default async function NedeljaPage() {
   const recentGroups = groups.filter((g) => g.dayKey >= weekCutoffKey);
   const olderGroups = groups.filter((g) => g.dayKey < weekCutoffKey);
 
-  const footer =
-    historyResult.error === null ? (
-      <MealHistory recentGroups={recentGroups} olderGroups={olderGroups} />
-    ) : null;
+  // Prethodna trčanja (moved here from the /trcanje tab, which is now the map).
+  const { data: runRows } = await supabase
+    .from("runs")
+    .select("id, started_at, distance_m, duration_s, calories, route")
+    .eq("user_id", userId)
+    .order("started_at", { ascending: false })
+    .limit(20);
+
+  const footer = (
+    <>
+      <RunHistoryList runs={runRows ?? []} />
+      {historyResult.error === null ? (
+        <MealHistory recentGroups={recentGroups} olderGroups={olderGroups} />
+      ) : null}
+    </>
+  );
 
   // Niz: derived purely from the logged-day set (money-math rule). The SAME
   // computation the home screen runs, so the two screens can never disagree.

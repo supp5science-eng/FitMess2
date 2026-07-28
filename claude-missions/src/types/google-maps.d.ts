@@ -47,12 +47,19 @@ declare global {
     interface MapOptions {
       center?: LatLngLiteral;
       zoom?: number;
+      /** Cloud-configured Vector map id — enables 3D buildings + tilt/rotation. */
+      mapId?: string;
+      /** Camera tilt in degrees (0 = top-down; ~45 for the 3D perspective). */
+      tilt?: number;
+      /** Camera bearing in degrees clockwise from north. */
+      heading?: number;
       disableDefaultUI?: boolean;
       zoomControl?: boolean;
       gestureHandling?: "cooperative" | "greedy" | "none" | "auto";
       clickableIcons?: boolean;
       keyboardShortcuts?: boolean;
       backgroundColor?: string;
+      /** Raster-map styling only (ignored on a Vector `mapId`). */
       styles?: MapTypeStyle[];
     }
 
@@ -77,7 +84,14 @@ declare global {
     class Map {
       constructor(element: HTMLElement, options?: MapOptions);
       setCenter(latLng: LatLngLiteral): void;
+      panTo(latLng: LatLngLiteral): void;
       setZoom(zoom: number): void;
+      getZoom(): number | undefined;
+      setTilt(tilt: number): void;
+      getTilt(): number | undefined;
+      setHeading(heading: number): void;
+      getHeading(): number | undefined;
+      setOptions(options: MapOptions): void;
       fitBounds(bounds: LatLngBounds, padding?: number | Padding): void;
     }
 

@@ -56,6 +56,9 @@ const FULL_BLEED_PREFIXES = [
   "/upitnik",
   "/onboarding",
   "/telefon",
+  // The run recorder is an immersive, full-viewport map experience (its own
+  // floating controls), so it opts out of the centered column + bottom nav.
+  "/trcanje/snimanje",
 ] as const;
 
 function isFullBleed(pathname: string): boolean {

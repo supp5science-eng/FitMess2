@@ -71,6 +71,7 @@ code or Vercel config is needed for that behavior.
    | `GOOGLE_CLIENT_ID` | Production + Preview |
    | `GOOGLE_CLIENT_SECRET` | Production only (server-only secret) |
    | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Production + Preview (browser key — restrict by HTTP referrer) |
+   | `NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID` | Production + Preview (Vector Map ID — 3D recorder map + dark cloud style) |
    | `NEXT_PUBLIC_POSTHOG_KEY` | Production + Preview |
    | `NEXT_PUBLIC_POSTHOG_HOST` | Production + Preview |
    | `SENTRY_DSN` | Production only (server-only secret) |

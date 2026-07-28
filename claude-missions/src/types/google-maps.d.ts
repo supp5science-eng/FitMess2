@@ -53,6 +53,8 @@ declare global {
       tilt?: number;
       /** Camera bearing in degrees clockwise from north. */
       heading?: number;
+      /** "LIGHT" | "DARK" | "FOLLOW_SYSTEM" — which Map-ID style variant to use. */
+      colorScheme?: string;
       disableDefaultUI?: boolean;
       zoomControl?: boolean;
       gestureHandling?: "cooperative" | "greedy" | "none" | "auto";

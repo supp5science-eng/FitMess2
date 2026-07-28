@@ -1,3 +1,5 @@
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { RunMap } from "@/components/run/run-map";
@@ -53,9 +55,18 @@ export default async function RunDetailPage({
 
   return (
     <main className="flex flex-col gap-5 px-4 py-6">
+      <Link
+        href="/trcanje"
+        className="inline-flex w-fit items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" />
+        Trčanje
+      </Link>
+
       <header className="flex flex-col gap-1">
-        <h1 className="text-xl font-semibold text-foreground">
-          Bravo! {distanceKm} km 💪
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          Bravo!{" "}
+          <span className="text-[color:var(--brand)]">{distanceKm} km</span> 💪
         </h1>
         <p className="text-sm text-muted-foreground">
           {formatStartedAt(run.started_at)}
@@ -71,7 +82,10 @@ export default async function RunDetailPage({
         <BigStat label="Kalorije" value={`${run.calories} kcal`} />
       </section>
 
-      <div className="rounded-xl border border-primary/30 bg-accent/40 px-4 py-3 text-center text-sm text-accent-foreground">
+      <div
+        className="rounded-2xl px-4 py-3 text-center text-sm font-medium text-[#04231c]"
+        style={{ backgroundImage: "linear-gradient(135deg,#2ee0bd,#0d9c7e)" }}
+      >
         Sagorelo {run.calories} kcal — svaka čast! 💚
       </div>
 
@@ -84,7 +98,7 @@ function BigStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 rounded-2xl border border-border bg-card p-4">
       <span className="text-xs text-muted-foreground">{label}</span>
-      <span className="text-xl font-semibold tabular-nums text-foreground">
+      <span className="text-xl font-bold tabular-nums text-foreground">
         {value}
       </span>
     </div>

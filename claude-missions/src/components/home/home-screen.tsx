@@ -13,6 +13,7 @@ import type { MiniWeekDay } from "@/components/home/mini-week-bars";
 import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
 import { AdaptivePlanCard } from "@/components/home/adaptive-plan-card";
+import { MealPlanReminder } from "@/components/home/meal-plan-reminder";
 import { StepsCard } from "@/components/home/steps-card";
 import { StreakPill } from "@/components/streak/streak-pill";
 import { GricButton } from "@/components/home/gric-button";
@@ -22,6 +23,7 @@ import type { LogWithFood } from "@/lib/home/attach-food";
 import type { DayCell } from "@/lib/home/date-strip";
 import { computeDayTotals } from "@/lib/home/totals";
 import { computeHealthScore } from "@/lib/nutrition/health-score";
+import { planProgress } from "@/lib/plan/plan";
 import { computeMicroTotals, microTargetsForKcal } from "@/lib/nutrition/micro";
 import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { waterGoalMl } from "@/lib/water/water-week";
@@ -209,6 +211,31 @@ export function HomeScreen({
 
   const totals = useMemo(() => computeDayTotals(logs), [logs]);
 
+  // "Šta da jedeš danas": the compact meal-plan reminder shown under the header
+  // (only today, and only once a target/plan exists). Derived with pure
+  // `planProgress` from the SAME target + today's totals the ring uses, so it
+  // updates in the same re-render as everything else after a log edit/delete.
+  const mealPlan = useMemo(
+    () =>
+      isToday && target
+        ? planProgress({
+            target: {
+              dailyKcal: target.daily_kcal,
+              proteinG: target.protein_g,
+              carbsG: target.carbs_g,
+              fatG: target.fat_g,
+            },
+            consumed: {
+              kcal: totals.kcal,
+              proteinG: totals.protein,
+              carbsG: totals.carbs,
+              fatG: totals.fat,
+            },
+          })
+        : null,
+    [isToday, target, totals]
+  );
+
   // The kcal number the whole block is measured against: the adapted target when
   // this week's overshoot has trimmed today, otherwise the plain daily one.
   const targetKcal =
@@ -290,6 +317,13 @@ export function HomeScreen({
         </div>
         {days.length > 0 ? <DateStrip days={days} /> : null}
       </header>
+
+      {mealPlan ? (
+        <MealPlanReminder
+          suggestedCount={mealPlan.suggestedCount}
+          mealsDone={mealPlan.mealsDone}
+        />
+      ) : null}
 
       {target ? (
         <div className="flex flex-col gap-7">

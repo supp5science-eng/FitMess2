@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { MapFab } from "@/components/run/map-fab";
 import { RunMap, type RunMapHandle } from "@/components/run/run-map";
@@ -51,6 +51,8 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
   // Default to 3D when a Vector map id is configured (it can actually tilt).
   const [is3D, setIs3D] = useState<boolean>(Boolean(googleMapsMapId()));
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [myLocation, setMyLocation] =
+    useState<google.maps.LatLngLiteral | null>(null);
 
   const { status, points, elapsedMs } = recorder;
   const isActive = status === "recording" || status === "paused";
@@ -59,6 +61,24 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
     () => computeRunSummary(points, weightKg),
     [points, weightKg]
   );
+
+  // Track the user's position for the blue "you are here" dot from the moment
+  // the screen opens — so the map shows where you are before you tap Kreni.
+  // Uses the already-granted permission (no re-prompt once allowed).
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+      return;
+    }
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) =>
+        setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {
+        // Ignore here — the recorder's own watch surfaces a denied state.
+      },
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, []);
 
   function toggle3D() {
     const next = !is3D;
@@ -126,7 +146,7 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
 
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-background">
-      <RunMap ref={mapRef} points={points} live fill />
+      <RunMap ref={mapRef} points={points} live fill myLocation={myLocation} />
 
       {/* Legibility scrims behind the controls. */}
       <div
@@ -190,7 +210,8 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
             <button
               type="button"
               onClick={recorder.start}
-              className="liquid-glass inline-flex size-24 items-center justify-center rounded-full bg-primary text-lg font-bold uppercase tracking-wide text-primary-foreground shadow-[0_10px_30px_-6px_rgba(0,0,0,0.6)]"
+              className="liquid-glass inline-flex size-24 items-center justify-center rounded-full text-lg font-bold uppercase tracking-wide text-[#04231c] shadow-[0_12px_34px_-8px_rgba(23,209,168,0.7)]"
+              style={{ backgroundImage: "linear-gradient(135deg,#2ee0bd,#0d9c7e)" }}
             >
               Kreni
             </button>

@@ -55,6 +55,18 @@ function circleIcon(
   };
 }
 
+/** iOS-style blue "you are here" dot (blue core, white ring). */
+function locationDot(): google.maps.Symbol {
+  return {
+    path: 0 /* google.maps.SymbolPath.CIRCLE */,
+    scale: 7,
+    fillColor: "#2a7bff",
+    fillOpacity: 1,
+    strokeColor: "#ffffff",
+    strokeWeight: 3,
+  };
+}
+
 const toLatLng = (p: RunRoutePoint): google.maps.LatLngLiteral => ({
   lat: p.lat,
   lng: p.lng,
@@ -77,6 +89,9 @@ interface RunMapProps {
   live?: boolean;
   /** Immersive: fill the parent edge-to-edge (no card border/rounding). */
   fill?: boolean;
+  /** The user's current position — drawn as the blue "you are here" dot and
+   * (before a run starts) what the map centres on. */
+  myLocation?: google.maps.LatLngLiteral | null;
   className?: string;
 }
 
@@ -91,15 +106,16 @@ interface RunMapProps {
  * placeholder rather than a broken tile — the rest of the screen still works.
  */
 export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
-  { points, live = false, fill = false, className },
+  { points, live = false, fill = false, myLocation = null, className },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
+  const meRef = useRef<google.maps.Marker | null>(null);
+  const centeredOnMe = useRef(false);
   const lineRef = useRef<google.maps.Polyline | null>(null);
   const startRef = useRef<google.maps.Marker | null>(null);
   const endRef = useRef<google.maps.Marker | null>(null);
-  const currentRef = useRef<google.maps.Marker | null>(null);
 
   const [status, setStatus] = useState<"loading" | "ready" | "unavailable">(
     googleMapsApiKey() ? "loading" : "unavailable"
@@ -144,6 +160,9 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
           clickableIcons: false,
           keyboardShortcuts: false,
           backgroundColor: "#14181a",
+          // Force the Map-ID's DARK style variant (matches the app's dark UI)
+          // instead of following the phone's light/dark setting.
+          colorScheme: "DARK",
           // Vector map id → 3D buildings + tilt; else dark-styled raster.
           ...(mapId
             ? { mapId, tilt: live ? TILT_3D : 0, heading: 0 }
@@ -186,7 +205,8 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
     const last = path[path.length - 1];
 
     if (live) {
-      // A single prominent current-position dot; follow it.
+      // The teal start dot + the teal route line; the current position is the
+      // blue "you are here" dot (drawn from `myLocation` below). Follow it.
       if (first && !startRef.current) {
         startRef.current = new google.maps.Marker({
           map,
@@ -196,18 +216,7 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
         });
       }
       if (first) startRef.current?.setPosition(first);
-      if (last) {
-        if (!currentRef.current) {
-          currentRef.current = new google.maps.Marker({
-            map,
-            title: "Ovde si",
-            icon: circleIcon("#17d1a8", "#ffffff", 8),
-            zIndex: 5,
-          });
-        }
-        currentRef.current.setPosition(last);
-        map.panTo(last);
-      }
+      if (last) map.panTo(last);
       return;
     }
 
@@ -242,6 +251,26 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
       map.setCenter(last);
     }
   }, [points, status, live]);
+
+  // Blue "you are here" dot. Before a run starts we centre on the user once
+  // (so the map opens on their location), then leave the camera alone.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (status !== "ready" || !map || !myLocation) return;
+    if (!meRef.current) {
+      meRef.current = new google.maps.Marker({
+        map,
+        title: "Ovde si",
+        icon: locationDot(),
+        zIndex: 6,
+      });
+    }
+    meRef.current.setPosition(myLocation);
+    if (points.length === 0 && !centeredOnMe.current) {
+      map.setCenter(myLocation);
+      centeredOnMe.current = true;
+    }
+  }, [myLocation, status, points.length]);
 
   return (
     <div

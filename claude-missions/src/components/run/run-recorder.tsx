@@ -80,6 +80,13 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
 
+  // Auto-start the run on open: the user already committed by tapping Kreni on
+  // the landing map, so the recorder goes straight into recording.
+  useEffect(() => {
+    recorder.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function toggle3D() {
     const next = !is3D;
     setIs3D(next);

@@ -64,7 +64,7 @@ export default async function TrcanjePage() {
       {/* Teal hero — tap anywhere to start the immersive recorder. */}
       <Link
         href="/trcanje/snimanje"
-        aria-label="Kreni u trčanje"
+        aria-label="Kreni na trčanje"
         className="relative block overflow-hidden rounded-3xl p-6 text-[#04231c] shadow-[0_14px_34px_-14px_rgba(23,209,168,0.75)]"
         style={{ backgroundImage: "linear-gradient(135deg,#2ee0bd,#0d9c7e)" }}
       >
@@ -87,7 +87,7 @@ export default async function TrcanjePage() {
             <span className="text-sm font-medium text-[#04231c]/70">
               Spreman?
             </span>
-            <span className="text-2xl font-bold">Kreni u trčanje</span>
+            <span className="text-2xl font-bold">Kreni na trčanje</span>
           </div>
           <span className="inline-flex size-16 shrink-0 items-center justify-center rounded-full bg-[#04231c] text-white shadow-lg">
             <Footprints className="size-7" aria-hidden="true" />

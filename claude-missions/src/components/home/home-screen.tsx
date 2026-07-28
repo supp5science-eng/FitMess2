@@ -14,6 +14,7 @@ import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
 import { AdaptivePlanCard } from "@/components/home/adaptive-plan-card";
 import { StepsCard } from "@/components/home/steps-card";
+import { StreakCard } from "@/components/streak/streak-card";
 import { GricButton } from "@/components/home/gric-button";
 import { WaterButton } from "@/components/home/water-button";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
@@ -24,6 +25,7 @@ import { computeHealthScore } from "@/lib/nutrition/health-score";
 import { computeMicroTotals, microTargetsForKcal } from "@/lib/nutrition/micro";
 import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { waterGoalMl } from "@/lib/water/water-week";
+import type { StreakSummary } from "@/lib/streak/streak";
 import type { Log, Target } from "@/lib/types/db";
 import { cn } from "@/lib/utils";
 
@@ -72,6 +74,7 @@ export function HomeScreen({
   waterGoal = waterGoalMl(null),
   stepsWeek = [],
   waterWeek = [],
+  streak = null,
   isToday = true,
 }: {
   initialLogs: LogWithFood[];
@@ -114,6 +117,9 @@ export function HomeScreen({
   // `computeStepsWeek`/`computeWaterWeek` the Analitika cards use.
   stepsWeek?: MiniWeekDay[];
   waterWeek?: MiniWeekDay[];
+  // Niz: the meal-logging streak, derived server-side by `computeStreak`. Only
+  // passed for the today view (a streak is a "now" fact); null => no card.
+  streak?: StreakSummary | null;
   // Whether `dayKey` is the current Belgrade day. Gates "Gric", which always
   // writes at `now()` and so has no meaning on a past day.
   isToday?: boolean;
@@ -277,6 +283,12 @@ export function HomeScreen({
         </div>
         {days.length > 0 ? <DateStrip days={days} /> : null}
       </header>
+
+      {/* Niz: the meal-logging streak, front and centre. Only on the today
+          view (the page passes `streak` only then). `home-body` so it rides the
+          onboarding reveal with the rest of the dashboard instead of flashing
+          under the cover. */}
+      {streak ? <StreakCard streak={streak} className="home-body" /> : null}
 
       {target ? (
         <div className="flex flex-col gap-7">

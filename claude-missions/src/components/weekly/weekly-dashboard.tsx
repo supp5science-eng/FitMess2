@@ -6,8 +6,10 @@ import { MacroAverageCard } from "@/components/analytics/macro-average-card";
 import { MicroWeekCard } from "@/components/analytics/micro-week-card";
 import { StepsCard } from "@/components/analytics/steps-card";
 import { WaterCard } from "@/components/analytics/water-card";
+import { StreakSummaryCard } from "@/components/streak/streak-summary-card";
 import type { MicroWeek } from "@/lib/nutrition/micro-week";
 import type { StepsWeek } from "@/lib/steps/steps-week";
+import type { StreakSummary } from "@/lib/streak/streak";
 import type { IntakeTrend } from "@/lib/weight/intake-trend";
 import type { WaterWeek } from "@/lib/water/water-week";
 import type { MacroWeek } from "@/lib/week/macro-weeks";
@@ -22,6 +24,7 @@ export function WeeklyDashboard({
   intakeTrend,
   waterWeek,
   stepsWeek,
+  streak,
   footer,
 }: {
   /** The user's body-mass index (kg/m²), computed from their questionnaire
@@ -45,6 +48,9 @@ export function WeeklyDashboard({
   /** Interactive 7-day step series (`computeStepsWeek`). `null` when the read
    * failed. */
   stepsWeek: StepsWeek | null;
+  /** Meal-logging streak (`computeStreak`) — current run, record, and the last
+   * 7 days. Always present (the reader degrades to an empty set, not null). */
+  streak: StreakSummary | null;
   footer?: ReactNode;
 }) {
   return (
@@ -55,6 +61,10 @@ export function WeeklyDashboard({
         </h1>
         <p className="text-sm text-muted-foreground">Ova nedelja</p>
       </header>
+
+      {/* Niz: the meal-logging streak — the first thing the weekly view answers,
+          "am I keeping it up?", before any single number. */}
+      {streak ? <StreakSummaryCard streak={streak} /> : null}
 
       {/* BMI from the questionnaire height + weight. */}
       <BmiCard bmi={bmi} />

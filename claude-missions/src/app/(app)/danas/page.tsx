@@ -17,6 +17,8 @@ import type { GoalType } from "@/lib/types/db";
 import { buildDateStrip } from "@/lib/home/date-strip";
 import { getLoggedDayKcals } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
+import { getLoggedDayKeys } from "@/lib/streak/read-streak";
+import { computeStreak, type StreakSummary } from "@/lib/streak/streak";
 import { getStepsForDay, getStepsWeek } from "@/lib/steps/steps";
 import { resolveStepGoal } from "@/lib/steps/step-goal";
 import { getCustomStepGoal } from "@/lib/steps/step-goal-read";
@@ -183,6 +185,7 @@ export default async function DanasPage({
     steps,
     stepsWeekRows,
     waterWeekRows,
+    streakDays,
   ] = await Promise.all([
     getLoggedDayKcals(
       supabase,
@@ -212,7 +215,19 @@ export default async function DanasPage({
     // failed day render.
     getStepsWeek(supabase, userId, selectedNoon),
     getWaterWeek(supabase, userId, selectedNoon),
+    // Niz: the Belgrade days (in the trailing window) the user logged a meal
+    // on, for the streak card. Only the today view shows the streak (it is a
+    // "now" fact, not a per-day one), so a past-day view skips the read.
+    isToday
+      ? getLoggedDayKeys(supabase, userId, now)
+      : Promise.resolve(null),
   ]);
+
+  // Derive the streak purely from the logged-day keys (money-math rule). Null
+  // when viewing a past day -> the home screen simply omits the card.
+  const streak: StreakSummary | null = streakDays
+    ? computeStreak([...streakDays], todayKey)
+    : null;
 
   const waterGoal = waterGoalMl(profileResult.data?.weight_kg ?? null);
   // Map the two week models onto the strip's tiny shape (label + share of goal
@@ -272,6 +287,7 @@ export default async function DanasPage({
       adaptivePlan={adaptivePlan}
       planIntro={planIntro}
       dayKey={selectedKey}
+      streak={streak}
       initialWaterMl={water.ml}
       initialSteps={steps.steps}
       stepsGoal={stepGoal}

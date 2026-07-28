@@ -106,6 +106,16 @@ export interface FoodCommonUnit {
   grams: number;
 }
 
+/** 0023: one GPS sample of a run's `route` (jsonb array). `lat`/`lng` are WGS84
+ * degrees; `t` is milliseconds since the run started. Sampled on the recording
+ * screen via `navigator.geolocation.watchPosition` and used to redraw the map
+ * and recompute the summary in `src/lib/run/**`. */
+export interface RunRoutePoint {
+  lat: number;
+  lng: number;
+  t: number;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -722,6 +732,64 @@ export interface Database {
           },
         ];
       };
+      /** Trčanje (0023): user-owned GPS-tracked running activities.
+       * Append-only — one row per completed run (many per day allowed). Totals
+       * are server-computed in src/lib/run/**; `route` holds the raw trace. */
+      runs: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** Belgrade calendar day of the run, `"YYYY-MM-DD"` (a Postgres `date`). */
+          day: string;
+          started_at: string;
+          ended_at: string;
+          /** Active moving seconds, excluding paused time (0..86400). */
+          duration_s: number;
+          /** Total distance in whole metres (0..200000). */
+          distance_m: number;
+          /** Whole kcal burned, server-computed from distance + body weight. */
+          calories: number;
+          /** Raw GPS trace: `{ lat, lng, t(ms since start) }` samples. */
+          route: RunRoutePoint[];
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day: string;
+          started_at: string;
+          ended_at: string;
+          duration_s?: number;
+          distance_m?: number;
+          calories?: number;
+          route?: RunRoutePoint[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          day?: string;
+          started_at?: string;
+          ended_at?: string;
+          duration_s?: number;
+          distance_m?: number;
+          calories?: number;
+          route?: RunRoutePoint[];
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "runs_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -784,3 +852,7 @@ export type StepCountInsert =
   Database["public"]["Tables"]["step_counts"]["Insert"];
 export type StepCountUpdate =
   Database["public"]["Tables"]["step_counts"]["Update"];
+
+export type Run = Database["public"]["Tables"]["runs"]["Row"];
+export type RunInsert = Database["public"]["Tables"]["runs"]["Insert"];
+export type RunUpdate = Database["public"]["Tables"]["runs"]["Update"];

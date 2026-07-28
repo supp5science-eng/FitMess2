@@ -22,7 +22,7 @@ describe("BottomNav", () => {
     pathnameMock.mockReturnValue("/danas");
     render(<BottomNav />);
 
-    for (const label of ["Početna", "Analitika", "Agent", "Profil"]) {
+    for (const label of ["Početna", "Analitika", "Trčanje", "Profil"]) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
   });
@@ -59,7 +59,7 @@ describe("BottomNav", () => {
     // No nav tab owns an /dodaj route -> the lens fades out.
     expect(lens).toHaveStyle({ opacity: "0" });
     // And nothing is marked active.
-    for (const label of ["Početna", "Analitika", "Agent", "Profil"]) {
+    for (const label of ["Početna", "Analitika", "Trčanje", "Profil"]) {
       expect(screen.getByRole("link", { name: label })).not.toHaveAttribute(
         "aria-current"
       );

@@ -67,6 +67,18 @@ describe("StreakCard (home)", () => {
       screen.getByLabelText("3 od poslednjih 7 dana sa unosom")
     ).toBeInTheDocument();
   });
+
+  it("is a plain section (not a link) without an href", () => {
+    render(<StreakCard streak={activeRun(3)} />);
+    expect(screen.queryByTestId("streak-card-link")).not.toBeInTheDocument();
+  });
+
+  it("becomes a link to the given href when one is passed", () => {
+    render(<StreakCard streak={activeRun(5)} href="/dostignuca" />);
+    const link = screen.getByTestId("streak-card-link");
+    expect(link).toHaveAttribute("href", "/dostignuca");
+    expect(link).toHaveAccessibleName(/Otvori dostignuća/);
+  });
 });
 
 describe("StreakSummaryCard (analitika)", () => {

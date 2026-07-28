@@ -1,4 +1,5 @@
-import { Flame } from "lucide-react";
+import { ChevronRight, Flame } from "lucide-react";
+import Link from "next/link";
 
 import { ProgressRing } from "@/components/home/progress-ring";
 import { FLAME_GRADIENT } from "@/components/streak/flame";
@@ -26,9 +27,13 @@ import { cn } from "@/lib/utils";
 export function StreakCard({
   streak,
   className,
+  href,
 }: {
   streak: StreakSummary;
   className?: string;
+  /** When set, the whole card becomes a link to this route (the /danas entry
+   * point to `/dostignuca`), with a chevron affordance. */
+  href?: string;
 }) {
   const {
     current,
@@ -59,18 +64,17 @@ export function StreakCard({
         ? `Još ${dayCountSr(daysToNext ?? 0)} do ${nextMilestone} 🔥`
         : "Neprekidan niz 🔥";
 
-  return (
-    <section
-      aria-label={
-        hasStreak
-          ? `Niz: ${dayCountSr(current)} zaredom`
-          : "Niz: još nije započet"
-      }
-      className={cn(
-        "flex items-center gap-4 rounded-2xl border border-border bg-card px-4 py-3.5",
-        className
-      )}
-    >
+  const ariaLabel = hasStreak
+    ? `Niz: ${dayCountSr(current)} zaredom`
+    : "Niz: još nije započet";
+
+  const cardClass = cn(
+    "flex items-center gap-4 rounded-2xl border border-border bg-card px-4 py-3.5",
+    className
+  );
+
+  const inner = (
+    <>
       <ProgressRing
         fraction={progressToNext}
         size={64}
@@ -133,6 +137,35 @@ export function StreakCard({
 
         <p className="text-xs font-medium text-muted-foreground">{hint}</p>
       </div>
+
+      {href ? (
+        <ChevronRight
+          aria-hidden="true"
+          className="size-5 shrink-0 self-center text-muted-foreground/50"
+        />
+      ) : null}
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        data-testid="streak-card-link"
+        aria-label={`${ariaLabel}. Otvori dostignuća.`}
+        className={cn(
+          cardClass,
+          "text-left transition-colors hover:bg-muted/40 active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+        )}
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return (
+    <section aria-label={ariaLabel} className={cardClass}>
+      {inner}
     </section>
   );
 }

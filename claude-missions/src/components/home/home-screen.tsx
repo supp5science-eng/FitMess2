@@ -288,7 +288,9 @@ export function HomeScreen({
           view (the page passes `streak` only then). `home-body` so it rides the
           onboarding reveal with the rest of the dashboard instead of flashing
           under the cover. */}
-      {streak ? <StreakCard streak={streak} className="home-body" /> : null}
+      {streak ? (
+        <StreakCard streak={streak} href="/dostignuca" className="home-body" />
+      ) : null}
 
       {target ? (
         <div className="flex flex-col gap-7">

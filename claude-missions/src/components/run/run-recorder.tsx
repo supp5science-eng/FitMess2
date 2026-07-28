@@ -22,10 +22,7 @@ import {
   useRunRecorder,
   type RunPayload,
 } from "@/components/run/use-run-recorder";
-import {
-  googleMapsMapId,
-  loadGoogleMaps,
-} from "@/lib/run/google-maps-loader";
+import { loadGoogleMaps } from "@/lib/run/google-maps-loader";
 import { haversineMeters } from "@/lib/run/distance";
 import {
   bearingDegrees,
@@ -73,9 +70,9 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
   const mapRef = useRef<RunMapHandle>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [pendingPayload, setPendingPayload] = useState<RunPayload | null>(null);
-  // 3D tilt only actually works on a Vector map (Map ID); start on when one is
-  // configured, off otherwise so the button doesn't advertise a no-op.
-  const [is3D, setIs3D] = useState<boolean>(Boolean(googleMapsMapId()));
+  // The map is a vector (MapLibre) renderer, so 3D tilt + rotation always
+  // work — start tilted, like the reference.
+  const [is3D, setIs3D] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [myLocation, setMyLocation] =
     useState<google.maps.LatLngLiteral | null>(null);

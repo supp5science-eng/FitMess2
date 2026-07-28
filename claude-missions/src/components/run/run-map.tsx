@@ -1,5 +1,8 @@
 "use client";
 
+import "maplibre-gl/dist/maplibre-gl.css";
+import "./run-map.css";
+
 import { MapPin } from "lucide-react";
 import {
   forwardRef,
@@ -8,144 +11,226 @@ import {
   useRef,
   useState,
 } from "react";
+import type {
+  GeoJSONSource,
+  LngLatBoundsLike,
+  Map as MlMap,
+  Marker as MlMarker,
+  StyleSpecification,
+} from "maplibre-gl";
 
 import { cn } from "@/lib/utils";
-import {
-  googleMapsApiKey,
-  googleMapsMapId,
-  loadGoogleMaps,
-} from "@/lib/run/google-maps-loader";
 import type { RunRoutePoint } from "@/lib/types/db";
 
 /** Teal accent (matches `--primary` in globals.css) for the route + markers. */
 const ROUTE_COLOR = "#17d1a8";
-/** The indigo ground the clean style paints — also the map's backdrop while
- * tiles load, so there's never a flash of Google's default grey. */
+/** The indigo ground — also the canvas backdrop while tiles stream in. */
 const GROUND_COLOR = "#232842";
 /** Fallback centre when there are no fixes yet — central Belgrade. */
-const DEFAULT_CENTER: google.maps.LatLngLiteral = { lat: 44.8176, lng: 20.4633 };
-/** Camera tilt (degrees) for the 3D perspective, applied best-effort. */
-const TILT_3D = 47;
+const DEFAULT_CENTER: [number, number] = [20.4633, 44.8176];
+/** Camera pitch (degrees) for the 3D perspective. */
+const TILT_3D = 55;
 
-/**
- * A calm running style we own entirely in code — so the map stays clutter-free
- * (no cafés or shops crowding the runner) no matter how the Google Cloud
- * console is set up. Deep-indigo ground, muted lavender roads, dim water, parks
- * in a quiet green — the palette of the reference running map, under the app's
- * dark, teal-accented controls.
- *
- * Businesses/POI pins and transit are removed, but the names people orient by
- * are kept: main-street labels (arterials + highways) and neighbourhood/place
- * names stay on and legible; only minor local-street labels are dropped so the
- * map reads clean without leaving the runner lost.
- */
-const CLEAN_MAP_STYLE: google.maps.MapTypeStyle[] = [
-  { elementType: "geometry", stylers: [{ color: GROUND_COLOR }] },
-  // Labels we keep: calm lavender text with a dark halo so it reads on indigo.
-  { elementType: "labels.text.fill", stylers: [{ color: "#aeb4dd" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#171b30" }] },
-  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-  // Businesses & transit stay gone — that was the clutter.
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  // Keep neighbourhood/city names for orientation; drop borders + parcel noise.
-  { featureType: "administrative", elementType: "geometry", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
-  {
-    featureType: "administrative.neighborhood",
-    elementType: "labels",
-    stylers: [{ visibility: "on" }],
-  },
-  // Parks as quiet green geometry.
-  {
-    featureType: "poi.park",
-    elementType: "geometry",
-    stylers: [{ color: "#2c4a3e" }, { visibility: "on" }],
-  },
-  {
-    featureType: "landscape.man_made",
-    elementType: "geometry.fill",
-    stylers: [{ color: "#2b315a" }],
-  },
-  // Roads: lavender geometry; keep ONLY main-street names (drop local labels).
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#3a4168" }] },
-  { featureType: "road.local", elementType: "labels", stylers: [{ visibility: "off" }] },
-  {
-    featureType: "road.arterial",
-    elementType: "geometry",
-    stylers: [{ color: "#434d7d" }],
-  },
-  {
-    featureType: "road.arterial",
-    elementType: "labels",
-    stylers: [{ visibility: "on" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "geometry",
-    stylers: [{ color: "#4d5891" }],
-  },
-  {
-    featureType: "road.highway",
-    elementType: "labels",
-    stylers: [{ visibility: "on" }],
-  },
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#151b33" }] },
+/** Free, key-less OpenStreetMap vector tiles (OpenFreeMap public instance). */
+const OFM_TILES = "https://tiles.openfreemap.org/planet";
+const OFM_GLYPHS = "https://tiles.openfreemap.org/fonts/{fontstack}/{range}.pbf";
+
+const toLngLat = (p: { lat: number; lng: number }): [number, number] => [
+  p.lng,
+  p.lat,
 ];
-
-function circleIcon(
-  fill: string,
-  stroke: string,
-  scale = 6
-): google.maps.Symbol {
-  return {
-    path: 0 /* google.maps.SymbolPath.CIRCLE */,
-    scale,
-    fillColor: fill,
-    fillOpacity: 1,
-    strokeColor: stroke,
-    strokeWeight: 2,
-  };
-}
-
-/** iOS-style blue "you are here" dot (blue core, white ring). */
-function locationDot(): google.maps.Symbol {
-  return {
-    path: 0 /* google.maps.SymbolPath.CIRCLE */,
-    scale: 7,
-    fillColor: "#2a7bff",
-    fillOpacity: 1,
-    strokeColor: "#ffffff",
-    strokeWeight: 3,
-  };
-}
+const goalKey = (g: { lat: number; lng: number }): string => `${g.lat},${g.lng}`;
 
 /**
- * The soft white "facing" cone that fans out from the location dot in the
- * direction the runner is heading (like Google/Apple Maps). A translucent wedge
- * whose apex sits on the dot; `rotation` (degrees clockwise from north) turns it
- * to the live heading.
+ * A calm, clutter-free running style we own entirely in code, drawn on free
+ * OpenFreeMap vector tiles. Deep-indigo ground, muted lavender roads, quiet
+ * parks, dim water — no cafés/shops. The names people orient by stay on: main
+ * streets (motorway → secondary) and neighbourhood/place labels. Buildings are
+ * extruded for the 3D perspective. Because it is a vector style, tilt and
+ * two-finger rotation work.
  */
-function headingBeam(rotation: number): google.maps.Symbol {
-  return {
-    path: "M0,0 L-11,-30 Q0,-37 11,-30 Z",
-    scale: 1,
-    fillColor: "#ffffff",
-    fillOpacity: 0.5,
-    strokeColor: "#ffffff",
-    strokeOpacity: 0,
-    strokeWeight: 0,
-    rotation,
-    anchor: new google.maps.Point(0, 0),
+function mapStyle(): StyleSpecification {
+  const style = {
+    version: 8,
+    glyphs: OFM_GLYPHS,
+    sources: {
+      ofm: {
+        type: "vector",
+        url: OFM_TILES,
+        attribution: "© OpenStreetMap",
+      },
+    },
+    layers: [
+      { id: "bg", type: "background", paint: { "background-color": GROUND_COLOR } },
+      {
+        id: "water",
+        type: "fill",
+        source: "ofm",
+        "source-layer": "water",
+        paint: { "fill-color": "#151b33" },
+      },
+      {
+        id: "park",
+        type: "fill",
+        source: "ofm",
+        "source-layer": "park",
+        paint: { "fill-color": "#2c4a3e", "fill-opacity": 0.7 },
+      },
+      {
+        id: "landcover-green",
+        type: "fill",
+        source: "ofm",
+        "source-layer": "landcover",
+        filter: ["in", ["get", "class"], ["literal", ["wood", "grass", "park"]]],
+        paint: { "fill-color": "#2a4238", "fill-opacity": 0.5 },
+      },
+      {
+        id: "road-minor",
+        type: "line",
+        source: "ofm",
+        "source-layer": "transportation",
+        filter: [
+          "in",
+          ["get", "class"],
+          ["literal", ["minor", "service", "track", "path"]],
+        ],
+        paint: {
+          "line-color": "#333a63",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 13, 0.5, 18, 4],
+        },
+      },
+      {
+        id: "road-arterial",
+        type: "line",
+        source: "ofm",
+        "source-layer": "transportation",
+        filter: [
+          "in",
+          ["get", "class"],
+          ["literal", ["tertiary", "secondary", "primary"]],
+        ],
+        paint: {
+          "line-color": "#434d7d",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 11, 0.8, 18, 8],
+        },
+      },
+      {
+        id: "road-highway",
+        type: "line",
+        source: "ofm",
+        "source-layer": "transportation",
+        filter: [
+          "in",
+          ["get", "class"],
+          ["literal", ["motorway", "trunk"]],
+        ],
+        paint: {
+          "line-color": "#4d5891",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 9, 1, 18, 12],
+        },
+      },
+      {
+        id: "buildings-3d",
+        type: "fill-extrusion",
+        source: "ofm",
+        "source-layer": "building",
+        minzoom: 14,
+        paint: {
+          "fill-extrusion-color": "#2f3660",
+          "fill-extrusion-height": ["coalesce", ["get", "render_height"], 6],
+          "fill-extrusion-base": ["coalesce", ["get", "render_min_height"], 0],
+          "fill-extrusion-opacity": 0.85,
+        },
+      },
+      {
+        id: "road-label",
+        type: "symbol",
+        source: "ofm",
+        "source-layer": "transportation_name",
+        filter: [
+          "in",
+          ["get", "class"],
+          ["literal", ["motorway", "trunk", "primary", "secondary"]],
+        ],
+        layout: {
+          "symbol-placement": "line",
+          "text-field": ["get", "name"],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": 12,
+        },
+        paint: {
+          "text-color": "#c3c8ea",
+          "text-halo-color": "#171b30",
+          "text-halo-width": 1.4,
+        },
+      },
+      {
+        id: "place-label",
+        type: "symbol",
+        source: "ofm",
+        "source-layer": "place",
+        filter: [
+          "in",
+          ["get", "class"],
+          ["literal", ["city", "town", "suburb", "neighbourhood", "quarter"]],
+        ],
+        layout: {
+          "text-field": ["get", "name"],
+          "text-font": ["Noto Sans Regular"],
+          "text-size": ["interpolate", ["linear"], ["zoom"], 10, 11, 16, 15],
+        },
+        paint: {
+          "text-color": "#aeb4dd",
+          "text-halo-color": "#171b30",
+          "text-halo-width": 1.6,
+        },
+      },
+    ],
   };
+  return style as unknown as StyleSpecification;
 }
 
-const toLatLng = (p: RunRoutePoint): google.maps.LatLngLiteral => ({
-  lat: p.lat,
-  lng: p.lng,
-});
+function meElement(): { el: HTMLDivElement; beam: HTMLDivElement } {
+  const el = document.createElement("div");
+  el.className = "fm-me";
+  const beam = document.createElement("div");
+  beam.className = "fm-beam";
+  beam.style.display = "none";
+  const dot = document.createElement("div");
+  dot.className = "fm-dot";
+  el.append(beam, dot);
+  return { el, beam };
+}
 
-const goalKey = (g: google.maps.LatLngLiteral): string => `${g.lat},${g.lng}`;
+function goalElement(): HTMLDivElement {
+  const el = document.createElement("div");
+  el.className = "fm-goal";
+  const dot = document.createElement("div");
+  dot.className = "fm-goal-dot";
+  el.append(dot);
+  return el;
+}
+
+function pinElement(color: string, ring: string): HTMLDivElement {
+  const el = document.createElement("div");
+  el.className = "fm-pin";
+  const dot = document.createElement("div");
+  dot.className = "fm-pin-dot";
+  dot.style.background = color;
+  dot.style.boxShadow = `0 0 0 2px ${ring}`;
+  el.append(dot);
+  return el;
+}
+
+function lineData(
+  coords: [number, number][]
+): GeoJSON.Feature<GeoJSON.LineString> {
+  return {
+    type: "Feature",
+    geometry: { type: "LineString", coordinates: coords },
+    properties: {},
+  };
+}
 
 /** Imperative controls the floating map FABs drive. */
 export interface RunMapHandle {
@@ -164,32 +249,27 @@ interface RunMapProps {
   live?: boolean;
   /** Immersive: fill the parent edge-to-edge (no card border/rounding). */
   fill?: boolean;
-  /** The user's current position — drawn as the blue "you are here" dot and
-   * (before a run starts) what the map centres on. */
-  myLocation?: google.maps.LatLngLiteral | null;
-  /** Live heading (degrees clockwise from north) for the facing beam; `null`
-   * when unknown (standing still with no compass) hides the beam. */
+  /** The user's current position — the blue "you are here" dot. */
+  myLocation?: { lat: number; lng: number } | null;
+  /** Live heading (deg clockwise from north) for the facing beam; `null` hides it. */
   heading?: number | null;
-  /** A searched destination — drawn as the "cilj" target marker. */
-  goal?: google.maps.LatLngLiteral | null;
+  /** A searched destination — drawn as the "cilj" target. */
+  goal?: { lat: number; lng: number } | null;
   /** The walked route to `goal`, drawn as a faint teal underlay. */
-  plannedRoute?: readonly google.maps.LatLngLiteral[] | null;
+  plannedRoute?: readonly { lat: number; lng: number }[] | null;
   className?: string;
 }
 
 /**
- * Draws a run's GPS route on a Google map. In `live` mode it follows the latest
- * fix (recording screen); otherwise it frames the whole route (run detail).
- * With `fill` it becomes the full-viewport, immersive map behind the recorder's
- * floating controls.
+ * Draws a run's GPS route on a MapLibre GL vector map (free OpenFreeMap tiles).
+ * In `live` mode it follows the latest fix (recording screen); otherwise it
+ * frames the whole route (run detail). With `fill` it becomes the immersive
+ * full-viewport map behind the recorder's floating controls.
  *
- * The look is a label-free, POI-free indigo style we own in code (see
- * {@link CLEAN_MAP_STYLE}) — clean and calm for running, and independent of any
- * Cloud console styling. A searched `goal` adds a target marker plus its walked
- * `plannedRoute`, and `heading` fans a facing beam out of the location dot.
- *
- * Degrades gracefully: with no API key or a failed load it shows a calm
- * placeholder rather than a broken tile — the rest of the screen still works.
+ * A vector renderer, so the 3D tilt button and two-finger rotate/tilt gestures
+ * all work — no Google Cloud Map ID needed. A searched `goal` adds a target
+ * marker plus its walked `plannedRoute`, and `heading` fans a facing beam out of
+ * the location dot. Degrades to a calm placeholder if the map can't load.
  */
 export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
   {
@@ -205,283 +285,272 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<google.maps.Map | null>(null);
-  const meRef = useRef<google.maps.Marker | null>(null);
-  const beamRef = useRef<google.maps.Marker | null>(null);
+  const mapRef = useRef<MlMap | null>(null);
+  const meRef = useRef<MlMarker | null>(null);
+  const beamElRef = useRef<HTMLDivElement | null>(null);
   const centeredOnMe = useRef(false);
-  const lineRef = useRef<google.maps.Polyline | null>(null);
-  const plannedRef = useRef<google.maps.Polyline | null>(null);
-  const goalRef = useRef<google.maps.Marker | null>(null);
-  const goalHaloRef = useRef<google.maps.Marker | null>(null);
+  const goalRef = useRef<MlMarker | null>(null);
+  const startRef = useRef<MlMarker | null>(null);
+  const endRef = useRef<MlMarker | null>(null);
   const framedGoalRef = useRef<string | null>(null);
-  const startRef = useRef<google.maps.Marker | null>(null);
-  const endRef = useRef<google.maps.Marker | null>(null);
 
   const [status, setStatus] = useState<"loading" | "ready" | "unavailable">(
-    googleMapsApiKey() ? "loading" : "unavailable"
+    "loading"
   );
-  // Short diagnostic surfaced under the placeholder so a misconfigured deploy
-  // (missing key vs. blocked script) is debuggable from the screen itself.
-  const [reason, setReason] = useState<string | null>(
-    googleMapsApiKey()
-      ? null
-      : "Nedostaje NEXT_PUBLIC_GOOGLE_MAPS_API_KEY u build-u."
-  );
+  const [reason, setReason] = useState<string | null>(null);
 
   useImperativeHandle(ref, () => ({
     recenter: () => {
       const last = points[points.length - 1];
-      const target = last ? toLatLng(last) : myLocation;
+      const target = last ? toLngLat(last) : myLocation ? toLngLat(myLocation) : null;
       if (mapRef.current && target) mapRef.current.panTo(target);
     },
     setTilt3D: (on: boolean) => {
-      mapRef.current?.setTilt(on ? TILT_3D : 0);
+      mapRef.current?.easeTo({ pitch: on ? TILT_3D : 0, duration: 400 });
     },
     resetNorth: () => {
-      mapRef.current?.setHeading(0);
+      mapRef.current?.easeTo({ bearing: 0, pitch: 0, duration: 400 });
     },
   }));
 
   // One-time map init. `live`/`fill` are read once at mount, so intentionally
   // not dependencies.
   useEffect(() => {
-    if (!googleMapsApiKey()) return;
     let cancelled = false;
+    let map: MlMap | null = null;
 
-    const mapId = googleMapsMapId();
-
-    loadGoogleMaps()
-      .then(() => {
+    (async () => {
+      try {
+        const gl = await import("maplibre-gl");
         if (cancelled || !containerRef.current || mapRef.current) return;
         const first = points[0];
-        mapRef.current = new google.maps.Map(containerRef.current, {
-          center: first ? toLatLng(first) : DEFAULT_CENTER,
+        const m = new gl.Map({
+          container: containerRef.current,
+          style: mapStyle(),
+          center: first ? toLngLat(first) : DEFAULT_CENTER,
           zoom: live ? 16.5 : 15,
-          disableDefaultUI: true,
-          gestureHandling: live ? "greedy" : "cooperative",
-          clickableIcons: false,
-          keyboardShortcuts: false,
-          backgroundColor: GROUND_COLOR,
-          tilt: live ? TILT_3D : 0,
-          heading: 0,
-          // With a Vector Map ID → real 3D buildings, tilt, and two-finger
-          // rotate/tilt gestures; its clean, POI-free look comes from the
-          // cloud-configured style. Without one → the raster fallback, styled
-          // in-code (CLEAN_MAP_STYLE) — clutter-free but flat (no 3D/rotation).
-          ...(mapId
-            ? {
-                mapId,
-                colorScheme: "DARK",
-                tiltInteractionEnabled: true,
-                headingInteractionEnabled: true,
-              }
-            : { styles: CLEAN_MAP_STYLE }),
+          pitch: live ? TILT_3D : 0,
+          bearing: 0,
+          attributionControl: false,
+          maxPitch: 70,
         });
-        lineRef.current = new google.maps.Polyline({
-          map: mapRef.current,
-          geodesic: true,
-          strokeColor: ROUTE_COLOR,
-          strokeOpacity: 1,
-          strokeWeight: 5,
-          zIndex: 2,
+        map = m;
+        mapRef.current = m;
+        m.addControl(
+          new gl.AttributionControl({
+            compact: true,
+            customAttribution: "© OpenStreetMap",
+          }),
+          "bottom-right"
+        );
+
+        m.on("load", () => {
+          if (cancelled) return;
+          // Route layers, drawn beneath the labels (empty until points arrive).
+          m.addSource("route-planned", {
+            type: "geojson",
+            data: lineData([]),
+          });
+          m.addSource("route-actual", {
+            type: "geojson",
+            data: lineData([]),
+          });
+          m.addLayer({
+            id: "route-planned",
+            type: "line",
+            source: "route-planned",
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: {
+              "line-color": ROUTE_COLOR,
+              "line-opacity": 0.45,
+              "line-width": 7,
+            },
+          });
+          m.addLayer({
+            id: "route-actual",
+            type: "line",
+            source: "route-actual",
+            layout: { "line-cap": "round", "line-join": "round" },
+            paint: { "line-color": ROUTE_COLOR, "line-width": 5 },
+          });
+          setStatus("ready");
         });
-        setStatus("ready");
-      })
-      .catch((error: unknown) => {
+
+        m.on("error", (event) => {
+          // Per-tile/font errors are non-fatal — the map still renders geometry;
+          // only surface a message if the map never became ready.
+          if (!cancelled && mapRef.current) {
+            console.warn("Run map:", event.error?.message ?? event);
+          }
+        });
+      } catch (error: unknown) {
         if (cancelled) return;
         setStatus("unavailable");
         setReason(
           error instanceof Error ? error.message : "Greška pri učitavanju mape."
         );
-      });
+      }
+    })();
 
     return () => {
       cancelled = true;
+      map?.remove();
+      mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Redraw the route + markers whenever the points change.
+  // Redraw the actual route + start/finish markers whenever the points change.
   useEffect(() => {
     const map = mapRef.current;
-    const line = lineRef.current;
-    if (status !== "ready" || !map || !line) return;
+    if (status !== "ready" || !map) return;
 
-    const path = points.map(toLatLng);
-    line.setPath(path);
+    const path = points.map(toLngLat);
+    (map.getSource("route-actual") as GeoJSONSource | undefined)?.setData(
+      lineData(path)
+    );
 
     const first = path[0];
     const last = path[path.length - 1];
 
     if (live) {
-      // The teal start dot + the teal route line; the current position is the
-      // blue "you are here" dot (drawn from `myLocation` below). Follow it.
       if (first && !startRef.current) {
-        startRef.current = new google.maps.Marker({
-          map,
-          title: "Start",
-          icon: circleIcon(ROUTE_COLOR, "#04231c", 5),
-          zIndex: 3,
+        import("maplibre-gl").then((gl) => {
+          if (!mapRef.current || startRef.current) return;
+          startRef.current = new gl.Marker({ element: pinElement(ROUTE_COLOR, "#04231c") })
+            .setLngLat(first)
+            .addTo(mapRef.current);
         });
+      } else if (first) {
+        startRef.current?.setLngLat(first);
       }
-      if (first) startRef.current?.setPosition(first);
-      if (last) map.panTo(last);
+      if (last) map.panTo(last, { duration: 500 });
       return;
     }
 
     // Static (run detail): start + finish markers, framed to the whole route.
-    if (first) {
-      if (!startRef.current) {
-        startRef.current = new google.maps.Marker({
-          map,
-          title: "Start",
-          icon: circleIcon(ROUTE_COLOR, "#04231c"),
-          zIndex: 3,
-        });
+    import("maplibre-gl").then((gl) => {
+      if (!mapRef.current) return;
+      if (first) {
+        if (!startRef.current) {
+          startRef.current = new gl.Marker({ element: pinElement(ROUTE_COLOR, "#04231c") })
+            .setLngLat(first)
+            .addTo(mapRef.current);
+        } else startRef.current.setLngLat(first);
       }
-      startRef.current.setPosition(first);
-    }
-    if (last) {
-      if (!endRef.current) {
-        endRef.current = new google.maps.Marker({
-          map,
-          title: "Cilj",
-          icon: circleIcon("#f3f7f5", ROUTE_COLOR),
-          zIndex: 4,
-        });
+      if (last) {
+        if (!endRef.current) {
+          endRef.current = new gl.Marker({ element: pinElement("#f3f7f5", ROUTE_COLOR) })
+            .setLngLat(last)
+            .addTo(mapRef.current);
+        } else endRef.current.setLngLat(last);
       }
-      endRef.current.setPosition(last);
-    }
+    });
+
     if (path.length >= 2) {
-      const bounds = new google.maps.LatLngBounds();
-      path.forEach((p) => bounds.extend(p));
-      if (!bounds.isEmpty()) map.fitBounds(bounds, 48);
+      const bounds = path.reduce(
+        (b, p) => [
+          [Math.min(b[0][0], p[0]), Math.min(b[0][1], p[1])],
+          [Math.max(b[1][0], p[0]), Math.max(b[1][1], p[1])],
+        ],
+        [
+          [path[0][0], path[0][1]],
+          [path[0][0], path[0][1]],
+        ]
+      );
+      map.fitBounds(bounds as LngLatBoundsLike, { padding: 48, duration: 0 });
     } else if (last) {
       map.setCenter(last);
     }
   }, [points, status, live]);
 
-  // Blue "you are here" dot + the facing beam behind it. Before a run starts we
-  // centre on the user once (so the map opens on their location), then leave the
-  // camera alone.
+  // Blue "you are here" dot + facing beam. Centre on the user once before a run.
   useEffect(() => {
     const map = mapRef.current;
     if (status !== "ready" || !map || !myLocation) return;
+    const at = toLngLat(myLocation);
 
     if (!meRef.current) {
-      meRef.current = new google.maps.Marker({
-        map,
-        title: "Ovde si",
-        icon: locationDot(),
-        zIndex: 6,
+      import("maplibre-gl").then((gl) => {
+        if (!mapRef.current || meRef.current) return;
+        const { el, beam } = meElement();
+        beamElRef.current = beam;
+        meRef.current = new gl.Marker({ element: el })
+          .setLngLat(at)
+          .addTo(mapRef.current);
+        applyHeading(beam, heading);
       });
-    }
-    meRef.current.setPosition(myLocation);
-
-    if (typeof heading === "number" && Number.isFinite(heading)) {
-      if (!beamRef.current) {
-        beamRef.current = new google.maps.Marker({
-          map,
-          title: "Smer",
-          icon: headingBeam(heading),
-          zIndex: 5,
-        });
-      }
-      beamRef.current.setMap(map);
-      beamRef.current.setPosition(myLocation);
-      beamRef.current.setIcon(headingBeam(heading));
     } else {
-      beamRef.current?.setMap(null);
+      meRef.current.setLngLat(at);
+      applyHeading(beamElRef.current, heading);
     }
 
     if (points.length === 0 && !centeredOnMe.current) {
-      map.setCenter(myLocation);
+      map.setCenter(at);
       centeredOnMe.current = true;
     }
   }, [myLocation, heading, status, points.length]);
 
-  // The searched destination ("cilj") — a teal target: a soft halo under a
-  // white-cored ring, so it reads apart from the start (teal) and me (blue).
+  // The searched destination ("cilj") — a teal target marker.
   useEffect(() => {
     const map = mapRef.current;
     if (status !== "ready" || !map) return;
 
     if (!goal) {
-      goalRef.current?.setMap(null);
+      goalRef.current?.remove();
       goalRef.current = null;
-      goalHaloRef.current?.setMap(null);
-      goalHaloRef.current = null;
       framedGoalRef.current = null;
+      (map.getSource("route-planned") as GeoJSONSource | undefined)?.setData(
+        lineData([])
+      );
       return;
     }
-
-    if (!goalHaloRef.current) {
-      goalHaloRef.current = new google.maps.Marker({
-        map,
-        title: "Cilj",
-        icon: {
-          path: 0 /* CIRCLE */,
-          scale: 15,
-          fillColor: ROUTE_COLOR,
-          fillOpacity: 0.2,
-          strokeColor: ROUTE_COLOR,
-          strokeOpacity: 0.35,
-          strokeWeight: 1,
-        },
-        zIndex: 4,
-      });
-    }
+    const at = toLngLat(goal);
     if (!goalRef.current) {
-      goalRef.current = new google.maps.Marker({
-        map,
-        title: "Cilj",
-        icon: circleIcon("#f3f7f5", ROUTE_COLOR, 8),
-        zIndex: 5,
+      import("maplibre-gl").then((gl) => {
+        if (!mapRef.current || goalRef.current) return;
+        goalRef.current = new gl.Marker({ element: goalElement() })
+          .setLngLat(at)
+          .addTo(mapRef.current);
       });
+    } else {
+      goalRef.current.setLngLat(at);
     }
-    goalHaloRef.current.setPosition(goal);
-    goalRef.current.setPosition(goal);
   }, [goal, status]);
 
-  // The walked route to the goal — a faint, wide teal underlay beneath the
-  // bright, opaque run trace, so "planned" and "run so far" never blur together.
+  // The walked route to the goal — a faint teal underlay.
   useEffect(() => {
     const map = mapRef.current;
     if (status !== "ready" || !map) return;
-
-    if (!plannedRoute || plannedRoute.length < 2) {
-      plannedRef.current?.setMap(null);
-      plannedRef.current = null;
-      return;
-    }
-    if (!plannedRef.current) {
-      plannedRef.current = new google.maps.Polyline({
-        map,
-        geodesic: true,
-        strokeColor: ROUTE_COLOR,
-        strokeOpacity: 0.5,
-        strokeWeight: 6,
-        zIndex: 1,
-      });
-    }
-    plannedRef.current.setPath([...plannedRoute]);
+    const coords = (plannedRoute ?? []).map(toLngLat);
+    (map.getSource("route-planned") as GeoJSONSource | undefined)?.setData(
+      lineData(coords)
+    );
   }, [plannedRoute, status]);
 
-  // When a goal is first set (recording), frame me + goal + route once so the
-  // whole trip is visible; the point-following effect resumes on the next fix.
+  // When a goal is first set (recording), frame me + goal + route once.
   useEffect(() => {
     const map = mapRef.current;
     if (status !== "ready" || !map || !live || !goal) return;
     if (framedGoalRef.current === goalKey(goal)) return;
 
-    const bounds = new google.maps.LatLngBounds();
-    if (myLocation) bounds.extend(myLocation);
-    (plannedRoute ?? []).forEach((p) => bounds.extend(p));
-    bounds.extend(goal);
-    if (!bounds.isEmpty()) {
-      map.fitBounds(bounds, 80);
-      framedGoalRef.current = goalKey(goal);
-    }
+    const pts: [number, number][] = [toLngLat(goal)];
+    if (myLocation) pts.push(toLngLat(myLocation));
+    (plannedRoute ?? []).forEach((p) => pts.push(toLngLat(p)));
+    if (pts.length < 2) return;
+
+    const bounds = pts.reduce(
+      (b, p) => [
+        [Math.min(b[0][0], p[0]), Math.min(b[0][1], p[1])],
+        [Math.max(b[1][0], p[0]), Math.max(b[1][1], p[1])],
+      ],
+      [
+        [pts[0][0], pts[0][1]],
+        [pts[0][0], pts[0][1]],
+      ]
+    );
+    map.fitBounds(bounds as LngLatBoundsLike, { padding: 80, duration: 500 });
+    framedGoalRef.current = goalKey(goal);
   }, [goal, plannedRoute, myLocation, live, status]);
 
   return (
@@ -511,3 +580,14 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
     </div>
   );
 });
+
+/** Point the facing beam along `heading` (or hide it when unknown). */
+function applyHeading(beam: HTMLDivElement | null, heading: number | null) {
+  if (!beam) return;
+  if (typeof heading === "number" && Number.isFinite(heading)) {
+    beam.style.display = "block";
+    beam.style.transform = `rotate(${heading}deg)`;
+  } else {
+    beam.style.display = "none";
+  }
+}

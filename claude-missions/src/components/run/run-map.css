@@ -1,0 +1,68 @@
+/**
+ * Trčanje: HTML markers layered over the MapLibre canvas — the "you are here"
+ * dot with its facing beam, the searched-goal target, and the run's start/end
+ * pins. Each marker element is 0×0 at its geo point; children are positioned
+ * around that origin so the map anchors them dead-centre.
+ */
+
+.fm-me,
+.fm-goal,
+.fm-pin {
+  position: relative;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+/* Blue iOS-style "you are here" dot. */
+.fm-dot {
+  position: absolute;
+  left: -8px;
+  top: -8px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #2a7bff;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+}
+
+/* Soft white flashlight cone fanning out along the heading. Apex sits on the
+   dot (transform-origin bottom-centre = the geo point); rotated inline. */
+.fm-beam {
+  position: absolute;
+  left: -27px;
+  bottom: 0;
+  width: 54px;
+  height: 46px;
+  transform-origin: 50% 100%;
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.5),
+    rgba(255, 255, 255, 0)
+  );
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+}
+
+/* Searched destination ("cilj") — a teal target with a soft halo. */
+.fm-goal-dot {
+  position: absolute;
+  left: -9px;
+  top: -9px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f3f7f5;
+  border: 3px solid #17d1a8;
+  box-shadow: 0 0 0 6px rgba(23, 209, 168, 0.18);
+}
+
+/* Start (teal) / finish (light) route pins on the run-detail map. */
+.fm-pin-dot {
+  position: absolute;
+  left: -6px;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}

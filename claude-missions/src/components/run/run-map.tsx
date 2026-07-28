@@ -104,6 +104,13 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
   const [status, setStatus] = useState<"loading" | "ready" | "unavailable">(
     googleMapsApiKey() ? "loading" : "unavailable"
   );
+  // Short diagnostic surfaced under the placeholder so a misconfigured deploy
+  // (missing key vs. blocked script) is debuggable from the screen itself.
+  const [reason, setReason] = useState<string | null>(
+    googleMapsApiKey()
+      ? null
+      : "Nedostaje NEXT_PUBLIC_GOOGLE_MAPS_API_KEY u build-u."
+  );
 
   useImperativeHandle(ref, () => ({
     recenter: () => {
@@ -152,8 +159,12 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
         });
         setStatus("ready");
       })
-      .catch(() => {
-        if (!cancelled) setStatus("unavailable");
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setStatus("unavailable");
+        setReason(
+          error instanceof Error ? error.message : "Greška pri učitavanju mape."
+        );
       });
 
     return () => {
@@ -249,6 +260,11 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
               ? "Učitavam mapu…"
               : "Mapa trenutno nije dostupna, ali trčanje se i dalje snima."}
           </p>
+          {status === "unavailable" && reason && (
+            <p className="max-w-[18rem] px-4 text-[11px] text-muted-foreground/70">
+              {reason}
+            </p>
+          )}
         </div>
       )}
     </div>

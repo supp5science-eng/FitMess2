@@ -3,10 +3,12 @@
 import {
   Check,
   Compass,
+  Flag,
   Footprints,
   Navigation,
   Pause,
   Play,
+  Search,
   Settings,
   Square,
   X,
@@ -20,7 +22,13 @@ import {
   useRunRecorder,
   type RunPayload,
 } from "@/components/run/use-run-recorder";
-import { googleMapsMapId } from "@/lib/run/google-maps-loader";
+import { loadGoogleMaps } from "@/lib/run/google-maps-loader";
+import { haversineMeters } from "@/lib/run/distance";
+import {
+  bearingDegrees,
+  distanceToGoalM,
+  formatDistanceShort,
+} from "@/lib/run/geo";
 import { formatDuration, formatPace } from "@/lib/run/pace";
 import { computeRunSummary } from "@/lib/run/summary";
 import { cn } from "@/lib/utils";
@@ -30,6 +38,14 @@ function km(distanceM: number): string {
   return (distanceM / 1000).toFixed(2);
 }
 
+const goalKey = (g: google.maps.LatLngLiteral): string => `${g.lat},${g.lng}`;
+
+/** A searched destination the runner is heading toward. */
+interface Goal {
+  location: google.maps.LatLngLiteral;
+  label: string;
+}
+
 interface RunRecorderProps {
   /** Current body weight (kg) for the live calorie readout; may be null. */
   weightKg: number | null;
@@ -37,10 +53,11 @@ interface RunRecorderProps {
 
 /**
  * The `/trcanje/snimanje` recording screen — an immersive, full-viewport map
- * with floating glass controls (Strava/Nike-style): exit + compass up top, 3D +
- * recenter on the side, and a Kreni → live-stats flow at the bottom. On Zaustavi
- * it POSTs the trace to `/api/trcanje` and routes to the run summary. On-brand
- * FitMess teal, zero-shame throughout.
+ * with floating glass controls (Strava/Nike-style): exit + compass up top,
+ * search + 3D + recenter on the side, and a Kreni → live-stats flow at the
+ * bottom. You can search a destination ("cilj") and the map draws the walked
+ * route to it with a live distance. On Zaustavi it POSTs the trace to
+ * `/api/trcanje` and routes to the run summary. On-brand teal, zero-shame.
  */
 export function RunRecorder({ weightKg }: RunRecorderProps) {
   const recorder = useRunRecorder();
@@ -48,11 +65,26 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
   const mapRef = useRef<RunMapHandle>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [pendingPayload, setPendingPayload] = useState<RunPayload | null>(null);
-  // Default to 3D when a Vector map id is configured (it can actually tilt).
-  const [is3D, setIs3D] = useState<boolean>(Boolean(googleMapsMapId()));
+  // Best-effort 3D tilt (honoured on WebGL renderers, ignored on raster).
+  const [is3D, setIs3D] = useState(true);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [myLocation, setMyLocation] =
     useState<google.maps.LatLngLiteral | null>(null);
+  const [heading, setHeading] = useState<number | null>(null);
+  const prevLocRef = useRef<google.maps.LatLngLiteral | null>(null);
+
+  // Destination search ("cilj") state.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [results, setResults] = useState<google.maps.GeocoderResult[]>([]);
+  const [goal, setGoal] = useState<Goal | null>(null);
+  const [plannedRoute, setPlannedRoute] = useState<
+    google.maps.LatLngLiteral[] | null
+  >(null);
+  const [routeNote, setRouteNote] = useState<string | null>(null);
+  const routedGoalRef = useRef<string | null>(null);
 
   const { status, points, elapsedMs } = recorder;
   const isActive = status === "recording" || status === "paused";
@@ -62,16 +94,36 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
     [points, weightKg]
   );
 
-  // Track the user's position for the blue "you are here" dot from the moment
-  // the screen opens — so the map shows where you are before you tap Kreni.
-  // Uses the already-granted permission (no re-prompt once allowed).
+  const goalDistanceM =
+    goal && myLocation ? distanceToGoalM(myLocation, goal.location) : null;
+
+  // Track the user's position (blue dot) and heading (facing beam) from the
+  // moment the screen opens — so the map shows where you are, and which way you
+  // face, before you tap Kreni. Uses the already-granted permission.
   useEffect(() => {
     if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
       return;
     }
     const watchId = navigator.geolocation.watchPosition(
-      (pos) =>
-        setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => {
+        const next = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setMyLocation(next);
+        const deviceHeading = pos.coords.heading;
+        if (typeof deviceHeading === "number" && Number.isFinite(deviceHeading)) {
+          // The phone's compass/course is best when moving.
+          setHeading(deviceHeading);
+          prevLocRef.current = next;
+        } else if (prevLocRef.current) {
+          // Standing still / no compass: face along the last real move.
+          const moved = haversineMeters(prevLocRef.current, next);
+          if (moved >= 3) {
+            setHeading(bearingDegrees(prevLocRef.current, next));
+            prevLocRef.current = next;
+          }
+        } else {
+          prevLocRef.current = next;
+        }
+      },
       () => {
         // Ignore here — the recorder's own watch surfaces a denied state.
       },
@@ -79,6 +131,98 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
     );
     return () => navigator.geolocation.clearWatch(watchId);
   }, []);
+
+  // Once we have both a goal and a fix, draw the walked route to the cilj — but
+  // only once per goal (routing on every GPS drift would hammer the API).
+  useEffect(() => {
+    if (!goal || !myLocation) return;
+    const key = goalKey(goal.location);
+    if (routedGoalRef.current === key) return;
+    routedGoalRef.current = key;
+
+    const origin = myLocation;
+    const destination = goal.location;
+    let cancelled = false;
+    (async () => {
+      try {
+        await loadGoogleMaps();
+        const service = new google.maps.DirectionsService();
+        const result = await service.route({
+          origin,
+          destination,
+          travelMode: google.maps.TravelMode.WALKING,
+        });
+        const route = result.routes[0];
+        if (cancelled) return;
+        if (route && route.overview_path.length >= 2) {
+          setPlannedRoute(
+            route.overview_path.map((p) => ({ lat: p.lat(), lng: p.lng() }))
+          );
+          setRouteNote(null);
+          return;
+        }
+        throw new Error("no route");
+      } catch {
+        if (cancelled) return;
+        // Fall back to a straight line so the cilj still has a visible path.
+        setPlannedRoute([origin, destination]);
+        setRouteNote("Ne mogu da iscrtam rutu, pa je prikazana vazdušna linija.");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [goal, myLocation]);
+
+  async function runSearch(event: React.FormEvent) {
+    event.preventDefault();
+    const q = query.trim();
+    if (!q) return;
+    setSearching(true);
+    setSearchError(null);
+    setResults([]);
+    try {
+      await loadGoogleMaps();
+      const geocoder = new google.maps.Geocoder();
+      const { results: found } = await geocoder.geocode({
+        address: q,
+        region: "rs",
+      });
+      setResults(found.slice(0, 5));
+      if (found.length === 0) {
+        setSearchError("Ništa nije nađeno za tu pretragu.");
+      }
+    } catch {
+      setSearchError(
+        "Pretraga trenutno ne radi. Proveri da je Geocoding API uključen na Maps ključu."
+      );
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  function selectResult(result: google.maps.GeocoderResult) {
+    setGoal({
+      location: {
+        lat: result.geometry.location.lat(),
+        lng: result.geometry.location.lng(),
+      },
+      label: result.formatted_address,
+    });
+    routedGoalRef.current = null;
+    setPlannedRoute(null);
+    setRouteNote(null);
+    setSearchOpen(false);
+    setResults([]);
+    setQuery("");
+  }
+
+  function clearGoal() {
+    setGoal(null);
+    setPlannedRoute(null);
+    setRouteNote(null);
+    routedGoalRef.current = null;
+  }
 
   function toggle3D() {
     const next = !is3D;
@@ -146,7 +290,16 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
 
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-background">
-      <RunMap ref={mapRef} points={points} live fill myLocation={myLocation} />
+      <RunMap
+        ref={mapRef}
+        points={points}
+        live
+        fill
+        myLocation={myLocation}
+        heading={heading}
+        goal={goal?.location ?? null}
+        plannedRoute={plannedRoute}
+      />
 
       {/* Legibility scrims behind the controls. */}
       <div
@@ -174,8 +327,43 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
         </MapFab>
       </div>
 
-      {/* Right stack: 3D toggle + recenter. */}
+      {/* Goal chip: the searched cilj + live crow-flies distance to it. */}
+      {goal && (
+        <div
+          className="absolute inset-x-0 flex justify-center px-4"
+          style={{ top: "calc(max(1rem, env(safe-area-inset-top)) + 3.75rem)" }}
+        >
+          <div className="flex max-w-[92%] items-center gap-2 rounded-full border border-white/10 bg-black/65 py-2 pl-3 pr-2 backdrop-blur-md">
+            <Flag className="size-4 shrink-0 text-primary" aria-hidden="true" />
+            <span className="min-w-0 truncate text-sm text-white/90">
+              {goal.label}
+            </span>
+            {goalDistanceM !== null && (
+              <span className="shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-semibold text-primary">
+                {formatDistanceShort(goalDistanceM)}
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={clearGoal}
+              aria-label="Ukloni cilj"
+              className="shrink-0 rounded-full p-1 text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              <X className="size-4" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Right stack: search (cilj) + 3D toggle + recenter. */}
       <div className="absolute right-4 top-1/2 flex -translate-y-1/2 flex-col gap-3">
+        <MapFab
+          label="Pretraži cilj"
+          active={Boolean(goal)}
+          onClick={() => setSearchOpen(true)}
+        >
+          <Search className="size-5" aria-hidden="true" />
+        </MapFab>
         <MapFab label="3D prikaz" active={is3D} onClick={toggle3D}>
           <span className="text-sm font-bold">3D</span>
         </MapFab>
@@ -304,6 +492,75 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
         )}
       </div>
 
+      {/* Destination search sheet. */}
+      {searchOpen && (
+        <div
+          className="absolute inset-0 z-30 flex items-end bg-black/50"
+          onClick={() => setSearchOpen(false)}
+        >
+          <div
+            className="w-full rounded-t-3xl border-t border-border bg-card p-5"
+            onClick={(event) => event.stopPropagation()}
+            style={{ paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))" }}
+          >
+            <div className="mx-auto mb-4 h-1.5 w-10 rounded-full bg-muted" />
+            <h2 className="text-base font-semibold text-foreground">
+              Pretraži cilj
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Nađi destinaciju i mapa će iscrtati rutu do nje.
+            </p>
+            <form onSubmit={runSearch} className="mt-3 flex items-center gap-2">
+              <input
+                type="text"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="npr. Ada Ciganlija, Kalemegdan…"
+                autoFocus
+                className="h-12 flex-1 rounded-xl border border-border bg-background px-4 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/60"
+              />
+              <button
+                type="submit"
+                disabled={searching || query.trim().length === 0}
+                aria-label="Pretraži"
+                className="inline-flex size-12 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground disabled:opacity-50"
+              >
+                <Search className="size-5" aria-hidden="true" />
+              </button>
+            </form>
+
+            {searching && (
+              <p className="mt-3 text-sm text-muted-foreground">Tražim…</p>
+            )}
+            {searchError && (
+              <p className="mt-3 text-sm text-muted-foreground">{searchError}</p>
+            )}
+
+            {results.length > 0 && (
+              <ul className="mt-3 flex flex-col gap-1.5">
+                {results.map((result, index) => (
+                  <li key={`${result.formatted_address}-${index}`}>
+                    <button
+                      type="button"
+                      onClick={() => selectResult(result)}
+                      className="flex w-full items-center gap-3 rounded-xl border border-border bg-background px-4 py-3 text-left hover:bg-accent"
+                    >
+                      <Flag
+                        className="size-4 shrink-0 text-primary"
+                        aria-hidden="true"
+                      />
+                      <span className="min-w-0 truncate text-sm text-foreground">
+                        {result.formatted_address}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Settings sheet. */}
       {settingsOpen && (
         <div
@@ -334,6 +591,9 @@ export function RunRecorder({ weightKg }: RunRecorderProps) {
                 {is3D ? "Uključeno" : "Isključeno"}
               </span>
             </button>
+            {routeNote && (
+              <p className="mt-3 text-xs text-muted-foreground">{routeNote}</p>
+            )}
             <p className="mt-3 text-xs text-muted-foreground">
               Ekran ostaje budan tokom trčanja. Jedinice: kilometri.
             </p>

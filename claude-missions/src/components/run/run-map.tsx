@@ -12,6 +12,7 @@ import {
 import { cn } from "@/lib/utils";
 import {
   googleMapsApiKey,
+  googleMapsMapId,
   loadGoogleMaps,
 } from "@/lib/run/google-maps-loader";
 import type { RunRoutePoint } from "@/lib/types/db";
@@ -247,6 +248,8 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
     if (!googleMapsApiKey()) return;
     let cancelled = false;
 
+    const mapId = googleMapsMapId();
+
     loadGoogleMaps()
       .then(() => {
         if (cancelled || !containerRef.current || mapRef.current) return;
@@ -259,11 +262,20 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
           clickableIcons: false,
           keyboardShortcuts: false,
           backgroundColor: GROUND_COLOR,
-          styles: CLEAN_MAP_STYLE,
-          // Tilt/heading are honoured on WebGL (vector) renderers and ignored on
-          // the raster fallback — a harmless best-effort at the 3D perspective.
           tilt: live ? TILT_3D : 0,
           heading: 0,
+          // With a Vector Map ID → real 3D buildings, tilt, and two-finger
+          // rotate/tilt gestures; its clean, POI-free look comes from the
+          // cloud-configured style. Without one → the raster fallback, styled
+          // in-code (CLEAN_MAP_STYLE) — clutter-free but flat (no 3D/rotation).
+          ...(mapId
+            ? {
+                mapId,
+                colorScheme: "DARK",
+                tiltInteractionEnabled: true,
+                headingInteractionEnabled: true,
+              }
+            : { styles: CLEAN_MAP_STYLE }),
         });
         lineRef.current = new google.maps.Polyline({
           map: mapRef.current,

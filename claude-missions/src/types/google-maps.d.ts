@@ -66,6 +66,10 @@ declare global {
       heading?: number;
       /** "LIGHT" | "DARK" | "FOLLOW_SYSTEM" — which Map-ID style variant to use. */
       colorScheme?: string;
+      /** Vector-map only: allow the two-finger tilt gesture. */
+      tiltInteractionEnabled?: boolean;
+      /** Vector-map only: allow the two-finger rotate gesture. */
+      headingInteractionEnabled?: boolean;
       disableDefaultUI?: boolean;
       zoomControl?: boolean;
       gestureHandling?: "cooperative" | "greedy" | "none" | "auto";

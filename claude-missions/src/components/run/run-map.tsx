@@ -318,6 +318,7 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
   useEffect(() => {
     let cancelled = false;
     let map: MlMap | null = null;
+    let watchdog: ReturnType<typeof setTimeout> | null = null;
 
     (async () => {
       try {
@@ -344,42 +345,71 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
           "bottom-right"
         );
 
-        m.on("load", () => {
-          if (cancelled) return;
-          // Route layers, drawn beneath the labels (empty until points arrive).
-          m.addSource("route-planned", {
-            type: "geojson",
-            data: lineData([]),
-          });
-          m.addSource("route-actual", {
-            type: "geojson",
-            data: lineData([]),
-          });
-          m.addLayer({
-            id: "route-planned",
-            type: "line",
-            source: "route-planned",
-            layout: { "line-cap": "round", "line-join": "round" },
-            paint: {
-              "line-color": ROUTE_COLOR,
-              "line-opacity": 0.45,
-              "line-width": 7,
-            },
-          });
-          m.addLayer({
-            id: "route-actual",
-            type: "line",
-            source: "route-actual",
-            layout: { "line-cap": "round", "line-join": "round" },
-            paint: { "line-color": ROUTE_COLOR, "line-width": 5 },
-          });
+        // The route layers live beneath the labels; they start empty and fill
+        // in as GPS fixes (or a planned route) arrive. Guarded so they are
+        // only ever added once, whichever activation path fires first.
+        const addRouteLayers = () => {
+          if (!mapRef.current) return;
+          if (!m.getSource("route-planned")) {
+            m.addSource("route-planned", { type: "geojson", data: lineData([]) });
+          }
+          if (!m.getSource("route-actual")) {
+            m.addSource("route-actual", { type: "geojson", data: lineData([]) });
+          }
+          if (!m.getLayer("route-planned")) {
+            m.addLayer({
+              id: "route-planned",
+              type: "line",
+              source: "route-planned",
+              layout: { "line-cap": "round", "line-join": "round" },
+              paint: {
+                "line-color": ROUTE_COLOR,
+                "line-opacity": 0.45,
+                "line-width": 7,
+              },
+            });
+          }
+          if (!m.getLayer("route-actual")) {
+            m.addLayer({
+              id: "route-actual",
+              type: "line",
+              source: "route-actual",
+              layout: { "line-cap": "round", "line-join": "round" },
+              paint: { "line-color": ROUTE_COLOR, "line-width": 5 },
+            });
+          }
+        };
+
+        // Flip to "ready" as soon as the map is usable — and crucially, do NOT
+        // gate this on the full `load` event. `load` only fires once *every*
+        // tile source has finished loading, so a slow or unreachable tile host
+        // (the free OpenFreeMap instance) would otherwise strand the map on the
+        // "Učitavam mapu…" spinner forever, with no route, markers or location
+        // dot. `style.load` fires the moment the (inline) style is parsed —
+        // even when the tiles never arrive — so the map is usable regardless,
+        // rendering the run trace and markers over the base colour.
+        let activated = false;
+        const activate = () => {
+          if (cancelled || activated || !mapRef.current) return;
+          activated = true;
+          if (watchdog) {
+            clearTimeout(watchdog);
+            watchdog = null;
+          }
+          if (m.isStyleLoaded()) addRouteLayers();
+          else m.once("style.load", addRouteLayers);
           setStatus("ready");
-        });
+        };
+
+        m.on("load", activate);
+        m.on("style.load", activate);
+        // Safety net: the map must never block recording. If neither event has
+        // fired in time (e.g. tiles hang the initial load), show it anyway.
+        watchdog = setTimeout(activate, 6000);
 
         m.on("error", (event) => {
-          // Per-tile/font errors are non-fatal — the map still renders geometry;
-          // only surface a message if the map never became ready.
-          if (!cancelled && mapRef.current) {
+          // Per-tile/font errors are non-fatal — the map still renders geometry.
+          if (!cancelled) {
             console.warn("Run map:", event.error?.message ?? event);
           }
         });
@@ -394,6 +424,7 @@ export const RunMap = forwardRef<RunMapHandle, RunMapProps>(function RunMap(
 
     return () => {
       cancelled = true;
+      if (watchdog) clearTimeout(watchdog);
       map?.remove();
       mapRef.current = null;
     };

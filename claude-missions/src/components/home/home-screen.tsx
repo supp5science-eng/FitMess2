@@ -14,7 +14,7 @@ import { MealList } from "@/components/home/meal-list";
 import { Ring, type RingView } from "@/components/home/ring";
 import { AdaptivePlanCard } from "@/components/home/adaptive-plan-card";
 import { StepsCard } from "@/components/home/steps-card";
-import { StreakCard } from "@/components/streak/streak-card";
+import { StreakPill } from "@/components/streak/streak-pill";
 import { GricButton } from "@/components/home/gric-button";
 import { WaterButton } from "@/components/home/water-button";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
@@ -280,17 +280,16 @@ export function HomeScreen({
           >
             Fit<span className="fm-wordmark-accent">Mess</span>
           </h1>
+          {/* Niz, compact: a small flame + day count in the top-right of the
+              header, tappable to open /dostignuca. Deliberately tiny -- it
+              costs no vertical space, unlike the old full card. Only on the
+              today view (the page passes `streak` only then). */}
+          {streak ? (
+            <StreakPill streak={streak} href="/dostignuca" className="ml-auto" />
+          ) : null}
         </div>
         {days.length > 0 ? <DateStrip days={days} /> : null}
       </header>
-
-      {/* Niz: the meal-logging streak, front and centre. Only on the today
-          view (the page passes `streak` only then). `home-body` so it rides the
-          onboarding reveal with the rest of the dashboard instead of flashing
-          under the cover. */}
-      {streak ? (
-        <StreakCard streak={streak} href="/dostignuca" className="home-body" />
-      ) : null}
 
       {target ? (
         <div className="flex flex-col gap-7">

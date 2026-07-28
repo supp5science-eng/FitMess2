@@ -82,13 +82,6 @@ export default async function RunDetailPage({
         <BigStat label="Kalorije" value={`${run.calories} kcal`} />
       </section>
 
-      <div
-        className="rounded-2xl px-4 py-3 text-center text-sm font-medium text-[#04231c]"
-        style={{ backgroundImage: "linear-gradient(135deg,#2ee0bd,#0d9c7e)" }}
-      >
-        Sagorelo {run.calories} kcal — svaka čast! 💚
-      </div>
-
       <RunSplits splits={splits} />
     </main>
   );

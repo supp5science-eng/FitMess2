@@ -89,7 +89,16 @@ export function AppShell({
       {/* Launch splash: a first-paint brand cover over the app column that
           dismisses itself. Suppressed during the onboarding hand-off. */}
       {introActive ? null : <AppSplash />}
-      <div className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">
+      <div className="relative isolate mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">
+        {/* App aurora: a barely-there iridescent wash in the corners, behind
+            all content. `isolate` on the column makes it a stacking context, so
+            this `-z-10` layer paints above the white/near-black background but
+            below every child — the colour only shows in the negative space
+            between cards. Decorative, so it's inert and hidden from a11y. */}
+        <div
+          aria-hidden="true"
+          className="app-aurora pointer-events-none absolute inset-0 -z-10"
+        />
         {/* Content scrolls inside this region only; the nav below keeps its own
             space, so nothing ever hides behind it. */}
         <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain">

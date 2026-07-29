@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  CARD_BASE_GLYPHS,
   CARD_FORMATS,
   MACRO_COLORS,
   MAX_DISH_NAME,
-  cardGlyphSet,
+  cardFontText,
   cardMacros,
   cleanDishName,
   formatGrams,
@@ -92,22 +93,32 @@ describe("cleanDishName", () => {
   });
 });
 
-describe("cardGlyphSet", () => {
-  it("test_deduplicates_and_always_includes_a_space", () => {
-    const set = cardGlyphSet("aab", "bc");
-    expect(set).toContain(" ");
-    // Each distinct character appears once.
-    expect([...set].filter((c) => c === "a")).toHaveLength(1);
-    expect([...set].filter((c) => c === "b")).toHaveLength(1);
-    expect([...set].filter((c) => c === "c")).toHaveLength(1);
-  });
-
-  it("test_covers_serbian_letters_in_a_dish_name", () => {
-    // The reason the loader is text-driven: a subset must contain č/ć/š/ž/đ if
-    // the dish name does, or the card renders tofu blocks for them.
-    const set = cardGlyphSet("Ćevapčići, đuveč, šopska i ražnjići — žito");
-    for (const ch of "Ććčšžđ—") {
+describe("cardFontText", () => {
+  it("test_covers_serbian_letters_and_card_chrome_out_of_the_box", () => {
+    // The reason the loader is text-driven: the subset must contain č/ć/š/ž/đ
+    // if the dish name does, or the card renders tofu blocks for them. The
+    // fixed chrome (wordmark, macro labels, tier badge) has to be in there too.
+    const set = cardFontText("Ćevapčići, đuveč, šopska i ražnjići — žito");
+    for (const ch of "Ććčšžđ— FitMesskcalPROTEINUGLJENIH.MASTgONYX0123456789") {
       expect(set).toContain(ch);
     }
+  });
+
+  it("test_an_ordinary_name_returns_the_base_set_unchanged", () => {
+    // The cache-hit property: identical request text for every ordinary meal,
+    // so `fonts.ts` fetches the subset once per server instance, not per card.
+    expect(cardFontText("Ćevapčići sa lukom")).toBe(CARD_BASE_GLYPHS);
+    expect(cardFontText("Obrok")).toBe(CARD_BASE_GLYPHS);
+    expect(cardFontText("")).toBe(CARD_BASE_GLYPHS);
+  });
+
+  it("test_an_unusual_name_appends_only_its_missing_glyphs_sorted", () => {
+    const set = cardFontText("Ручак 🍲");
+    expect(set.startsWith(CARD_BASE_GLYPHS)).toBe(true);
+    for (const ch of "Ручак🍲") expect(set).toContain(ch);
+    // Order-independent, so two odd names differing only in order share one
+    // cache entry -- and each missing glyph is asked for exactly once.
+    expect(cardFontText("🍲 Ручак")).toBe(set);
+    expect([...set].filter((c) => c === "🍲")).toHaveLength(1);
   });
 });

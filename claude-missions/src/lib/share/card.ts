@@ -39,11 +39,16 @@ export function toCardFormat(value: string | null | undefined): CardFormat {
 /** The app's macro accent trio (dark-theme hex, mirroring `--macro-*` in
  * `globals.css`). Concrete hex because satori can't read CSS variables; the
  * card always sits on a dark scrim, so the dark-theme values are the right
- * ones. This trio IS part of the recognizable signature (PRD §2.2). */
+ * ones. This trio IS part of the recognizable signature (PRD §2.2).
+ *
+ * Green protein / yellow carbs / red fat -- copied value-for-value from the
+ * `.dark` block of `globals.css`, so a shared card and the macro bars on
+ * `/danas` read as the same three colours. (They used to be rotated here,
+ * which made a card silently disagree with the app it came from.) */
 export const MACRO_COLORS = {
-  protein: "#f9745f",
-  carbs: "#45c78d",
-  fat: "#f2c14e",
+  protein: "#45c78d",
+  carbs: "#f2c14e",
+  fat: "#f9745f",
 } as const;
 
 /** One macro as the card renders it: a colored dot, a whole-gram value, a label. */
@@ -99,27 +104,45 @@ export function cleanDishName(name: string): string {
   return `${base.trimEnd()}…`;
 }
 
-/** Fixed text that appears on every scan card, so the glyph set always covers
- * it even for a name that shares no letters with the chrome. */
-export const CARD_CHROME_TEXT =
-  "FitMess fitmess.rs kcal PROTEIN UGLJENI H. MAST g ONYX 0123456789";
+/**
+ * Every glyph a card can realistically need, as one fixed string: both cases of
+ * the Latin alphabet with Serbian diacritics, digits, and ordinary punctuation.
+ * It covers the fixed chrome (FitMess, kcal, PROTEIN / UGLJENI H. / MAST, ONYX)
+ * and any normal dish name alike.
+ *
+ * The font loader subsets Inter to exactly the text it is given, so a set that
+ * changed per dish meant a fresh Google Fonts round-trip for *every* meal --
+ * the single slowest part of building a card. Asking for this fixed superset
+ * instead makes the subset request identical every time, so it is fetched once
+ * per server instance and served from memory afterwards. It costs a few KB more
+ * per font file and saves seconds on the card.
+ */
+export const CARD_BASE_GLYPHS =
+  " ABCDEFGHIJKLMNOPQRSTUVWXYZĆČĐŠŽ" +
+  "abcdefghijklmnopqrstuvwxyzćčđšž" +
+  "0123456789" +
+  ".,:;!?%+-–—…()[]/&'\"°*#@";
 
 /**
- * The exact set of characters the card will paint, as one deduplicated string.
+ * The text to subset the card font to (see `src/lib/share/fonts.ts`): the fixed
+ * superset above, plus anything a particular dish name uses that it somehow
+ * misses (an emoji, a Cyrillic letter, a stray symbol). Text-driven subsetting
+ * is what guarantees the Serbian letters č/ć/š/ž/đ are actually in the font
+ * file instead of rendering as tofu blocks.
  *
- * `next/og` subsets the brand font to precisely these glyphs (see
- * `src/lib/share/fonts.ts`), which is what keeps the font payload tiny AND
- * guarantees Serbian letters (č/ć/š/ž/đ) in a dish name are actually present in
- * the subset -- the whole reason the loader is text-driven.
+ * The common case returns `CARD_BASE_GLYPHS` UNCHANGED -- byte-for-byte the
+ * same request every time -- which is what lets the font cache in `fonts.ts`
+ * actually hit. Only an unusual name pays for a fresh subset, and the extras are
+ * sorted so even two such names in a different order share one cache entry.
  */
-export function cardGlyphSet(...parts: string[]): string {
-  const seen = new Set<string>();
-  // A space so the subset can always lay out word gaps.
-  seen.add(" ");
-  for (const part of parts) {
-    for (const ch of part) seen.add(ch);
+export function cardFontText(dishName: string): string {
+  const base = new Set(CARD_BASE_GLYPHS);
+  const extra = new Set<string>();
+  for (const ch of dishName) {
+    if (!base.has(ch)) extra.add(ch);
   }
-  return [...seen].join("");
+  if (extra.size === 0) return CARD_BASE_GLYPHS;
+  return CARD_BASE_GLYPHS + [...extra].sort().join("");
 }
 
 /** Everything the scan-card template needs, already formatted and tier-tagged.

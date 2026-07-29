@@ -4,6 +4,7 @@ import type { ReactElement } from "react";
 import { wordmarkLetterColors } from "@/lib/brand/wordmark";
 import type { ScanCardModel } from "@/lib/share/card";
 import { CARD_FORMATS } from "@/lib/share/card";
+import { PEAR_MARK_DATA_URI } from "@/lib/share/pear-mark";
 import { tierStyle } from "@/lib/share/tier";
 
 /**
@@ -36,6 +37,7 @@ export function scanCardElement(model: ScanCardModel): ReactElement {
   const bottomInset = isStory ? 128 : 92;
   const scrimHeight = isStory ? "62%" : "72%";
   const frameInset = 26;
+  const markSize = isStory ? 58 : 52;
 
   const messColors = wordmarkLetterColors(4, "dark");
   const textShadow = "0 2px 24px rgba(0,0,0,0.55)";
@@ -240,7 +242,9 @@ export function scanCardElement(model: ScanCardModel): ReactElement {
           ))}
         </div>
 
-        {/* Signature — small FitMess wordmark + fitmess.rs (§3.1 "u uglu") */}
+        {/* Signature — the pear mark + the FitMess wordmark, and nothing else.
+            No domain, no URL, no CTA: on someone's story this has to read as
+            their flex with a maker's mark on it, not as an ad (§2.1/§8). */}
         <div
           style={{
             display: "flex",
@@ -248,15 +252,26 @@ export function scanCardElement(model: ScanCardModel): ReactElement {
             marginTop: isStory ? 56 : 40,
           }}
         >
+          <img
+            src={PEAR_MARK_DATA_URI}
+            alt=""
+            width={markSize}
+            height={markSize}
+            style={{ width: markSize, height: markSize, marginRight: 18 }}
+          />
+
           <div
             style={{
               display: "flex",
-              fontSize: 34,
+              fontSize: 40,
               fontWeight: 800,
               letterSpacing: -1,
             }}
           >
             <div style={{ display: "flex", color: "#ffffff" }}>Fit</div>
+            {/* "Mess" carries the pear's iridescent shell. satori paints flat
+                fills only, so the shimmer is sampled one letter at a time — the
+                same trick the PDF report and the OG card use. */}
             {["M", "e", "s", "s"].map((letter, index) => (
               <div
                 key={`${letter}-${index}`}
@@ -265,30 +280,6 @@ export function scanCardElement(model: ScanCardModel): ReactElement {
                 {letter}
               </div>
             ))}
-          </div>
-
-          <div
-            style={{
-              display: "flex",
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: "rgba(255,255,255,0.4)",
-              marginLeft: 18,
-              marginRight: 18,
-            }}
-          />
-
-          <div
-            style={{
-              display: "flex",
-              fontSize: 30,
-              fontWeight: 600,
-              letterSpacing: 0,
-              color: "rgba(255,255,255,0.62)",
-            }}
-          >
-            fitmess.rs
           </div>
 
           {/* Onyx alone earns a badge (§4) */}

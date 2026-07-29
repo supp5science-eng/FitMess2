@@ -5,9 +5,8 @@ import { z } from "zod";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { toBelgradeCalendarDay } from "@/lib/dates";
 import {
-  cardGlyphSet,
+  cardFontText,
   cardMacros,
-  CARD_CHROME_TEXT,
   CARD_FORMATS,
   cleanDishName,
   formatKcal,
@@ -101,9 +100,10 @@ export async function POST(request: NextRequest) {
     photoDataUri,
   };
 
-  const fonts = await loadCardFonts(
-    cardGlyphSet(model.dishName, CARD_CHROME_TEXT)
-  );
+  // One fixed glyph set for (almost) every card, so the font subset request is
+  // byte-identical between meals and the loader's cache actually hits -- the
+  // font fetch used to be the slowest part of building a card.
+  const fonts = await loadCardFonts(cardFontText(model.dishName));
 
   const { width, height } = CARD_FORMATS[format];
   return new ImageResponse(scanCardElement(model), {

@@ -13,6 +13,11 @@ import type { RingView } from "@/components/home/ring";
 // shown value between consumed and remaining; the bar fill and the number
 // follow it. The bar caps visually at 100% (a macro can exceed its target
 // without overflowing its track) but the number always shows the real value.
+//
+// Redesign (2026-07-29): each column now floats on its OWN raised card
+// (`bg-card` + `.fm-lift`), so the three macros read as three separate tiles
+// hovering over the aurora ground -- the Cal-AI "sve lebdi" direction. Only
+// the surface changed; the bar/number logic (and every test id) is untouched.
 
 /** Per-macro accent colours (distinct from the teal calorie gauge). Driven by
  * the themed `--macro-*` tokens in `globals.css`, so each is right for dark
@@ -50,9 +55,11 @@ function MacroBar({
   return (
     <div
       data-testid={testId}
-      className="flex flex-1 flex-col items-center gap-2 text-center"
+      className="fm-lift flex flex-1 flex-col items-center gap-2 rounded-2xl border border-border bg-card px-2 py-3.5 text-center"
     >
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <span className="text-[13px] font-medium text-muted-foreground">
+        {label}
+      </span>
       <div
         className="h-1.5 w-full overflow-hidden rounded-full"
         style={{ backgroundColor: `color-mix(in oklab, ${color} 22%, transparent)` }}
@@ -69,7 +76,7 @@ function MacroBar({
       </div>
       <span
         data-testid={`${testId}-values`}
-        className="text-sm tabular-nums text-foreground"
+        className="text-xs font-medium tabular-nums text-foreground"
       >
         <AnimatedNumber value={shown} animateKey={view} /> / {Math.round(targetG)} g
       </span>
@@ -88,7 +95,7 @@ export function MacroBars({
 }) {
   const { t } = useT();
   return (
-    <div data-testid="home-macro-bars" className="flex items-start gap-4">
+    <div data-testid="home-macro-bars" className="flex items-stretch gap-2.5">
       <MacroBar
         label={t("macro.protein")}
         consumedG={consumed.protein}

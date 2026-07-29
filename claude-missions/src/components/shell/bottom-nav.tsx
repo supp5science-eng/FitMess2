@@ -3,12 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ChartColumnBig, Footprints, Home, Settings } from "lucide-react";
+import { ChartColumnBig, Home, Settings } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 /**
- * F005: bottom navigation. Four Serbian tabs; plain `next/link` anchors are
+ * F005: bottom navigation. Three Serbian tabs; plain `next/link` anchors are
  * natively keyboard-reachable (Tab / Shift+Tab, activate with Enter).
  *
  * Rendered as a floating dark frosted-glass pill (see `AppNavBar`), always
@@ -27,7 +27,6 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS = [
   { href: "/danas", label: "Početna", icon: Home },
   { href: "/analitika", label: "Analitika", icon: ChartColumnBig },
-  { href: "/trcanje", label: "Trčanje", icon: Footprints },
   { href: "/profil", label: "Profil", icon: Settings },
 ] as const;
 

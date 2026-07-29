@@ -25,7 +25,6 @@ import { ShotGuide } from "@/components/ai/shot-guide";
 import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
 import {
   defaultGeometry,
-  portionGrams,
   PREP_LABELS,
   PREP_METHODS,
   type PortionGeometry,
@@ -665,8 +664,6 @@ export function NajtacnijeFlow() {
   }
 
   const shotIssues = (index: number) => issues[index] ?? [];
-  const guessedGrams =
-    geometry && unit ? portionGrams(geometry, unit) : null;
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
@@ -1233,25 +1230,6 @@ export function NajtacnijeFlow() {
             <span>{CONFIDENCE_LABEL[estimate.sigurnost]}</span>
           </div>
 
-          {/* Their reading against ours. Shown because it makes the work
-              visible -- and because seeing the two numbers side by side is the
-              only way anyone ever calibrates their eye for a portion. */}
-          {mode === "obrok" && guessedGrams != null ? (
-            <div className="flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm">
-              <span className="text-muted-foreground">
-                Tvoja procena:{" "}
-                <strong className="font-semibold text-foreground">
-                  {guessedGrams} g
-                </strong>
-              </span>
-              <span className="text-muted-foreground">·</span>
-              <span className="text-muted-foreground">
-                Naša:{" "}
-                <strong className="font-semibold text-primary">{grams} g</strong>
-              </span>
-            </div>
-          ) : null}
-
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-foreground">Naziv</span>
             <input
@@ -1357,8 +1335,21 @@ export function NajtacnijeFlow() {
             />
           </div>
 
+          {/* The AI's own short account of how it reached these numbers -- what
+              it recognised, which masses it took, the assumption that moved the
+              calories most. Shown as a proper card, not a footnote: it is the
+              visible proof the estimate was analysed for THIS plate, not copied
+              from a template. */}
           {estimate.napomena ? (
-            <p className="text-xs text-muted-foreground">{estimate.napomena}</p>
+            <div className="flex flex-col gap-1.5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3.5">
+              <div className="flex items-center gap-2 text-sm font-medium text-primary">
+                <Sparkles className="size-4" aria-hidden="true" />
+                <span>Kako sam došao do procene</span>
+              </div>
+              <p className="text-sm leading-relaxed text-foreground/80">
+                {estimate.napomena}
+              </p>
+            </div>
           ) : null}
 
           <button

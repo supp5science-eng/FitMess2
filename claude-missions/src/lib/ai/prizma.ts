@@ -475,6 +475,10 @@ export const PRIZMA_FINALIZE_RESPONSE_SCHEMA = {
     "natrijum_mg",
     "zasicene_g",
     "sigurnost",
+    // Required so the result always carries the AI's own short explanation of
+    // how it reached the numbers -- the "it actually analysed, didn't copy a
+    // template" signal the confirm screen surfaces.
+    "napomena",
   ],
   propertyOrdering: [
     "naziv",
@@ -614,7 +618,7 @@ Pravila za izlaz:
 ${MICRO_PROMPT_RULES}
 - Proveri: 4×protein + 4×uh + 9×mast mora da odgovara kcal (±10%).
 - "sigurnost": "visoka" samo kad je hrana jasno prepoznata, referenca jasna i korisnikov opis oblika potpun; inače niže.
-- "napomena": kratko objasni ključne pretpostavke.
+- "napomena": OBAVEZNO — napiši u 1–2 rečenice, prijateljski i konkretno za BAŠ OVAJ obrok, kako si došao do brojki: šta si prepoznao na tanjiru, koje si mase glavnih komponenti uzeo i koja pretpostavka najviše nosi kalorije (npr. „Vidim pola tanjira pirinča (~150 g) i pileće belo (~120 g); pošto deluje prženo, dodao sam kašiku ulja — otud najviše masti."). Piši kao da objašnjavaš čoveku svojim rečima, nikako šablonski ni prazno. Ovo je dokaz da si zaista analizirao, a ne prepisao.
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;
 
 export const PRIZMA_FINALIZE_LABEL_PROMPT = `Dobijaš FOTOGRAFIJE nutritivne deklaracije i korisnikove ODGOVORE (tekst i/ili glasovni snimak) o ukupnoj masi proizvoda i pojedenoj količini.
@@ -634,5 +638,5 @@ Pravila:
 - Ako deklaracija navodi vlakna, šećere, so/natrijum ili zasićene masti, pročitaj ih sa tabele i skaliraj isto kao makroe; ako ih nema, proceni po vrsti proizvoda.
 ${MICRO_PROMPT_RULES}
 - "sigurnost": "visoka" kad su i deklaracija i količina jasni; inače niže.
-- "napomena": kratko (npr. "125 g od 250 g paketa").
+- "napomena": OBAVEZNO — u 1–2 rečenice objasni svojim rečima kako si izračunao: koju si pojedenu masu uzeo i sa kojih vrednosti sa deklaracije si je skalirao (npr. „Uzeo sam 125 g od paketa od 250 g i skalirao vrednosti sa deklaracije (na 100 g) na tu masu."). Neka se vidi da si zaista pročitao tabelu, a ne prepisao.
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;

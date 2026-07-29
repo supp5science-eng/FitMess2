@@ -7,11 +7,10 @@ import { HealthScoreCard } from "@/components/home/health-score-card";
 import { IntakePager } from "@/components/home/intake-pager";
 import { IntroCover } from "@/components/home/intro-cover";
 import { InstallOverlay } from "@/components/pwa/install-overlay";
-import { MacroBars } from "@/components/home/macro-bars";
+import { IntakeConfluence } from "@/components/home/intake-confluence";
 import { MicroCards } from "@/components/home/micro-cards";
 import type { MiniWeekDay } from "@/components/home/mini-week-bars";
 import { MealList } from "@/components/home/meal-list";
-import { Ring, type RingView } from "@/components/home/ring";
 import { AdaptivePlanCard } from "@/components/home/adaptive-plan-card";
 import { StepsCard } from "@/components/home/steps-card";
 import { StreakPill } from "@/components/streak/streak-pill";
@@ -28,7 +27,6 @@ import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { waterGoalMl } from "@/lib/water/water-week";
 import type { StreakSummary } from "@/lib/streak/streak";
 import type { Log, Target } from "@/lib/types/db";
-import { cn } from "@/lib/utils";
 
 // useLayoutEffect on the client (measure + cover before first paint), a no-op
 // useEffect on the server (avoids the SSR warning).
@@ -127,10 +125,6 @@ export function HomeScreen({
 }) {
   const { t } = useT();
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
-
-  // Calorie/macro display mode. Defaults to "remaining" (Preostalo) -- what
-  // the user has left today -- with "consumed" (Potrošeno) as the alternate.
-  const [view, setView] = useState<RingView>("remaining");
 
   // Ring hand-off intro. Initial stage comes from the server prop so the SSR
   // markup already renders the cover (no flash of the assembled dashboard).
@@ -320,28 +314,27 @@ export function HomeScreen({
                   // pixel of air here is a pixel the OTHER two pages have to
                   // find something to do with.
                   <div className="flex flex-1 flex-col gap-4">
-                    {/* Hero card (2026-07-29): the calorie ring + view toggle
-                        float together on one raised `.fm-lift` card, so the
-                        centrepiece hovers over the aurora ground instead of
-                        sitting flat on it (the Cal-AI direction). The card
-                        itself is deliberately NOT wrapped in `home-body`: the
-                        ring is measured (`ringRef`) for the onboarding ghost
-                        hand-off, and a `home-body` transform would offset that
-                        measurement -- so the ring keeps fading in via its own
-                        `home-ring-slot` exactly as before, just on a card. */}
-                    <div className="fm-lift flex flex-col gap-5 rounded-3xl border border-border bg-card px-5 py-6">
-                      {/* The ring lives in its own slot so the intro can fade
-                          just the ring in (where the ghost lands) after the
-                          body has risen in. */}
-                      <div ref={ringRef} className="home-ring-slot">
-                        <Ring
-                          consumedKcal={totals.kcal}
-                          targetKcal={targetKcal}
-                          view={view}
-                        />
-                      </div>
-                      <ViewToggle view={view} onChange={setView} />
-                    </div>
+                    {/* "Slivanje" (2026-07-29): the calorie ring in its own
+                        glass cloud, with the macro tiles below feeding coloured
+                        threads that pour into the ring. `IntakeConfluence` owns
+                        the view toggle + the ring/threads/tiles; it takes the
+                        ring ref so the onboarding ghost hand-off still docks on
+                        the ring (which fades in via its own `home-ring-slot`). */}
+                    <IntakeConfluence
+                      consumedKcal={totals.kcal}
+                      targetKcal={targetKcal}
+                      consumedMacros={{
+                        protein: totals.protein,
+                        carbs: totals.carbs,
+                        fat: totals.fat,
+                      }}
+                      targetMacros={{
+                        proteinG: target.protein_g,
+                        carbsG: target.carbs_g,
+                        fatG: target.fat_g,
+                      }}
+                      ringRef={ringRef}
+                    />
                     {adaptivePlan?.isAdjusted ? (
                       <AdaptivePlanCard
                         plan={adaptivePlan}
@@ -349,24 +342,6 @@ export function HomeScreen({
                         dayKey={dayKey}
                       />
                     ) : null}
-                    {/* Macros: three floating cards below the hero (see
-                        `MacroBars`), so the day's protein/fat/carbs read as
-                        their own tiles hovering over the ground. */}
-                    <div className="home-body">
-                      <MacroBars
-                        consumed={{
-                          protein: totals.protein,
-                          carbs: totals.carbs,
-                          fat: totals.fat,
-                        }}
-                        target={{
-                          proteinG: target.protein_g,
-                          carbsG: target.carbs_g,
-                          fatG: target.fat_g,
-                        }}
-                        view={view}
-                      />
-                    </div>
                     {/* Gric logs at `now()`, so it only makes sense on today. */}
                     {isToday ? (
                       <div className="home-body">
@@ -476,60 +451,5 @@ export function HomeScreen({
           has fully settled, so the two moments never fight for attention. */}
       {installPrompt && !introActive ? <InstallOverlay /> : null}
     </main>
-  );
-}
-
-/**
- * "Deo 2": a short, calm note shown on today's dashboard when the week's
- * earlier overshoot has trimmed today's target. Explains the adjusted number
- * (so the ring's smaller "Cilj" isn't a mystery) and, when food alone can't
- * absorb the overshoot without dropping below the safe floor, suggests a bit
- * of activity to cover the rest.
- */
-
-/**
- * The "Potrošeno | Preostalo" segmented toggle that drives the gauge + macros
- * display mode. Two real buttons in a pill; the selected one is a light,
- * high-contrast fill (like the reference design). "Preostalo" is the default.
- */
-function ViewToggle({
-  view,
-  onChange,
-}: {
-  view: RingView;
-  onChange: (next: RingView) => void;
-}) {
-  const { t } = useT();
-  const options: { value: RingView; label: string }[] = [
-    { value: "consumed", label: t("home.view.consumed") },
-    { value: "remaining", label: t("home.view.remaining") },
-  ];
-
-  return (
-    <div
-      role="group"
-      aria-label={t("home.view.aria")}
-      className="home-body mx-auto inline-flex items-center gap-1 rounded-full bg-muted p-1"
-    >
-      {options.map(({ value, label }) => {
-        const selected = view === value;
-        return (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={selected}
-            onClick={() => onChange(value)}
-            className={cn(
-              "min-h-11 rounded-full px-6 text-sm font-semibold transition-colors",
-              selected
-                ? "bg-foreground text-background"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {label}
-          </button>
-        );
-      })}
-    </div>
   );
 }

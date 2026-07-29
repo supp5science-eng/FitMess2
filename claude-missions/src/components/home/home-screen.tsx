@@ -289,7 +289,12 @@ export function HomeScreen({
 
       {target ? (
         <div className="flex flex-col gap-7">
-          <h2 className="home-body text-xl font-semibold tracking-tight text-foreground">
+          <h2
+            className="home-body text-2xl font-bold tracking-tight text-foreground"
+            style={{
+              fontFamily: "var(--font-brand), var(--font-sans), sans-serif",
+            }}
+          >
             {t("home.dailyIntake")}
           </h2>
           {/* Three swipeable pages (2026-07-25), in the order the day is

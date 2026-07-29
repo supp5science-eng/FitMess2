@@ -1,6 +1,7 @@
 "use client";
 
 import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import type { HealthScore } from "@/lib/nutrition/health-score";
 
 // "Ocena zdravosti" (2026-07-25): the card under the four micronutrient cards on
@@ -79,16 +80,16 @@ export function HealthScoreCard({ score }: { score: HealthScore }) {
       </div>
 
       <div className="flex flex-col gap-1">
-        {score.labelSr ? (
+        {score.bandKey ? (
           <span
             data-testid="health-score-label"
             className="text-sm font-semibold text-foreground"
           >
-            {score.labelSr}
+            {t(score.bandKey as MessageKey)}
           </span>
         ) : null}
         <p className="text-xs leading-snug text-muted-foreground">
-          {score.noteSr}
+          {t(score.noteKey as MessageKey)}
         </p>
       </div>
     </div>

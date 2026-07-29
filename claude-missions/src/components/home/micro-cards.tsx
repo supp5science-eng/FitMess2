@@ -3,6 +3,7 @@
 import { Beef, Candy, Soup, Wheat } from "lucide-react";
 
 import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import type { TFunction } from "@/lib/i18n/translate";
 import {
   computeMicroCardState,
@@ -172,7 +173,7 @@ function MicroCard({ card, t }: { card: MicroCardState; t: TFunction }) {
           {style.icon}
         </span>
         <span className="truncate text-xs font-semibold text-foreground">
-          {card.spec.labelSr}
+          {t(card.spec.labelKey as MessageKey)}
         </span>
       </div>
 

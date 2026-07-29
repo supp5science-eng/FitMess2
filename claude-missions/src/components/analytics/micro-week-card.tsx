@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { ChartHint, ChartReadout } from "@/components/analytics/chart-readout";
 import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import type { TFunction } from "@/lib/i18n/translate";
 import {
   formatMicroAmount,
@@ -173,7 +174,7 @@ function NutrientBody({
 }) {
   const { t } = useT();
   const style = STYLE[nutrient.key];
-  const { unit, kind, labelSr } = nutrient.spec;
+  const { unit, kind, labelKey } = nutrient.spec;
   const over = nutrient.status === "over";
   const selectedDay =
     nutrient.days.find((d) => d.dayKey === selectedDayKey) ?? null;
@@ -192,7 +193,9 @@ function NutrientBody({
               : formatMicroAmount(nutrient.average, unit)}
           </span>
           <span className="text-sm text-muted-foreground">
-            {t("analytics.micro.avgDaily", { label: labelSr })}
+            {t("analytics.micro.avgDaily", {
+              label: t(labelKey as MessageKey),
+            })}
           </span>
           {nutrient.key === "sodium" && nutrient.average !== null ? (
             <span className="text-[11px] text-muted-foreground">
@@ -318,7 +321,7 @@ function NutrientBody({
           primary={
             selectedDay.value === null
               ? t("analytics.micro.notEnoughData")
-              : `${formatMicroAmount(selectedDay.value, unit)} · ${labelSr.toLowerCase()}`
+              : `${formatMicroAmount(selectedDay.value, unit)} · ${t(labelKey as MessageKey).toLowerCase()}`
           }
           secondary={daySecondary(selectedDay, nutrient, t)}
           accentColor={

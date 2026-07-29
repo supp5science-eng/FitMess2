@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 
 import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { FieldError } from "@/components/onboarding/field-error";
 import {
   rangeInclusive,
@@ -142,7 +143,10 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
         placeholder={t("profil.data.choose")}
         value={activityLevel}
         onChange={setActivityLevel}
-        options={ACTIVITY_LEVEL_OPTIONS}
+        options={ACTIVITY_LEVEL_OPTIONS.map((option) => ({
+          value: option.value,
+          label: t(option.labelKey as MessageKey),
+        }))}
       />
 
       {error ? (

@@ -10,6 +10,8 @@ export interface DayCell {
   key: string;
   /** Serbian short weekday, `Pon`..`Ned`. */
   dayLabel: string;
+  /** Weekday index, 0=Mon..6=Sun -- lets the view resolve a localized label. */
+  weekdayIndex: number;
   /** Day-of-month number, 1..31. */
   dayNum: number;
   /** This cell is today (Belgrade). */
@@ -99,6 +101,7 @@ export function buildDateStrip({
     cells.push({
       key,
       dayLabel: SR_WEEKDAYS_SHORT[belgradeWeekdayIndex(instant)]!,
+      weekdayIndex: belgradeWeekdayIndex(instant),
       dayNum: Number(key.split("-")[2]),
       isToday: key === todayKey,
       isFuture,

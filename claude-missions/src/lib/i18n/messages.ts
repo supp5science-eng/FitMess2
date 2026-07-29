@@ -3,6 +3,7 @@ import { adminMessages } from "@/lib/i18n/messages-parts/admin";
 import { analyticsMessages } from "@/lib/i18n/messages-parts/analytics";
 import { appMessages } from "@/lib/i18n/messages-parts/app";
 import { authMessages } from "@/lib/i18n/messages-parts/auth";
+import { dataMessages } from "@/lib/i18n/messages-parts/data";
 import { dodajMessages } from "@/lib/i18n/messages-parts/dodaj";
 import { foodMessages } from "@/lib/i18n/messages-parts/food";
 import { homeExtraMessages } from "@/lib/i18n/messages-parts/home";
@@ -97,6 +98,7 @@ const sr = {
   ...mediaMessages.sr,
   ...adminMessages.sr,
   ...appMessages.sr,
+  ...dataMessages.sr,
 } as const;
 
 export type MessageKey = keyof typeof sr;
@@ -171,6 +173,7 @@ const en: Record<MessageKey, string> = {
   ...mediaMessages.en,
   ...adminMessages.en,
   ...appMessages.en,
+  ...dataMessages.en,
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { sr, en };

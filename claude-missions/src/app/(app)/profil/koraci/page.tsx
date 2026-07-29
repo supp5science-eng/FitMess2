@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { getT } from "@/lib/i18n/server";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { ACTIVITY_LEVEL_OPTIONS } from "@/lib/onboarding/types";
 import {
   getCustomStepGoal,
@@ -50,9 +51,12 @@ export default async function CiljKorakaPage() {
     recentSteps = history;
   }
 
-  const activityLabel =
-    ACTIVITY_LEVEL_OPTIONS.find((option) => option.value === activityLevel)
-      ?.label ?? null;
+  const activityOption = ACTIVITY_LEVEL_OPTIONS.find(
+    (option) => option.value === activityLevel
+  );
+  const activityLabel = activityOption
+    ? t(activityOption.labelKey as MessageKey)
+    : null;
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-5 px-5 py-8">

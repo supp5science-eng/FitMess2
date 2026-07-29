@@ -596,3 +596,32 @@ a[aria-disabled="true"]:active,
       var(--fm-rise-delay, 0s) both;
   }
 }
+
+/*
+ * App aurora — a whisper of the FitMess sedef palette washed into the four
+ * corners of the app column, behind all content. The screens were a clean
+ * white/near-black; this keeps that calm but stops it reading as EMPTY —
+ * teal/gold/blue/green bloom softly in the corners, barely-there but present
+ * (the "prozirna šarena boja" brief). Rendered as a fixed backdrop under the
+ * content (see AppShell), so cards and text sit cleanly on top; the colour only
+ * ever shows in the negative space between them.
+ *
+ * Same iridescent stops as `--wordmark-grad`: light theme uses the deeper,
+ * saturated tones so they read on white; dark theme uses the brighter shell
+ * tones at a lower alpha so they glow without muddying the near-black ground.
+ */
+.app-aurora {
+  background-image:
+    radial-gradient(40% 32% at 6% 3%, rgba(14, 156, 130, 0.16), transparent 72%),
+    radial-gradient(42% 32% at 97% 12%, rgba(185, 134, 44, 0.14), transparent 72%),
+    radial-gradient(46% 36% at 1% 97%, rgba(44, 124, 190, 0.15), transparent 72%),
+    radial-gradient(48% 36% at 100% 100%, rgba(47, 154, 80, 0.16), transparent 72%);
+}
+
+.dark .app-aurora {
+  background-image:
+    radial-gradient(40% 32% at 6% 3%, rgba(38, 221, 182, 0.1), transparent 72%),
+    radial-gradient(42% 32% at 97% 12%, rgba(236, 199, 102, 0.08), transparent 72%),
+    radial-gradient(46% 36% at 1% 97%, rgba(87, 168, 238, 0.1), transparent 72%),
+    radial-gradient(48% 36% at 100% 100%, rgba(99, 217, 118, 0.1), transparent 72%);
+}

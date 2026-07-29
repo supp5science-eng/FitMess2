@@ -23,35 +23,30 @@ import { scanCardElement } from "./scan-card-template";
 
 /**
  * POST /api/card/scan — render the "Scan moment" share card (Share-cards PRD
- * §3.1) as a PNG for the native share sheet.
+ * §3.1) as a PNG for a single already-logged meal.
  *
- * The client (the Prizma result screen) POSTs the downscaled meal photo plus
- * the confirmed macros; this route turns that into a 9:16 or 1:1 branded card
- * with `next/og`. Two deliberate server-side decisions:
+ * The card is shared from the meal down on `/danas`, so the client sends only
+ * the `logId` (JSON). Everything else is read server-side, which is both
+ * simpler and safer:
  *
- *  - The photo rides in the request body, so satori embeds it as a data URI --
- *    no cross-request auth dance to re-fetch a private `meal_photos` row from
- *    an edge render.
- *  - The TIER is computed here from the user's REAL logged days (§4 "tier se ne
- *    kupuje — samo zarađuje"), never from a client-sent streak. Today's key is
- *    added to the set because the user is, by definition, logging a meal today.
+ *  - name + macros come from the user's own `logs` row (RLS-scoped),
+ *  - the background is the stored `meal_photos` thumbnail for that log,
+ *  - the TIER is derived from the user's REAL streak (§4 "zarađuje se, ne
+ *    kupuje") — never a client-sent number.
  *
- * Auth is a signed-in session; the response is private and uncacheable (it
- * contains the user's own photo).
+ * A meal with no stored photo can't be a scan card, so the button that calls
+ * this only appears on photo meals; a missing photo answers 404 defensively.
+ * The response is private and uncacheable (it contains the user's own photo).
  */
 
 export const dynamic = "force-dynamic";
 
-// The client already downscales to ~1080px; this is a generous ceiling that
-// still refuses a full-resolution phone photo posted by mistake.
-const MAX_PHOTO_BYTES = 6 * 1024 * 1024;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const fieldsSchema = z.object({
-  naziv: z.string().trim().min(1).max(120),
-  kcal: z.coerce.number().min(0).max(20000),
-  protein: z.coerce.number().min(0).max(2000),
-  carbs: z.coerce.number().min(0).max(2000),
-  fat: z.coerce.number().min(0).max(2000),
+const bodySchema = z.object({
+  logId: z.string().regex(UUID_RE),
+  format: z.string().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -61,55 +56,46 @@ export async function POST(request: NextRequest) {
     return new NextResponse(null, { status: 401 });
   }
 
-  let formData: FormData;
-  try {
-    formData = await request.formData();
-  } catch {
-    return new NextResponse(null, { status: 400 });
-  }
-
-  const parsed = fieldsSchema.safeParse({
-    naziv: formData.get("naziv"),
-    kcal: formData.get("kcal"),
-    protein: formData.get("protein"),
-    carbs: formData.get("carbs"),
-    fat: formData.get("fat"),
-  });
+  const parsed = bodySchema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) {
     return new NextResponse(null, { status: 400 });
   }
+  const { logId } = parsed.data;
+  const format = toCardFormat(parsed.data.format);
 
-  const photo = formData.get("slika");
-  if (
-    !(photo instanceof File) ||
-    photo.size === 0 ||
-    photo.size > MAX_PHOTO_BYTES ||
-    !photo.type.startsWith("image/")
-  ) {
-    return new NextResponse(null, { status: 400 });
+  // The meal itself (RLS scopes this to the caller's own logs).
+  const { data: log } = await supabase
+    .from("logs")
+    .select("name, kcal, protein, carbs, fat")
+    .eq("id", logId)
+    .maybeSingle();
+  if (!log) {
+    return new NextResponse(null, { status: 404 });
   }
 
-  const format = toCardFormat(
-    typeof formData.get("format") === "string"
-      ? (formData.get("format") as string)
-      : null
-  );
+  // Its stored photo -- the full-bleed background. No photo => no scan card.
+  const { data: photo } = await supabase
+    .from("meal_photos")
+    .select("image_base64, mime_type")
+    .eq("log_id", logId)
+    .maybeSingle();
+  if (!photo) {
+    return new NextResponse(null, { status: 404 });
+  }
 
-  // Tier from the user's real streak, including today (they're logging now).
+  // Tier from the user's real current streak (no client input to trust).
   const todayKey = toBelgradeCalendarDay(new Date());
   const loggedDays = await getLoggedDayKeys(supabase, userId);
-  loggedDays.add(todayKey);
   const tier = tierForStreak(currentStreak(loggedDays, todayKey));
 
-  const photoBytes = Buffer.from(await photo.arrayBuffer());
-  const photoDataUri = `data:${photo.type};base64,${photoBytes.toString(
-    "base64"
-  )}`;
+  const photoDataUri = `data:${photo.mime_type || "image/jpeg"};base64,${
+    photo.image_base64
+  }`;
 
   const model: ScanCardModel = {
-    dishName: cleanDishName(parsed.data.naziv),
-    kcal: formatKcal(parsed.data.kcal),
-    macros: cardMacros(parsed.data.protein, parsed.data.carbs, parsed.data.fat),
+    dishName: cleanDishName(log.name),
+    kcal: formatKcal(log.kcal),
+    macros: cardMacros(log.protein, log.carbs, log.fat),
     tier,
     format,
     photoDataUri,

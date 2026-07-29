@@ -6,6 +6,7 @@ import { X } from "lucide-react";
 import { LogAddMoreSheet } from "@/components/food/log-add-more-sheet";
 import { LogDeleteConfirm } from "@/components/food/log-delete-confirm";
 import { LogEditSheet } from "@/components/food/log-edit-sheet";
+import { ShareMealSheet } from "@/components/share/share-meal-sheet";
 import { sheetPortal } from "@/components/ui/sheet-portal";
 import { findMatchingCommonUnit } from "@/lib/food/portions";
 import type { Food, Log } from "@/lib/types/db";
@@ -221,6 +222,11 @@ export function MealCard({
               needs no `food` row -- it grows the entry from its own snapshot, so
               it is available on AI meal entries too (which is the point). */}
           <LogAddMoreSheet log={log} onSaved={onSaved} />
+          {/* Share the "Scan moment" card — only meals with a stored photo can
+              become one (PRD §3.1). Sits right beside the meal, as asked. */}
+          {hasPhoto ? (
+            <ShareMealSheet logId={log.id} mealName={log.name} />
+          ) : null}
           {food ? (
             <LogEditSheet log={log} food={food} onSaved={onSaved} />
           ) : null}

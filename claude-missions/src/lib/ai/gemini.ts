@@ -18,8 +18,8 @@ import {
   type GricEstimate,
 } from "@/lib/ai/gric-estimate";
 import {
+  MEAL_PHOTO_RESPONSE_SCHEMA,
   MEAL_PROMPT,
-  MEAL_RESPONSE_SCHEMA,
   mealEstimateSchema,
   type MealEstimate,
 } from "@/lib/ai/meal-estimate";
@@ -101,6 +101,14 @@ export function isQuotaError(err: unknown): boolean {
  */
 export const AI_BUSY_ERROR_SR =
   "AI trenutno ne stiže da obradi zahteve. Sačekaj minut pa probaj ponovo.";
+
+/**
+ * Shown when the model looked at the photo and found no food at all (a selfie,
+ * a meme, an empty table). Deliberately calm and blame-free -- the zero-shame
+ * tone -- and it points at the fix rather than scolding the user for the shot.
+ */
+export const NO_FOOD_ERROR_SR =
+  "Ne vidim hranu na ovoj slici. Uslikaj svoj obrok (tanjir, piće, grickalicu…) pa ćemo probati ponovo.";
 
 /**
  * The Serbian message to show for a failed AI call: the quota sentence when the
@@ -338,7 +346,7 @@ export async function estimateMealFromImage(
 ): Promise<MealEstimate> {
   const text = await generateJsonFromImage(
     MEAL_PROMPT,
-    MEAL_RESPONSE_SCHEMA,
+    MEAL_PHOTO_RESPONSE_SCHEMA,
     base64Image,
     mimeType,
     process.env.GEMINI_MEAL_MODEL || MEAL_MODEL
@@ -471,6 +479,7 @@ export async function analyzePrizmaMeal(
   console.info(
     "[prizma] analyze:",
     JSON.stringify({
+      nemaHrane: analysis.nemaHrane,
       naziv: analysis.naziv,
       posuda: analysis.posuda,
       // Plate size is the biggest error source left and the only one nobody

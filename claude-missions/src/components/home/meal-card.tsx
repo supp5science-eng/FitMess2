@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { Expand, X } from "lucide-react";
+import { X } from "lucide-react";
 
 import { LogAddMoreSheet } from "@/components/food/log-add-more-sheet";
 import { LogDeleteConfirm } from "@/components/food/log-delete-confirm";
@@ -169,33 +169,16 @@ export function MealCard({
               viewed ? "" : "scale-105 blur-[6px] opacity-70"
             )}
           />
-          {/* Once revealed, the corner "tap to enlarge" chip (top-LEFT, mirroring
-              the lightbox close button) is the affordance. While still veiled it
-              would just duplicate the "Dodirni da vidiš" hint below, so it — and
-              its legibility scrim — appear only after the first open. */}
-          {viewed ? (
-            <>
-              <span
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-black/25 to-transparent"
-              />
-              <span
-                aria-hidden="true"
-                data-testid={`meal-card-expand-${log.id}`}
-                className="absolute left-2.5 top-2.5 flex size-8 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-transform group-active:scale-95"
-              >
-                <Expand className="size-4" />
-              </span>
-            </>
-          ) : (
-            // Veiled: a single, plain invitation to reveal it — the calm reveal
-            // is the whole point.
+          {/* While veiled, a single plain invitation to reveal it — the calm
+              reveal is the whole point. Once revealed, the clear photo stands on
+              its own (no corner badge); a tap still opens the full-screen view. */}
+          {!viewed ? (
             <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
               <span className="rounded-full bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
                 Dodirni da vidiš
               </span>
             </span>
-          )}
+          ) : null}
         </button>
       ) : null}
 

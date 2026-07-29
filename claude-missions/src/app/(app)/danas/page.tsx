@@ -277,7 +277,17 @@ export default async function DanasPage({
     cookieStore.get(PLAN_INTRO_COOKIE)?.value !== todayKey;
 
   return (
+    // Keyed by the viewed day so switching days on the date strip REMOUNTS the
+    // dashboard. `/danas` -> `/danas?dan=X` is the same route with only a
+    // changed search param, so React would otherwise reuse the HomeScreen
+    // instance and keep its day-scoped `useState` (logs, water, steps)
+    // initialized from the FIRST day -- the ring/macros/meal list/water/steps
+    // would stay on "today" even though a past day is selected. A per-day key
+    // re-initializes all of it from this render's fresh server props. In-place
+    // edits/deletes keep the same key (no navigation), so AS-043's
+    // "update without a full reload" still holds.
     <HomeScreen
+      key={selectedKey}
       initialLogs={result.data.logs}
       target={result.data.target}
       intro={intro}

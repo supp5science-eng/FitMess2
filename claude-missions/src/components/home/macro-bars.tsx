@@ -57,9 +57,11 @@ function MacroBar({
       data-testid={testId}
       className="fm-lift flex flex-1 flex-col items-center gap-2 rounded-2xl border border-border bg-card px-2 py-3.5 text-center"
     >
-      <span className="text-[13px] font-medium text-muted-foreground">
-        {label}
-      </span>
+      {/* text-xs, matching the stat row above (2026-07-29): these tiles and the
+          Cilj/Potrošeno/Preostalo row sit on the same three-column grid, so
+          they have to share a type scale or the two blocks read as two
+          unrelated widgets stacked by accident. */}
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
       <div
         className="h-1.5 w-full overflow-hidden rounded-full"
         style={{ backgroundColor: `color-mix(in oklab, ${color} 22%, transparent)` }}

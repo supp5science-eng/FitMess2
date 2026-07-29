@@ -73,6 +73,17 @@ const THREADS = [
   },
 ] as const;
 
+/** One number in the row under the dial. `key` doubles as the match against
+ * the current view, which is what marks a column as the promoted one. */
+interface Stat {
+  key: RingView | "target";
+  value: number;
+  label: string;
+  testId: string;
+  labelTestId?: string;
+  danger?: boolean;
+}
+
 export function IntakeConfluence({
   consumedKcal,
   targetKcal,
@@ -103,38 +114,38 @@ export function IntakeConfluence({
   const fillDashOffset = 100 - arcFraction * 100;
   const overshootDashOffset = 100 - state.overshootFraction * 100;
 
-  const isRemaining = view === "remaining";
-  // Centre = the selected metric; the other one sits on the right; Cilj left.
-  const centre = isRemaining
-    ? {
-        value: state.remainingKcal,
-        label: t("ring.remaining"),
-        testId: "home-ring-value",
-        labelTestId: "home-ring-label",
-        danger: state.isOver,
-      }
-    : {
-        value: state.consumedKcal,
-        label: t("ring.consumed"),
-        testId: "home-ring-consumed",
-        labelTestId: undefined,
-        danger: false,
-      };
-  const right = isRemaining
-    ? {
-        value: state.consumedKcal,
-        label: t("ring.consumed"),
-        testId: "home-ring-consumed",
-        labelTestId: undefined,
-        danger: false,
-      }
-    : {
-        value: state.remainingKcal,
-        label: t("ring.remaining"),
-        testId: "home-ring-value",
-        labelTestId: "home-ring-label",
-        danger: state.isOver,
-      };
+  // The stat row under the dial, in a reading order that never changes: the
+  // fixed budget first, then the day's two moving numbers. Each test id is tied
+  // to its metric for good (remaining is always `home-ring-value`, consumed
+  // always `home-ring-consumed`, target always `home-ring-target`), so a view
+  // switch moves no id anywhere -- it only promotes one of them into the dial.
+  const stats: Stat[] = [
+    {
+      key: "target",
+      value: state.targetKcal,
+      label: t("ring.target"),
+      testId: "home-ring-target",
+    },
+    {
+      key: "consumed",
+      value: state.consumedKcal,
+      label: t("ring.consumed"),
+      testId: "home-ring-consumed",
+    },
+    {
+      key: "remaining",
+      value: state.remainingKcal,
+      label: t("ring.remaining"),
+      testId: "home-ring-value",
+      labelTestId: "home-ring-label",
+      danger: state.isOver,
+    },
+  ];
+  // Centre = whichever of the two moving numbers the toggle has selected.
+  const centre =
+    view === "remaining"
+      ? { value: state.remainingKcal, danger: state.isOver }
+      : { value: state.consumedKcal, danger: false };
 
   const ariaLabel = state.isOver
     ? `Prekoračeno ${state.overshootKcal} kcal`
@@ -278,74 +289,56 @@ export function IntakeConfluence({
             ) : null}
           </svg>
 
-          {/* Cilj (left) */}
-          <div className="absolute left-[11.4%] top-[46.5%] -translate-x-1/2 -translate-y-1/2 text-center">
-            <div
-              data-testid="home-ring-target"
-              className="font-semibold leading-none tabular-nums text-foreground"
-              style={{ fontSize: "clamp(1rem, 5vw, 1.4rem)" }}
-            >
-              {state.targetKcal}
-            </div>
-            <div className="mt-0.5 text-xs font-medium text-muted-foreground">
-              {t("ring.target")}
-            </div>
-          </div>
-
-          {/* Centre = the selected metric */}
+          {/* Centre = the selected metric, and nothing else. No label under it
+              any more: the toggle above and the highlighted column below both
+              name it, and a bare number is what makes the dial read as one
+              object instead of a stack of type. */}
           <div className="absolute left-1/2 top-[46.5%] flex -translate-x-1/2 -translate-y-1/2 flex-col items-center px-4 text-center">
             <AnimatedNumber
               value={centre.value}
               animateKey={view}
-              data-testid={centre.testId}
               className={cn(
                 "font-bold leading-none tabular-nums",
                 centre.danger ? "text-destructive" : "text-foreground"
               )}
               style={{ fontSize: "clamp(2.1rem, 11.5vw, 3rem)" }}
             />
-            <span
-              data-testid={centre.labelTestId}
-              className="mt-1 text-sm font-medium text-muted-foreground"
-            >
-              {centre.label}
-            </span>
             {state.isOver ? (
               <span
                 data-testid="home-ring-overshoot-note"
-                className="mt-0.5 text-[11px] font-semibold text-destructive"
+                className="mt-1.5 text-[11px] font-semibold text-destructive"
               >
                 preko cilja
               </span>
             ) : null}
           </div>
-
-          {/* Alt metric (right) */}
-          <div className="absolute left-[88.6%] top-[46.5%] -translate-x-1/2 -translate-y-1/2 text-center">
-            <div
-              data-testid={right.testId}
-              className={cn(
-                "font-semibold leading-none tabular-nums",
-                right.danger ? "text-destructive" : "text-foreground"
-              )}
-              style={{ fontSize: "clamp(1rem, 5vw, 1.4rem)" }}
-            >
-              {right.value}
-            </div>
-            <div
-              data-testid={right.labelTestId}
-              className="mt-0.5 text-xs font-medium text-muted-foreground"
-            >
-              {right.label}
-            </div>
-          </div>
         </div>
 
         {/* View toggle -- OUTSIDE the role="img" ring so it stays a real,
-            reachable control, floated at the top of the cloud. */}
-        <div className="absolute left-1/2 top-[3.5%] z-20 -translate-x-1/2">
+            reachable control. Parked in the cloud's top-right corner
+            (2026-07-29): it is the least important control on the card and was
+            sitting dead centre above the dial, reading as a headline. */}
+        <div className="absolute right-[4%] top-[3.5%] z-20">
           <ViewToggle view={view} onChange={setView} />
         </div>
+      </div>
+
+      {/* The three numbers, on the SAME three-column grid as the macro tiles
+          below: equal thirds, one type size, hairline rules between them, so
+          the ring + numbers + macros read as one ruled table instead of three
+          widgets. The threads land on this row's top edge on their way to the
+          ring. All three are always present and always the same size -- the one
+          the toggle has promoted into the dial is only DARKER -- so nothing
+          jumps when you switch views. */}
+      <div className="grid grid-cols-3 border-b border-border/60 pb-3">
+        {stats.map((stat, i) => (
+          <StatColumn
+            key={stat.key}
+            stat={stat}
+            active={stat.key === view}
+            divided={i > 0}
+          />
+        ))}
       </div>
 
       {/* Macro tiles -- the sources the threads flow from. `home-body` staggers
@@ -362,9 +355,63 @@ export function IntakeConfluence({
 }
 
 /**
+ * One third of the stat row. `active` = the number currently shown inside the
+ * dial; it is only DARKER, never bigger, so the row stays a calm ruler and the
+ * dial keeps the emphasis.
+ */
+function StatColumn({
+  stat,
+  active,
+  divided,
+}: {
+  stat: Stat;
+  active: boolean;
+  divided: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center gap-0.5 px-1",
+        divided && "border-l border-border/60"
+      )}
+    >
+      <span
+        data-testid={stat.testId}
+        className={cn(
+          "text-lg font-semibold leading-none tabular-nums tracking-tight",
+          stat.danger
+            ? "text-destructive"
+            : active
+              ? "text-foreground"
+              : "text-foreground/70"
+        )}
+      >
+        {stat.value}
+      </span>
+      <span
+        data-testid={stat.labelTestId}
+        className={cn(
+          "text-xs",
+          active
+            ? "font-semibold text-foreground"
+            : "font-medium text-muted-foreground"
+        )}
+      >
+        {stat.label}
+      </span>
+    </div>
+  );
+}
+
+/**
  * The "Potrošeno | Preostalo" segmented toggle that drives the ring arc, the
- * centre number, and the macro tiles. Two real buttons in a pill; the selected
- * one is a high-contrast fill. "Preostalo" is the default.
+ * centre number, and the macro tiles. Two real buttons in a pill; "Preostalo"
+ * is the default.
+ *
+ * Restyled 2026-07-29: the selected segment used to be a solid `bg-foreground`
+ * fill -- the heaviest mark on the card, for the least important control on it.
+ * Now it is a raised light thumb on a muted track (iOS-style), small enough to
+ * sit quietly in the cloud's corner.
  */
 function ViewToggle({
   view,
@@ -394,9 +441,9 @@ function ViewToggle({
             aria-pressed={selected}
             onClick={() => onChange(value)}
             className={cn(
-              "min-h-9 rounded-full px-4 text-[13px] font-semibold transition-colors",
+              "min-h-9 rounded-full px-3.5 text-xs font-semibold transition-colors",
               selected
-                ? "bg-foreground text-background shadow-sm"
+                ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             )}
           >

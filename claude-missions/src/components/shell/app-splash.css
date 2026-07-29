@@ -1,14 +1,16 @@
 /*
- * Launch splash (`app-splash.tsx`) -- a full-screen brand cover on the app's
- * own ground (`var(--background)`, theme-aware) that plays once when the app
- * boots, then dismisses itself. Everything below runs on pure CSS so the
- * animation is alive on the first paint, before hydration; the component only
- * decides *whether* to render it (session replay-guard).
+ * Launch splash (`app-splash.tsx`).
  *
- * Timeline: bloom + mark rise (~0.1s) -> wordmark rises (~0.36s) -> an
- * iridescent shimmer sweeps through "Mess" (~0.62s) -> the whole cover fades
- * out (starts 1.5s). All motion collapses under prefers-reduced-motion to a
- * calm fade.
+ * A deliberate, FIXED dark brand cover (not theme-aware) shown the moment the
+ * app boots -- it matches the PWA's dark launch `background_color`, so tapping
+ * the icon flows straight into this animation with no white flash. When the
+ * app is ready the cover does a signature exit: the dark ground collapses in a
+ * circle toward the mark while the lockup zooms a touch and fades, revealing
+ * the (light) app beneath -- a "dive into the app" reveal.
+ *
+ * Everything runs on pure CSS so the animation is alive on the first paint,
+ * before hydration; the component only decides *whether* to render it. All
+ * motion collapses to a calm fade under prefers-reduced-motion.
  */
 
 .fm-splash {
@@ -18,18 +20,23 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--background);
-  /* Pure-CSS auto-dismiss: the cover clears itself even if JS never runs. */
-  animation: fm-splash-out 520ms ease 1500ms forwards;
-  will-change: opacity;
+  /* Fixed dark brand ground -- matches manifest.background_color so the OS
+     launch frame and this cover are the same colour (no white flash). */
+  background-color: #0a0c0b;
+  color: #f3f7f5;
+  /* Signature exit: the dark ground irises shut toward the mark, revealing the
+     app beneath. Pure CSS, so it fires even if hydration is slow. */
+  animation: fm-splash-reveal 760ms cubic-bezier(0.7, 0, 0.24, 1) 1500ms
+    forwards;
+  will-change: clip-path, opacity;
 }
 
 /* Ambient teal bloom behind the mark -- same language as the /danas ring
-   hand-off's ::before glow, so the two brand moments feel of a piece. */
+   hand-off's glow, so the brand moments feel of a piece. */
 .fm-splash::before {
   content: "";
   position: absolute;
-  top: 46%;
+  top: 45%;
   left: 50%;
   width: 460px;
   height: 460px;
@@ -37,7 +44,7 @@
   transform: translate(-50%, -50%);
   background: radial-gradient(
     circle,
-    color-mix(in srgb, var(--brand) 20%, transparent) 0%,
+    color-mix(in srgb, #17d1a8 22%, transparent) 0%,
     transparent 66%
   );
   filter: blur(12px);
@@ -51,8 +58,12 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 22px;
   padding-bottom: 4vh; /* optically centered a touch high */
+  /* On exit the whole lockup lifts toward the viewer and fades as the ground
+     irises away -- the "dive in" feel. */
+  animation: fm-splash-lockup-out 680ms cubic-bezier(0.6, 0, 0.2, 1) 1520ms
+    forwards;
 }
 
 .fm-splash__mark {
@@ -63,30 +74,59 @@
   animation:
     fm-splash-mark-in 640ms cubic-bezier(0.18, 1.04, 0.3, 1) 120ms forwards,
     fm-splash-float 3.4s ease-in-out 940ms infinite;
-  filter: drop-shadow(
-    0 12px 28px color-mix(in srgb, var(--brand) 22%, transparent)
-  );
+  filter: drop-shadow(0 12px 28px color-mix(in srgb, #17d1a8 24%, transparent));
+}
+
+.fm-splash__lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
 }
 
 .fm-splash__wordmark {
   font-size: 34px;
   line-height: 1;
   letter-spacing: -0.02em;
-  color: var(--foreground);
+  color: #f3f7f5;
   opacity: 0;
   transform: translateY(10px);
   animation: fm-splash-word-in 560ms cubic-bezier(0.16, 1, 0.3, 1) 360ms
     forwards;
 }
 
-/* Iridescent shimmer swept once through "Mess" -- scoped under .fm-splash so
-   the header lockup's wordmark is never touched. Only has a visible effect
-   where background-clip:text is supported (the accent's gradient fill); the
-   flat-teal fallback simply stays flat. */
+/* Iridescent shimmer swept once through "Mess". The dark-theme wordmark
+   gradient is pinned here (the splash is always dark, regardless of the app's
+   theme), so it never depends on --wordmark-grad. */
 .fm-splash .fm-wordmark-accent {
+  background-image: linear-gradient(
+    112deg,
+    #26ddb6 0%,
+    #35d3cc 22%,
+    #ecc766 40%,
+    #57a8ee 62%,
+    #40d98c 83%,
+    #63dd76 100%
+  );
   background-size: 220% 100%;
   background-position: 120% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
   animation: fm-splash-shimmer 1150ms ease 620ms 1 both;
+}
+
+.fm-splash__tagline {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, #f3f7f5 66%, transparent);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: fm-splash-word-in 560ms cubic-bezier(0.16, 1, 0.3, 1) 560ms
+    forwards;
 }
 
 @keyframes fm-splash-bloom {
@@ -135,23 +175,44 @@
   }
 }
 
-@keyframes fm-splash-out {
-  to {
+/* The dark ground collapses in a circle toward the mark (46% down = its
+   optical center), then clears -- revealing the app underneath. */
+@keyframes fm-splash-reveal {
+  0% {
+    clip-path: circle(140% at 50% 46%);
+    opacity: 1;
+  }
+  72% {
+    opacity: 1;
+  }
+  100% {
+    clip-path: circle(0% at 50% 46%);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
   }
 }
 
+@keyframes fm-splash-lockup-out {
+  to {
+    transform: scale(1.14);
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fm-splash {
-    animation: fm-splash-out 420ms ease 1400ms forwards;
+    animation: fm-splash-fade-out 420ms ease 1400ms forwards;
+  }
+  .fm-splash__stage {
+    animation: none;
   }
   .fm-splash::before {
     animation: fm-splash-bloom 320ms ease forwards;
   }
   .fm-splash__mark,
-  .fm-splash__wordmark {
+  .fm-splash__wordmark,
+  .fm-splash__tagline {
     transform: none;
     animation: fm-splash-fade-in 320ms ease forwards;
   }
@@ -164,6 +225,13 @@
     }
     to {
       opacity: 1;
+    }
+  }
+  @keyframes fm-splash-fade-out {
+    to {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
     }
   }
 }

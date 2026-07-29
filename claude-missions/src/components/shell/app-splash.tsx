@@ -65,13 +65,16 @@ export function AppSplash() {
           width={96}
           height={96}
         />
-        <div
-          className="fm-splash__wordmark"
-          style={{
-            fontFamily: "var(--font-display), var(--font-sans), sans-serif",
-          }}
-        >
-          Fit<span className="fm-wordmark-accent">Mess</span>
+        <div className="fm-splash__lockup">
+          <div
+            className="fm-splash__wordmark"
+            style={{
+              fontFamily: "var(--font-display), var(--font-sans), sans-serif",
+            }}
+          >
+            Fit<span className="fm-wordmark-accent">Mess</span>
+          </div>
+          <p className="fm-splash__tagline">Jedi, radi, treniraj i uživaj</p>
         </div>
       </div>
     </div>

@@ -7,6 +7,8 @@ import {
   ChartReadout,
   DayTapTargets,
 } from "@/components/analytics/chart-readout";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import { formatSteps, type StepsDay, type StepsWeek } from "@/lib/steps/steps-week";
 
 // Analitika "Koraci" card: a 7-day steps line chart in the same clean language
@@ -28,6 +30,7 @@ const PAD_X = 12;
 const PAD_Y = 12;
 
 export function StepsCard({ week }: { week: StepsWeek | null }) {
+  const { t } = useT();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   if (!week) {
@@ -35,7 +38,7 @@ export function StepsCard({ week }: { week: StepsWeek | null }) {
       <section className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6">
         <Header />
         <p className="py-4 text-sm text-muted-foreground">
-          Nismo uspeli da učitamo korake. Pokušaj ponovo.
+          {t("analytics.steps.loadError")}
         </p>
       </section>
     );
@@ -43,8 +46,8 @@ export function StepsCard({ week }: { week: StepsWeek | null }) {
 
   const today = week.days[week.days.length - 1]!;
   const todayHint = today.reached
-    ? "cilj ispunjen 🎉"
-    : `${Math.round(today.pct * 100)}% dnevnog cilja`;
+    ? t("analytics.steps.goalReachedShort")
+    : t("analytics.steps.pctOfGoal", { pct: Math.round(today.pct * 100) });
   const selected = week.days.find((d) => d.dayKey === selectedKey) ?? null;
 
   return (
@@ -61,7 +64,9 @@ export function StepsCard({ week }: { week: StepsWeek | null }) {
           }
           ariaLabel={(day) => {
             const match = week.days.find((d) => d.dayKey === day.dayKey)!;
-            return `${day.longLabel}: ${formatSteps(match.steps)} koraka`;
+            return `${day.longLabel}: ${t("analytics.steps.stepsCount", {
+              steps: formatSteps(match.steps),
+            })}`;
           }}
         />
       </div>
@@ -69,15 +74,17 @@ export function StepsCard({ week }: { week: StepsWeek | null }) {
       {selected ? (
         <ChartReadout
           label={selected.longLabel}
-          primary={`${formatSteps(selected.steps)} koraka`}
-          secondary={secondaryFor(selected, week.goalSteps)}
+          primary={t("analytics.steps.stepsCount", {
+            steps: formatSteps(selected.steps),
+          })}
+          secondary={secondaryFor(selected, week.goalSteps, t)}
           accentColor={selected.reached ? LINE : undefined}
           onClear={() => setSelectedKey(null)}
           testId="steps-readout"
         />
       ) : (
         <ChartHint testId="steps-hint">
-          Dodirni dan na grafiku da vidiš koliko si tada prošao/la.
+          {t("analytics.steps.hint")}
         </ChartHint>
       )}
 
@@ -95,7 +102,7 @@ export function StepsCard({ week }: { week: StepsWeek | null }) {
             className="text-[11px] font-medium"
             style={{ color: today.reached ? LINE : "var(--muted-foreground)" }}
           >
-            {todayHint} · danas
+            {t("analytics.steps.todayLine", { hint: todayHint })}
           </span>
         </div>
 
@@ -108,7 +115,9 @@ export function StepsCard({ week }: { week: StepsWeek | null }) {
             className="size-2 shrink-0 rounded-full"
             style={{ backgroundColor: LINE }}
           />
-          prosek {formatSteps(week.weekAvgSteps)} /dan
+          {t("analytics.steps.avgPerDay", {
+            steps: formatSteps(week.weekAvgSteps),
+          })}
         </span>
       </div>
     </section>
@@ -116,10 +125,14 @@ export function StepsCard({ week }: { week: StepsWeek | null }) {
 }
 
 /** The read-out's second line: goal progress, or an honest "no steps logged". */
-function secondaryFor(day: StepsDay, goalSteps: number): string {
-  if (day.steps === 0) return "Tog dana nije uneto nijedan korak.";
-  if (day.reached) return `Cilj (${formatSteps(goalSteps)}) ispunjen 🎉`;
-  return `${Math.round(day.pct * 100)}% od cilja ${formatSteps(goalSteps)}`;
+function secondaryFor(day: StepsDay, goalSteps: number, t: TFunction): string {
+  if (day.steps === 0) return t("analytics.steps.noStepsThatDay");
+  if (day.reached)
+    return t("analytics.steps.goalReached", { goal: formatSteps(goalSteps) });
+  return t("analytics.steps.pctOfGoalValue", {
+    pct: Math.round(day.pct * 100),
+    goal: formatSteps(goalSteps),
+  });
 }
 
 function Sparkline({
@@ -129,6 +142,7 @@ function Sparkline({
   week: StepsWeek;
   selectedKey: string | null;
 }) {
+  const { t } = useT();
   const max = Math.max(week.maxSteps, 1);
   const points = week.days.map((d, i) => ({
     x: i / (week.days.length - 1),
@@ -155,9 +169,9 @@ function Sparkline({
       viewBox={`0 0 ${VB_W} ${VB_H}`}
       className="w-full"
       role="img"
-      aria-label={`Koraci u poslednjih 7 dana; prosek ${formatSteps(
-        week.weekAvgSteps
-      )} dnevno`}
+      aria-label={t("analytics.steps.chartAria", {
+        steps: formatSteps(week.weekAvgSteps),
+      })}
       data-testid="steps-chart"
     >
       <defs>
@@ -213,12 +227,15 @@ function Sparkline({
 }
 
 function Header() {
+  const { t } = useT();
   return (
     <div className="flex flex-col gap-0.5">
       <h2 className="text-2xl font-bold tracking-tight text-foreground">
-        Koraci
+        {t("analytics.steps.title")}
       </h2>
-      <p className="text-sm text-muted-foreground">Poslednjih 7 dana</p>
+      <p className="text-sm text-muted-foreground">
+        {t("analytics.steps.subtitle")}
+      </p>
     </div>
   );
 }

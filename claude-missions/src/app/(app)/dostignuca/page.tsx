@@ -8,6 +8,7 @@ import {
 } from "@/lib/achievements/achievements";
 import { getUserStats } from "@/lib/achievements/read-stats";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 // `/dostignuca` — the achievements / badges screen, reached by tapping the
@@ -24,16 +25,17 @@ export default async function DostignucaPage() {
   const userId = await getCurrentUserId(supabase);
 
   if (!userId) {
+    const { t } = await getT();
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
         <p role="alert" className="text-sm text-destructive">
-          Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.
+          {t("media.dostignuca.sessionExpired")}
         </p>
         <Link
           href="/prijava"
           className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
         >
-          Prijavi se
+          {t("media.dostignuca.login")}
         </Link>
       </main>
     );

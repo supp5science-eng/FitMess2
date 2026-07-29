@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Moon, Palette, Sun } from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { getT } from "@/lib/i18n/server";
 import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
 
 // Settings → "Izgled": pick the light or dark theme. Self-contained (only the
@@ -12,6 +13,7 @@ import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
 // hydration mismatch). The toggle applies the change live + persists it.
 export default async function IzgledPage() {
   const cookieStore = await cookies();
+  const { t } = await getT();
   const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
 
   return (
@@ -21,13 +23,13 @@ export default async function IzgledPage() {
           href="/profil"
           className="inline-flex w-fit items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          ← Nazad
+          {t("profil.back")}
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Izgled
+          {t("settings.appearance")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Izaberi svetlu ili tamnu temu. Primenjuje se odmah.
+          {t("profil.appearance.desc")}
         </p>
       </header>
 
@@ -37,15 +39,15 @@ export default async function IzgledPage() {
             <Palette className="size-[18px]" aria-hidden={true} />
           </span>
           <span className="truncate text-sm font-medium text-foreground">
-            Tema
+            {t("profil.appearance.theme")}
           </span>
         </span>
         <ThemeToggle initialTheme={theme} />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <ThemePreview label="Svetla" icon={Sun} light />
-        <ThemePreview label="Tamna" icon={Moon} light={false} />
+        <ThemePreview label={t("theme.light")} icon={Sun} light />
+        <ThemePreview label={t("theme.dark")} icon={Moon} light={false} />
       </div>
     </main>
   );

@@ -1,8 +1,12 @@
+"use client";
+
 import { Flame } from "lucide-react";
 
 import { ProgressRing } from "@/components/home/progress-ring";
 import { FLAME_GRADIENT } from "@/components/streak/flame";
 import { StreakDots } from "@/components/streak/streak-dots";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import {
   dayCountSr,
   dayNounSr,
@@ -19,6 +23,7 @@ import {
 // header, a hero ring, a small series, one calm closing line.
 
 export function StreakSummaryCard({ streak }: { streak: StreakSummary }) {
+  const { t } = useT();
   const {
     current,
     best,
@@ -33,16 +38,19 @@ export function StreakSummaryCard({ streak }: { streak: StreakSummary }) {
   const justReached = hasStreak && isMilestone(current);
 
   const hint = !hasStreak
-    ? "Uloguj obrok pa kreni da nižeš dane."
+    ? t("media.streakCard.hintStart")
     : justReached
       ? milestone
       : nextMilestone !== null
-        ? `Još ${dayCountSr(daysToNext ?? 0)} do ${nextMilestone} dana.`
-        : "Prošao/la si svaki cilj — niz i dalje traje.";
+        ? t("media.streakCard.hintNext", {
+            count: dayCountSr(daysToNext ?? 0),
+            target: nextMilestone,
+          })
+        : t("media.streakCard.hintAllDone");
 
   return (
     <section className="flex flex-col gap-5 rounded-3xl border border-border bg-card p-6">
-      <Header />
+      <Header t={t} />
 
       {/* Hero: flame ring (filling toward the next milestone) + the count */}
       <div className="flex items-center gap-5">
@@ -79,7 +87,7 @@ export function StreakSummaryCard({ streak }: { streak: StreakSummary }) {
                 {current}
               </span>
               <span className="text-base font-medium text-muted-foreground">
-                {dayNounSr(current)} zaredom
+                {t("media.streakCard.inARow", { noun: dayNounSr(current) })}
               </span>
             </span>
           ) : (
@@ -87,7 +95,7 @@ export function StreakSummaryCard({ streak }: { streak: StreakSummary }) {
               data-testid="streak-summary-count"
               className="text-xl font-semibold text-foreground"
             >
-              Započni svoj niz
+              {t("media.streakCard.startYourStreak")}
             </span>
           )}
 
@@ -99,7 +107,7 @@ export function StreakSummaryCard({ streak }: { streak: StreakSummary }) {
           </span>
 
           <span className="mt-1 text-xs text-muted-foreground">
-            Najduži niz: {dayCountSr(best)}
+            {t("media.streakCard.longest", { count: dayCountSr(best) })}
           </span>
         </div>
       </div>
@@ -109,14 +117,14 @@ export function StreakSummaryCard({ streak }: { streak: StreakSummary }) {
 
       <p className="text-center text-[11px] text-muted-foreground">
         {loggedToday
-          ? "Danas je ubeleženo — niz raste. 🔥"
-          : "Uloguj bar jedan obrok danas da nastaviš niz."}
+          ? t("media.streakCard.loggedToday")
+          : t("media.streakCard.logToContinue")}
       </p>
     </section>
   );
 }
 
-function Header() {
+function Header({ t }: { t: TFunction }) {
   return (
     <div className="flex items-center gap-2.5">
       <span
@@ -129,9 +137,11 @@ function Header() {
           strokeWidth={2.25}
         />
       </span>
-      <h2 className="text-lg font-semibold text-foreground">Niz</h2>
+      <h2 className="text-lg font-semibold text-foreground">
+        {t("media.streakCard.title")}
+      </h2>
       <span className="ml-auto text-xs text-muted-foreground">
-        Dani sa unosom
+        {t("media.streakCard.daysWithLog")}
       </span>
     </div>
   );

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 import { PhoneForm } from "./phone-form";
@@ -21,6 +22,7 @@ import { PhoneForm } from "./phone-form";
  */
 export default async function TelefonSettingsPage() {
   const supabase = await createClient();
+  const { t } = await getT();
   const userId = await getCurrentUserId(supabase);
 
   let phone: string | null = null;
@@ -40,16 +42,16 @@ export default async function TelefonSettingsPage() {
         className="inline-flex items-center gap-1 self-start text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" aria-hidden={true} />
-        Podešavanja
+        {t("settings.title")}
       </Link>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Broj telefona
+          {t("settings.phone")}
         </h1>
         {phone ? null : (
           <p className="text-sm text-muted-foreground">
-            Još nemamo tvoj broj — možeš ga dodati ovde.
+            {t("profil.phone.noNumber")}
           </p>
         )}
       </div>

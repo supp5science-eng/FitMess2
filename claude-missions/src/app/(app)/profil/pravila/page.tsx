@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { HabitsScreen } from "@/components/profil/habits-screen";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
+import type { TFunction } from "@/lib/i18n/translate";
 import { toBelgradeCalendarDay } from "@/lib/dates";
 import { getHabitChecks } from "@/lib/habits/checks";
 import { buildHabitProgress } from "@/lib/habits/streak";
@@ -25,12 +27,13 @@ import type { PersistedRule } from "@/lib/budget/rules";
  */
 export default async function PravilaPage() {
   const supabase = await createClient();
+  const { t } = await getT();
   // Local access-token verification (`getClaims`) instead of `auth.getUser()`'s
   // per-navigation network round trip -- same fast path as `/profil`.
   const userId = await getCurrentUserId(supabase);
 
   if (!userId) {
-    return <RetryErrorState message="Sesija je istekla. Prijavi se ponovo." />;
+    return <RetryErrorState t={t} message={t("profil.sessionExpired")} />;
   }
 
   const todayKey = toBelgradeCalendarDay();
@@ -55,9 +58,7 @@ export default async function PravilaPage() {
     ]);
 
   if (profileError) {
-    return (
-      <RetryErrorState message="Nismo uspeli da učitamo tvoje navike. Proveri konekciju i pokušaj ponovo." />
-    );
+    return <RetryErrorState t={t} message={t("profil.habits.loadError")} />;
   }
 
   const rules: PersistedRule[] = profile?.rules ?? [];
@@ -72,7 +73,7 @@ export default async function PravilaPage() {
   );
 }
 
-function RetryErrorState({ message }: { message: string }) {
+function RetryErrorState({ t, message }: { t: TFunction; message: string }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
       <p role="alert" data-testid="pravila-load-error" className="text-sm text-destructive">
@@ -82,7 +83,7 @@ function RetryErrorState({ message }: { message: string }) {
         href="/profil/pravila"
         className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
       >
-        Pokušaj ponovo
+        {t("profil.habits.retry")}
       </Link>
     </main>
   );

@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { Mic, Plus } from "lucide-react";
+
+import { useT } from "@/components/i18n/locale-provider";
 
 /**
  * "Gric" — the entry point for the food that otherwise never gets logged: a
@@ -14,6 +18,7 @@ import { Mic, Plus } from "lucide-react";
  * `now()`, so it has nothing to offer while browsing an earlier day.
  */
 export function GricButton() {
+  const { t } = useT();
   return (
     <Link
       href="/dodaj/gric"
@@ -27,7 +32,7 @@ export function GricButton() {
         <span className="flex flex-col">
           <span className="text-base font-semibold text-foreground">Gric</span>
           <span className="text-xs text-muted-foreground">
-            Reci šta si grickao — bez slikanja
+            {t("home.gric.desc")}
           </span>
         </span>
       </span>

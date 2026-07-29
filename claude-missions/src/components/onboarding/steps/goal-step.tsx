@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from "react";
 
 import type { GoalType } from "@/lib/types/db";
+import { useT } from "@/components/i18n/locale-provider";
 import { RulerPicker } from "@/components/onboarding/ruler-picker";
 import { rangeInclusive } from "@/components/onboarding/select-field";
 import { MAX_WEIGHT_KG, MIN_WEIGHT_KG } from "@/lib/onboarding/validation";
@@ -63,6 +64,7 @@ export function GoalStep({
   onChangeTargetWeight: (value: number | null) => void;
   error?: string;
 }) {
+  const { t } = useT();
   const isGain = goal === "gain";
 
   const targetOptions = useMemo(
@@ -99,16 +101,18 @@ export function GoalStep({
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-xl font-semibold text-foreground">
-          {isGain ? "Do koje težine želiš?" : "Koja ti je ciljna težina?"}
+          {isGain
+            ? t("onboarding.goal.titleGain")
+            : t("onboarding.goal.titleLose")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Ovo je težina koju želiš da dostigneš.
+          {t("onboarding.goal.subtitle")}
         </p>
       </div>
       <RulerPicker
         id="ciljna-tezina"
-        label="Ciljna težina"
-        caption="Ciljna težina"
+        label={t("onboarding.goal.targetLabel")}
+        caption={t("onboarding.goal.targetLabel")}
         value={targetWeightKg}
         onChange={onChangeTargetWeight}
         options={targetOptions}

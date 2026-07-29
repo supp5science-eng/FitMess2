@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
+import type { TFunction } from "@/lib/i18n/translate";
 import { createClient } from "@/lib/supabase/server";
 
 import { EditProfileForm } from "./edit-profile-form";
@@ -15,12 +17,11 @@ import { EditProfileForm } from "./edit-profile-form";
 // ever comes back empty (same posture as `/danas`, `/profil`).
 export default async function PodaciPage() {
   const supabase = await createClient();
+  const { t } = await getT();
   const userId = await getCurrentUserId(supabase);
 
   if (!userId) {
-    return (
-      <ErrorState message="Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo." />
-    );
+    return <ErrorState t={t} message={t("profil.data.sessionExpired")} />;
   }
 
   const { data: profile, error } = await supabase
@@ -30,9 +31,7 @@ export default async function PodaciPage() {
     .maybeSingle();
 
   if (error) {
-    return (
-      <ErrorState message="Nismo uspeli da učitamo tvoje podatke. Pokušaj ponovo." />
-    );
+    return <ErrorState t={t} message={t("profil.data.loadError")} />;
   }
 
   // `birth_year` is stored; the form edits AGE (as onboarding collected it), so
@@ -50,14 +49,13 @@ export default async function PodaciPage() {
           href="/profil"
           className="inline-flex w-fit items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          ← Nazad
+          {t("profil.back")}
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Lični podaci
+          {t("settings.personal")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Kad promeniš težinu ili aktivnost, tvoj dnevni cilj se automatski
-          preračunava.
+          {t("profil.data.subtitle")}
         </p>
       </header>
 
@@ -75,7 +73,7 @@ export default async function PodaciPage() {
   );
 }
 
-function ErrorState({ message }: { message: string }) {
+function ErrorState({ t, message }: { t: TFunction; message: string }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
       <p role="alert" className="text-sm text-destructive">
@@ -85,7 +83,7 @@ function ErrorState({ message }: { message: string }) {
         href="/profil"
         className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
       >
-        Nazad na podešavanja
+        {t("profil.data.backToSettings")}
       </Link>
     </main>
   );

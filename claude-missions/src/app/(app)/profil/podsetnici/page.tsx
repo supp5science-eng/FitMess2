@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 import type { ReminderPreferences } from "./actions";
@@ -32,6 +33,7 @@ const DEFAULTS: ReminderPreferences = {
 
 export default async function PodsetniciPage() {
   const supabase = await createClient();
+  const { t } = await getT();
   const userId = await getCurrentUserId(supabase);
 
   let preferences = DEFAULTS;
@@ -64,16 +66,15 @@ export default async function PodsetniciPage() {
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" aria-hidden={true} />
-        Podešavanja
+        {t("settings.title")}
       </Link>
 
       <div className="flex flex-col gap-1.5">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Podsetnici
+          {t("settings.reminders")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Dva puta dnevno: ujutru da upišeš doručak, uveče koliko ti je ostalo.
-          I jednom kad zaslužiš — kad upišeš treći obrok.
+          {t("profil.reminders.subtitle")}
         </p>
       </div>
 

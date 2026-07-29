@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { getT } from "@/lib/i18n/server";
+
 import { ResendForm } from "./resend-form";
 import { VerifyCodeForm } from "./verify-code-form";
 
@@ -27,56 +29,56 @@ export default async function ProveriEmailPage({
   // Fresh from signup (email just sent) -> start the resend button on a
   // cooldown so the first click can't hit GoTrue's per-address send window.
   const justSent = poslato === "1";
+  const { t } = await getT();
 
   return (
     <>
       <div className="auth-card" style={{ textAlign: "center" }}>
         <div className="auth-head" style={{ alignItems: "center" }}>
-          <h1>Potvrdi nalog</h1>
+          <h1>{t("auth.verify.title")}</h1>
           <p>
             {email ? (
               <>
-                Poslali smo 6-cifreni kod na <strong>{email}</strong>.
+                {t("auth.verify.sentTo")} <strong>{email}</strong>.
               </>
             ) : (
-              "Poslali smo ti 6-cifreni kod na email adresu koju si uneo/la."
+              t("auth.verify.sentToUnknown")
             )}{" "}
-            Unesi ga ispod da završiš registraciju.
+            {t("auth.verify.enterBelow")}
           </p>
         </div>
 
         {email ? <VerifyCodeForm email={email} /> : null}
 
         <div className="auth-sep" role="separator">
-          Nisi dobio/la kod?
+          {t("auth.verify.noCode")}
         </div>
 
         {email ? (
           <ResendForm email={email} initialCooldown={justSent ? 60 : 0} />
         ) : (
           <p className="auth-hint">
-            Vrati se na{" "}
-            <Link href="/registracija">registraciju</Link> da ponovo zatražiš
-            kod.
+            {t("auth.verify.backToRegPrefix")}{" "}
+            <Link href="/registracija">{t("auth.verify.regLink")}</Link>{" "}
+            {t("auth.verify.backToRegSuffix")}
           </p>
         )}
 
         {email ? (
           <p className="auth-hint">
-            Pogrešna adresa?{" "}
+            {t("auth.verify.wrongAddress")}{" "}
             <Link href={`/registracija?email=${encodeURIComponent(email)}`}>
-              Izmeni email
+              {t("auth.verify.editEmailLink")}
             </Link>{" "}
-            i pošalji kod ponovo.
+            {t("auth.verify.resendAfterEdit")}
           </p>
         ) : null}
 
-        <p className="auth-hint">
-          Otvaraš na računaru? Možeš i da klikneš link iz mejla.
-        </p>
+        <p className="auth-hint">{t("auth.verify.desktopHint")}</p>
       </div>
       <p className="auth-alt">
-        Već potvrdio/la nalog? <Link href="/prijava">Prijavi se</Link>
+        {t("auth.verify.alreadyConfirmed")}{" "}
+        <Link href="/prijava">{t("auth.link.signIn")}</Link>
       </p>
     </>
   );

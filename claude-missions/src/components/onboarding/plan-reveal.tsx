@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { finishOnboardingAction } from "@/app/(app)/onboarding/pregled/actions";
 import { computeBudgetSummary } from "@/lib/onboarding/summary";
@@ -44,13 +45,6 @@ const INTRO_COOKIE = "fm_intro";
 // (see `components/pwa/install-overlay.tsx`, which consumes it).
 const INSTALL_COOKIE = "fm_install";
 
-const CALC_LINES = [
-  "Analiziramo tvoje podatke…",
-  "Računamo optimalan unos…",
-  "Podešavamo makronutrijente…",
-  "Skoro gotovo…",
-];
-
 function formatKcal(n: number) {
   return n.toLocaleString("sr-RS");
 }
@@ -71,6 +65,13 @@ export function PlanReveal({
   /** Called in `preview` mode when the visitor taps the save CTA. */
   onContinue?: () => void;
 }) {
+  const { t } = useT();
+  const CALC_LINES = [
+    t("onboarding.plan.calc1"),
+    t("onboarding.plan.calc2"),
+    t("onboarding.plan.calc3"),
+    t("onboarding.plan.calc4"),
+  ];
   const summary = useMemo(() => computeBudgetSummary(data), [data]);
   const target = summary.dailyKcal;
 
@@ -113,14 +114,14 @@ export function PlanReveal({
       },
       () => {
         if (cancelled) return;
-        setSaveError("Nešto je pošlo naopako. Pokušaj ponovo.");
+        setSaveError(t("onboarding.error.generic"));
         setSaveState("error");
       }
     );
     return () => {
       cancelled = true;
     };
-  }, [persist, data, saveNonce]);
+  }, [persist, data, saveNonce, t]);
 
   // Cycle the reassurance copy during the calc phase.
   useEffect(() => {
@@ -129,7 +130,7 @@ export function PlanReveal({
       setCalcLine((i) => Math.min(i + 1, CALC_LINES.length - 1));
     }, calcMs / CALC_LINES.length);
     return () => clearInterval(id);
-  }, [phase, reduced, calcMs]);
+  }, [phase, reduced, calcMs, CALC_LINES.length]);
 
   // calc -> reveal.
   useEffect(() => {
@@ -215,9 +216,9 @@ export function PlanReveal({
     return (
       <main className="pr">
         <div className="pr-error" role="alert">
-          <p>{saveError ?? "Nešto je pošlo naopako."}</p>
+          <p>{saveError ?? t("onboarding.error.genericShort")}</p>
           <button type="button" className="pr-retry liquid-glass" onClick={retry}>
-            Pokušaj ponovo
+            {t("onboarding.retry")}
           </button>
         </div>
       </main>
@@ -263,9 +264,11 @@ export function PlanReveal({
           </div>
           <div>
             {data.name ? (
-              <div className="pr-calc-greeting">Zdravo, {data.name}!</div>
+              <div className="pr-calc-greeting">
+                {t("onboarding.plan.greeting", { name: data.name })}
+              </div>
             ) : null}
-            <div className="pr-calc-title">Računamo tvoj plan</div>
+            <div className="pr-calc-title">{t("onboarding.plan.calcTitle")}</div>
             <div className="pr-calc-sub" key={calcLine}>
               {CALC_LINES[calcLine]}
             </div>
@@ -282,7 +285,7 @@ export function PlanReveal({
           className="pr-stage pr-reveal"
           style={{ "--pr-count-ms": `${countMs}ms` } as CSSProperties}
         >
-          <div className="pr-reveal-label">Tvoj dnevni cilj</div>
+          <div className="pr-reveal-label">{t("onboarding.plan.dailyGoal")}</div>
           <div className="pr-ring">
             <svg viewBox="0 0 200 200" aria-hidden="true">
               <circle
@@ -307,21 +310,21 @@ export function PlanReveal({
               <div className="pr-kcal" data-testid="daily-kcal">
                 {formatKcal(count)}
               </div>
-              <div className="pr-unit">kcal dnevno</div>
+              <div className="pr-unit">{t("onboarding.plan.kcalPerDay")}</div>
             </div>
           </div>
           <div className="pr-macros">
             <div className="pr-macro">
               <b>{summary.macros.proteinG}g</b>
-              <span>Proteini</span>
+              <span>{t("macro.protein")}</span>
             </div>
             <div className="pr-macro">
               <b>{summary.macros.fatG}g</b>
-              <span>Masti</span>
+              <span>{t("macro.fat")}</span>
             </div>
             <div className="pr-macro">
               <b>{summary.macros.carbsG}g</b>
-              <span>UH</span>
+              <span>{t("macro.carbs")}</span>
             </div>
           </div>
 
@@ -330,16 +333,14 @@ export function PlanReveal({
               navigates on its own, so it never shows this. */}
           {!persist && animationDone ? (
             <div className="pr-cta">
-              <p className="pr-cta-copy">
-                Napravi nalog da sačuvaš svoj plan i kreneš da pratiš unos.
-              </p>
+              <p className="pr-cta-copy">{t("onboarding.plan.ctaCopy")}</p>
               <Button
                 type="button"
                 size="lg"
                 className="w-full"
                 onClick={onContinue}
               >
-                Napravi nalog i sačuvaj
+                {t("onboarding.plan.ctaButton")}
               </Button>
             </div>
           ) : null}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { InstallGuide } from "@/components/landing/install-guide";
+import { useT } from "@/components/i18n/locale-provider";
 
 /**
  * The landing page's "Instaliraj FitMess" call to action — the single most
@@ -70,13 +71,14 @@ function detectInitialMode(): Mode {
 
 export function InstallButton({
   className = "",
-  label = "Instaliraj FitMess",
+  label,
   showArrow = true,
 }: {
   className?: string;
   label?: string;
   showArrow?: boolean;
 }) {
+  const { t } = useT();
   // Start in a deterministic state so server and first client render match;
   // real capabilities are resolved in the effect below, after mount.
   const [mode, setMode] = useState<Mode>("install");
@@ -135,7 +137,7 @@ export function InstallButton({
     setHelpOpen(true);
   }
 
-  const text = mode === "open" ? "Otvori FitMess" : label;
+  const text = mode === "open" ? t("app.install.open") : (label ?? t("app.install.cta"));
 
   return (
     <>

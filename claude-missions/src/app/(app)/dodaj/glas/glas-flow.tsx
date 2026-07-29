@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Loader2, Mic, Sparkles, Square } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
+import { useT } from "@/components/i18n/locale-provider";
 
 import { scaleMealMicros } from "@/lib/ai/meal-estimate";
 import type { VoiceMealEstimate } from "@/lib/ai/voice-estimate";
@@ -22,12 +23,6 @@ interface Nutrition {
   fat: number;
 }
 
-const CONFIDENCE_LABEL: Record<VoiceMealEstimate["sigurnost"], string> = {
-  niska: "Niska sigurnost",
-  srednja: "Srednja sigurnost",
-  visoka: "Visoka sigurnost",
-};
-
 // Safety cap: nobody needs to speak a single meal for longer than this, and it
 // keeps the clip (and the API cost) bounded even if "Zaustavi" is forgotten.
 const MAX_RECORDING_MS = 60_000;
@@ -35,6 +30,12 @@ const MAX_RECORDING_MS = 60_000;
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 export function GlasFlow() {
+  const { t } = useT();
+  const CONFIDENCE_LABEL: Record<VoiceMealEstimate["sigurnost"], string> = {
+    niska: t("dodaj.confidence.low"),
+    srednja: t("dodaj.confidence.medium"),
+    visoka: t("dodaj.confidence.high"),
+  };
   const router = useRouter();
   const recordingRef = useRef<WavRecording | null>(null);
   const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -80,9 +81,7 @@ export function GlasFlow() {
       setPhase("recording");
       autoStopRef.current = setTimeout(() => void stopRecording(), MAX_RECORDING_MS);
     } catch {
-      setError(
-        "Nismo dobili pristup mikrofonu. Dozvoli mikrofon u podešavanjima pa pokušaj ponovo."
-      );
+      setError(t("dodaj.mic.denied"));
       setPhase("idle");
     }
   }
@@ -101,7 +100,7 @@ export function GlasFlow() {
     try {
       wav = await recording.stop();
     } catch {
-      setError("Nismo uspeli da obradimo snimak. Pokušaj ponovo.");
+      setError(t("dodaj.audio.processFailed"));
       setPhase("idle");
       return;
     }
@@ -191,13 +190,13 @@ export function GlasFlow() {
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Reci obrok
+          {t("dodaj.voice.title")}
         </h1>
         <Link
           href="/danas"
           className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          Otkaži
+          {t("dodaj.cancel")}
         </Link>
       </header>
 
@@ -215,18 +214,17 @@ export function GlasFlow() {
           <button
             type="button"
             onClick={() => void startRecording()}
-            aria-label="Počni snimanje"
+            aria-label={t("dodaj.startRecording")}
             className="flex size-28 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
           >
             <Mic className="size-11" aria-hidden="true" />
           </button>
           <div className="flex flex-col gap-1">
             <span className="text-base font-medium text-foreground">
-              Dodirni i reci šta si jeo ili pio
+              {t("dodaj.voice.prompt")}
             </span>
             <span className="text-sm text-muted-foreground">
-              Možeš izgovoriti vrednosti sa deklaracije, ili samo opisati obrok —
-              AI će proceniti.
+              {t("dodaj.voice.hint")}
             </span>
           </div>
         </div>
@@ -237,7 +235,7 @@ export function GlasFlow() {
           <button
             type="button"
             onClick={() => void stopRecording()}
-            aria-label="Zaustavi snimanje"
+            aria-label={t("dodaj.stopRecording")}
             className="flex size-28 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px animate-pulse"
           >
             <Square className="size-10 fill-current" aria-hidden="true" />
@@ -250,7 +248,7 @@ export function GlasFlow() {
               {formatSeconds(seconds)}
             </span>
             <span className="text-sm text-muted-foreground">
-              Snimam… dodirni da zaustaviš
+              {t("dodaj.voice.recording")}
             </span>
           </div>
         </div>
@@ -258,11 +256,11 @@ export function GlasFlow() {
 
       {phase === "estimating" ? (
         <AiThinking
-          title="Slušam i računam…"
+          title={t("dodaj.listenCalc.title")}
           lines={[
-            "Razumem šta si rekao…",
-            "Prepoznajem obrok i količinu…",
-            "Računam makronutrijente…",
+            t("dodaj.voice.thinking.line1"),
+            t("dodaj.voice.thinking.line2"),
+            t("dodaj.voice.thinking.line3"),
           ]}
         />
       ) : null}
@@ -288,7 +286,7 @@ export function GlasFlow() {
           ) : null}
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-foreground">Naziv</span>
+            <span className="text-sm font-medium text-foreground">{t("dodaj.field.name")}</span>
             <input
               type="text"
               value={name}
@@ -298,7 +296,7 @@ export function GlasFlow() {
           </label>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-foreground">Gramaža (g)</span>
+            <span className="text-sm font-medium text-foreground">{t("dodaj.field.grams")}</span>
             <input
               type="number"
               inputMode="numeric"
@@ -313,23 +311,23 @@ export function GlasFlow() {
 
           <div className="grid grid-cols-2 gap-3">
             <MacroField
-              label="Kalorije"
+              label={t("dodaj.field.kcal")}
               value={nutrition.kcal}
               decimals={0}
               onChange={(v) => setNutrition((n) => ({ ...n, kcal: v }))}
             />
             <MacroField
-              label="Protein (g)"
+              label={t("dodaj.field.protein")}
               value={nutrition.protein}
               onChange={(v) => setNutrition((n) => ({ ...n, protein: v }))}
             />
             <MacroField
-              label="Ugljeni hidrati (g)"
+              label={t("dodaj.field.carbs")}
               value={nutrition.carbs}
               onChange={(v) => setNutrition((n) => ({ ...n, carbs: v }))}
             />
             <MacroField
-              label="Masti (g)"
+              label={t("dodaj.field.fat")}
               value={nutrition.fat}
               onChange={(v) => setNutrition((n) => ({ ...n, fat: v }))}
             />
@@ -349,7 +347,7 @@ export function GlasFlow() {
               {phase === "saving" ? (
                 <Loader2 className="size-5 animate-spin" aria-hidden="true" />
               ) : null}
-              Dodaj u dan
+              {t("dodaj.addToDay")}
             </button>
             <button
               type="button"
@@ -357,12 +355,12 @@ export function GlasFlow() {
               disabled={phase === "saving"}
               className="rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
             >
-              Snimi ponovo
+              {t("dodaj.recordAgain")}
             </button>
           </div>
 
           <p className="text-center text-xs text-muted-foreground">
-            AI procena je približna — proveri i doteraj po potrebi.
+            {t("dodaj.aiApproxNote")}
           </p>
         </div>
       ) : null}

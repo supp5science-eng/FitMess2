@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { PortionPicker } from "@/components/food/portion-picker";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
+import type { TFunction } from "@/lib/i18n/translate";
 import { createClient } from "@/lib/supabase/server";
 
 /**
@@ -24,12 +26,13 @@ export default async function PorcijaPage({
   params: Promise<{ foodId: string }>;
 }) {
   const { foodId } = await params;
+  const { t } = await getT();
   const supabase = await createClient();
   const userId = await getCurrentUserId(supabase);
 
   if (!userId) {
     return (
-      <RetryErrorState message="Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo." />
+      <RetryErrorState t={t} message={t("dodaj.sessionExpired")} />
     );
   }
 
@@ -44,13 +47,13 @@ export default async function PorcijaPage({
   }
 
   if (error || !food) {
-    return <RetryErrorState message="Namirnica nije pronađena." />;
+    return <RetryErrorState t={t} message={t("dodaj.foodNotFound")} />;
   }
 
   return <PortionPicker food={food} />;
 }
 
-function RetryErrorState({ message }: { message: string }) {
+function RetryErrorState({ t, message }: { t: TFunction; message: string }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
       <p
@@ -64,7 +67,7 @@ function RetryErrorState({ message }: { message: string }) {
         href="/dodaj/pretraga"
         className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
       >
-        Nazad na pretragu
+        {t("dodaj.backToSearch")}
       </Link>
     </main>
   );

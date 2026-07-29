@@ -1,3 +1,5 @@
+"use client";
+
 import {
   CircleCheckBig,
   Droplet,
@@ -13,6 +15,7 @@ import type {
   Achievement,
   AchievementCategory,
 } from "@/lib/achievements/achievements";
+import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
 // One badge in the Dostignuća grid. Flat and light (the product owner's brief:
@@ -62,7 +65,12 @@ export const CATEGORY_STYLE: Record<
   },
 };
 
-export function AchievementTile({ achievement }: { achievement: Achievement }) {
+export function AchievementTile({
+  achievement,
+}: {
+  achievement: Achievement;
+}) {
+  const { t } = useT();
   const { icon: Icon, accent, soft } = CATEGORY_STYLE[achievement.category];
   const { earned, title, criteria, value, threshold } = achievement;
 
@@ -71,8 +79,8 @@ export function AchievementTile({ achievement }: { achievement: Achievement }) {
       className="flex flex-col items-center gap-2 text-center"
       aria-label={
         earned
-          ? `${title}: osvojeno, ${criteria}`
-          : `${title}: zaključano, ${value} od ${threshold}`
+          ? t("media.achievement.earnedAria", { title, criteria })
+          : t("media.achievement.lockedAria", { title, value, threshold })
       }
     >
       <div

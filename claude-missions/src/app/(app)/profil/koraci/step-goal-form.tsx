@@ -4,6 +4,7 @@ import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown, Footprints } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -40,6 +41,7 @@ export function StepGoalForm({
   suggestion: StepGoalSuggestion | null;
 }) {
   const router = useRouter();
+  const { t } = useT();
   const automatic = automaticStepGoal(activityLevel);
   const options = stepGoalOptions();
 
@@ -63,7 +65,7 @@ export function StepGoalForm({
     startTransition(async () => {
       const result = await saveStepGoalAction({ goal: chosen });
       if (!result.ok) {
-        setError(result.error_sr ?? "Nešto nije uspelo. Pokušaj ponovo.");
+        setError(result.error_sr ?? t("profil.error.generic"));
         return;
       }
       setSaved(true);
@@ -78,11 +80,11 @@ export function StepGoalForm({
         <ChoiceCard
           selected={mode === "auto"}
           onSelect={() => setMode("auto")}
-          title="Automatski"
+          title={t("profil.steps.auto")}
           // Just the level, not a sentence about it: with the number on the
           // right, "Prema tvom nivou aktivnosti (umerena aktivnost)" wrapped to
           // two lines and pushed the figure off-centre.
-          subtitle={activityLabel ?? "Prema tvom nivou aktivnosti"}
+          subtitle={activityLabel ?? t("profil.steps.autoSubtitle")}
           value={formatSteps(automatic)}
           testId="step-goal-auto"
         />
@@ -90,8 +92,8 @@ export function StepGoalForm({
         <ChoiceCard
           selected={mode === "custom"}
           onSelect={() => setMode("custom")}
-          title="Sam biram"
-          subtitle="Postavi broj koji tebi ima smisla"
+          title={t("profil.steps.custom")}
+          subtitle={t("profil.steps.customSubtitle")}
           value={mode === "custom" ? formatSteps(customGoal) : null}
           testId="step-goal-custom"
         >
@@ -100,7 +102,7 @@ export function StepGoalForm({
               <div className="relative">
                 <select
                   id={selectId}
-                  aria-label="Dnevni cilj koraka"
+                  aria-label={t("profil.steps.selectAria")}
                   value={customGoal}
                   onChange={(e) => setCustomGoal(Number(e.target.value))}
                   data-testid="step-goal-select"
@@ -109,7 +111,7 @@ export function StepGoalForm({
                 >
                   {options.map((option) => (
                     <option key={option} value={option}>
-                      {formatSteps(option)} koraka
+                      {t("profil.steps.optionLabel", { steps: formatSteps(option) })}
                     </option>
                   ))}
                 </select>
@@ -128,12 +130,17 @@ export function StepGoalForm({
                   data-testid="step-goal-suggestion"
                   className="self-start text-left text-xs text-muted-foreground underline-offset-4 hover:underline"
                 >
-                  Tvoj prosek ({suggestion.basedOnDays}{" "}
-                  {suggestion.basedOnDays === 1 ? "dan" : "dana"} sa unosom) je{" "}
+                  {t("profil.steps.avgLabel", {
+                    days: suggestion.basedOnDays,
+                    dayWord:
+                      suggestion.basedOnDays === 1
+                        ? t("profil.steps.day")
+                        : t("profil.steps.days"),
+                  })}{" "}
                   <span className="font-medium text-foreground">
                     {formatSteps(suggestion.averageSteps)}
                   </span>
-                  . Predlog:{" "}
+                  {t("profil.steps.suggestLabel")}{" "}
                   <span className="font-medium text-primary">
                     {formatSteps(suggestion.suggestedGoal)}
                   </span>
@@ -151,7 +158,7 @@ export function StepGoalForm({
       ) : null}
       {saved ? (
         <p role="status" className="px-1 text-sm font-medium text-primary">
-          Cilj koraka je sačuvan.
+          {t("profil.steps.saved")}
         </p>
       ) : null}
 
@@ -160,7 +167,7 @@ export function StepGoalForm({
         disabled={pending || saved || unchanged}
         className="h-12 rounded-xl text-base"
       >
-        {pending ? "Čuvam…" : "Sačuvaj cilj"}
+        {pending ? t("profil.saving") : t("profil.saveGoal")}
       </Button>
     </form>
   );

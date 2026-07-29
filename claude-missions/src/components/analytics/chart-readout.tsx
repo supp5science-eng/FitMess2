@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
 // The shared "you tapped a day" read-out used by every chart in Analitika
@@ -43,6 +44,7 @@ export function ChartReadout({
   onClear: () => void;
   testId?: string;
 }) {
+  const { t } = useT();
   return (
     <div
       data-testid={testId}
@@ -68,7 +70,7 @@ export function ChartReadout({
       <button
         type="button"
         onClick={onClear}
-        aria-label="Zatvori detalje dana"
+        aria-label={t("analytics.readout.close")}
         data-testid={`${testId}-clear`}
         className="flex size-8 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
@@ -80,18 +82,19 @@ export function ChartReadout({
 
 /** The same slot when nothing is selected: a quiet invitation to tap. */
 export function ChartHint({
-  children = "Dodirni dan na grafiku da vidiš tačne brojke.",
+  children,
   testId = "chart-hint",
 }: {
   children?: React.ReactNode;
   testId?: string;
 }) {
+  const { t } = useT();
   return (
     <p
       data-testid={testId}
       className="px-1 text-center text-[11px] text-muted-foreground"
     >
-      {children}
+      {children ?? t("analytics.hint.default")}
     </p>
   );
 }

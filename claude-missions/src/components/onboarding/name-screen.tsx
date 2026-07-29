@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/onboarding/field-error";
 import { MAX_NAME_LENGTH, validateName } from "@/lib/onboarding/validation";
@@ -23,9 +24,9 @@ import "./name-screen.css";
 
 const OUTRO_MS = 600; // keep in sync with `ns-out` in name-screen.css
 
-const TITLE_WORDS = ["Kako", "da", "te", "zovemo?"];
-
 export function NameScreen({ onSubmit }: { onSubmit: (name: string) => void }) {
+  const { t } = useT();
+  const TITLE_WORDS = t("onboarding.name.title").split(" ");
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | undefined>(undefined);
   const [leaving, setLeaving] = useState(false);
@@ -66,7 +67,7 @@ export function NameScreen({ onSubmit }: { onSubmit: (name: string) => void }) {
   return (
     <main className={`ns${leaving ? " ns-leaving" : ""}`}>
       <form className="ns-stage" onSubmit={handleSubmit} noValidate>
-        <span className="ns-kicker">Još samo jedna stvar</span>
+        <span className="ns-kicker">{t("onboarding.name.kicker")}</span>
         {/* The words animate as inline-blocks, so the separating spaces MUST
             be their own text nodes between the spans — whitespace inside an
             inline-block collapses away (visually and in the accessible
@@ -87,7 +88,7 @@ export function NameScreen({ onSubmit }: { onSubmit: (name: string) => void }) {
 
         <div className="ns-field">
           <label htmlFor="ime" className="sr-only">
-            Ime
+            {t("onboarding.name.label")}
           </label>
           <input
             ref={inputRef}
@@ -95,7 +96,7 @@ export function NameScreen({ onSubmit }: { onSubmit: (name: string) => void }) {
             name="ime"
             type="text"
             className="ns-input"
-            placeholder="tvoje ime"
+            placeholder={t("onboarding.name.placeholder")}
             autoComplete="given-name"
             autoCapitalize="words"
             enterKeyHint="done"
@@ -109,7 +110,7 @@ export function NameScreen({ onSubmit }: { onSubmit: (name: string) => void }) {
             }}
           />
           <FieldError message={error} id="ime-error" />
-          <p className="ns-hint">Ovako će ti se FitMess obraćati.</p>
+          <p className="ns-hint">{t("onboarding.name.hint")}</p>
         </div>
 
         <div className={`ns-cta${hasName ? " ns-cta-show" : ""}`}>
@@ -118,7 +119,7 @@ export function NameScreen({ onSubmit }: { onSubmit: (name: string) => void }) {
             disabled={leaving}
             className="h-14 w-full rounded-full text-base font-semibold"
           >
-            Nastavi
+            {t("onboarding.continue")}
           </Button>
         </div>
       </form>

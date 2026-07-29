@@ -9,16 +9,16 @@ import { render, screen } from "@testing-library/react";
 import AdminPage from "../page";
 
 describe("AS-059: /admin landing page renders links to every admin sub-area", () => {
-  it("test_AS_059_admin_landing_renders_the_admin_landing_container", () => {
-    render(<AdminPage />);
+  it("test_AS_059_admin_landing_renders_the_admin_landing_container", async () => {
+    render(await AdminPage());
     expect(screen.getByTestId("admin-landing")).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Administracija" })
     ).toBeInTheDocument();
   });
 
-  it("test_AS_059_admin_landing_links_to_hrana_korisnici_and_troskovi", () => {
-    render(<AdminPage />);
+  it("test_AS_059_admin_landing_links_to_hrana_korisnici_and_troskovi", async () => {
+    render(await AdminPage());
 
     expect(screen.getByRole("link", { name: /Hrana/ })).toHaveAttribute(
       "href",

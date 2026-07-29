@@ -4,6 +4,7 @@ import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DIAL_CODES, splitPhone } from "@/lib/auth/dial-codes";
@@ -31,6 +32,7 @@ import { changePhoneAction } from "./actions";
  */
 export function PhoneForm({ phone }: { phone: string | null }) {
   const router = useRouter();
+  const { t } = useT();
   const initial = splitPhone(phone);
 
   const [dialCode, setDialCode] = useState(initial.dialCode);
@@ -53,7 +55,7 @@ export function PhoneForm({ phone }: { phone: string | null }) {
     startTransition(async () => {
       const result = await changePhoneAction({ dialCode, local });
       if (!result.ok) {
-        setError(result.error_sr ?? "Nešto nije uspelo. Pokušaj ponovo.");
+        setError(result.error_sr ?? t("profil.error.generic"));
         return;
       }
       setSaved(true);
@@ -81,7 +83,7 @@ export function PhoneForm({ phone }: { phone: string | null }) {
               id={ccId}
               value={dialCode}
               onChange={(e) => setDialCode(e.target.value)}
-              aria-label="Pozivni broj države"
+              aria-label={t("profil.phone.dialAria")}
               // 16px text (`text-base`): anything smaller makes iOS Safari zoom
               // the page in on focus and never zoom back out.
               className="h-14 appearance-none bg-transparent pl-4 pr-8 text-base text-foreground outline-none"
@@ -103,7 +105,7 @@ export function PhoneForm({ phone }: { phone: string | null }) {
           <input
             id={localId}
             name="phone_local"
-            aria-label="Broj telefona"
+            aria-label={t("settings.phone")}
             type="tel"
             inputMode="numeric"
             placeholder="60 123 4567"
@@ -128,7 +130,7 @@ export function PhoneForm({ phone }: { phone: string | null }) {
           <p className="min-h-4 text-xs text-muted-foreground" aria-live="polite">
             {digits ? (
               <>
-                Sačuvaćemo{" "}
+                {t("profil.phone.willSave")}{" "}
                 <span className="font-medium text-foreground">
                   {dialCode}
                   {digits}
@@ -137,7 +139,7 @@ export function PhoneForm({ phone }: { phone: string | null }) {
             ) : null}
           </p>
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Koristimo ga samo za kontakt — nikad za prijavu i ne šaljemo ti SMS.
+            {t("profil.phone.note")}
           </p>
         </div>
       </section>
@@ -149,7 +151,7 @@ export function PhoneForm({ phone }: { phone: string | null }) {
       ) : null}
       {saved ? (
         <p role="status" className="px-1 text-sm font-medium text-primary">
-          Broj telefona je sačuvan.
+          {t("profil.phone.saved")}
         </p>
       ) : null}
 
@@ -158,7 +160,7 @@ export function PhoneForm({ phone }: { phone: string | null }) {
         disabled={pending || saved || unchanged}
         className="h-12 rounded-xl text-base"
       >
-        {pending ? "Čuvam…" : "Sačuvaj broj"}
+        {pending ? t("profil.saving") : t("profil.phone.submit")}
       </Button>
     </form>
   );

@@ -14,6 +14,7 @@ import {
 
 import { AiThinking } from "@/components/ai/ai-thinking";
 import { CameraCapture } from "@/components/camera/camera-capture";
+import { useT } from "@/components/i18n/locale-provider";
 import {
   scaleMealComponents,
   scaleMealMicros,
@@ -42,12 +43,6 @@ interface Nutrition {
   fat: number;
 }
 
-const CONFIDENCE_LABEL: Record<MealEstimate["sigurnost"], string> = {
-  niska: "Niska sigurnost",
-  srednja: "Srednja sigurnost",
-  visoka: "Visoka sigurnost",
-};
-
 const round1 = (n: number) => Math.round(n * 10) / 10;
 
 /** Read a Blob as base64 (no `data:` prefix) for upload. Client-only. */
@@ -65,6 +60,12 @@ function blobToBase64(blob: Blob): Promise<string> {
 }
 
 export function ObrokFlow() {
+  const { t } = useT();
+  const CONFIDENCE_LABEL: Record<MealEstimate["sigurnost"], string> = {
+    niska: t("dodaj.confidence.low"),
+    srednja: t("dodaj.confidence.medium"),
+    visoka: t("dodaj.confidence.high"),
+  };
   const router = useRouter();
   // Two fallback inputs, used only when the live camera can't run:
   //  - cameraInputRef has `capture="environment"`, so a tap hands off to the
@@ -215,13 +216,13 @@ export function ObrokFlow() {
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Slikaj obrok
+          {t("dodaj.meal.title")}
         </h1>
         <Link
           href="/danas"
           className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          Otkaži
+          {t("dodaj.cancel")}
         </Link>
       </header>
 
@@ -258,7 +259,7 @@ export function ObrokFlow() {
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={previewUrl}
-          alt="Tvoj obrok"
+          alt={t("dodaj.meal.photoAlt")}
           // Small on purpose: on the fast path the photo is confirmation that
           // the right thing was shot, not the content. A tall image pushed the
           // answer -- the whole reason this screen exists -- below the fold.
@@ -275,7 +276,7 @@ export function ObrokFlow() {
           onCapture={(file) => void handlePhoto(file)}
           onCancel={() => router.push("/danas")}
           onPickFromLibrary={() => uploadInputRef.current?.click()}
-          hint="Uslikaj ceo tanjir odozgo"
+          hint={t("dodaj.meal.hint")}
           // A failed estimate drops back here; the message has to ride on the
           // viewfinder, which covers the page's own error slot.
           notice={error}
@@ -291,10 +292,10 @@ export function ObrokFlow() {
               >
                 <Camera className="size-9 text-primary" aria-hidden="true" />
                 <span className="text-base font-medium text-foreground">
-                  Otvori kameru
+                  {t("dodaj.openCamera")}
                 </span>
                 <span className="text-sm text-muted-foreground">
-                  AI će proceniti kalorije i makronutrijente
+                  {t("dodaj.meal.cameraHint")}
                 </span>
               </button>
               <button
@@ -303,7 +304,7 @@ export function ObrokFlow() {
                 className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
               >
                 <ImageUp className="size-4" aria-hidden="true" />
-                Otpremi postojeću sliku
+                {t("dodaj.uploadExisting")}
               </button>
             </div>
           )}
@@ -312,11 +313,11 @@ export function ObrokFlow() {
 
       {phase === "estimating" ? (
         <AiThinking
-          title="Analiziram obrok…"
+          title={t("dodaj.meal.analyzing.title")}
           lines={[
-            "Prepoznajem šta je na tanjiru…",
-            "Procenjujem porciju…",
-            "Računam makronutrijente…",
+            t("dodaj.meal.analyzing.line1"),
+            t("dodaj.meal.analyzing.line2"),
+            t("dodaj.meal.analyzing.line3"),
           ]}
         />
       ) : null}
@@ -334,7 +335,7 @@ export function ObrokFlow() {
           <div className="flex flex-col gap-3 rounded-2xl border border-border bg-muted/40 px-5 py-5">
             <div className="flex items-baseline justify-between gap-3">
               <span className="min-w-0 flex-1 truncate text-lg font-semibold text-foreground">
-                {name || "Obrok"}
+                {name || t("dodaj.meal.defaultName")}
               </span>
               <span className="shrink-0 text-sm text-muted-foreground">
                 {grams} g
@@ -348,19 +349,19 @@ export function ObrokFlow() {
             </div>
             <div className="flex gap-4 text-sm text-muted-foreground">
               <span>
-                P{" "}
+                {t("dodaj.macroAbbr.protein")}{" "}
                 <strong className="font-medium text-foreground">
                   {round1(nutrition.protein)}
                 </strong>
               </span>
               <span>
-                UH{" "}
+                {t("dodaj.macroAbbr.carbs")}{" "}
                 <strong className="font-medium text-foreground">
                   {round1(nutrition.carbs)}
                 </strong>
               </span>
               <span>
-                M{" "}
+                {t("dodaj.macroAbbr.fat")}{" "}
                 <strong className="font-medium text-foreground">
                   {round1(nutrition.fat)}
                 </strong>
@@ -376,7 +377,7 @@ export function ObrokFlow() {
           {isEditing ? (
             <div className="flex flex-col gap-4">
               <label className="flex flex-col gap-1.5">
-                <span className="text-sm font-medium text-foreground">Naziv</span>
+                <span className="text-sm font-medium text-foreground">{t("dodaj.field.name")}</span>
                 <input
                   type="text"
                   value={name}
@@ -387,7 +388,7 @@ export function ObrokFlow() {
 
               <label className="flex flex-col gap-1.5">
                 <span className="text-sm font-medium text-foreground">
-                  Gramaža (g)
+                  {t("dodaj.field.grams")}
                 </span>
                 <input
                   type="number"
@@ -403,23 +404,23 @@ export function ObrokFlow() {
 
               <div className="grid grid-cols-2 gap-3">
                 <MacroField
-                  label="Kalorije"
+                  label={t("dodaj.field.kcal")}
                   value={nutrition.kcal}
                   decimals={0}
                   onChange={(v) => setNutrition((n) => ({ ...n, kcal: v }))}
                 />
                 <MacroField
-                  label="Protein (g)"
+                  label={t("dodaj.field.protein")}
                   value={nutrition.protein}
                   onChange={(v) => setNutrition((n) => ({ ...n, protein: v }))}
                 />
                 <MacroField
-                  label="Ugljeni hidrati (g)"
+                  label={t("dodaj.field.carbs")}
                   value={nutrition.carbs}
                   onChange={(v) => setNutrition((n) => ({ ...n, carbs: v }))}
                 />
                 <MacroField
-                  label="Masti (g)"
+                  label={t("dodaj.field.fat")}
                   value={nutrition.fat}
                   onChange={(v) => setNutrition((n) => ({ ...n, fat: v }))}
                 />
@@ -441,7 +442,7 @@ export function ObrokFlow() {
               {phase === "saving" ? (
                 <Loader2 className="size-5 animate-spin" aria-hidden="true" />
               ) : null}
-              Dodaj u dan
+              {t("dodaj.addToDay")}
             </button>
             <div className="flex gap-2">
               <button
@@ -451,7 +452,7 @@ export function ObrokFlow() {
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
               >
                 <Pencil className="size-4" aria-hidden="true" />
-                {isEditing ? "Sakrij" : "Ispravi"}
+                {isEditing ? t("dodaj.hide") : t("dodaj.correct")}
               </button>
               <button
                 type="button"
@@ -460,7 +461,7 @@ export function ObrokFlow() {
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
               >
                 <Camera className="size-4" aria-hidden="true" />
-                Slikaj ponovo
+                {t("dodaj.retakePhoto")}
               </button>
             </div>
           </div>
@@ -474,7 +475,7 @@ export function ObrokFlow() {
             className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <Target className="size-4 shrink-0 text-primary" aria-hidden="true" />
-            Ne deluje tačno? Probaj Prizmu
+            {t("dodaj.meal.tryPrizma")}
           </Link>
         </div>
       ) : null}

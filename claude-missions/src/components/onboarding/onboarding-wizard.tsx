@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { ProgressIndicator } from "@/components/onboarding/progress-indicator";
 import { SexStep } from "@/components/onboarding/steps/sex-step";
@@ -91,6 +92,7 @@ export function OnboardingWizard({
 }: {
   onComplete: (data: OnboardingData) => void;
 }) {
+  const { t } = useT();
   const [stepIndex, setStepIndex] = useState(0);
   const [data, setData] = useState<OnboardingData>(DEFAULT_ONBOARDING_DATA);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -225,7 +227,7 @@ export function OnboardingWizard({
             onClick={handleBack}
             className="h-14 flex-1 rounded-full text-base font-semibold"
           >
-            Nazad
+            {t("onboarding.wizard.back")}
           </Button>
         ) : null}
         <Button
@@ -233,7 +235,7 @@ export function OnboardingWizard({
           onClick={handleNext}
           className="h-14 flex-1 rounded-full text-base font-semibold"
         >
-          {isLastStep ? "Završi" : "Dalje"}
+          {isLastStep ? t("onboarding.wizard.finish") : t("onboarding.wizard.next")}
         </Button>
       </div>
     </div>

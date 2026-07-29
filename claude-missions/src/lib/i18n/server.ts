@@ -1,6 +1,11 @@
 import { cookies } from "next/headers";
 
-import { LOCALE_COOKIE, resolveLocale, type Locale } from "@/lib/i18n/locale";
+import {
+  DEFAULT_LOCALE,
+  LOCALE_COOKIE,
+  resolveLocale,
+  type Locale,
+} from "@/lib/i18n/locale";
 import { createT, type TFunction } from "@/lib/i18n/translate";
 
 /**
@@ -10,8 +15,15 @@ import { createT, type TFunction } from "@/lib/i18n/translate";
  * `LocaleProvider` + `useT()` hook instead (both resolve from the same cookie).
  */
 export async function getLocale(): Promise<Locale> {
-  const cookieStore = await cookies();
-  return resolveLocale(cookieStore.get(LOCALE_COOKIE)?.value);
+  try {
+    const cookieStore = await cookies();
+    return resolveLocale(cookieStore.get(LOCALE_COOKIE)?.value);
+  } catch {
+    // `cookies()` throws when called outside a request scope -- e.g. a unit
+    // test that renders a server component in isolation. Degrade to the
+    // default language (Serbian) rather than crashing the render.
+    return DEFAULT_LOCALE;
+  }
 }
 
 export async function getT(): Promise<{ locale: Locale; t: TFunction }> {

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { ConfettiCanvas } from "@/components/onboarding/confetti-canvas";
 import { ProgressIndicator } from "@/components/onboarding/progress-indicator";
@@ -211,6 +212,7 @@ export function CommitScreen({
   data: CommitmentInput;
   onCommitted: () => void;
 }) {
+  const { t } = useT();
   const commitment = buildCommitment(data);
   const female = data.sex === "female";
 
@@ -334,11 +336,14 @@ export function CommitScreen({
 
           <div className="space-y-3">
             <h2 className="fm-intro-title text-3xl font-bold tracking-tight">
-              Sve je spremno
+              {t("onboarding.commit.readyTitle")}
             </h2>
             <p className="fm-intro-copy mx-auto max-w-sm text-lg leading-relaxed text-muted-foreground">
-              Ali pre nego što zakoračiš u sve što sledi, moraš nešto da obećaš{" "}
-              <span className="font-semibold text-foreground">sebi</span>.
+              {t("onboarding.commit.promiseIntro")}{" "}
+              <span className="font-semibold text-foreground">
+                {t("onboarding.commit.promiseEmphasis")}
+              </span>
+              .
             </p>
           </div>
 
@@ -367,10 +372,11 @@ export function CommitScreen({
               </svg>
             </span>
             <p className="text-sm leading-relaxed text-muted-foreground">
-              Kad si {female ? "stigla" : "stigao"} dovde, više ne postoji dugme za
-              nazad.{" "}
+              {female
+                ? t("onboarding.commit.noBackF")
+                : t("onboarding.commit.noBackM")}{" "}
               <span className="font-semibold text-foreground">
-                Ili nastavljaš, ili ostaješ na istom.
+                {t("onboarding.commit.noBackEmphasis")}
               </span>
             </p>
           </div>
@@ -381,7 +387,7 @@ export function CommitScreen({
           onClick={() => setPhase("hold")}
           className="fm-intro-cta h-14 w-full rounded-full text-base font-semibold"
         >
-          Nastavi
+          {t("onboarding.continue")}
         </Button>
       </div>
     );
@@ -391,7 +397,7 @@ export function CommitScreen({
     <div className="relative flex flex-1 flex-col gap-6 px-6 py-8">
       <ProgressIndicator currentStep={10} totalSteps={10} />
       <h2 className="text-3xl font-bold tracking-tight text-foreground">
-        Posveti se svom cilju
+        {t("onboarding.commit.pledgeTitle")}
       </h2>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-8">
@@ -420,7 +426,7 @@ export function CommitScreen({
         <button
           ref={buttonRef}
           type="button"
-          aria-label="Pritisni i zadrži da se obavežeš"
+          aria-label={t("onboarding.commit.holdAria")}
           onPointerDown={(e) => {
             e.preventDefault();
             pointerUsedRef.current = true;
@@ -446,7 +452,7 @@ export function CommitScreen({
         </button>
 
         <p className="text-center text-sm font-semibold text-foreground">
-          Pritisni i zadrži
+          {t("onboarding.commit.holdLabel")}
         </p>
       </div>
 
@@ -475,10 +481,10 @@ export function CommitScreen({
             <FingerprintSeal progress={1} holding={false} size={56} />
           </div>
           <h3 className="animate-in fade-in zoom-in-95 text-3xl font-bold text-white duration-500">
-            Posvećeno 🤝
+            {t("onboarding.commit.done")}
           </h3>
           <p className="animate-in fade-in text-lg text-white/80 duration-700">
-            Ovo je prvi korak ka mom cilju.
+            {t("onboarding.commit.doneSub")}
           </p>
         </div>
       ) : null}

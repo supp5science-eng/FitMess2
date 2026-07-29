@@ -1,6 +1,7 @@
 "use client";
 
 import type { GoalType } from "@/lib/types/db";
+import { useT } from "@/components/i18n/locale-provider";
 import { FieldError } from "@/components/onboarding/field-error";
 import {
   IconOptionGroup,
@@ -53,35 +54,6 @@ function GoalIcon({ goal }: { goal: GoalType }) {
   }
 }
 
-const GOAL_OPTIONS: IconOptionItem<GoalType>[] = [
-  {
-    value: "lose",
-    label: "Smršaj",
-    description: "Skini kilograme uz kontrolisan kalorijski deficit.",
-    icon: <GoalIcon goal="lose" />,
-  },
-  {
-    value: "tone",
-    label: "Zategni se",
-    description:
-      "Blagi deficit da izgubiš salo i dobiješ čvrstu, zategnutu liniju.",
-    icon: <GoalIcon goal="tone" />,
-  },
-  {
-    value: "gain",
-    label: "Nabaci mišiće",
-    description:
-      "Kalorijski višak da izgradiš čistu mišićnu masu i postaneš jači.",
-    icon: <GoalIcon goal="gain" />,
-  },
-  {
-    value: "maintain",
-    label: "Održavanje",
-    description: "Zadrži trenutnu težinu i navike.",
-    icon: <GoalIcon goal="maintain" />,
-  },
-];
-
 /** Onboarding step: the user's overall objective. Drives the calorie math
  * (`planForGoal`) and whether the target-weight step is shown next. */
 export function GoalTypeStep({
@@ -93,18 +65,45 @@ export function GoalTypeStep({
   onChange: (value: GoalType) => void;
   error?: string;
 }) {
+  const { t } = useT();
+  const GOAL_OPTIONS: IconOptionItem<GoalType>[] = [
+    {
+      value: "lose",
+      label: t("onboarding.goalType.loseLabel"),
+      description: t("onboarding.goalType.loseDesc"),
+      icon: <GoalIcon goal="lose" />,
+    },
+    {
+      value: "tone",
+      label: t("onboarding.goalType.toneLabel"),
+      description: t("onboarding.goalType.toneDesc"),
+      icon: <GoalIcon goal="tone" />,
+    },
+    {
+      value: "gain",
+      label: t("onboarding.goalType.gainLabel"),
+      description: t("onboarding.goalType.gainDesc"),
+      icon: <GoalIcon goal="gain" />,
+    },
+    {
+      value: "maintain",
+      label: t("onboarding.goalType.maintainLabel"),
+      description: t("onboarding.goalType.maintainDesc"),
+      icon: <GoalIcon goal="maintain" />,
+    },
+  ];
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-xl font-semibold text-foreground">
-          Koji ti je cilj?
+          {t("onboarding.goalType.title")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Po ovome računamo tvoj dnevni unos i prilagođavamo plan.
+          {t("onboarding.goalType.subtitle")}
         </p>
       </div>
       <IconOptionGroup
-        legend="Cilj"
+        legend={t("onboarding.goalType.legend")}
         options={GOAL_OPTIONS}
         value={value}
         onChange={onChange}
@@ -113,12 +112,10 @@ export function GoalTypeStep({
       <FieldError message={error} />
       <div className="rounded-lg border border-border bg-card p-3">
         <p className="text-sm font-medium text-foreground">
-          Zašto tražimo ove podatke?
+          {t("onboarding.goalType.whyTitle")}
         </p>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Koristimo ih isključivo da tvoj plan izračunamo što tačnije, prema
-          tvom cilju — po proverenim naučnim formulama (Mifflin-St Jeor), a ne
-          po nasumičnim brojkama sa interneta.
+          {t("onboarding.goalType.whyBody")}
         </p>
       </div>
     </div>

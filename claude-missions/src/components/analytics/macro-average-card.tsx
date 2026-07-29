@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { ChartHint, ChartReadout } from "@/components/analytics/chart-readout";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import type { MacroDay, MacroWeek } from "@/lib/week/macro-weeks";
 import { cn } from "@/lib/utils";
 
@@ -21,12 +23,19 @@ import { cn } from "@/lib/utils";
 // protein = green, carbs = yellow, fat = red. Bars stack green → yellow → red
 // top-to-bottom (protein, carbs, fat).
 const MACRO = {
-  protein: { color: "var(--macro-protein)", label: "Proteini" },
-  carbs: { color: "var(--macro-carbs)", label: "Ugljeni hidrati" },
-  fat: { color: "var(--macro-fat)", label: "Masti" },
+  protein: { color: "var(--macro-protein)" },
+  carbs: { color: "var(--macro-carbs)" },
+  fat: { color: "var(--macro-fat)" },
 } as const;
 
-const TAB_LABELS = ["Ova nedelja", "Prošla", "Pre 2 ned.", "Pre 3 ned."] as const;
+/** Translated macro legend labels, keyed to the `MACRO` colours above. */
+function macroLabels(t: TFunction): Record<keyof typeof MACRO, string> {
+  return {
+    protein: t("macro.protein"),
+    carbs: t("analytics.macro.carbs"),
+    fat: t("macro.fat"),
+  };
+}
 
 const CHART_HEIGHT = 176; // px
 
@@ -43,14 +52,22 @@ function niceScale(maxValue: number): { step: number; max: number } {
 }
 
 export function MacroAverageCard({ weeks }: { weeks: MacroWeek[] }) {
+  const { t } = useT();
   const [selected, setSelected] = useState(0);
   const [selectedDayKey, setSelectedDayKey] = useState<string | null>(null);
   const week = weeks[selected] ?? weeks[0];
 
+  const tabLabels = [
+    t("analytics.macro.tab.thisWeek"),
+    t("analytics.macro.tab.lastWeek"),
+    t("analytics.macro.tab.twoAgo"),
+    t("analytics.macro.tab.threeAgo"),
+  ];
+
   return (
     <section className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6">
       <h2 className="text-lg font-semibold text-foreground">
-        Dnevni prosek kalorija
+        {t("analytics.macro.title")}
       </h2>
 
       {week ? (
@@ -68,10 +85,10 @@ export function MacroAverageCard({ weeks }: { weeks: MacroWeek[] }) {
       {/* Week selector */}
       <div
         role="tablist"
-        aria-label="Izbor nedelje"
+        aria-label={t("analytics.macro.weekSelector")}
         className="mt-1 flex gap-1 overflow-x-auto rounded-full bg-muted/60 p-1"
       >
-        {TAB_LABELS.map((label, i) => {
+        {tabLabels.map((label, i) => {
           const active = i === selected;
           return (
             <button
@@ -109,6 +126,8 @@ function WeekBody({
   selectedDayKey: string | null;
   onSelectDay: (dayKey: string) => void;
 }) {
+  const { t } = useT();
+  const labels = macroLabels(t);
   const hasData = week.loggedDaysCount > 0;
   const selectedDay =
     week.days.find((d) => d.dayKey === selectedDayKey) ?? null;
@@ -193,7 +212,7 @@ function WeekBody({
         </div>
       ) : (
         <p className="py-8 text-center text-sm text-muted-foreground">
-          Nema unetih obroka u ovoj nedelji.
+          {t("analytics.macro.emptyWeek")}
         </p>
       )}
 
@@ -205,15 +224,15 @@ function WeekBody({
             primary={
               selectedDay.logged
                 ? `${selectedDay.totalKcal.toLocaleString("sr-RS")} kcal`
-                : "Nema unosa"
+                : t("analytics.macro.noEntry")
             }
-            secondary={macroLine(selectedDay)}
+            secondary={macroLine(selectedDay, t)}
             onClear={() => onSelectDay(selectedDay.dayKey)}
             testId="macro-readout"
           />
         ) : (
           <ChartHint testId="macro-hint">
-            Dodirni stubić da vidiš tačan unos tog dana.
+            {t("analytics.macro.hint")}
           </ChartHint>
         )
       ) : null}
@@ -230,7 +249,7 @@ function WeekBody({
               className="size-2.5 rounded-full"
               style={{ backgroundColor: MACRO[key].color }}
             />
-            {MACRO[key].label}
+            {labels[key]}
           </span>
         ))}
       </div>
@@ -239,13 +258,17 @@ function WeekBody({
 }
 
 /** The read-out's second line: the day's macro grams, or why there are none. */
-function macroLine(day: MacroDay): string {
+function macroLine(day: MacroDay, t: TFunction): string {
   if (!day.logged) {
     return day.isFuture
-      ? "Taj dan tek dolazi."
-      : "Tog dana nije unet nijedan obrok.";
+      ? t("analytics.macro.dayFuture")
+      : t("analytics.macro.dayNoMeals");
   }
-  return `P ${day.proteinG} g · UH ${day.carbsG} g · M ${day.fatG} g`;
+  return t("analytics.macro.gramsLine", {
+    protein: day.proteinG,
+    carbs: day.carbsG,
+    fat: day.fatG,
+  });
 }
 
 /** One day's macro-stacked bar, as a button. Segments (top→bottom: protein,
@@ -262,6 +285,7 @@ function DayBar({
   active: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useT();
   const share = (kcal: number) =>
     day.totalKcal > 0 ? `${(kcal / day.totalKcal) * 100}%` : "0%";
 
@@ -276,7 +300,9 @@ function DayBar({
       onClick={onSelect}
       aria-pressed={active}
       aria-label={`${day.longLabel}: ${
-        day.logged ? `${day.totalKcal} kcal` : "nema unosa"
+        day.logged
+          ? `${day.totalKcal} kcal`
+          : t("analytics.macro.aria.noEntry")
       }`}
       data-testid={`macro-bar-${day.dayKey}`}
       className={cn(
@@ -325,9 +351,10 @@ function ChangeBadge({ pct }: { pct: number }) {
 }
 
 function EmptyBody() {
+  const { t } = useT();
   return (
     <p className="py-8 text-center text-sm text-muted-foreground">
-      Počni da beležiš obroke pa ćeš ovde videti svoj dnevni prosek.
+      {t("analytics.macro.emptyAll")}
     </p>
   );
 }

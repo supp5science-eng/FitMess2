@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { getT } from "@/lib/i18n/server";
+
 /**
  * F033: the `/admin` landing page -- reachable only by an `is_admin=true`
  * profile (enforced by `src/app/admin/layout.tsx`'s `requireAdmin()` call,
@@ -10,32 +12,34 @@ import Link from "next/link";
  * 404 for now" precedent F005's bottom nav established for `/nedelja` and
  * `/agent`.
  */
-const ADMIN_SECTIONS = [
-  {
-    href: "/admin/hrana",
-    label: "Hrana",
-    description: "Odobravanje i uređivanje unosa hrane.",
-  },
-  {
-    href: "/admin/korisnici",
-    label: "Korisnici",
-    description: "Pregled i upravljanje korisničkim nalozima.",
-  },
-  {
-    href: "/admin/troskovi",
-    label: "Troškovi",
-    description: "Pregled troškova AI poziva.",
-  },
-] as const;
+export default async function AdminPage() {
+  const { t } = await getT();
 
-export default function AdminPage() {
+  const ADMIN_SECTIONS = [
+    {
+      href: "/admin/hrana",
+      label: t("admin.hrana.title"),
+      description: t("admin.section.hrana.desc"),
+    },
+    {
+      href: "/admin/korisnici",
+      label: t("admin.section.korisnici.label"),
+      description: t("admin.section.korisnici.desc"),
+    },
+    {
+      href: "/admin/troskovi",
+      label: t("admin.section.troskovi.label"),
+      description: t("admin.section.troskovi.desc"),
+    },
+  ] as const;
+
   return (
     <main
       data-testid="admin-landing"
       className="flex flex-1 flex-col gap-6 px-6 py-10"
     >
       <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-        Administracija
+        {t("admin.title")}
       </h1>
       <ul className="flex flex-col gap-3">
         {ADMIN_SECTIONS.map(({ href, label, description }) => (

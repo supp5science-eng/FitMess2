@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 
 // F026 / AS-045: the reusable "delete an existing log entry" confirm.
@@ -15,8 +16,6 @@ import { Button } from "@/components/ui/button";
 // `<LogDeleteConfirm logId={log.id} logName={log.name} onDeleted={...} />`
 // directly onto a meal card -- `onDeleted` is the caller's hook to
 // re-fetch/recompute the day's remaining budget after a successful delete.
-
-const DELETE_FAILED_ERROR_SR = "Nismo uspeli da obrišemo unos. Pokušaj ponovo.";
 
 interface DeleteLogResponseBody {
   ok: boolean;
@@ -35,6 +34,7 @@ export function LogDeleteConfirm({
    * the day's remaining budget. */
   onDeleted?: (logId: string) => void;
 }) {
+  const { t } = useT();
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -60,7 +60,7 @@ export function LogDeleteConfirm({
       const body = (await response.json()) as DeleteLogResponseBody;
 
       if (!response.ok || !body.ok) {
-        setError(body.error_sr || DELETE_FAILED_ERROR_SR);
+        setError(body.error_sr || t("food.logDelete.error"));
         setIsDeleting(false);
         return;
       }
@@ -69,7 +69,7 @@ export function LogDeleteConfirm({
       setIsOpen(false);
       onDeleted?.(logId);
     } catch {
-      setError(DELETE_FAILED_ERROR_SR);
+      setError(t("food.logDelete.error"));
       setIsDeleting(false);
     }
   }
@@ -82,7 +82,7 @@ export function LogDeleteConfirm({
         onClick={openConfirm}
         data-testid="log-delete-open-button"
       >
-        Obriši
+        {t("food.logDelete.open")}
       </Button>
 
       {isOpen ? (
@@ -101,10 +101,10 @@ export function LogDeleteConfirm({
               id="log-delete-confirm-title"
               className="text-lg font-semibold text-foreground"
             >
-              Obrisati unos &ldquo;{logName}&rdquo;?
+              {t("food.logDelete.title", { name: logName })}
             </h2>
             <p className="text-sm text-muted-foreground">
-              Ova radnja se ne može poništiti.
+              {t("food.logDelete.warning")}
             </p>
 
             {error ? (
@@ -125,7 +125,7 @@ export function LogDeleteConfirm({
                 disabled={isDeleting}
                 data-testid="log-delete-cancel-button"
               >
-                Otkaži
+                {t("food.cancel")}
               </Button>
               <Button
                 type="button"
@@ -134,7 +134,9 @@ export function LogDeleteConfirm({
                 disabled={isDeleting}
                 data-testid="log-delete-confirm-button"
               >
-                {isDeleting ? "Brišemo..." : "Obriši"}
+                {isDeleting
+                  ? t("food.logDelete.deleting")
+                  : t("food.logDelete.open")}
               </Button>
             </div>
           </div>

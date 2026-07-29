@@ -5,6 +5,7 @@ import { WeeklyDashboard } from "@/components/weekly/weekly-dashboard";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { bmr, tdee } from "@/lib/budget/engine";
 import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
+import { getT } from "@/lib/i18n/server";
 import { groupLogsByDay } from "@/lib/log/group";
 import { getMealHistory } from "@/lib/log/history";
 import { getMicroHistory } from "@/lib/nutrition/micro-history";
@@ -35,6 +36,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 // `/danas`: expired session, read failure, and no-target-yet each get their own
 // calm Serbian state.
 export default async function NedeljaPage() {
+  const { t } = await getT();
   const supabase = await createClient();
   // Identity comes from the locally-verified access token (`getClaims`), not
   // `auth.getUser()`'s per-navigation network round trip to the Auth server --
@@ -44,9 +46,9 @@ export default async function NedeljaPage() {
   if (!userId) {
     return (
       <RetryErrorState
-        message="Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo."
+        message={t("analytics.error.sessionExpired")}
         href="/prijava"
-        linkLabel="Prijavi se"
+        linkLabel={t("analytics.action.signIn")}
       />
     );
   }
@@ -122,9 +124,9 @@ export default async function NedeljaPage() {
   if (result.error || !result.data) {
     return (
       <RetryErrorState
-        message="Nismo uspeli da učitamo tvoju nedelju. Pokušaj ponovo."
+        message={t("analytics.error.loadWeek")}
         href="/analitika"
-        linkLabel="Pokušaj ponovo"
+        linkLabel={t("analytics.action.retry")}
       />
     );
   }
@@ -135,14 +137,13 @@ export default async function NedeljaPage() {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
         <p className="text-sm text-muted-foreground">
-          Još nemaš plan ishrane. Završi upitnik pa se ovde pojavi tvoja
-          nedelja.
+          {t("analytics.noPlan")}
         </p>
         <Link
           href="/danas"
           className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
         >
-          Nazad na Danas
+          {t("analytics.backToToday")}
         </Link>
       </main>
     );

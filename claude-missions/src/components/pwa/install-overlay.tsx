@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 
 import "./install-overlay.css";
 
@@ -87,19 +90,32 @@ interface BeforeInstallPromptEvent extends Event {
 // icon is NOT in the toolbar — you go ••• (More) → Podeli (Share) → the system
 // share sheet → Dodaj na početni ekran. Verified against the product owner's
 // own on-device screenshots (2026-07). Android/Chrome is the ⋮ menu flow.
-const STEPS: Record<Platform, { key: string; text: React.ReactNode }[]> = {
-  ios: [
-    { key: "more", text: <>Tapni <b>•••</b> u dnu Safari-ja</> },
-    { key: "share", text: <>Izaberi <b>Podeli</b></> },
-    { key: "add", text: <>Tapni <b>Dodaj na početni ekran</b></> },
-    { key: "done", text: <>I <b>FitMess</b> je na tvom ekranu 🎉</> },
-  ],
-  android: [
-    { key: "menu", text: <>Tapni meni <b>⋮</b> gore desno</> },
-    { key: "install", text: <>Izaberi <b>Instaliraj aplikaciju</b></> },
-    { key: "done", text: <>I <b>FitMess</b> je na tvom ekranu 🎉</> },
-  ],
+const STEPS: Record<Platform, { key: string }[]> = {
+  ios: [{ key: "more" }, { key: "share" }, { key: "add" }, { key: "done" }],
+  android: [{ key: "menu" }, { key: "install" }, { key: "done" }],
 };
+
+/** The per-step instruction text, rebuilt from translation keys (the bolded
+ * word is a `<b>` around a separate key, so word order can differ by language). */
+function stepText(platform: Platform, key: string, t: TFunction): ReactNode {
+  switch (`${platform}.${key}`) {
+    case "ios.more":
+      return <>{t("app.pwi.step.ios.more.a")} <b>•••</b> {t("app.pwi.step.ios.more.c")}</>;
+    case "ios.share":
+      return <>{t("app.pwi.step.ios.share.a")} <b>{t("app.pwi.step.ios.share.b")}</b></>;
+    case "ios.add":
+      return <>{t("app.pwi.step.ios.add.a")} <b>{t("app.pwi.step.ios.add.b")}</b></>;
+    case "android.menu":
+      return <>{t("app.pwi.step.android.menu.a")} <b>⋮</b> {t("app.pwi.step.android.menu.c")}</>;
+    case "android.install":
+      return <>{t("app.pwi.step.android.install.a")} <b>{t("app.pwi.step.android.install.b")}</b></>;
+    case "ios.done":
+    case "android.done":
+      return <>{t("app.pwi.step.done.a")} <b>{t("app.pwi.step.done.b")}</b> {t("app.pwi.step.done.c")}</>;
+    default:
+      return null;
+  }
+}
 
 function detectPlatform(): Platform {
   const ua = window.navigator.userAgent;
@@ -170,6 +186,7 @@ export function InstallOverlay({
 }: {
   mode?: InstallOverlayMode;
 } = {}) {
+  const { t } = useT();
   const [visible, setVisible] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [platform, setPlatform] = useState<Platform>("android");
@@ -296,7 +313,7 @@ export function InstallOverlay({
       className={`pwi${leaving ? " pwi-leaving" : ""}`}
       role="dialog"
       aria-modal="true"
-      aria-label="Dodaj FitMess na početni ekran"
+      aria-label={t("app.pwi.ariaLabel")}
     >
       <div className="pwi-glow" aria-hidden="true" />
 
@@ -311,9 +328,9 @@ export function InstallOverlay({
               </svg>
             </span>
           </span>
-          <h2 className="pwi-title">Instalirano! 🎉</h2>
+          <h2 className="pwi-title">{t("app.pwi.done.title")}</h2>
           <p className="pwi-sub">
-            Potraži <b>FitMess</b> na početnom ekranu — tu te čeka tvoj plan.
+            {t("app.pwi.done.a")} <b>{t("app.pwi.done.b")}</b> {t("app.pwi.done.c")}
           </p>
         </div>
       ) : (
@@ -326,15 +343,14 @@ export function InstallOverlay({
           </span>
 
           <h2 className="pwi-title pwi-in pwi-d1">
-            Tvoj plan te čeka <span className="pwi-hi">na jedan tap</span>
+            {t("app.pwi.title.a")} <span className="pwi-hi">{t("app.pwi.title.hi")}</span>
           </h2>
           <p className="pwi-sub pwi-in pwi-d2">
-            Dodaj FitMess na početni ekran — otvara se kao prava aplikacija,
-            bez kucanja adrese.
+            {t("app.pwi.sub")}
           </p>
 
           <div className="pwi-demo pwi-in pwi-d3">
-            <MiniPhone platform={platform} step={step} />
+            <MiniPhone platform={platform} step={step} t={t} />
 
             <ol className="pwi-steps">
               {steps.map((s, i) => (
@@ -349,7 +365,7 @@ export function InstallOverlay({
                     aria-current={i === step ? "step" : undefined}
                   >
                     <span className="pwi-num">{i + 1}</span>
-                    <span className="pwi-step-text">{s.text}</span>
+                    <span className="pwi-step-text">{stepText(platform, s.key, t)}</span>
                   </button>
                 </li>
               ))}
@@ -358,9 +374,9 @@ export function InstallOverlay({
 
           {platform === "ios" ? (
             <p className="pwi-note pwi-in pwi-d4">
-              Ne vidiš „Dodaj na početni ekran”? Skroluj listu ili tapni
+              {t("app.pwi.note.a")}
               {" "}
-              <b>Prikaži još</b>.
+              <b>{t("app.pwi.note.b")}</b>{t("app.pwi.note.c")}
             </p>
           ) : null}
 
@@ -372,11 +388,11 @@ export function InstallOverlay({
                   <path d="m7 12 5 5 5-5" />
                   <path d="M5 21h14" />
                 </svg>
-                Instaliraj aplikaciju
+                {t("app.os.installApp")}
               </button>
             ) : null}
             <button type="button" className="pwi-skip" onClick={close}>
-              Nastavi u pregledaču
+              {t("app.pwi.skip")}
             </button>
           </div>
         </div>
@@ -394,7 +410,7 @@ export function InstallOverlay({
  * home screen. The final home-screen layer is shared and sits at the last
  * step index of whichever platform (iOS: 3, Android: 2).
  */
-function MiniPhone({ platform, step }: { platform: Platform; step: number }) {
+function MiniPhone({ platform, step, t }: { platform: Platform; step: number; t: TFunction }) {
   const lastIndex = STEPS[platform].length - 1;
   return (
     <div className="pwi-phone" data-step={step} data-platform={platform}>
@@ -419,7 +435,7 @@ function MiniPhone({ platform, step }: { platform: Platform; step: number }) {
               <WebLines dim />
               <div className="pwi-menu pwi-menu-br">
                 <div className="pwi-row pwi-target">
-                  <span>Podeli</span>
+                  <span>{t("app.os.share")}</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M12 3v13" />
                     <path d="m8 7 4-4 4 4" />
@@ -427,8 +443,8 @@ function MiniPhone({ platform, step }: { platform: Platform; step: number }) {
                   </svg>
                   <span className="pwi-tap" />
                 </div>
-                <div className="pwi-row">Dodaj obeleživač</div>
-                <div className="pwi-row">Nova kartica</div>
+                <div className="pwi-row">{t("app.os.addBookmark")}</div>
+                <div className="pwi-row">{t("app.os.newTab")}</div>
               </div>
             </div>
             {/* 2: the system share sheet; Dodaj na početni ekran highlighted */}
@@ -444,9 +460,9 @@ function MiniPhone({ platform, step }: { platform: Platform; step: number }) {
                     <span>fitmess.app</span>
                   </span>
                 </div>
-                <div className="pwi-row">Kopiraj</div>
+                <div className="pwi-row">{t("app.os.copy")}</div>
                 <div className="pwi-row pwi-target">
-                  <span>Dodaj na početni ekran</span>
+                  <span>{t("app.os.addToHome")}</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <rect x="4" y="4" width="16" height="16" rx="3" />
                     <path d="M12 9v6M9 12h6" />
@@ -476,9 +492,9 @@ function MiniPhone({ platform, step }: { platform: Platform; step: number }) {
               </div>
               <WebLines dim />
               <div className="pwi-menu">
-                <div className="pwi-row">Nova kartica</div>
+                <div className="pwi-row">{t("app.os.newTab")}</div>
                 <div className="pwi-row pwi-target">
-                  <span>Instaliraj aplikaciju</span>
+                  <span>{t("app.os.installApp")}</span>
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                     <path d="M12 3v12" />
                     <path d="m8 11 4 4 4-4" />
@@ -486,7 +502,7 @@ function MiniPhone({ platform, step }: { platform: Platform; step: number }) {
                   </svg>
                   <span className="pwi-tap" />
                 </div>
-                <div className="pwi-row">Istorija</div>
+                <div className="pwi-row">{t("app.os.history")}</div>
               </div>
             </div>
           </>

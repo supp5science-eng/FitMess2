@@ -5,6 +5,8 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { Camera, Cookie, Plus, Target, UtensilsCrossed, X } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import { cn } from "@/lib/utils";
 
 // F028 / AS-051: "From the home screen, starting any of the logging methods
@@ -49,63 +51,69 @@ interface AddSheetOption {
 // two entry points are no longer offered here. Their routes still EXIST as
 // hidden fallbacks (the barcode scanner's "manual search" escape hatch, the
 // portion flow, etc.), so nothing breaks; they're just no longer advertised.
-const OPTIONS: AddSheetOption[] = [
-  // The highest-accuracy path (guided two angles + the AI's own questions)
-  // leads the menu and carries a teal "NAJTAČNIJE" badge to draw people to it.
-  {
-    key: "najtacnije",
-    label: "Prizma",
-    icon: Target,
-    href: "/dodaj/najtacnije",
-    // Says what you GET, not how it works -- the guided two-angle mechanic is
-    // left for the flow itself to reveal (spelled out here it reads as effort
-    // before anyone has seen the payoff). The number is the promise.
-    // NOTE: 92% is a marketing figure, not a measured one. If we ever publish
-    // it outside this row, back it with a real benchmark first.
-    description: "92% tačnost procene kalorija",
-    badge: "NAJTAČNIJE",
-    badgeTone: "accent",
-  },
-  // The other half of the pair: Prizma buys accuracy with effort, this one buys
-  // speed with a single tap of the shutter. Naming both makes the trade-off the
-  // menu's actual content -- you pick by what you need right now, not by
-  // guessing what the labels mean.
-  {
-    key: "obrok",
-    label: "Slikaj obrok",
-    icon: UtensilsCrossed,
-    href: "/dodaj/obrok",
-    description: "Jedna slika i gotovo",
-    badge: "NAJBRŽE",
-  },
-  // "Reci obrok" (`/dodaj/glas`) was removed from this menu: "Gric" below
-  // already covers speaking your food, and two microphone rows just made people
-  // stop and compare. The route still exists, it is simply no longer offered.
-  //
-  // "Gric" sits below the two photographed MEAL methods because it answers a
-  // different question: not "how do I log this meal accurately" but "how do I
-  // log this at all". A cucumber costs more to photograph than it is worth, so
-  // it goes unlogged and the day's total quietly reads too low.
-  {
-    key: "gric",
-    label: "Gric",
-    icon: Cookie,
-    href: "/dodaj/gric",
-    description: "Sitnice — reci ih sve odjednom, bez slikanja",
-  },
-  {
-    key: "deklaracija",
-    label: "Slikaj deklaraciju",
-    icon: Camera,
-    href: "/dodaj/deklaracija",
-  },
-  // Barcode scanning was dropped from this menu on purpose: a barcode only
-  // yields the per-100g label data the user is already photographing, and it
-  // sat here as a dead "Uskoro" row. The scanner code and its route
-  // (`/dodaj/skener`, still used by the admin food editor) stay in place.
-];
+//
+// "Prizma" and "Gric" are product/feature names kept as-is in both languages.
+function buildOptions(t: TFunction): AddSheetOption[] {
+  return [
+    // The highest-accuracy path (guided two angles + the AI's own questions)
+    // leads the menu and carries a teal "NAJTAČNIJE" badge to draw people to it.
+    {
+      key: "najtacnije",
+      label: "Prizma",
+      icon: Target,
+      href: "/dodaj/najtacnije",
+      // Says what you GET, not how it works -- the guided two-angle mechanic is
+      // left for the flow itself to reveal (spelled out here it reads as effort
+      // before anyone has seen the payoff). The number is the promise.
+      // NOTE: 92% is a marketing figure, not a measured one. If we ever publish
+      // it outside this row, back it with a real benchmark first.
+      description: t("home.addSheet.prizmaDesc"),
+      badge: t("home.addSheet.badge.mostAccurate"),
+      badgeTone: "accent",
+    },
+    // The other half of the pair: Prizma buys accuracy with effort, this one buys
+    // speed with a single tap of the shutter. Naming both makes the trade-off the
+    // menu's actual content -- you pick by what you need right now, not by
+    // guessing what the labels mean.
+    {
+      key: "obrok",
+      label: t("home.addSheet.meal"),
+      icon: UtensilsCrossed,
+      href: "/dodaj/obrok",
+      description: t("home.addSheet.mealDesc"),
+      badge: t("home.addSheet.badge.fastest"),
+    },
+    // "Reci obrok" (`/dodaj/glas`) was removed from this menu: "Gric" below
+    // already covers speaking your food, and two microphone rows just made people
+    // stop and compare. The route still exists, it is simply no longer offered.
+    //
+    // "Gric" sits below the two photographed MEAL methods because it answers a
+    // different question: not "how do I log this meal accurately" but "how do I
+    // log this at all". A cucumber costs more to photograph than it is worth, so
+    // it goes unlogged and the day's total quietly reads too low.
+    {
+      key: "gric",
+      label: "Gric",
+      icon: Cookie,
+      href: "/dodaj/gric",
+      description: t("home.addSheet.gricDesc"),
+    },
+    {
+      key: "deklaracija",
+      label: t("home.addSheet.label"),
+      icon: Camera,
+      href: "/dodaj/deklaracija",
+    },
+    // Barcode scanning was dropped from this menu on purpose: a barcode only
+    // yields the per-100g label data the user is already photographing, and it
+    // sat here as a dead "Uskoro" row. The scanner code and its route
+    // (`/dodaj/skener`, still used by the admin food editor) stay in place.
+  ];
+}
 
 export function AddSheet() {
+  const { t } = useT();
+  const OPTIONS = buildOptions(t);
   const [isOpen, setIsOpen] = useState(false);
 
   function open() {
@@ -124,7 +132,7 @@ export function AddSheet() {
         type="button"
         onClick={open}
         data-testid="add-sheet-open-button"
-        aria-label="Dodaj unos"
+        aria-label={t("home.addSheet.title")}
         aria-haspopup="dialog"
         aria-expanded={isOpen}
         className="liquid-glass pointer-events-auto flex size-14 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
@@ -156,13 +164,13 @@ export function AddSheet() {
                     id="add-sheet-title"
                     className="text-lg font-semibold text-foreground"
                   >
-                    Dodaj unos
+                    {t("home.addSheet.title")}
                   </h2>
                   <button
                     type="button"
                     onClick={close}
                     data-testid="add-sheet-close-button"
-                    aria-label="Zatvori"
+                    aria-label={t("home.close")}
                     className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
                   >
                     <X className="size-5" aria-hidden="true" />

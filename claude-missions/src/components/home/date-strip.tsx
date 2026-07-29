@@ -3,7 +3,9 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 
+import { useT } from "@/components/i18n/locale-provider";
 import type { DayCell } from "@/lib/home/date-strip";
+import type { TFunction } from "@/lib/i18n/translate";
 import { cn } from "@/lib/utils";
 
 // Apple-Fitness-style date strip under the wordmark (2026-07-22 redesign): a
@@ -23,26 +25,12 @@ import { cn } from "@/lib/utils";
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
-const SR_MONTHS_SHORT = [
-  "jan",
-  "feb",
-  "mar",
-  "apr",
-  "maj",
-  "jun",
-  "jul",
-  "avg",
-  "sep",
-  "okt",
-  "nov",
-  "dec",
-];
-
-function accessibleLabel(cell: DayCell): string {
+function accessibleLabel(cell: DayCell, t: TFunction): string {
+  const monthsShort = t("home.dateStrip.monthsShort").split(" ");
   const [, month, day] = cell.key.split("-").map(Number);
-  const date = `${day}. ${SR_MONTHS_SHORT[month! - 1]}`;
-  if (cell.isToday) return `Danas, ${date}`;
-  return cell.isLogged ? `${date} — uneo si obrok` : date;
+  const date = `${day}. ${monthsShort[month! - 1]}`;
+  if (cell.isToday) return t("home.dateStrip.today", { date });
+  return cell.isLogged ? t("home.dateStrip.logged", { date }) : date;
 }
 
 // Mini-ring geometry: a 40px box, ring radius/stroke sized so the day number
@@ -148,6 +136,7 @@ function DayCellInner({ cell }: { cell: DayCell }) {
 }
 
 export function DateStrip({ days }: { days: DayCell[] }) {
+  const { t } = useT();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const selectedRef = useRef<HTMLElement | null>(null);
 
@@ -165,7 +154,7 @@ export function DateStrip({ days }: { days: DayCell[] }) {
   return (
     <div
       ref={scrollerRef}
-      aria-label="Izbor dana"
+      aria-label={t("home.dateStrip.aria")}
       role="navigation"
       className="-mx-1 flex snap-x gap-0.5 overflow-x-auto overscroll-x-contain px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
@@ -189,7 +178,7 @@ export function DateStrip({ days }: { days: DayCell[] }) {
             key={cell.key}
             ref={setRef}
             href={cell.isToday ? "/danas" : `/danas?dan=${cell.key}`}
-            aria-label={accessibleLabel(cell)}
+            aria-label={accessibleLabel(cell, t)}
             aria-current={cell.isSelected ? "page" : undefined}
             className="w-14 shrink-0 snap-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
           >

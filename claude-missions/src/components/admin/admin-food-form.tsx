@@ -7,6 +7,7 @@ import { useState, type FormEvent } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 import { adminFoodInputSchema } from "@/lib/food/admin-foods";
 import type { Food } from "@/lib/types/db";
@@ -56,6 +57,7 @@ export function AdminFoodForm({
   initialBarcode?: string;
 }) {
   const router = useRouter();
+  const { t } = useT();
 
   const [name, setName] = useState(food?.name_sr ?? "");
   const [brand, setBrand] = useState(food?.brand ?? "");
@@ -149,7 +151,7 @@ export function AdminFoodForm({
 
       if (!response.ok || !body.ok || !body.data) {
         setStatus("error");
-        setErrorMessage(body.error_sr || "Nešto je pošlo naopako.");
+        setErrorMessage(body.error_sr || t("admin.form.error.generic"));
         setExistingFoodId(body.existingFoodId);
         return;
       }
@@ -173,7 +175,7 @@ export function AdminFoodForm({
       setUnits([]);
     } catch {
       setStatus("error");
-      setErrorMessage("Nešto je pošlo naopako. Pokušaj ponovo.");
+      setErrorMessage(t("admin.form.error.retry"));
     }
   }
 
@@ -183,50 +185,50 @@ export function AdminFoodForm({
     <form onSubmit={onSubmit} className="flex flex-1 flex-col gap-5" noValidate>
       <Field
         id="admin-food-name"
-        label="Naziv namirnice"
+        label={t("admin.form.name.label")}
         value={name}
         onChange={(v) => {
           setName(v);
           clearFieldError("name_sr");
         }}
         error={fieldErrors.name_sr}
-        placeholder="Npr. Jogurt 2.8% m.m."
+        placeholder={t("admin.form.name.placeholder")}
         required
       />
       <Field
         id="admin-food-brand"
-        label="Brend (opciono)"
+        label={t("admin.form.brand.label")}
         value={brand}
         onChange={(v) => {
           setBrand(v);
           clearFieldError("brand");
         }}
         error={fieldErrors.brand}
-        placeholder="Npr. Imlek"
+        placeholder={t("admin.form.brand.placeholder")}
       />
       <Field
         id="admin-food-barcode"
-        label="Barkod (opciono)"
+        label={t("admin.form.barcode.label")}
         value={barcode}
         onChange={(v) => {
           setBarcode(v);
           clearFieldError("barcode");
         }}
         error={fieldErrors.barcode}
-        placeholder="Npr. 8600000000000"
+        placeholder={t("admin.form.barcode.placeholder")}
         inputMode="numeric"
       />
 
       <div className="flex flex-col gap-1">
-        <h2 className="text-sm font-semibold text-foreground">Vrednosti na 100g</h2>
+        <h2 className="text-sm font-semibold text-foreground">{t("admin.form.per100g.title")}</h2>
         <p className="text-xs text-muted-foreground">
-          Unesi tačne vrednosti sa deklaracije, po 100 grama.
+          {t("admin.form.per100g.desc")}
         </p>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <Field
           id="admin-food-kcal"
-          label="Kalorije (kcal)"
+          label={t("admin.form.kcal.label")}
           value={kcal}
           onChange={(v) => {
             setKcal(v);
@@ -239,7 +241,7 @@ export function AdminFoodForm({
         />
         <Field
           id="admin-food-protein"
-          label="Proteini (g)"
+          label={t("admin.form.protein.label")}
           value={protein}
           onChange={(v) => {
             setProtein(v);
@@ -252,7 +254,7 @@ export function AdminFoodForm({
         />
         <Field
           id="admin-food-carbs"
-          label="Ugljeni hidrati (g)"
+          label={t("admin.form.carbs.label")}
           value={carbs}
           onChange={(v) => {
             setCarbs(v);
@@ -265,7 +267,7 @@ export function AdminFoodForm({
         />
         <Field
           id="admin-food-fat"
-          label="Masti (g)"
+          label={t("admin.form.fat.label")}
           value={fat}
           onChange={(v) => {
             setFat(v);
@@ -282,10 +284,10 @@ export function AdminFoodForm({
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-1">
           <h2 className="text-sm font-semibold text-foreground">
-            Mere porcije (opciono)
+            {t("admin.form.units.title")}
           </h2>
           <p className="text-xs text-muted-foreground">
-            Npr. 1 kriška = 30g, 1 šolja = 240g. Olakšava logovanje porcija.
+            {t("admin.form.units.desc")}
           </p>
         </div>
         {units.map((row, index) => {
@@ -295,10 +297,10 @@ export function AdminFoodForm({
             <div key={index} className="flex items-start gap-2">
               <div className="flex-1">
                 <Input
-                  aria-label={`Naziv mere ${index + 1}`}
+                  aria-label={t("admin.form.unitName.aria", { n: index + 1 })}
                   value={row.label}
                   onChange={(e) => updateUnit(index, { label: e.target.value })}
-                  placeholder="Naziv (npr. kriška)"
+                  placeholder={t("admin.form.unitName.placeholder")}
                   aria-invalid={Boolean(labelErr)}
                 />
                 {labelErr ? (
@@ -309,10 +311,10 @@ export function AdminFoodForm({
               </div>
               <div className="w-28">
                 <Input
-                  aria-label={`Grami mere ${index + 1}`}
+                  aria-label={t("admin.form.unitGrams.aria", { n: index + 1 })}
                   value={row.grams}
                   onChange={(e) => updateUnit(index, { grams: e.target.value })}
-                  placeholder="grama"
+                  placeholder={t("admin.form.unitGrams.placeholder")}
                   type="number"
                   inputMode={DECIMAL}
                   aria-invalid={Boolean(gramsErr)}
@@ -327,7 +329,7 @@ export function AdminFoodForm({
                 type="button"
                 variant="ghost"
                 size="icon"
-                aria-label={`Obriši meru ${index + 1}`}
+                aria-label={t("admin.form.unitRemove.aria", { n: index + 1 })}
                 onClick={() => removeUnit(index)}
               >
                 ✕
@@ -342,7 +344,7 @@ export function AdminFoodForm({
           onClick={addUnit}
           className="self-start"
         >
-          + Dodaj meru
+          + {t("admin.form.addUnit")}
         </Button>
       </div>
 
@@ -356,7 +358,7 @@ export function AdminFoodForm({
               href={`/admin/hrana/${existingFoodId}`}
               className="text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
-              Otvori postojeći proizvod
+              {t("admin.form.openExisting")}
             </Link>
           ) : null}
         </div>
@@ -367,7 +369,7 @@ export function AdminFoodForm({
           role="status"
           className="rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-medium text-primary"
         >
-          Sačuvano ✓ Forma je ispražnjena za sledeći proizvod.
+          {t("admin.form.saved")}
         </p>
       ) : null}
 
@@ -378,16 +380,16 @@ export function AdminFoodForm({
           className="flex-1"
         >
           {status === "saving"
-            ? "Čuvanje..."
+            ? t("admin.saving")
             : mode === "create"
-              ? "Sačuvaj (provereno)"
-              : "Sačuvaj izmene"}
+              ? t("admin.form.submitCreate")
+              : t("admin.form.submitEdit")}
         </Button>
         <Link
           href="/admin/hrana"
           className={cn(buttonVariants({ variant: "outline" }))}
         >
-          Nazad
+          {t("admin.back")}
         </Link>
       </div>
     </form>

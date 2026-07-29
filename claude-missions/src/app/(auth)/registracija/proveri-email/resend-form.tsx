@@ -3,6 +3,8 @@
 import { useActionState, useEffect, useState } from "react";
 import { useFormStatus } from "react-dom";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import { resendAction, type AuthFormState } from "../../actions";
 
 const initialState: AuthFormState = null;
@@ -14,9 +16,11 @@ const COOLDOWN_SECONDS = 60;
 function ResendButton({
   cooldown,
   onStart,
+  t,
 }: {
   cooldown: number;
   onStart: () => void;
+  t: TFunction;
 }) {
   const { pending } = useFormStatus();
   const waiting = cooldown > 0;
@@ -30,10 +34,10 @@ function ResendButton({
       onClick={onStart}
     >
       {pending
-        ? "Slanje…"
+        ? t("auth.sending")
         : waiting
-          ? `Pošalji ponovo (${cooldown}s)`
-          : "Pošalji ponovo"}
+          ? t("auth.resend.retryIn", { seconds: cooldown })
+          : t("auth.resend.retry")}
     </button>
   );
 }
@@ -56,6 +60,7 @@ export function ResendForm({
 }) {
   const [state, formAction] = useActionState(resendAction, initialState);
   const [cooldown, setCooldown] = useState(initialCooldown);
+  const { t } = useT();
 
   // Tick the countdown down to zero. Setting state inside the timer callback
   // (not synchronously in the effect body) is the intended, lint-clean pattern.
@@ -73,12 +78,11 @@ export function ResendForm({
       <ResendButton
         cooldown={cooldown}
         onStart={() => setCooldown(COOLDOWN_SECONDS)}
+        t={t}
       />
       {state ? (
         <p role="status" className={state.ok ? "auth-notice" : "auth-error"}>
-          {state.ok
-            ? "Poslali smo novi link za potvrdu na tvoj email. Proveri i „Spam“ / „Promocije“ folder."
-            : state.error_sr}
+          {state.ok ? t("auth.resend.success") : state.error_sr}
         </p>
       ) : null}
     </form>

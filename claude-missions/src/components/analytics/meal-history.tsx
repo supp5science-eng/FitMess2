@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 
 import { MealHistoryRow } from "@/components/analytics/meal-history-row";
+import { useT } from "@/components/i18n/locale-provider";
 import type { DayGroup } from "@/lib/log/group";
 
 // F041 "Svi obroci" section at the bottom of `/analitika`: a collapsible
@@ -40,6 +41,7 @@ export function MealHistory({
   recentGroups: DayGroup[];
   olderGroups: DayGroup[];
 }) {
+  const { t } = useT();
   const [open, setOpen] = useState(true);
   const [showOlder, setShowOlder] = useState(false);
 
@@ -54,7 +56,7 @@ export function MealHistory({
         className="flex items-center justify-between gap-2 text-left"
       >
         <span className="text-base font-semibold text-foreground">
-          Svi obroci
+          {t("analytics.mealHistory.title")}
         </span>
         <ChevronDown
           aria-hidden="true"
@@ -70,8 +72,7 @@ export function MealHistory({
             data-testid="meal-history-empty"
             className="py-4 text-sm text-muted-foreground"
           >
-            Još nemaš unetih obroka. Kad počneš da unosiš, ovde ti stoji
-            istorija poslednjih 30 dana.
+            {t("analytics.mealHistory.empty")}
           </p>
         ) : (
           <div className="flex flex-col gap-4">
@@ -86,7 +87,7 @@ export function MealHistory({
                 onClick={() => setShowOlder(true)}
                 className="mt-1 inline-flex items-center justify-center rounded-full border border-border bg-background px-5 py-2.5 text-sm font-medium text-foreground active:bg-muted"
               >
-                Prikaži više
+                {t("analytics.mealHistory.showMore")}
               </button>
             ) : null}
 

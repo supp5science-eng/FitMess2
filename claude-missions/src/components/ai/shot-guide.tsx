@@ -1,3 +1,7 @@
+"use client";
+
+import { useT } from "@/components/i18n/locale-provider";
+
 import "./shot-guide.css";
 
 /**
@@ -18,6 +22,7 @@ import "./shot-guide.css";
  * under `prefers-reduced-motion`.
  */
 export function ShotGuide({ variant }: { variant: "top" | "angle" }) {
+  const { t } = useT();
   const isTop = variant === "top";
 
   return (
@@ -28,8 +33,8 @@ export function ShotGuide({ variant }: { variant: "top" | "angle" }) {
         role="img"
         aria-label={
           isTop
-            ? "Animacija: telefon stoji ravno iznad tanjira i slika pravo odozgo, viljuška leži pored tanjira"
-            : "Animacija: telefon se spušta po luku i naginje na 45 stepeni da uslika tanjir sa strane"
+            ? t("media.shotGuide.topAria")
+            : t("media.shotGuide.angleAria")
         }
       >
         {/* The table line, so the plate and fork read as lying on something. */}

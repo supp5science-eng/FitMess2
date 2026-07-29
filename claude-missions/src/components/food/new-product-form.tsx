@@ -5,6 +5,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { Camera, Loader2, Upload } from "lucide-react";
 
 import { PortionPicker } from "@/components/food/portion-picker";
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,9 +44,6 @@ import type { Food } from "@/lib/types/db";
 // form state until `POST /api/foods` (F032) persists it.
 
 const DECIMAL_INPUT_MODE = "decimal" as const;
-
-const LABEL_READ_FAILED_ERROR_SR =
-  "Nismo uspeli da pročitamo deklaraciju. Uslikaj tabelu izbliza i pokušaj ponovo.";
 
 type FormStatus = "idle" | "saving" | "error";
 type LabelPhase = "idle" | "reading";
@@ -112,6 +110,7 @@ export function NewProductForm({
    * uses this to show its own success screen). */
   onCreated?: (food: Food) => void;
 }) {
+  const { t } = useT();
   const [name, setName] = useState(initialName ?? "");
   const [brand, setBrand] = useState(initialBrand ?? "");
   const [barcode, setBarcode] = useState(initialBarcode ?? "");
@@ -185,7 +184,7 @@ export function NewProductForm({
       setStatus("idle");
       setLabelPhase("idle");
     } catch {
-      setLabelError(LABEL_READ_FAILED_ERROR_SR);
+      setLabelError(t("food.newProduct.labelReadError"));
       setLabelPhase("idle");
     }
   }
@@ -275,11 +274,10 @@ export function NewProductForm({
         >
           <div className="flex flex-col gap-0.5">
             <h2 className="text-sm font-semibold text-foreground">
-              Popuni sa deklaracije
+              {t("food.newProduct.fillFromLabel")}
             </h2>
             <p className="text-xs text-muted-foreground">
-              Slikaj ili otpremi nutritivnu tabelu — AI popuni vrednosti, ti
-              samo proveriš.
+              {t("food.newProduct.fillFromLabelDesc")}
             </p>
           </div>
 
@@ -315,7 +313,7 @@ export function NewProductForm({
               data-testid="novi-proizvod-label-reading"
             >
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-              <span>Čitam deklaraciju…</span>
+              <span>{t("food.newProduct.readingLabel")}</span>
             </div>
           ) : (
             <div className="flex gap-2">
@@ -327,7 +325,7 @@ export function NewProductForm({
                 onClick={() => cameraInputRef.current?.click()}
               >
                 <Camera aria-hidden="true" />
-                Slikaj
+                {t("food.newProduct.photo")}
               </Button>
               <Button
                 type="button"
@@ -337,7 +335,7 @@ export function NewProductForm({
                 onClick={() => uploadInputRef.current?.click()}
               >
                 <Upload aria-hidden="true" />
-                Otpremi
+                {t("food.newProduct.upload")}
               </Button>
             </div>
           )}
@@ -356,69 +354,69 @@ export function NewProductForm({
 
       <FormField
         id="novi-proizvod-name-input"
-        label="Naziv namirnice"
+        label={t("food.newProduct.nameLabel")}
         value={name}
         onChange={(value) => {
           setName(value);
           clearFieldError("name_sr");
         }}
         error={fieldErrors.name_sr}
-        placeholder="Npr. Jogurt, Smoki, čips"
+        placeholder={t("food.newProduct.namePlaceholder")}
         required
       />
 
       <FormField
         id="novi-proizvod-brand-input"
-        label="Brend (opciono)"
+        label={t("food.newProduct.brandLabel")}
         value={brand}
         onChange={(value) => {
           setBrand(value);
           clearFieldError("brand");
         }}
         error={fieldErrors.brand}
-        placeholder="Npr. Podravka"
+        placeholder={t("food.newProduct.brandPlaceholder")}
       />
 
       <FormField
         id="novi-proizvod-barcode-input"
-        label="Barkod (opciono)"
+        label={t("food.newProduct.barcodeLabel")}
         value={barcode}
         onChange={(value) => {
           setBarcode(value);
           clearFieldError("barcode");
         }}
         error={fieldErrors.barcode}
-        placeholder="Npr. 5901234123457"
+        placeholder={t("food.newProduct.barcodePlaceholder")}
         inputMode="numeric"
       />
 
       <FormField
         id="novi-proizvod-price-input"
-        label="Cena (RSD, opciono)"
+        label={t("food.newProduct.priceLabel")}
         value={price}
         onChange={(value) => {
           setPrice(value);
           clearFieldError("price");
         }}
         error={fieldErrors.price}
-        placeholder="Npr. 149.99"
+        placeholder={t("food.newProduct.pricePlaceholder")}
         type="number"
         inputMode={DECIMAL_INPUT_MODE}
       />
 
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-semibold text-foreground">
-          Vrednosti na 100g
+          {t("food.newProduct.per100gHeading")}
         </h2>
         <p className="text-xs text-muted-foreground">
-          Unesi vrednosti sa deklaracije proizvoda, po 100 grama.
+          {t("food.newProduct.per100gDesc")}
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <FormField
           id="novi-proizvod-kcal-input"
-          label="Kalorije (kcal)"
+          label={t("food.newProduct.kcalLabel")}
           value={kcal}
           onChange={(value) => {
             setKcal(value);
@@ -431,7 +429,7 @@ export function NewProductForm({
         />
         <FormField
           id="novi-proizvod-protein-input"
-          label="Proteini (g)"
+          label={t("food.newProduct.proteinLabel")}
           value={protein}
           onChange={(value) => {
             setProtein(value);
@@ -444,7 +442,7 @@ export function NewProductForm({
         />
         <FormField
           id="novi-proizvod-carbs-input"
-          label="Ugljeni hidrati (g)"
+          label={t("food.newProduct.carbsLabel")}
           value={carbs}
           onChange={(value) => {
             setCarbs(value);
@@ -457,7 +455,7 @@ export function NewProductForm({
         />
         <FormField
           id="novi-proizvod-fat-input"
-          label="Masti (g)"
+          label={t("food.newProduct.fatLabel")}
           value={fat}
           onChange={(value) => {
             setFat(value);
@@ -488,7 +486,7 @@ export function NewProductForm({
               data-testid="novi-proizvod-open-existing"
               className="text-sm font-medium text-primary underline-offset-4 hover:underline"
             >
-              Otvori postojeći proizvod
+              {t("food.newProduct.openExisting")}
             </Link>
           ) : null}
         </div>
@@ -500,7 +498,9 @@ export function NewProductForm({
         disabled={status === "saving"}
         className="w-full"
       >
-        {status === "saving" ? "Čuvanje..." : "Sačuvaj proizvod"}
+        {status === "saving"
+          ? t("food.portion.saving")
+          : t("food.newProduct.submit")}
       </Button>
     </form>
   );

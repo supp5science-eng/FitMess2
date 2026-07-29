@@ -9,6 +9,8 @@ import {
   type LensOption,
 } from "@/lib/camera/lenses";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import { cn } from "@/lib/utils";
 
 /**
@@ -41,26 +43,19 @@ import { cn } from "@/lib/utils";
 const MAX_EDGE = 1920;
 const JPEG_QUALITY = 0.92;
 
-const DENIED_SR =
-  "Nema pristupa kameri. Dozvoli kameru u podešavanjima pregledača, ili otpremi postojeću sliku.";
-const NO_CAMERA_SR =
-  "Ne vidimo kameru na ovom uređaju. Otpremi postojeću sliku.";
-const GENERIC_SR =
-  "Kamera trenutno nije dostupna. Otpremi postojeću sliku.";
-
-function messageForCameraError(error: unknown): string {
+function messageForCameraError(error: unknown, t: TFunction): string {
   const name = error instanceof DOMException ? error.name : undefined;
   if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-    return DENIED_SR;
+    return t("media.camera.denied");
   }
   if (
     name === "NotFoundError" ||
     name === "DevicesNotFoundError" ||
     name === "OverconstrainedError"
   ) {
-    return NO_CAMERA_SR;
+    return t("media.camera.noCamera");
   }
-  return GENERIC_SR;
+  return t("media.camera.generic");
 }
 
 type Status = "starting" | "live" | "unavailable";
@@ -96,10 +91,11 @@ export function CameraCapture({
   notice,
   fallback,
 }: CameraCaptureProps) {
+  const { t } = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [status, setStatus] = useState<Status>("starting");
-  const [reason, setReason] = useState<string>(GENERIC_SR);
+  const [reason, setReason] = useState<string>(() => t("media.camera.generic"));
   // Lens/zoom stops this phone can actually honour, discovered from the live
   // track (see `buildLensOptions`). Empty on devices that offer no real choice,
   // and then no switcher is rendered at all.
@@ -127,7 +123,7 @@ export function CameraCapture({
 
       if (!mediaDevices || typeof mediaDevices.getUserMedia !== "function") {
         if (!cancelled) {
-          setReason(NO_CAMERA_SR);
+          setReason(t("media.camera.noCamera"));
           setStatus("unavailable");
         }
         return;
@@ -154,7 +150,7 @@ export function CameraCapture({
         });
       } catch (error) {
         if (!cancelled) {
-          setReason(messageForCameraError(error));
+          setReason(messageForCameraError(error, t));
           setStatus("unavailable");
         }
         return;
@@ -213,7 +209,7 @@ export function CameraCapture({
     };
     // `deviceId` restarts the stream on another physical lens; zoom does not
     // (it is applied to the running track).
-  }, [stopStream, deviceId]);
+  }, [stopStream, deviceId, t]);
 
   async function selectLens(option: LensOption) {
     if (option.deviceId !== undefined) {
@@ -264,7 +260,7 @@ export function CameraCapture({
       (blob) => {
         if (!blob) {
           setFlashing(false);
-          setReason(GENERIC_SR);
+          setReason(t("media.camera.generic"));
           setStatus("unavailable");
           return;
         }
@@ -298,7 +294,7 @@ export function CameraCapture({
       {status === "starting" ? (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/70">
           <Loader2 className="size-7 animate-spin" aria-hidden="true" />
-          <span className="text-sm">Otvaram kameru…</span>
+          <span className="text-sm">{t("media.camera.opening")}</span>
         </div>
       ) : null}
 
@@ -314,7 +310,7 @@ export function CameraCapture({
         <button
           type="button"
           onClick={onCancel}
-          aria-label="Otkaži"
+          aria-label={t("media.camera.cancel")}
           className="flex size-11 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm"
         >
           <X className="size-6" aria-hidden="true" />
@@ -345,7 +341,7 @@ export function CameraCapture({
         <div
           data-testid="camera-lenses"
           role="group"
-          aria-label="Sočivo"
+          aria-label={t("media.camera.lens")}
           className="relative mx-auto mb-4 flex items-center gap-1 rounded-full bg-black/45 p-1 backdrop-blur-sm"
         >
           {lenses.map((option) => {
@@ -378,7 +374,7 @@ export function CameraCapture({
           <button
             type="button"
             onClick={onPickFromLibrary}
-            aria-label="Otpremi postojeću sliku"
+            aria-label={t("media.camera.uploadExisting")}
             className="flex size-12 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm"
           >
             <ImageUp className="size-5" aria-hidden="true" />
@@ -392,7 +388,7 @@ export function CameraCapture({
           onClick={capture}
           disabled={status !== "live"}
           data-testid="camera-shutter"
-          aria-label="Slikaj"
+          aria-label={t("media.camera.takePhoto")}
           className="flex size-[74px] items-center justify-center rounded-full border-[5px] border-white/85 bg-white/25 transition-transform active:scale-95 disabled:opacity-40"
         >
           <span className="size-[54px] rounded-full bg-white" />

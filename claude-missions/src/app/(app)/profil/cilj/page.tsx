@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react";
 
 import { bmr, tdee } from "@/lib/budget/engine";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import type { GoalType } from "@/lib/types/db";
 
@@ -15,6 +16,7 @@ import { GoalForm } from "./goal-form";
 // "Lični podaci" rather than rendering a broken form.
 export default async function CiljPage() {
   const supabase = await createClient();
+  const { t } = await getT();
   const currentUser = await getCurrentUser(supabase);
 
   const backLink = (
@@ -23,7 +25,7 @@ export default async function CiljPage() {
       className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
     >
       <ChevronLeft className="size-4" aria-hidden={true} />
-      Podešavanja
+      {t("settings.title")}
     </Link>
   );
 
@@ -32,7 +34,7 @@ export default async function CiljPage() {
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-5 px-5 py-8">
         {backLink}
         <p className="text-sm text-muted-foreground">
-          Sesija je istekla. Prijavi se ponovo.
+          {t("profil.sessionExpired")}
         </p>
       </main>
     );
@@ -66,16 +68,16 @@ export default async function CiljPage() {
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-5 px-5 py-8">
         {backLink}
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Cilj i plan
+          {t("settings.goal")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Prvo popuni lične podatke pa ćeš moći da postaviš cilj.
+          {t("profil.goal.completeFirst")}
         </p>
         <Link
           href="/profil/podaci"
           className="inline-flex w-fit items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
         >
-          Lični podaci
+          {t("settings.personal")}
         </Link>
       </main>
     );
@@ -95,10 +97,10 @@ export default async function CiljPage() {
       {backLink}
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Cilj i plan
+          {t("settings.goal")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Trenutna težina: {profile.weight_kg} kg
+          {t("profil.goal.currentWeight", { weight: profile.weight_kg! })}
         </p>
       </div>
 

@@ -14,6 +14,7 @@ import {
 
 import { ExportDownloadButton } from "@/components/settings/export-download-button";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { exportErrorText } from "@/lib/export/error-messages";
 import { collectExportSummary, formatMemberSince } from "@/lib/export/summary";
 import { createClient } from "@/lib/supabase/server";
@@ -47,6 +48,7 @@ export default async function MojiPodaciPage({
   searchParams: Promise<{ greska?: string }>;
 }) {
   const { greska } = await searchParams;
+  const { t } = await getT();
   // Only reachable if someone opens `/api/export*` directly (or an old cached
   // link): the buttons below never navigate, they report failures inline.
   const errorText = greska ? exportErrorText(greska) : null;
@@ -60,7 +62,7 @@ export default async function MojiPodaciPage({
       className="inline-flex items-center gap-1 self-start text-sm text-muted-foreground hover:text-foreground"
     >
       <ChevronLeft className="size-4" aria-hidden={true} />
-      Podešavanja
+      {t("settings.title")}
     </Link>
   );
 
@@ -69,7 +71,7 @@ export default async function MojiPodaciPage({
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-5 px-5 py-8">
         {backLink}
         <p role="alert" className="text-sm text-muted-foreground">
-          Sesija je istekla. Prijavi se ponovo.
+          {t("profil.sessionExpired")}
         </p>
       </main>
     );
@@ -88,10 +90,10 @@ export default async function MojiPodaciPage({
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Moji podaci
+          {t("settings.mydata")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Ovo je sve što čuvamo o tebi.
+          {t("profil.mydata.subtitle")}
         </p>
       </div>
 
@@ -106,9 +108,9 @@ export default async function MojiPodaciPage({
       ) : null}
 
       <section className="flex flex-col divide-y divide-border rounded-xl border border-border bg-card">
-        <Row icon={Mail} label="Nalog" value={summary.email ?? "—"} />
+        <Row icon={Mail} label={t("profil.mydata.account")} value={summary.email ?? "—"} />
         {memberSince ? (
-          <Row icon={CircleCheck} label="Sa nama od" value={memberSince} />
+          <Row icon={CircleCheck} label={t("profil.mydata.memberSince")} value={memberSince} />
         ) : null}
       </section>
 
@@ -139,16 +141,13 @@ export default async function MojiPodaciPage({
           href="/api/export/pdf"
           contentType="application/pdf"
           fallbackFilename="fitmess-moji-podaci.pdf"
-          label="Preuzmi PDF"
-          readyLabel="Sačuvaj PDF"
-          doneText="PDF je sačuvan."
+          label={t("profil.mydata.pdfLabel")}
+          readyLabel={t("profil.mydata.pdfReady")}
+          doneText={t("profil.mydata.pdfDone")}
           testId="export-pdf-link"
         />
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Uredan izveštaj koji možeš otvoriti na telefonu, odštampati ili
-          proslediti lekaru/treneru. Same slike obroka nisu u njemu — brišu se
-          automatski otprilike dan po unosu, a kalorije i makroi tog obroka
-          ostaju u tabeli unosa.
+          {t("profil.mydata.pdfNote")}
         </p>
 
         {/* Kept for people (or apps) that want the machine-readable form --
@@ -157,17 +156,16 @@ export default async function MojiPodaciPage({
           href="/api/export"
           contentType="application/json"
           fallbackFilename="fitmess-podaci.json"
-          label="Preuzmi i .json (za prenos u drugu aplikaciju)"
-          readyLabel="Sačuvaj .json"
-          doneText=".json je sačuvan."
+          label={t("profil.mydata.jsonLabel")}
+          readyLabel={t("profil.mydata.jsonReady")}
+          doneText={t("profil.mydata.jsonDone")}
           variant="quiet"
           testId="export-download-link"
         />
       </div>
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Ako želiš da sve ovo nestane, u Podešavanjima postoji „Obriši nalog“ —
-        briše nalog i sve podatke iz tabele iznad.
+        {t("profil.mydata.deleteNote")}
       </p>
     </main>
   );

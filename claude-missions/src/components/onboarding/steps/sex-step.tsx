@@ -1,6 +1,7 @@
 "use client";
 
 import type { Sex } from "@/lib/types/db";
+import { useT } from "@/components/i18n/locale-provider";
 import { FieldError } from "@/components/onboarding/field-error";
 import { IconOptionGroup } from "@/components/onboarding/icon-option-group";
 
@@ -33,11 +34,6 @@ function SexIcon({ sex }: { sex: Sex }) {
   );
 }
 
-const SEX_OPTIONS: { value: Sex; label: string; icon: React.ReactNode }[] = [
-  { value: "male", label: "Muško", icon: <SexIcon sex="male" /> },
-  { value: "female", label: "Žensko", icon: <SexIcon sex="female" /> },
-];
-
 /** F015 step 1 (pol) -- AS-019: collects sex. Icon-card single-select (a gender
  *  glyph, the label, and a radio dot); the picked card gets a bold border. */
 export function SexStep({
@@ -49,18 +45,27 @@ export function SexStep({
   onChange: (value: Sex) => void;
   error?: string;
 }) {
+  const { t } = useT();
+  const SEX_OPTIONS: { value: Sex; label: string; icon: React.ReactNode }[] = [
+    { value: "male", label: t("onboarding.sex.male"), icon: <SexIcon sex="male" /> },
+    {
+      value: "female",
+      label: t("onboarding.sex.female"),
+      icon: <SexIcon sex="female" />,
+    },
+  ];
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-xl font-semibold text-foreground">
-          Koji je tvoj pol?
+          {t("onboarding.sex.title")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Ovo nam pomaže da tačnije izračunamo tvoje potrebe za kalorijama.
+          {t("onboarding.sex.subtitle")}
         </p>
       </div>
       <IconOptionGroup
-        legend="Pol"
+        legend={t("onboarding.sex.legend")}
         options={SEX_OPTIONS}
         value={value}
         onChange={onChange}

@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 // "Osveži aplikaciju": a PWA cache-buster. Installed PWAs aggressively serve
 // the cached app shell, so after a deploy users can keep seeing an old build
 // until the service worker updates -- a recurring confusion. This clears the
@@ -10,6 +12,7 @@ import { RefreshCw } from "lucide-react";
 // freshest build loads. Styled as a settings row (matches SettingsLinkRow) but
 // needs client JS, so it's its own button.
 export function RefreshAppButton() {
+  const { t } = useT();
   const [busy, setBusy] = useState(false);
 
   async function handleRefresh() {
@@ -47,10 +50,10 @@ export function RefreshAppButton() {
         </span>
         <div className="flex min-w-0 flex-1 flex-col">
           <span className="truncate text-sm font-medium text-foreground">
-            {busy ? "Osvežavam…" : "Osveži aplikaciju"}
+            {busy ? t("app.refresh.busy") : t("app.refresh.label")}
           </span>
           <span className="truncate text-xs text-muted-foreground">
-            Učitaj najnoviju verziju
+            {t("app.refresh.desc")}
           </span>
         </div>
       </div>

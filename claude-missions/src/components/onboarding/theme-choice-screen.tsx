@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { applyTheme, type Theme } from "@/lib/theme/theme";
 import "./name-screen.css";
@@ -25,8 +26,6 @@ import "./theme-choice-screen.css";
  */
 
 const OUTRO_MS = 600; // keep in sync with `ns-out` in name-screen.css
-
-const TITLE_WORDS = ["Svetla", "ili", "tamna?"];
 
 function CheckIcon() {
   return (
@@ -79,6 +78,8 @@ export function ThemeChoiceScreen({
 }: {
   onSubmit: (theme: Theme) => void;
 }) {
+  const { t } = useT();
+  const TITLE_WORDS = t("onboarding.theme.title").split(" ");
   const [selected, setSelected] = useState<Theme>("light");
   const [leaving, setLeaving] = useState(false);
   const submittedRef = useRef(false);
@@ -119,13 +120,13 @@ export function ThemeChoiceScreen({
   }[] = [
     {
       value: "light",
-      label: "Svetla",
+      label: t("theme.light"),
       icon: <SunIcon />,
       previewClass: "tc-preview-light",
     },
     {
       value: "dark",
-      label: "Tamna",
+      label: t("theme.dark"),
       icon: <MoonIcon />,
       previewClass: "tc-preview-dark",
     },
@@ -134,7 +135,7 @@ export function ThemeChoiceScreen({
   return (
     <main className={`ns${leaving ? " ns-leaving" : ""}`}>
       <div className="ns-stage">
-        <span className="ns-kicker">Još samo izgled</span>
+        <span className="ns-kicker">{t("onboarding.theme.kicker")}</span>
         <h1 className="ns-title">
           {TITLE_WORDS.map((word, i) => (
             <React.Fragment key={word}>
@@ -149,13 +150,13 @@ export function ThemeChoiceScreen({
           ))}
         </h1>
         <p className="ns-hint" style={{ animationDelay: "0.75s" }}>
-          Uvek možeš da promeniš kasnije u podešavanjima.
+          {t("onboarding.theme.hint")}
         </p>
 
         <div
           className="tc-options"
           role="radiogroup"
-          aria-label="Izgled aplikacije"
+          aria-label={t("onboarding.theme.groupAria")}
         >
           {cards.map((card) => {
             const active = selected === card.value;
@@ -194,7 +195,7 @@ export function ThemeChoiceScreen({
             disabled={leaving}
             className="h-14 w-full rounded-full text-base font-semibold"
           >
-            Nastavi
+            {t("onboarding.continue")}
           </Button>
         </div>
       </div>

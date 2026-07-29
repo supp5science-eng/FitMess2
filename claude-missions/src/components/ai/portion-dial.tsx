@@ -4,6 +4,8 @@ import "./portion-dial.css";
 
 import { Minus, Plus } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import {
   COUNT_MAX,
   COUNT_MIN,
@@ -57,21 +59,6 @@ const MOUND_HEIGHT_SCALE: Record<HeightLevel, number> = {
 /** Coverage is an AREA, so the drawn width goes with its square root. */
 const spreadScale = (coverage: number) => Math.sqrt(coverage);
 
-/** Tap targets under the coverage slider — how people actually describe a plate. */
-const COVERAGE_ANCHORS: { value: number; label: string }[] = [
-  { value: 0.25, label: "četvrt" },
-  { value: 0.5, label: "pola" },
-  { value: 0.75, label: "tri\nčetvrtine" },
-  { value: 1, label: "ceo\ntanjir" },
-];
-
-const LEVEL_ANCHORS: { value: number; label: string }[] = [
-  { value: 0.25, label: "na dnu" },
-  { value: 0.5, label: "do pola" },
-  { value: 0.75, label: "tri\nčetvrtine" },
-  { value: 1, label: "do vrha" },
-];
-
 export function PortionDial({
   geometry,
   unit,
@@ -81,17 +68,37 @@ export function PortionDial({
   unit: PortionUnit;
   onChange: (geometry: PortionGeometry) => void;
 }) {
+  const { t } = useT();
   const grams = portionGrams(geometry, unit);
+
+  /** Tap targets under the coverage slider — how people actually describe a plate. */
+  const coverageAnchors: { value: number; label: string }[] = [
+    { value: 0.25, label: t("media.portion.coverage.quarter") },
+    { value: 0.5, label: t("media.portion.coverage.half") },
+    { value: 0.75, label: t("media.portion.coverage.threeQuarters") },
+    { value: 1, label: t("media.portion.coverage.wholePlate") },
+  ];
+
+  const levelAnchors: { value: number; label: string }[] = [
+    { value: 0.25, label: t("media.portion.level.bottom") },
+    { value: 0.5, label: t("media.portion.level.half") },
+    { value: 0.75, label: t("media.portion.level.threeQuarters") },
+    { value: 1, label: t("media.portion.level.top") },
+  ];
 
   return (
     <div className="pd">
       <div className="pd-stage">
         {geometry.vessel === "ravan" ? (
-          <PlateScene coverage={geometry.coverage} height={geometry.height} />
+          <PlateScene
+            coverage={geometry.coverage}
+            height={geometry.height}
+            t={t}
+          />
         ) : geometry.vessel === "dubok" ? (
-          <BowlScene level={geometry.level} />
+          <BowlScene level={geometry.level} t={t} />
         ) : (
-          <PiecesScene count={geometry.count} />
+          <PiecesScene count={geometry.count} t={t} />
         )}
 
         <div className="pd-readout">
@@ -106,7 +113,7 @@ export function PortionDial({
       {geometry.vessel === "ravan" ? (
         <>
           <Slider
-            label="Koliki deo tanjira je pokriven"
+            label={t("media.portion.coverageLabel")}
             value={geometry.coverage}
             min={COVERAGE_MIN}
             max={COVERAGE_MAX}
@@ -114,13 +121,15 @@ export function PortionDial({
             onChange={(coverage) => onChange({ ...geometry, coverage })}
           />
           <Anchors
-            anchors={COVERAGE_ANCHORS}
+            anchors={coverageAnchors}
             value={geometry.coverage}
             tolerance={0.09}
             onPick={(coverage) => onChange({ ...geometry, coverage })}
           />
           <div className="pd-heights">
-            <span className="pd-heights-label">Koliko je visoko?</span>
+            <span className="pd-heights-label">
+              {t("media.portion.heightQuestion")}
+            </span>
             <div className="pd-chips">
               {HEIGHT_LEVELS.map((level) => (
                 <button
@@ -141,7 +150,7 @@ export function PortionDial({
       {geometry.vessel === "dubok" ? (
         <>
           <Slider
-            label="Dokle je napunjeno"
+            label={t("media.portion.fillLabel")}
             value={geometry.level}
             min={LEVEL_MIN}
             max={LEVEL_MAX}
@@ -149,7 +158,7 @@ export function PortionDial({
             onChange={(level) => onChange({ vessel: "dubok", level })}
           />
           <Anchors
-            anchors={LEVEL_ANCHORS}
+            anchors={levelAnchors}
             value={geometry.level}
             tolerance={0.09}
             onPick={(level) => onChange({ vessel: "dubok", level })}
@@ -161,7 +170,7 @@ export function PortionDial({
         <div className="pd-stepper">
           <button
             type="button"
-            aria-label="Manje komada"
+            aria-label={t("media.portion.fewerPieces")}
             disabled={geometry.count <= COUNT_MIN}
             onClick={() =>
               onChange({ vessel: "komadi", count: geometry.count - 1 })
@@ -178,7 +187,7 @@ export function PortionDial({
           </span>
           <button
             type="button"
-            aria-label="Više komada"
+            aria-label={t("media.portion.morePieces")}
             disabled={geometry.count >= COUNT_MAX}
             onClick={() =>
               onChange({ vessel: "komadi", count: geometry.count + 1 })
@@ -198,9 +207,11 @@ export function PortionDial({
 function PlateScene({
   coverage,
   height,
+  t,
 }: {
   coverage: number;
   height: HeightLevel;
+  t: TFunction;
 }) {
   const transform = `scale(${spreadScale(coverage)}, ${MOUND_HEIGHT_SCALE[height]})`;
   return (
@@ -208,7 +219,7 @@ function PlateScene({
       className="pd-svg"
       viewBox="0 0 320 180"
       role="img"
-      aria-label="Tanjir sa hranom"
+      aria-label={t("media.portion.plateAria")}
     >
       <ellipse className="pd-plate-face" cx="160" cy="132" rx="104" ry="24" />
       {/* Back rim first: the food is drawn over it, so a mound hides the far
@@ -228,14 +239,14 @@ function PlateScene({
 }
 
 /** Deep bowl, cut through the middle: the only variable is the fill line. */
-function BowlScene({ level }: { level: number }) {
+function BowlScene({ level, t }: { level: number; t: TFunction }) {
   const drop = (1 - level) * (BOWL_BOTTOM - BOWL_TOP);
   return (
     <svg
       className="pd-svg"
       viewBox="0 0 320 180"
       role="img"
-      aria-label="Duboka posuda sa hranom"
+      aria-label={t("media.portion.bowlAria")}
     >
       {/* Closing the wall path with a plain Z joins rim to rim, which is
           exactly the inside of the bowl. Adding corners below it instead makes
@@ -256,7 +267,7 @@ function BowlScene({ level }: { level: number }) {
 }
 
 /** Countable food: the answer is a number of things, not a spread. */
-function PiecesScene({ count }: { count: number }) {
+function PiecesScene({ count, t }: { count: number; t: TFunction }) {
   const shown = Math.min(count, 8);
   const perRow = 4;
   // Keep the pieces centred in the stage whether they need one row or two,
@@ -268,7 +279,7 @@ function PiecesScene({ count }: { count: number }) {
       className="pd-svg"
       viewBox="0 0 320 180"
       role="img"
-      aria-label={`${count} komada`}
+      aria-label={t("media.portion.piecesAria", { count })}
     >
       {Array.from({ length: shown }, (_, i) => {
         const row = Math.floor(i / perRow);

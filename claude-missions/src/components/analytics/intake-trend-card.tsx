@@ -7,6 +7,8 @@ import {
   ChartReadout,
   DayTapTargets,
 } from "@/components/analytics/chart-readout";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import type {
   IntakeNoteKind,
   IntakeTrend,
@@ -33,14 +35,30 @@ const VB_H = 92;
 const PAD_X = 12;
 const PAD_Y = 12;
 
-/** Serbian copy + tone for each nutrition insight. */
-const NOTE: Record<IntakeNoteKind, { text: string; tone: "good" | "warn" | "info" }> = {
-  no_data: { text: "Beleži obroke za precizniju procenu", tone: "info" },
-  fat_high: { text: "Masti malo iznad plana", tone: "warn" },
-  protein_low: { text: "Manje proteina od cilja", tone: "warn" },
-  surplus: { text: "Unos iznad potrošnje", tone: "info" },
-  on_track: { text: "U skladu s planom", tone: "good" },
+/** Tone for each nutrition insight. Text is looked up via `t()` at render. */
+const NOTE_TONE: Record<IntakeNoteKind, "good" | "warn" | "info"> = {
+  no_data: "info",
+  fat_high: "warn",
+  protein_low: "warn",
+  surplus: "info",
+  on_track: "good",
 };
+
+/** Translated one-line nutrition insight for each note kind. */
+function noteText(kind: IntakeNoteKind, t: TFunction): string {
+  switch (kind) {
+    case "no_data":
+      return t("analytics.intake.note.noData");
+    case "fat_high":
+      return t("analytics.intake.note.fatHigh");
+    case "protein_low":
+      return t("analytics.intake.note.proteinLow");
+    case "surplus":
+      return t("analytics.intake.note.surplus");
+    case "on_track":
+      return t("analytics.intake.note.onTrack");
+  }
+}
 
 const TONE_COLOR: Record<"good" | "warn" | "info", string> = {
   good: "var(--primary)",
@@ -67,17 +85,24 @@ function fmtKg(kg: number): string {
 
 /** The read-out's second line: what was eaten that day, and how it moved the
  * estimate. An untracked day is named as such -- never as "you ate 0". */
-function secondaryFor(point: IntakeTrendPoint): string {
-  if (!point.hasLog) return "Tog dana nema unetih obroka (računamo kao održavanje).";
+function secondaryFor(point: IntakeTrendPoint, t: TFunction): string {
+  if (!point.hasLog) return t("analytics.intake.noMealsThatDay");
   const balance = point.balanceKcal;
   const direction =
-    balance < 0 ? "manje od potrošnje" : balance > 0 ? "više od potrošnje" : "tačno na potrošnji";
-  return `Uneto ${point.intakeKcal.toLocaleString("sr-RS")} kcal · ${Math.abs(
-    balance
-  ).toLocaleString("sr-RS")} kcal ${direction}`;
+    balance < 0
+      ? t("analytics.intake.dir.below")
+      : balance > 0
+        ? t("analytics.intake.dir.above")
+        : t("analytics.intake.dir.exact");
+  return t("analytics.intake.eatenLine", {
+    intake: point.intakeKcal.toLocaleString("sr-RS"),
+    balance: Math.abs(balance).toLocaleString("sr-RS"),
+    direction,
+  });
 }
 
 export function IntakeTrendCard({ trend }: { trend: IntakeTrend | null }) {
+  const { t } = useT();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const selected =
     trend?.points.find((p) => p.dayKey === selectedKey) ?? null;
@@ -86,9 +111,11 @@ export function IntakeTrendCard({ trend }: { trend: IntakeTrend | null }) {
     <section className="flex flex-col gap-4 rounded-3xl border border-border bg-card p-6">
       <div className="flex flex-col gap-0.5">
         <h2 className="text-2xl font-bold tracking-tight text-foreground">
-          Procena težine
+          {t("analytics.intake.title")}
         </h2>
-        <p className="text-sm text-muted-foreground">Na osnovu unosa · 7 dana</p>
+        <p className="text-sm text-muted-foreground">
+          {t("analytics.intake.subtitle")}
+        </p>
       </div>
 
       {trend ? (
@@ -107,7 +134,9 @@ export function IntakeTrendCard({ trend }: { trend: IntakeTrend | null }) {
                 const point = trend.points.find(
                   (p) => p.dayKey === day.dayKey
                 )!;
-                return `${day.longLabel}: procena ${fmtKg(point.estWeightKg)}`;
+                return `${day.longLabel}: ${t("analytics.intake.estimateValue", {
+                  weight: fmtKg(point.estWeightKg),
+                })}`;
               }}
             />
           </div>
@@ -115,14 +144,16 @@ export function IntakeTrendCard({ trend }: { trend: IntakeTrend | null }) {
           {selected ? (
             <ChartReadout
               label={selected.longLabel}
-              primary={`Procena ${fmtKg(selected.estWeightKg)}`}
-              secondary={secondaryFor(selected)}
+              primary={t("analytics.intake.estimateValue", {
+                weight: fmtKg(selected.estWeightKg),
+              })}
+              secondary={secondaryFor(selected, t)}
               onClear={() => setSelectedKey(null)}
               testId="intake-trend-readout"
             />
           ) : (
             <ChartHint testId="intake-trend-hint">
-              Dodirni dan na liniji da vidiš procenu i šta si tada uneo/la.
+              {t("analytics.intake.hint")}
             </ChartHint>
           )}
 
@@ -137,7 +168,7 @@ export function IntakeTrendCard({ trend }: { trend: IntakeTrend | null }) {
                 {fmtChange(trend.estChangeKg)}
               </span>
               <span className="text-[11px] text-muted-foreground">
-                procenjena promena, 7 dana
+                {t("analytics.intake.changeLabel")}
               </span>
             </div>
             <NoteChip kind={trend.noteKind} />
@@ -145,8 +176,7 @@ export function IntakeTrendCard({ trend }: { trend: IntakeTrend | null }) {
         </>
       ) : (
         <p className="py-4 text-sm text-muted-foreground">
-          Dopuni pol, godine, visinu, težinu i nivo aktivnosti u upitniku pa
-          ćemo iz tvog unosa proceniti trend težine.
+          {t("analytics.intake.empty")}
         </p>
       )}
     </section>
@@ -160,6 +190,7 @@ function Sparkline({
   trend: IntakeTrend;
   selectedKey: string | null;
 }) {
+  const { t } = useT();
   const { points, minKg, maxKg } = trend;
   const span = Math.max(maxKg - minKg, 0.001);
 
@@ -184,7 +215,9 @@ function Sparkline({
       viewBox={`0 0 ${VB_W} ${VB_H}`}
       className="w-full"
       role="img"
-      aria-label={`Procenjeni trend težine: ${fmtChange(trend.estChangeKg)} za 7 dana`}
+      aria-label={t("analytics.intake.chartAria", {
+        change: fmtChange(trend.estChangeKg),
+      })}
       data-testid="intake-trend-chart"
     >
       <defs>
@@ -240,8 +273,8 @@ function Sparkline({
 }
 
 function NoteChip({ kind }: { kind: IntakeNoteKind }) {
-  const note = NOTE[kind];
-  const color = TONE_COLOR[note.tone];
+  const { t } = useT();
+  const color = TONE_COLOR[NOTE_TONE[kind]];
   return (
     <span
       data-testid="intake-trend-note"
@@ -252,7 +285,7 @@ function NoteChip({ kind }: { kind: IntakeNoteKind }) {
         className="size-2 shrink-0 rounded-full"
         style={{ backgroundColor: color }}
       />
-      {note.text}
+      {noteText(kind, t)}
     </span>
   );
 }

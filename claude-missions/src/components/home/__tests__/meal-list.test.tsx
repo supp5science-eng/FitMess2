@@ -208,12 +208,19 @@ describe("Slikaj obrok: a meal log with a stored photo shows the photo + macros"
       <MealList logs={logs} onSaved={vi.fn()} onDeleted={vi.fn()} />
     );
 
-    // Veiled on first sight: the reveal hint is shown.
+    // Veiled on first sight: the reveal hint is shown, and the enlarge badge is
+    // NOT (it would just duplicate the hint before you've opened it).
     expect(screen.getByText("Dodirni da vidiš")).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("meal-card-expand-log-veil")
+    ).not.toBeInTheDocument();
 
-    // Opening the photo marks it seen and un-veils it.
+    // Opening the photo marks it seen and un-veils it: hint gone, enlarge badge in.
     fireEvent.click(screen.getByTestId("meal-card-photo-button-log-veil"));
     expect(screen.queryByText("Dodirni da vidiš")).not.toBeInTheDocument();
+    expect(
+      screen.getByTestId("meal-card-expand-log-veil")
+    ).toBeInTheDocument();
 
     // And the reveal is remembered across a fresh render (persisted).
     fireEvent.click(screen.getByTestId("meal-card-photo-close-log-veil"));

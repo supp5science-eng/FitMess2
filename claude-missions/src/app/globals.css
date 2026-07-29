@@ -134,6 +134,13 @@
     #2f9a50 100%
   );
   --radius: 1.25rem;
+  /* Floating-card lift (light). The soft, large, low-opacity shadow that makes
+     the home cards read as HOVERING over the aurora ground -- the "sve lebdi"
+     brief. Themed (see `.dark` below) and applied via the `.fm-lift` utility,
+     so cards never inline a raw shadow. */
+  --fm-lift:
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 10px 26px -12px rgba(16, 24, 40, 0.16);
   --sidebar: #fafafa;
   --sidebar-foreground: #0a0c0b;
   --sidebar-primary: #0a0c0b;
@@ -208,6 +215,11 @@
   --macro-protein: #45c78d;
   --macro-fat: #f9745f;
   --macro-carbs: #f2c14e;
+  /* Floating-card lift (dark). A deeper, softer shadow so the raised cards
+     separate from the near-black ground without a hard edge. */
+  --fm-lift:
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 14px 34px -14px rgba(0, 0, 0, 0.55);
   --sidebar: #0f1413;
   --sidebar-foreground: #f3f7f5;
   --sidebar-primary: #17d1a8;
@@ -598,14 +610,29 @@ a[aria-disabled="true"]:active,
   }
 }
 
+/* ---------------------------------------------------------------------
+   Floating-card lift — the soft, diffuse shadow that lifts the home cards
+   off the aurora ground so the dashboard reads as "lebdi" (Cal-AI-style
+   floating). Value is themed (`--fm-lift` per theme above), so a card only
+   ever writes `.fm-lift` and never an inline/hex shadow (the "theme tokens,
+   not hex" rule). Pairs with the strengthened aurora below: crisp cards +
+   a softly-coloured ground = the sense of hovering. -------------------- */
+.fm-lift {
+  box-shadow: var(--fm-lift);
+}
+
 /*
- * App aurora — a whisper of the FitMess sedef palette washed into the four
- * corners of the app column, behind all content. The screens were a clean
- * white/near-black; this keeps that calm but stops it reading as EMPTY —
- * teal/gold/blue/green bloom softly in the corners, barely-there but present
+ * App aurora — a wash of the FitMess sedef palette behind all content. The
+ * screens were a clean white/near-black; this keeps that calm but stops it
+ * reading as EMPTY — teal/gold/blue/green bloom softly across the column
  * (the "prozirna šarena boja" brief). Rendered as a fixed backdrop under the
- * content (see AppShell), so cards and text sit cleanly on top; the colour only
- * ever shows in the negative space between them.
+ * content (see AppShell), so cards and text sit cleanly on top; the colour
+ * ever only shows in the negative space between the floating cards.
+ *
+ * Strengthened 2026-07-29 (~+40% alpha + wider blooms): with the home content
+ * now on raised `.fm-lift` cards, the ground needed enough colour to actually
+ * read BETWEEN them — that gap is where the "floating" comes from. Still calm
+ * and zero-shame; it is a whisper, not a gradient hero.
  *
  * Same iridescent stops as `--wordmark-grad`: light theme uses the deeper,
  * saturated tones so they read on white; dark theme uses the brighter shell
@@ -613,20 +640,20 @@ a[aria-disabled="true"]:active,
  */
 .app-aurora {
   background-image:
-    radial-gradient(40% 32% at 6% 3%, rgba(14, 156, 130, 0.16), transparent 72%),
-    radial-gradient(42% 32% at 97% 12%, rgba(185, 134, 44, 0.14), transparent 72%),
-    radial-gradient(46% 36% at 1% 97%, rgba(44, 124, 190, 0.15), transparent 72%),
-    radial-gradient(48% 36% at 100% 100%, rgba(47, 154, 80, 0.16), transparent 72%),
-    /* A single soft bloom through the middle so the center never reads empty --
-       kept the faintest of them all, so it fills the space without shouting. */
-    radial-gradient(58% 42% at 50% 46%, rgba(23, 168, 150, 0.07), transparent 70%);
+    radial-gradient(46% 36% at 4% 1%, rgba(14, 156, 130, 0.22), transparent 72%),
+    radial-gradient(48% 36% at 99% 9%, rgba(185, 134, 44, 0.19), transparent 72%),
+    radial-gradient(52% 40% at 0% 98%, rgba(44, 124, 190, 0.21), transparent 72%),
+    radial-gradient(54% 40% at 100% 100%, rgba(47, 154, 80, 0.22), transparent 72%),
+    /* A soft bloom through the middle so the centre never reads empty -- kept
+       the faintest of them all, so it fills the space without shouting. */
+    radial-gradient(64% 46% at 50% 44%, rgba(23, 168, 150, 0.11), transparent 70%);
 }
 
 .dark .app-aurora {
   background-image:
-    radial-gradient(40% 32% at 6% 3%, rgba(38, 221, 182, 0.1), transparent 72%),
-    radial-gradient(42% 32% at 97% 12%, rgba(236, 199, 102, 0.08), transparent 72%),
-    radial-gradient(46% 36% at 1% 97%, rgba(87, 168, 238, 0.1), transparent 72%),
-    radial-gradient(48% 36% at 100% 100%, rgba(99, 217, 118, 0.1), transparent 72%),
-    radial-gradient(58% 42% at 50% 46%, rgba(40, 217, 182, 0.05), transparent 70%);
+    radial-gradient(46% 36% at 4% 1%, rgba(38, 221, 182, 0.14), transparent 72%),
+    radial-gradient(48% 36% at 99% 9%, rgba(236, 199, 102, 0.11), transparent 72%),
+    radial-gradient(52% 40% at 0% 98%, rgba(87, 168, 238, 0.14), transparent 72%),
+    radial-gradient(54% 40% at 100% 100%, rgba(99, 217, 118, 0.14), transparent 72%),
+    radial-gradient(64% 46% at 50% 44%, rgba(40, 217, 182, 0.07), transparent 70%);
 }

@@ -24,6 +24,9 @@ describe("AppSplash: premium launch splash", () => {
     // The pear mark is present at launch size.
     const mark = status.querySelector("img.fm-splash__mark");
     expect(mark).toHaveAttribute("src", "/brand/fitmess-icon.png");
+
+    // Brand tagline under the wordmark.
+    expect(status).toHaveTextContent("Jedi, radi, treniraj i uživaj");
   });
 
   it("test_plays_once_then_is_suppressed_on_a_later_in_app_remount", () => {

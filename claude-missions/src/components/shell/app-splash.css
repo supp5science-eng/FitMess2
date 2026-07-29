@@ -101,9 +101,10 @@
 
 .fm-splash__tagline {
   margin: 0;
+  font-family: var(--font-brand), var(--font-sans), sans-serif;
   font-size: 15px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  font-weight: 600;
+  letter-spacing: 0.015em;
   color: var(--muted-foreground);
   opacity: 0;
   transform: translateY(8px);

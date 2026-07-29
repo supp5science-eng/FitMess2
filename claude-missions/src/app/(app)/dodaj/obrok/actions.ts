@@ -2,14 +2,11 @@
 
 import { z } from "zod";
 
-import {
-  aiErrorSr,
-  estimateMealFromImage,
-  NO_FOOD_ERROR_SR,
-} from "@/lib/ai/gemini";
+import { aiErrorSr, estimateMealFromImage } from "@/lib/ai/gemini";
 import type { MealEstimate } from "@/lib/ai/meal-estimate";
 import { estimateMealMicros } from "@/lib/ai/micro-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 // F064 (MVP): server actions for the meal-photo flow. The photo is sent to
@@ -27,21 +24,22 @@ export async function estimateMealAction(
   formData: FormData
 ): Promise<EstimateResult> {
   // Auth-gate before touching the paid vision API.
+  const { t } = await getT();
   const supabase = await createClient();
   const userId = await getCurrentUserId(supabase);
   if (!userId) {
     return {
       ok: false,
-      error_sr: "Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.",
+      error_sr: t("dodaj.error.sessionExpired"),
     };
   }
 
   const file = formData.get("slika");
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error_sr: "Nema slike. Slikaj obrok pa pokušaj ponovo." };
+    return { ok: false, error_sr: t("dodaj.error.noImageMeal") };
   }
   if (file.size > MAX_IMAGE_BYTES) {
-    return { ok: false, error_sr: "Slika je prevelika. Pokušaj ponovo." };
+    return { ok: false, error_sr: t("dodaj.error.imageTooLarge") };
   }
 
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
@@ -52,14 +50,14 @@ export async function estimateMealAction(
     // The model looked and there is no food on the photo -- don't hand back a
     // hallucinated meal, say so plainly instead.
     if (data.nema_hrane) {
-      return { ok: false, error_sr: NO_FOOD_ERROR_SR };
+      return { ok: false, error_sr: t("dodaj.error.noFood") };
     }
     return { ok: true, data };
   } catch (err) {
     console.error("[F064 obrok] estimate failed:", err);
     return {
       ok: false,
-      error_sr: aiErrorSr(err, "Nismo uspeli da procenimo obrok. Pokušaj ponovo."),
+      error_sr: aiErrorSr(err, t("dodaj.error.estimateMealFailed")),
     };
   }
 }

@@ -3,6 +3,7 @@
 import { aiErrorSr, estimateLabelFromImage } from "@/lib/ai/gemini";
 import type { LabelEstimate } from "@/lib/ai/label-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 // F063 (MVP): server action for the nutrition-label photo flow. The photo is
@@ -19,12 +20,13 @@ export type LabelResult =
 export async function estimateLabelAction(
   formData: FormData
 ): Promise<LabelResult> {
+  const { t } = await getT();
   const supabase = await createClient();
   const userId = await getCurrentUserId(supabase);
   if (!userId) {
     return {
       ok: false,
-      error_sr: "Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.",
+      error_sr: t("dodaj.error.sessionExpired"),
     };
   }
 
@@ -32,11 +34,11 @@ export async function estimateLabelAction(
   if (!(file instanceof File) || file.size === 0) {
     return {
       ok: false,
-      error_sr: "Nema slike. Slikaj deklaraciju pa pokušaj ponovo.",
+      error_sr: t("dodaj.deklaracija.error.noImage"),
     };
   }
   if (file.size > MAX_IMAGE_BYTES) {
-    return { ok: false, error_sr: "Slika je prevelika. Pokušaj ponovo." };
+    return { ok: false, error_sr: t("dodaj.error.imageTooLarge") };
   }
 
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
@@ -49,10 +51,7 @@ export async function estimateLabelAction(
     console.error("[F063 deklaracija] estimate failed:", err);
     return {
       ok: false,
-      error_sr: aiErrorSr(
-        err,
-        "Nismo uspeli da pročitamo deklaraciju. Uslikaj tabelu izbliza i pokušaj ponovo."
-      ),
+      error_sr: aiErrorSr(err, t("dodaj.deklaracija.error.readFailed")),
     };
   }
 }

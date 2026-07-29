@@ -4,6 +4,7 @@ import { Minus, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import { useCountUp } from "@/components/home/animated-number";
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { foodEmoji } from "@/lib/food/emoji";
 import {
@@ -46,10 +47,6 @@ import type { Log, LogComponentSnapshot } from "@/lib/types/db";
 // guarantee as F026's edit sheet: what you see added is what gets written. Only
 // unit counts go over the wire; no macro number is ever client-authored.
 
-const SAVE_FAILED_ERROR_SR = "Nismo uspeli da dodamo. Pokušaj ponovo.";
-const SPLIT_NOTE_SR =
-  "Ovaj obrok nismo uspeli da razložimo na namirnice — možeš da dodaš ceo unos još jednom.";
-
 interface LogResponseBody {
   ok: boolean;
   error_sr?: string;
@@ -66,6 +63,7 @@ export function LogAddMoreSheet({
   /** Called with the grown log row, so the day's ring/macros recompute. */
   onSaved?: (updatedLog: Log) => void;
 }) {
+  const { t } = useT();
   // The entry as the sheet currently knows it: the prop, then whatever the
   // split returns (the row gains `components` without its totals changing).
   const [entry, setEntry] = useState<Log>(log);
@@ -109,10 +107,12 @@ export function LogAddMoreSheet({
           : formatUnitCount(count, component.kom_naziv)
       );
     if (whole > 0) {
-      picked.unshift(whole === 1 ? "ceo obrok" : `${whole} × ceo obrok`);
+      picked.unshift(
+        whole === 1 ? t("food.wholeMeal") : `${whole} × ${t("food.wholeMeal")}`
+      );
     }
     return picked;
-  }, [components, units, whole]);
+  }, [components, units, whole, t]);
 
   async function openSheet() {
     setUnits(components.map(() => 0));
@@ -143,11 +143,11 @@ export function LogAddMoreSheet({
         setUnits(split.map(() => 0));
       } else {
         setWhole(1);
-        setSplitNote(SPLIT_NOTE_SR);
+        setSplitNote(t("food.splitNote"));
       }
     } catch {
       setWhole(1);
-      setSplitNote(SPLIT_NOTE_SR);
+      setSplitNote(t("food.splitNote"));
     } finally {
       setPhase("idle");
     }
@@ -203,7 +203,7 @@ export function LogAddMoreSheet({
 
       if (!response.ok || !body.ok || !body.data) {
         setPhase("idle");
-        setErrorMessage(body.error_sr || SAVE_FAILED_ERROR_SR);
+        setErrorMessage(body.error_sr || t("food.addMoreSaveFailed"));
         return;
       }
 
@@ -213,7 +213,7 @@ export function LogAddMoreSheet({
       setIsOpen(false);
     } catch {
       setPhase("idle");
-      setErrorMessage(SAVE_FAILED_ERROR_SR);
+      setErrorMessage(t("food.addMoreSaveFailed"));
     }
   }
 
@@ -226,7 +226,7 @@ export function LogAddMoreSheet({
         data-testid={`log-add-more-open-${log.id}`}
       >
         <Plus className="size-4" aria-hidden="true" />
-        Dodaj još
+        {t("food.addMore")}
       </Button>
 
       {isOpen ? (
@@ -269,7 +269,10 @@ export function LogAddMoreSheet({
                   {entry.name}
                 </h2>
                 <p className="text-xs text-muted-foreground">
-                  do sada: {Math.round(entry.kcal)} kcal · {Math.round(entry.grams)} g
+                  {t("food.soFar", {
+                    kcal: Math.round(entry.kcal),
+                    grams: Math.round(entry.grams),
+                  })}
                 </p>
               </div>
             </header>
@@ -288,13 +291,13 @@ export function LogAddMoreSheet({
               >
                 <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   <span className="size-1.5 animate-ping rounded-full bg-primary" />
-                  Razlažemo obrok na namirnice…
+                  {t("food.splitting")}
                 </p>
                 <SkeletonRow delay="0ms" nameWidth="w-24" />
                 <SkeletonRow delay="140ms" nameWidth="w-32" />
                 <SkeletonRow delay="280ms" nameWidth="w-20" />
                 <p className="px-1 text-xs text-muted-foreground">
-                  Za koji trenutak biraš tačno šta si još pojeo/la.
+                  {t("food.splittingHint")}
                 </p>
               </div>
             ) : (
@@ -302,14 +305,16 @@ export function LogAddMoreSheet({
                 {hasBreakdown ? (
                   <div className="flex flex-col gap-2">
                     <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      Koliko si još pojeo/la?
+                      {t("food.howMuchMore")}
                     </p>
                     {components.map((component, index) => (
                       <StepperRow
                         key={`${component.naziv}-${index}`}
                         testId={`log-add-more-component-${index}`}
                         label={capitalize(component.naziv)}
-                        detail={`u obroku: ${describeAmount(component)}`}
+                        detail={t("food.inMeal", {
+                          amount: describeAmount(component),
+                        })}
                         stepHint={stepHint(component)}
                         value={units[index] ?? 0}
                         onStep={(delta) => stepComponent(index, delta)}
@@ -324,7 +329,11 @@ export function LogAddMoreSheet({
                 {components.length === 1 ? null : (
                   <StepperRow
                     testId="log-add-more-whole"
-                    label={hasBreakdown ? "Ceo obrok još jednom" : "Još isto"}
+                    label={
+                      hasBreakdown
+                        ? t("food.wholeMealAgain")
+                        : t("food.sameAgain")
+                    }
                     detail={`${Math.round(entry.kcal)} kcal · ${Math.round(
                       entry.grams
                     )} g`}
@@ -366,7 +375,7 @@ export function LogAddMoreSheet({
                 </div>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Dodirni + kod onoga što si još pojeo/la.
+                  {t("food.tapPlus")}
                 </p>
               )}
               <div className="flex items-baseline justify-between gap-3">
@@ -380,7 +389,7 @@ export function LogAddMoreSheet({
                   <span className="ml-1 text-base font-semibold">kcal</span>
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  obrok postaje {preview.totals.kcal} kcal
+                  {t("food.mealBecomes", { kcal: preview.totals.kcal })}
                 </span>
               </div>
             </div>
@@ -404,7 +413,7 @@ export function LogAddMoreSheet({
                 data-testid="log-add-more-cancel"
                 className="flex-1"
               >
-                Otkaži
+                {t("food.cancel")}
               </Button>
               <Button
                 type="button"
@@ -413,7 +422,7 @@ export function LogAddMoreSheet({
                 data-testid="log-add-more-save"
                 className="flex-[1.6]"
               >
-                {phase === "saving" ? "Čuvamo…" : "Dodaj"}
+                {phase === "saving" ? t("food.savingProgress") : t("food.add")}
               </Button>
             </div>
           </div>
@@ -498,6 +507,7 @@ function StepperRow({
   value: number;
   onStep: (delta: number) => void;
 }) {
+  const { t } = useT();
   const active = value > 0;
   return (
     <div
@@ -518,7 +528,7 @@ function StepperRow({
       <div className="flex shrink-0 items-center gap-1.5">
         <button
           type="button"
-          aria-label={`Smanji: ${label}`}
+          aria-label={t("food.stepDecrease", { label })}
           data-testid={`${testId}-minus`}
           onClick={() => onStep(-1)}
           disabled={value === 0}
@@ -536,7 +546,7 @@ function StepperRow({
         </span>
         <button
           type="button"
-          aria-label={`Dodaj: ${label}`}
+          aria-label={t("food.stepIncrease", { label })}
           data-testid={`${testId}-plus`}
           onClick={() => onStep(1)}
           className="flex size-10 items-center justify-center rounded-full bg-primary text-primary-foreground"

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +38,6 @@ import type { Food, LogMethod } from "@/lib/types/db";
 // `POST /api/logs` (F025) already accepts an arbitrary `method` in its
 // request body, this was the only missing wiring.
 
-const SAVE_FAILED_ERROR_SR = "Nismo uspeli da sačuvamo unos. Pokušaj ponovo.";
 const DEFAULT_GRAMS = "100";
 const MIN_QUANTITY = 0.5;
 const MAX_QUANTITY = 20;
@@ -66,6 +66,7 @@ export function PortionPicker({
   method?: LogMethod;
 }) {
   const router = useRouter();
+  const { t } = useT();
   const [mode, setMode] = useState<PortionMode>("grams");
   const [gramsInput, setGramsInput] = useState(DEFAULT_GRAMS);
   const [selectedUnitIndex, setSelectedUnitIndex] = useState<number | null>(
@@ -121,7 +122,7 @@ export function PortionPicker({
   async function onConfirm() {
     if (!canConfirm) {
       setStatus("error");
-      setErrorMessage("Unesi količinu veću od 0 grama.");
+      setErrorMessage(t("food.quantityMin"));
       return;
     }
 
@@ -141,14 +142,14 @@ export function PortionPicker({
 
       if (!response.ok || !body.ok) {
         setStatus("error");
-        setErrorMessage(body.error_sr || SAVE_FAILED_ERROR_SR);
+        setErrorMessage(body.error_sr || t("food.portionSaveFailed"));
         return;
       }
 
       router.push(afterSaveHref);
     } catch {
       setStatus("error");
-      setErrorMessage(SAVE_FAILED_ERROR_SR);
+      setErrorMessage(t("food.portionSaveFailed"));
     }
   }
 
@@ -168,7 +169,7 @@ export function PortionPicker({
 
       {food.common_units.length > 0 ? (
         <div className="flex flex-col gap-2">
-          <Label>Uobičajena porcija</Label>
+          <Label>{t("food.commonPortion")}</Label>
           <div
             className="flex flex-wrap gap-2"
             data-testid="portion-unit-chips"
@@ -193,7 +194,7 @@ export function PortionPicker({
 
           {mode === "unit" && selectedUnitIndex !== null ? (
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="portion-quantity-input">Količina</Label>
+              <Label htmlFor="portion-quantity-input">{t("food.quantity")}</Label>
               <Input
                 id="portion-quantity-input"
                 data-testid="portion-quantity-input"
@@ -211,7 +212,7 @@ export function PortionPicker({
       ) : null}
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="portion-grams-input">Količina u gramima</Label>
+        <Label htmlFor="portion-grams-input">{t("food.amountInGrams")}</Label>
         <Input
           id="portion-grams-input"
           data-testid="portion-grams-input"
@@ -228,7 +229,7 @@ export function PortionPicker({
         className="flex flex-col gap-3 rounded-xl border border-border bg-background px-4 py-4"
       >
         <div className="flex items-baseline justify-between">
-          <span className="text-sm text-muted-foreground">Kalorije</span>
+          <span className="text-sm text-muted-foreground">{t("food.calories")}</span>
           <span
             data-testid="portion-preview-kcal"
             className="text-3xl font-bold text-foreground"
@@ -238,13 +239,13 @@ export function PortionPicker({
         </div>
         <div className="flex justify-between text-sm text-muted-foreground">
           <span data-testid="portion-preview-protein">
-            Proteini: {preview.protein} g
+            {t("food.proteinLine", { g: preview.protein })}
           </span>
           <span data-testid="portion-preview-carbs">
-            UH: {preview.carbs} g
+            {t("food.carbsLine", { g: preview.carbs })}
           </span>
           <span data-testid="portion-preview-fat">
-            Masti: {preview.fat} g
+            {t("food.fatLine", { g: preview.fat })}
           </span>
         </div>
       </div>
@@ -266,7 +267,7 @@ export function PortionPicker({
         disabled={!canConfirm}
         className="w-full"
       >
-        {status === "saving" ? "Čuvanje..." : "Dodaj u dnevnik"}
+        {status === "saving" ? t("food.saving") : t("food.addToDiary")}
       </Button>
     </main>
   );

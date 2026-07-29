@@ -3,6 +3,7 @@
 import { aiErrorSr, estimateMealFromAudio } from "@/lib/ai/gemini";
 import type { VoiceMealEstimate } from "@/lib/ai/voice-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 // "Reci obrok" (M7): the user speaks about what they ate/drank, the clip is
@@ -23,12 +24,13 @@ export async function estimateVoiceMealAction(
   formData: FormData
 ): Promise<VoiceEstimateResult> {
   // Auth-gate before touching the paid audio API.
+  const { t } = await getT();
   const supabase = await createClient();
   const userId = await getCurrentUserId(supabase);
   if (!userId) {
     return {
       ok: false,
-      error_sr: "Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.",
+      error_sr: t("dodaj.error.sessionExpired"),
     };
   }
 
@@ -36,11 +38,11 @@ export async function estimateVoiceMealAction(
   if (!(file instanceof File) || file.size === 0) {
     return {
       ok: false,
-      error_sr: "Nema snimka. Snimi obrok pa pokušaj ponovo.",
+      error_sr: t("dodaj.glas.error.noRecording"),
     };
   }
   if (file.size > MAX_AUDIO_BYTES) {
-    return { ok: false, error_sr: "Snimak je predugačak. Pokušaj ponovo, kraće." };
+    return { ok: false, error_sr: t("dodaj.error.recordingTooLong") };
   }
 
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
@@ -53,7 +55,7 @@ export async function estimateVoiceMealAction(
     console.error("[glas] voice estimate failed:", err);
     return {
       ok: false,
-      error_sr: aiErrorSr(err, "Nismo uspeli da razumemo snimak. Pokušaj ponovo."),
+      error_sr: aiErrorSr(err, t("dodaj.error.understandRecordingFailed")),
     };
   }
 }

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,7 +36,6 @@ import type { Food, Log } from "@/lib/types/db";
 // budget after a successful edit (F026 itself only proves the log row
 // changed correctly; the visual ring recompute is F027's job).
 
-const SAVE_FAILED_ERROR_SR = "Nismo uspeli da izmenimo unos. Pokušaj ponovo.";
 const MIN_QUANTITY = 0.5;
 const MAX_QUANTITY = 20;
 const QUANTITY_STEP = 0.5;
@@ -63,6 +63,7 @@ export function LogEditSheet({
    * can re-fetch/recompute the day's totals. */
   onSaved?: (updatedLog: Log) => void;
 }) {
+  const { t } = useT();
   const [isOpen, setIsOpen] = useState(false);
   const initialMatch = useMemo(
     () => findMatchingCommonUnit(food.common_units, log.grams),
@@ -145,7 +146,7 @@ export function LogEditSheet({
   async function onConfirm() {
     if (!canConfirm) {
       setStatus("error");
-      setErrorMessage("Unesi količinu veću od 0 grama.");
+      setErrorMessage(t("food.quantityMin"));
       return;
     }
 
@@ -161,7 +162,7 @@ export function LogEditSheet({
 
       if (!response.ok || !body.ok || !body.data) {
         setStatus("error");
-        setErrorMessage(body.error_sr || SAVE_FAILED_ERROR_SR);
+        setErrorMessage(body.error_sr || t("food.editSaveFailed"));
         return;
       }
 
@@ -170,7 +171,7 @@ export function LogEditSheet({
       setIsOpen(false);
     } catch {
       setStatus("error");
-      setErrorMessage(SAVE_FAILED_ERROR_SR);
+      setErrorMessage(t("food.editSaveFailed"));
     }
   }
 
@@ -182,7 +183,7 @@ export function LogEditSheet({
         onClick={openSheet}
         data-testid="log-edit-open-button"
       >
-        Izmeni
+        {t("food.edit")}
       </Button>
 
       {isOpen ? (
@@ -206,7 +207,7 @@ export function LogEditSheet({
 
             {food.common_units.length > 0 ? (
               <div className="flex flex-col gap-2">
-                <Label>Uobičajena porcija</Label>
+                <Label>{t("food.commonPortion")}</Label>
                 <div
                   className="flex flex-wrap gap-2"
                   data-testid="log-edit-unit-chips"
@@ -233,7 +234,7 @@ export function LogEditSheet({
 
                 {mode === "unit" && selectedUnitIndex !== null ? (
                   <div className="flex flex-col gap-1.5">
-                    <Label htmlFor="log-edit-quantity-input">Količina</Label>
+                    <Label htmlFor="log-edit-quantity-input">{t("food.quantity")}</Label>
                     <Input
                       id="log-edit-quantity-input"
                       data-testid="log-edit-quantity-input"
@@ -251,7 +252,7 @@ export function LogEditSheet({
             ) : null}
 
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="log-edit-grams-input">Količina u gramima</Label>
+              <Label htmlFor="log-edit-grams-input">{t("food.amountInGrams")}</Label>
               <Input
                 id="log-edit-grams-input"
                 data-testid="log-edit-grams-input"
@@ -268,7 +269,7 @@ export function LogEditSheet({
               className="flex flex-col gap-3 rounded-xl border border-border bg-background px-4 py-4"
             >
               <div className="flex items-baseline justify-between">
-                <span className="text-sm text-muted-foreground">Kalorije</span>
+                <span className="text-sm text-muted-foreground">{t("food.calories")}</span>
                 <span
                   data-testid="log-edit-preview-kcal"
                   className="text-3xl font-bold text-foreground"
@@ -278,13 +279,13 @@ export function LogEditSheet({
               </div>
               <div className="flex justify-between text-sm text-muted-foreground">
                 <span data-testid="log-edit-preview-protein">
-                  Proteini: {preview.protein} g
+                  {t("food.proteinLine", { g: preview.protein })}
                 </span>
                 <span data-testid="log-edit-preview-carbs">
-                  UH: {preview.carbs} g
+                  {t("food.carbsLine", { g: preview.carbs })}
                 </span>
                 <span data-testid="log-edit-preview-fat">
-                  Masti: {preview.fat} g
+                  {t("food.fatLine", { g: preview.fat })}
                 </span>
               </div>
             </div>
@@ -307,7 +308,7 @@ export function LogEditSheet({
                 disabled={status === "saving"}
                 data-testid="log-edit-cancel-button"
               >
-                Otkaži
+                {t("food.cancel")}
               </Button>
               <Button
                 type="button"
@@ -315,7 +316,7 @@ export function LogEditSheet({
                 disabled={!canConfirm}
                 data-testid="log-edit-save-button"
               >
-                {status === "saving" ? "Čuvanje..." : "Sačuvaj izmenu"}
+                {status === "saving" ? t("food.saving") : t("food.saveEdit")}
               </Button>
             </div>
           </div>

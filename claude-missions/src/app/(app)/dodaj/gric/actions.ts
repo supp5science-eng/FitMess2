@@ -5,6 +5,7 @@ import { z } from "zod";
 import { aiErrorSr, estimateGricFromAudio } from "@/lib/ai/gemini";
 import type { GricEstimate } from "@/lib/ai/gric-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 // Server actions for "Gric" (quick spoken logging of small stuff). The clip is
@@ -24,21 +25,22 @@ export async function estimateGricAction(
   formData: FormData
 ): Promise<GricEstimateResult> {
   // Auth-gate before touching the paid audio API.
+  const { t } = await getT();
   const supabase = await createClient();
   const userId = await getCurrentUserId(supabase);
   if (!userId) {
     return {
       ok: false,
-      error_sr: "Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.",
+      error_sr: t("dodaj.error.sessionExpired"),
     };
   }
 
   const file = formData.get("audio");
   if (!(file instanceof File) || file.size === 0) {
-    return { ok: false, error_sr: "Nema snimka. Reci šta si gricnuo pa pokušaj ponovo." };
+    return { ok: false, error_sr: t("dodaj.gric.error.noRecording") };
   }
   if (file.size > MAX_AUDIO_BYTES) {
-    return { ok: false, error_sr: "Snimak je predugačak. Pokušaj ponovo, kraće." };
+    return { ok: false, error_sr: t("dodaj.error.recordingTooLong") };
   }
 
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
@@ -51,7 +53,7 @@ export async function estimateGricAction(
     console.error("[gric] estimate failed:", err);
     return {
       ok: false,
-      error_sr: aiErrorSr(err, "Nismo uspeli da razumemo snimak. Pokušaj ponovo."),
+      error_sr: aiErrorSr(err, t("dodaj.error.understandRecordingFailed")),
     };
   }
 }
@@ -84,9 +86,10 @@ export type LogGricResult =
 export async function logGricAction(
   input: LogGricInput
 ): Promise<LogGricResult> {
+  const { t } = await getT();
   const parsed = logGricSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error_sr: "Neispravan unos. Pokušaj ponovo." };
+    return { ok: false, error_sr: t("dodaj.gric.error.invalidInput") };
   }
 
   const supabase = await createClient();
@@ -94,7 +97,7 @@ export async function logGricAction(
   if (!userId) {
     return {
       ok: false,
-      error_sr: "Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.",
+      error_sr: t("dodaj.error.sessionExpired"),
     };
   }
 
@@ -114,7 +117,7 @@ export async function logGricAction(
   const { error } = await supabase.from("logs").insert(rows);
   if (error) {
     console.error("[gric] log insert failed:", error.message);
-    return { ok: false, error_sr: "Nismo uspeli da sačuvamo unos. Pokušaj ponovo." };
+    return { ok: false, error_sr: t("dodaj.error.saveFailed") };
   }
 
   return { ok: true, saved: rows.length };

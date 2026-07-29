@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { useT } from "@/components/i18n/locale-provider";
 import type { Food } from "@/lib/types/db";
 
 /**
@@ -25,6 +26,7 @@ export function FoodListItem({
    * (AS-040) -- shown as a small "nedavno" tag alongside the name. */
   isRecent?: boolean;
 }) {
+  const { t } = useT();
   const kcal = Math.round(food.kcal_100g);
 
   return (
@@ -48,7 +50,7 @@ export function FoodListItem({
                 data-testid={`food-badge-default-${food.id}`}
                 className="border-primary/40 bg-primary/10 text-primary"
               >
-                default
+                {t("food.badgeDefault")}
               </Badge>
             ) : null}
             {!food.verified ? (
@@ -57,7 +59,7 @@ export function FoodListItem({
                 data-testid={`food-badge-neprovereno-${food.id}`}
                 className="border-amber-300 bg-amber-50 text-amber-700"
               >
-                neprovereno
+                {t("food.badgeUnverified")}
               </Badge>
             ) : null}
             {isRecent ? (
@@ -65,7 +67,7 @@ export function FoodListItem({
                 variant="secondary"
                 data-testid={`food-badge-recent-${food.id}`}
               >
-                nedavno
+                {t("food.badgeRecent")}
               </Badge>
             ) : null}
           </div>

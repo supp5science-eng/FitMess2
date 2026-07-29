@@ -2,7 +2,11 @@
 
 import { z } from "zod";
 
-import { aiErrorSr, estimateMealFromImage } from "@/lib/ai/gemini";
+import {
+  aiErrorSr,
+  estimateMealFromImage,
+  NO_FOOD_ERROR_SR,
+} from "@/lib/ai/gemini";
 import type { MealEstimate } from "@/lib/ai/meal-estimate";
 import { estimateMealMicros } from "@/lib/ai/micro-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
@@ -45,6 +49,11 @@ export async function estimateMealAction(
 
   try {
     const data = await estimateMealFromImage(base64, mimeType);
+    // The model looked and there is no food on the photo -- don't hand back a
+    // hallucinated meal, say so plainly instead.
+    if (data.nema_hrane) {
+      return { ok: false, error_sr: NO_FOOD_ERROR_SR };
+    }
     return { ok: true, data };
   } catch (err) {
     console.error("[F064 obrok] estimate failed:", err);

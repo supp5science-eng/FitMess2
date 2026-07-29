@@ -56,4 +56,21 @@ describe("mealEstimateSchema", () => {
     expect(parsed.sastojci).toEqual([]);
     expect(parsed.napomena).toBe("");
   });
+
+  it("parses the no-food flag, defaulting to false when absent or garbage", () => {
+    const base = {
+      naziv: "Test",
+      procenjeni_grami: 100,
+      kcal: 100,
+      protein_g: 5,
+      uh_g: 5,
+      mast_g: 5,
+      sigurnost: "srednja",
+    };
+    expect(mealEstimateSchema.parse({ ...base, nema_hrane: true }).nema_hrane).toBe(true);
+    expect(mealEstimateSchema.parse(base).nema_hrane).toBe(false);
+    expect(
+      mealEstimateSchema.parse({ ...base, nema_hrane: "nonsense" }).nema_hrane
+    ).toBe(false);
+  });
 });

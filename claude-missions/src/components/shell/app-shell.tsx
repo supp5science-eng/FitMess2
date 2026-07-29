@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
 import { AppNavBar } from "@/components/shell/app-nav-bar";
+import { AppSplash } from "@/components/shell/app-splash";
 import { AccountsSync } from "@/components/auth/accounts-sync";
 import { InstallNudge } from "@/components/pwa/install-nudge";
 
@@ -67,7 +68,16 @@ function isFullBleed(pathname: string): boolean {
   );
 }
 
-export function AppShell({ children }: { children: ReactNode }) {
+export function AppShell({
+  children,
+  introActive = false,
+}: {
+  children: ReactNode;
+  // The onboarding ring hand-off (`fm_intro` cookie, read server-side in the
+  // root layout) plays its own full-screen brand animation on `/danas`; the
+  // launch splash steps aside for it so the two never overlap.
+  introActive?: boolean;
+}) {
   const pathname = usePathname();
 
   if (pathname !== null && isFullBleed(pathname)) {
@@ -76,6 +86,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-dvh w-full bg-muted">
+      {/* Launch splash: a fixed, first-paint brand cover over the app column
+          that dismisses itself. Suppressed during the onboarding hand-off. */}
+      {introActive ? null : <AppSplash />}
       <div className="relative mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">
         {/* Content scrolls inside this region only; the nav below keeps its own
             space, so nothing ever hides behind it. */}

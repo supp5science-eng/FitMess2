@@ -261,6 +261,28 @@
   }
 }
 
+/* --- Launch splash: first-frame critical cover -------------------------------
+   The full splash (mark, bloom, iris-reveal) lives in
+   `components/shell/app-splash.css`, which ships WITH the client `AppSplash`
+   component and can apply a frame after the server-rendered HTML is already on
+   screen. In that gap the splash <div> sat unstyled in normal flow and the light
+   `bg-muted` body flashed through first -- the "white -> black -> app" the user
+   saw on launch.
+
+   These few rules live in the RENDER-BLOCKING global sheet (same one as `body`),
+   so the dark ground is painted on the very first frame, together with the body,
+   never after it. `app-splash.css` then layers the animation on top (its
+   `.fm-splash` rules load later and win the ties -- same colour, so there is no
+   visible handoff). Result: black from the first pixel, then the iris-reveal to
+   the chosen theme. Only the splash element carries this class, so it is inert
+   whenever the splash isn't mounted. */
+.fm-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  background-color: #0a0c0b;
+}
+
 /* ---------------------------------------------------------------------
    Liquid glass — "boja + glass sjaj".
    Layers an Apple-style glossy glass sheen ON TOP of a button's existing

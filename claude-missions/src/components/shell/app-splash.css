@@ -1,0 +1,201 @@
+/*
+ * Launch splash (`app-splash.tsx`).
+ *
+ * A brand cover on the app's OWN background (`var(--background)`) shown the
+ * moment the app boots. Because the ground matches the body's first-paint
+ * colour, there is no flash between the blank first frame and this cover -- on
+ * the default light theme it is a clean white launch. The mark springs in, the
+ * "FitMess" wordmark writes itself with the iridescent "Mess", then the whole
+ * lockup lifts and dissolves to reveal the app beneath.
+ *
+ * The base cover (position/size/centre/background) lives in the render-blocking
+ * global sheet (`globals.css .fm-splash`) so it is up on the very first frame;
+ * this file layers the bloom, the mark/wordmark, and every animation on top.
+ * Everything runs on pure CSS, so the whole sequence is alive before hydration;
+ * the component only decides WHETHER to render it. Motion collapses to a calm
+ * fade under prefers-reduced-motion.
+ */
+
+.fm-splash {
+  /* Exit: after the beat, the whole ground dissolves, revealing the app. Pure
+     CSS + `forwards`, so it fires even if hydration is slow. */
+  animation: fm-splash-ground-out 520ms ease 1840ms forwards;
+  will-change: opacity;
+  overflow: hidden;
+}
+
+/* Ambient teal bloom behind the mark -- the brand accent, kept soft on the
+   light ground so the launch stays calm rather than loud. */
+.fm-splash::before {
+  content: "";
+  position: absolute;
+  top: 43%;
+  left: 50%;
+  width: 440px;
+  height: 440px;
+  max-width: 116vw;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--brand) 26%, transparent) 0%,
+    transparent 64%
+  );
+  filter: blur(14px);
+  opacity: 0;
+  animation: fm-splash-bloom 1000ms cubic-bezier(0.16, 1, 0.3, 1) 60ms forwards;
+  pointer-events: none;
+}
+
+.fm-splash__stage {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  padding-bottom: 4vh; /* optically centered a touch high */
+  /* Exit: the lockup lifts toward the viewer and dissolves a beat before the
+     ground clears -- the "hand-off into the app" moment. */
+  animation: fm-splash-stage-out 580ms cubic-bezier(0.6, 0, 0.2, 1) 1720ms
+    forwards;
+}
+
+.fm-splash__mark {
+  width: 112px;
+  height: 112px;
+  opacity: 0;
+  transform: scale(0.68);
+  /* Springy settle: overshoots a touch, then lands. */
+  animation: fm-splash-mark-in 680ms cubic-bezier(0.2, 1.16, 0.32, 1) 100ms
+    forwards;
+  filter: drop-shadow(
+    0 14px 30px color-mix(in srgb, var(--brand) 30%, transparent)
+  );
+}
+
+.fm-splash__lockup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.fm-splash__wordmark {
+  font-size: 36px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+  opacity: 0;
+  transform: translateY(14px);
+  animation: fm-splash-word-in 600ms cubic-bezier(0.16, 1, 0.3, 1) 380ms
+    forwards;
+}
+
+/* "Mess" carries the themed iridescent wordmark gradient (`.fm-wordmark-accent`
+   in globals.css). Here we widen it and sweep it once -- a single shimmer pass
+   that is the signature of the launch. */
+.fm-splash__mess {
+  background-size: 220% 100%;
+  background-position: 120% 0;
+  animation: fm-splash-shimmer 1150ms ease 640ms 1 both;
+}
+
+.fm-splash__tagline {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  color: var(--muted-foreground);
+  opacity: 0;
+  transform: translateY(8px);
+  animation: fm-splash-word-in 560ms cubic-bezier(0.16, 1, 0.3, 1) 560ms
+    forwards;
+}
+
+@keyframes fm-splash-bloom {
+  to {
+    opacity: 0.7;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes fm-splash-mark-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.68);
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fm-splash-word-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fm-splash-shimmer {
+  from {
+    background-position: 120% 0;
+  }
+  to {
+    background-position: -20% 0;
+  }
+}
+
+/* The lockup rises a touch and fades -- the "lift away" before the reveal. */
+@keyframes fm-splash-stage-out {
+  to {
+    transform: translateY(-14px) scale(1.06);
+    opacity: 0;
+  }
+}
+
+/* The ground dissolves, uncovering the app (already painted beneath). */
+@keyframes fm-splash-ground-out {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fm-splash {
+    animation: fm-splash-ground-out 400ms ease 1500ms forwards;
+  }
+  .fm-splash__stage {
+    animation: none;
+  }
+  .fm-splash::before {
+    animation: fm-splash-bloom-still 320ms ease forwards;
+  }
+  .fm-splash__mark,
+  .fm-splash__wordmark,
+  .fm-splash__tagline {
+    transform: none;
+    animation: fm-splash-fade-in 320ms ease forwards;
+  }
+  .fm-splash__mess {
+    animation: none;
+  }
+  @keyframes fm-splash-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes fm-splash-bloom-still {
+    to {
+      opacity: 0.6;
+      transform: translate(-50%, -50%) scale(1);
+    }
+  }
+}

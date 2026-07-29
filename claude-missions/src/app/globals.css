@@ -616,7 +616,10 @@ a[aria-disabled="true"]:active,
     radial-gradient(40% 32% at 6% 3%, rgba(14, 156, 130, 0.16), transparent 72%),
     radial-gradient(42% 32% at 97% 12%, rgba(185, 134, 44, 0.14), transparent 72%),
     radial-gradient(46% 36% at 1% 97%, rgba(44, 124, 190, 0.15), transparent 72%),
-    radial-gradient(48% 36% at 100% 100%, rgba(47, 154, 80, 0.16), transparent 72%);
+    radial-gradient(48% 36% at 100% 100%, rgba(47, 154, 80, 0.16), transparent 72%),
+    /* A single soft bloom through the middle so the center never reads empty --
+       kept the faintest of them all, so it fills the space without shouting. */
+    radial-gradient(58% 42% at 50% 46%, rgba(23, 168, 150, 0.07), transparent 70%);
 }
 
 .dark .app-aurora {
@@ -624,5 +627,6 @@ a[aria-disabled="true"]:active,
     radial-gradient(40% 32% at 6% 3%, rgba(38, 221, 182, 0.1), transparent 72%),
     radial-gradient(42% 32% at 97% 12%, rgba(236, 199, 102, 0.08), transparent 72%),
     radial-gradient(46% 36% at 1% 97%, rgba(87, 168, 238, 0.1), transparent 72%),
-    radial-gradient(48% 36% at 100% 100%, rgba(99, 217, 118, 0.1), transparent 72%);
+    radial-gradient(48% 36% at 100% 100%, rgba(99, 217, 118, 0.1), transparent 72%),
+    radial-gradient(58% 42% at 50% 46%, rgba(40, 217, 182, 0.05), transparent 70%);
 }

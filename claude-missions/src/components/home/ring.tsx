@@ -1,4 +1,5 @@
 import { AnimatedNumber } from "@/components/home/animated-number";
+import { useT } from "@/components/i18n/locale-provider";
 import { computeRingState, type RingLevel } from "@/lib/home/totals";
 import { cn } from "@/lib/utils";
 
@@ -67,6 +68,7 @@ export function Ring({
   targetKcal: number;
   view?: RingView;
 }) {
+  const { t } = useT();
   const state = computeRingState(consumedKcal, targetKcal);
   // Kept for `data-level` (tests / future accents); the stroke itself is
   // always the brand gradient now.
@@ -78,17 +80,17 @@ export function Ring({
   // target always `home-ring-target`.
   const targetSpec: MetricSpec = {
     value: state.targetKcal,
-    label: "Cilj",
+    label: t("ring.target"),
     valueTestId: "home-ring-target",
   };
   const consumedSpec: MetricSpec = {
     value: state.consumedKcal,
-    label: "Potrošeno",
+    label: t("ring.consumed"),
     valueTestId: "home-ring-consumed",
   };
   const remainingSpec: MetricSpec = {
     value: state.remainingKcal,
-    label: "Preostalo",
+    label: t("ring.remaining"),
     valueTestId: "home-ring-value",
     labelTestId: "home-ring-label",
     danger: state.isOver,

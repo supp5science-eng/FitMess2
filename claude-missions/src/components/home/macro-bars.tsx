@@ -1,4 +1,5 @@
 import { AnimatedNumber } from "@/components/home/animated-number";
+import { useT } from "@/components/i18n/locale-provider";
 import type { RingView } from "@/components/home/ring";
 
 // F027 / AS-048: the three macros (Proteini / Masti / UH) shown below the
@@ -85,10 +86,11 @@ export function MacroBars({
   target: { proteinG: number; carbsG: number; fatG: number };
   view?: RingView;
 }) {
+  const { t } = useT();
   return (
     <div data-testid="home-macro-bars" className="flex items-start gap-4">
       <MacroBar
-        label="Proteini"
+        label={t("macro.protein")}
         consumedG={consumed.protein}
         targetG={target.proteinG}
         color={MACRO_COLORS.protein}
@@ -96,7 +98,7 @@ export function MacroBars({
         testId="macro-bar-protein"
       />
       <MacroBar
-        label="Masti"
+        label={t("macro.fat")}
         consumedG={consumed.fat}
         targetG={target.fatG}
         color={MACRO_COLORS.fat}
@@ -104,7 +106,7 @@ export function MacroBars({
         testId="macro-bar-fat"
       />
       <MacroBar
-        label="UH"
+        label={t("macro.carbs")}
         consumedG={consumed.carbs}
         targetG={target.carbsG}
         color={MACRO_COLORS.carbs}

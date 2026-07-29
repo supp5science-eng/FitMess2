@@ -15,6 +15,7 @@ import { Ring, type RingView } from "@/components/home/ring";
 import { AdaptivePlanCard } from "@/components/home/adaptive-plan-card";
 import { StepsCard } from "@/components/home/steps-card";
 import { StreakPill } from "@/components/streak/streak-pill";
+import { useT } from "@/components/i18n/locale-provider";
 import { GricButton } from "@/components/home/gric-button";
 import { WaterButton } from "@/components/home/water-button";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
@@ -124,6 +125,7 @@ export function HomeScreen({
   // writes at `now()` and so has no meaning on a past day.
   isToday?: boolean;
 }) {
+  const { t } = useT();
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
 
   // Calorie/macro display mode. Defaults to "remaining" (Preostalo) -- what
@@ -294,7 +296,7 @@ export function HomeScreen({
       {target ? (
         <div className="flex flex-col gap-7">
           <h2 className="home-body text-xl font-semibold tracking-tight text-foreground">
-            Dnevni unos
+            {t("home.dailyIntake")}
           </h2>
           {/* Three swipeable pages (2026-07-25), in the order the day is
               usually read: calories -> movement/hydration -> nutrient quality.
@@ -417,7 +419,7 @@ export function HomeScreen({
           data-testid="home-no-target"
           className="home-body rounded-2xl border border-dashed border-border bg-background px-6 py-8 text-center text-sm text-muted-foreground"
         >
-          Cilj još nije podešen, pa ne možemo da prikažemo tvoj dnevni budžet.
+          {t("home.noTarget")}
         </div>
       )}
 
@@ -483,15 +485,16 @@ function ViewToggle({
   view: RingView;
   onChange: (next: RingView) => void;
 }) {
+  const { t } = useT();
   const options: { value: RingView; label: string }[] = [
-    { value: "consumed", label: "Potrošeno" },
-    { value: "remaining", label: "Preostalo" },
+    { value: "consumed", label: t("home.view.consumed") },
+    { value: "remaining", label: t("home.view.remaining") },
   ];
 
   return (
     <div
       role="group"
-      aria-label="Prikaz kalorija i makroa"
+      aria-label={t("home.view.aria")}
       className="home-body mx-auto inline-flex items-center gap-1 rounded-full bg-muted p-1"
     >
       {options.map(({ value, label }) => {

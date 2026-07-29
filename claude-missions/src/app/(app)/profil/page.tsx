@@ -4,6 +4,7 @@ import {
   Download,
   FileText,
   Footprints,
+  Languages,
   LifeBuoy,
   LogOut,
   Phone,
@@ -27,7 +28,9 @@ import {
   SettingsLinkRow,
 } from "@/components/settings/settings-row";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { LanguageToggle } from "@/components/settings/language-toggle";
 import { getCurrentUser } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
 
@@ -72,17 +75,18 @@ export default async function ProfilPage() {
 
   const cookieStore = await cookies();
   const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
+  const { t, locale } = await getT();
 
   return (
     <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 py-8">
       <h1 className="px-1 text-2xl font-semibold tracking-tight text-foreground">
-        Podešavanja
+        {t("settings.title")}
       </h1>
 
-      <SettingsGroup title="Nalog">
+      <SettingsGroup title={t("settings.group.account")}>
         <SettingsInfoRow
           icon={User}
-          label="Email"
+          label={t("settings.email")}
           value={email ?? "—"}
         />
         {/* `/profil/telefon`, NOT `/telefon`: the latter is the first-run
@@ -90,98 +94,103 @@ export default async function ProfilPage() {
         <SettingsLinkRow
           href="/profil/telefon"
           icon={Phone}
-          label="Broj telefona"
-          value={phone ?? "Dodaj"}
+          label={t("settings.phone")}
+          value={phone ?? t("settings.phone.add")}
         />
         <SettingsLinkRow
           href="/profil/lozinka"
           icon={Shield}
-          label="Promeni lozinku"
+          label={t("settings.password")}
         />
       </SettingsGroup>
 
-      <SettingsGroup title="Cilj i plan">
+      <SettingsGroup title={t("settings.group.goal")}>
         <SettingsLinkRow
           href="/profil/cilj"
           icon={Target}
-          label="Cilj i plan"
-          description="Promeni cilj i preračunaj kalorije"
+          label={t("settings.goal")}
+          description={t("settings.goal.desc")}
         />
         <SettingsLinkRow
           href="/profil/podaci"
           icon={SlidersHorizontal}
-          label="Lični podaci"
-          description="Pol, godine, visina, težina, aktivnost"
+          label={t("settings.personal")}
+          description={t("settings.personal.desc")}
         />
         <SettingsLinkRow
           href="/profil/koraci"
           icon={Footprints}
-          label="Cilj koraka"
-          description="Automatski po aktivnosti ili tvoj broj"
+          label={t("settings.steps")}
+          description={t("settings.steps.desc")}
         />
         <SettingsLinkRow
           href="/profil/pravila"
           icon={UtensilsCrossed}
-          label="Navike"
-          description="Čekiraj dnevne navike i prati niz"
+          label={t("settings.habits")}
+          description={t("settings.habits.desc")}
         />
       </SettingsGroup>
 
-      <SettingsGroup title="Aplikacija">
+      <SettingsGroup title={t("settings.group.app")}>
         <SettingsInfoRow
           icon={SunMoon}
-          label="Izgled"
+          label={t("settings.appearance")}
           trailing={<ThemeToggle initialTheme={theme} />}
+        />
+        <SettingsInfoRow
+          icon={Languages}
+          label={t("settings.language")}
+          trailing={<LanguageToggle initialLocale={locale} />}
         />
         <SettingsLinkRow
           href="/profil/podsetnici"
           icon={Bell}
-          label="Podsetnici"
-          description="Javimo se ako dan prođe bez ijednog unosa"
+          label={t("settings.reminders")}
+          description={t("settings.reminders.desc")}
         />
         <RefreshAppButton />
       </SettingsGroup>
 
       {isAdmin ? (
-        <SettingsGroup title="Admin">
+        <SettingsGroup title={t("settings.group.admin")}>
           <SettingsLinkRow
             href="/admin"
             icon={Shield}
-            label="Admin panel"
+            label={t("settings.admin")}
           />
         </SettingsGroup>
       ) : null}
 
-      <SettingsGroup title="Podaci i privatnost">
+      <SettingsGroup title={t("settings.group.privacy")}>
         <SettingsLinkRow
           href="/profil/moji-podaci"
           icon={Download}
-          label="Moji podaci"
-          description="Vidi šta čuvamo o tebi i preuzmi kopiju"
+          label={t("settings.mydata")}
+          description={t("settings.mydata.desc")}
         />
         <SettingsLinkRow
           href="/profil/privatnost"
           icon={FileText}
-          label="Politika privatnosti"
+          label={t("settings.privacy")}
         />
         <SettingsLinkRow
           href="/profil/uslovi"
           icon={ScrollText}
-          label="Uslovi korišćenja"
+          label={t("settings.terms")}
         />
       </SettingsGroup>
 
-      <SettingsGroup title="Podrška">
+      <SettingsGroup title={t("settings.group.support")}>
         <SettingsLinkRow
           href={`mailto:${SUPPORT_EMAIL}`}
           external
           icon={LifeBuoy}
-          label="Kontaktiraj podršku"
+          label={t("settings.contact")}
           value={SUPPORT_EMAIL}
         />
         <SettingsInfoRow
           icon={FileText}
-          label="Verzija aplikacije"
+          label={t("settings.version")}
           value={APP_VERSION}
         />
       </SettingsGroup>
@@ -206,7 +215,7 @@ export default async function ProfilPage() {
                 <LogOut className="size-[18px]" aria-hidden={true} />
               </span>
               <span className="text-sm font-medium text-foreground">
-                Odjavi se
+                {t("settings.signout")}
               </span>
             </div>
           </button>
@@ -221,7 +230,7 @@ export default async function ProfilPage() {
                 <Trash2 className="size-[18px]" aria-hidden={true} />
               </span>
               <span className="text-sm font-medium text-destructive">
-                Obriši nalog
+                {t("settings.delete")}
               </span>
             </div>
           }

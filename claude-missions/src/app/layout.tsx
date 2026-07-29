@@ -4,8 +4,10 @@ import { cookies } from "next/headers";
 import "./globals.css";
 
 import { AppShell } from "@/components/shell/app-shell";
+import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { HapticProvider } from "@/components/pwa/haptic-provider";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
+import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/locale";
 import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
 
 // F005: single app-wide typeface, loaded via next/font (self-hosted, no
@@ -138,18 +140,21 @@ export default async function RootLayout({
   // (light).
   const cookieStore = await cookies();
   const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
+  const locale = resolveLocale(cookieStore.get(LOCALE_COOKIE)?.value);
   // The onboarding ring hand-off drops `fm_intro` just before landing on
   // `/danas`; while it's present the launch splash yields to that animation.
   const introActive = cookieStore.get("fm_intro") != null;
 
   return (
     <html
-      lang="sr"
+      lang={locale}
       className={`${theme} ${inter.variable} ${archivoBlack.variable} h-full antialiased`}
       style={{ colorScheme: theme }}
     >
       <body className="min-h-full">
-        <AppShell introActive={introActive}>{children}</AppShell>
+        <LocaleProvider locale={locale}>
+          <AppShell introActive={introActive}>{children}</AppShell>
+        </LocaleProvider>
         <ServiceWorkerRegister />
         <HapticProvider />
       </body>

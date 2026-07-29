@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { applyTheme, type Theme } from "@/lib/theme/theme";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +16,7 @@ import { cn } from "@/lib/utils";
  */
 export function ThemeToggle({ initialTheme }: { initialTheme: Theme }) {
   const router = useRouter();
+  const { t } = useT();
   const [theme, setTheme] = useState<Theme>(initialTheme);
 
   function select(next: Theme) {
@@ -25,8 +27,8 @@ export function ThemeToggle({ initialTheme }: { initialTheme: Theme }) {
   }
 
   const options: { value: Theme; label: string }[] = [
-    { value: "light", label: "Svetla" },
-    { value: "dark", label: "Tamna" },
+    { value: "light", label: t("theme.light") },
+    { value: "dark", label: t("theme.dark") },
   ];
 
   return (

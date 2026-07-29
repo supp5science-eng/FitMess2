@@ -5,6 +5,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChartColumnBig, Home, Settings } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,11 +26,15 @@ import { cn } from "@/lib/utils";
  * position (`ready`) so the lens never slides in from the left on load, and
  * it collapses to a plain fade under `prefers-reduced-motion`.
  */
-const NAV_ITEMS = [
-  { href: "/danas", label: "Početna", icon: Home },
-  { href: "/analitika", label: "Analitika", icon: ChartColumnBig },
-  { href: "/profil", label: "Profil", icon: Settings },
-] as const;
+const NAV_ITEMS: {
+  href: string;
+  labelKey: MessageKey;
+  icon: typeof Home;
+}[] = [
+  { href: "/danas", labelKey: "nav.home", icon: Home },
+  { href: "/analitika", labelKey: "nav.analytics", icon: ChartColumnBig },
+  { href: "/profil", labelKey: "nav.profile", icon: Settings },
+];
 
 /** True when the user asked for reduced motion (kept live via matchMedia). */
 function usePrefersReducedMotion(): boolean {
@@ -52,6 +58,7 @@ interface IndicatorRect {
 
 export function BottomNav() {
   const pathname = usePathname();
+  const { t } = useT();
   const navRef = useRef<HTMLElement>(null);
   const itemRefs = useRef<Array<HTMLAnchorElement | null>>([]);
   const [indicator, setIndicator] = useState<IndicatorRect>({
@@ -120,7 +127,7 @@ export function BottomNav() {
         }}
       />
 
-      {NAV_ITEMS.map(({ href, label, icon: Icon }, index) => {
+      {NAV_ITEMS.map(({ href, labelKey, icon: Icon }, index) => {
         const isActive = index === activeIndex;
 
         return (
@@ -144,7 +151,7 @@ export function BottomNav() {
                 stay well inside the rounded glass lens, including near its
                 curved lower edge, down to 375px. */}
             <span className="max-w-full whitespace-nowrap text-[10px] leading-none tracking-tight">
-              {label}
+              {t(labelKey)}
             </span>
           </Link>
         );

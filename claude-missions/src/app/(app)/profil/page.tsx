@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 
 import { signOutAction } from "../actions";
-import { AccountSwitcher } from "@/components/profil/account-switcher";
 import { DeleteAccountDialog } from "@/components/profil/delete-account-dialog";
 import { RefreshAppButton } from "@/components/settings/refresh-app-button";
 import { SettingsGroup } from "@/components/settings/settings-group";
@@ -194,15 +193,6 @@ export default async function ProfilPage() {
           value={APP_VERSION}
         />
       </SettingsGroup>
-
-      {currentUser ? (
-        <SettingsGroup>
-          <AccountSwitcher
-            currentUserId={currentUser.id}
-            currentEmail={email}
-          />
-        </SettingsGroup>
-      ) : null}
 
       <SettingsGroup>
         <form action={signOutAction}>

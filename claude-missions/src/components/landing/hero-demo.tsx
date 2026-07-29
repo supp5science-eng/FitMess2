@@ -276,9 +276,9 @@ function HomeScene({ end }: { end: boolean }) {
 
       {/* macro bars — Proteini / Masti / UH (consumed view: fill UP) */}
       <div className="lpd-macros">
-        <MacroCol label="Proteini" color="#f9745f" w0={47} w1={73} from={78} to={120} target={165} end={end} />
-        <MacroCol label="Masti" color="#f2c14e" w0={54} w1={71} from={38} to={50} target={70} end={end} />
-        <MacroCol label="UH" color="#45c78d" w0={56} w1={78} from={140} to={195} target={250} end={end} />
+        <MacroCol label="Proteini" color="#45c78d" w0={47} w1={73} from={78} to={120} target={165} end={end} />
+        <MacroCol label="Masti" color="#f9745f" w0={54} w1={71} from={38} to={50} target={70} end={end} />
+        <MacroCol label="UH" color="#f2c14e" w0={56} w1={78} from={140} to={195} target={250} end={end} />
       </div>
 
       {/* today's meals */}

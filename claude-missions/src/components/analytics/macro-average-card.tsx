@@ -17,12 +17,13 @@ import { cn } from "@/lib/utils";
 // week's chart would be worse than none.
 
 // Macro colours: protein red, carbs amber, fats blue -- fixed semantic colours
-// (not the theme accent) so they read the same in light and dark. Bars stack
-// blue → amber → red bottom-to-top, matching the reference design.
+// Macro colours come from the shared `--macro-*` tokens so the whole app agrees:
+// protein = green, carbs = yellow, fat = red. Bars stack green → yellow → red
+// top-to-bottom (protein, carbs, fat).
 const MACRO = {
-  protein: { color: "#EF6E64", label: "Proteini" },
-  carbs: { color: "#E0A45A", label: "Ugljeni hidrati" },
-  fat: { color: "#5B8DEF", label: "Masti" },
+  protein: { color: "var(--macro-protein)", label: "Proteini" },
+  carbs: { color: "var(--macro-carbs)", label: "Ugljeni hidrati" },
+  fat: { color: "var(--macro-fat)", label: "Masti" },
 } as const;
 
 const TAB_LABELS = ["Ova nedelja", "Prošla", "Pre 2 ned.", "Pre 3 ned."] as const;

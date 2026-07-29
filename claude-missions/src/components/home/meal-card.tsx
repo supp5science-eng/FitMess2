@@ -1,6 +1,7 @@
 import { LogAddMoreSheet } from "@/components/food/log-add-more-sheet";
 import { LogDeleteConfirm } from "@/components/food/log-delete-confirm";
 import { LogEditSheet } from "@/components/food/log-edit-sheet";
+import { useT } from "@/components/i18n/locale-provider";
 import { findMatchingCommonUnit } from "@/lib/food/portions";
 import type { Food, Log } from "@/lib/types/db";
 
@@ -32,6 +33,7 @@ export function MealCard({
   onSaved: (updatedLog: Log) => void;
   onDeleted: (logId: string) => void;
 }) {
+  const { t } = useT();
   const unitMatch = food
     ? findMatchingCommonUnit(food.common_units, log.grams)
     : null;
@@ -85,9 +87,9 @@ export function MealCard({
           data-testid={`meal-card-macros-${log.id}`}
           className="flex flex-wrap gap-x-4 gap-y-1 text-sm"
         >
-          <MacroStat label="Proteini" grams={log.protein} tone="text-macro-protein" />
-          <MacroStat label="UH" grams={log.carbs} tone="text-macro-carbs" />
-          <MacroStat label="Masti" grams={log.fat} tone="text-macro-fat" />
+          <MacroStat label={t("macro.protein")} grams={log.protein} tone="text-macro-protein" />
+          <MacroStat label={t("macro.carbs")} grams={log.carbs} tone="text-macro-carbs" />
+          <MacroStat label={t("macro.fat")} grams={log.fat} tone="text-macro-fat" />
         </div>
       ) : null}
       <div className="flex flex-wrap items-center gap-2">

@@ -108,11 +108,12 @@
   --chart-3: #8a9095;
   --chart-4: #b0b5b9;
   --chart-5: #c9a24b;
-  /* Macro accents, LIGHT theme: darkened from the dark-theme coral/amber/green
-     so they keep enough contrast on white (the dark values wash out there). */
-  --macro-protein: #d95540;
-  --macro-fat: #c98a1b;
-  --macro-carbs: #1f9e69;
+  /* Macro accents, LIGHT theme. Logical mapping: protein = green, fat = red,
+     carbs = yellow (darkened from the dark-theme values so they keep enough
+     contrast on white -- the dark values wash out there). */
+  --macro-protein: #1f9e69;
+  --macro-fat: #d95540;
+  --macro-carbs: #c98a1b;
   /* Brand accent -- the app's teal, theme-INDEPENDENT (mirrors the dark
      theme's --primary). Used by standalone light surfaces outside `.dark`
      that must still read as "FitMess" (e.g. the desktop gate wordmark),
@@ -202,11 +203,11 @@
   --chart-3: #a6b0ab;
   --chart-4: #6e7873;
   --chart-5: #c9a24b;
-  /* Macro accents, DARK theme: the original coral/amber/green (unchanged
-     look), now driven by tokens so `macro-bars.tsx` no longer inlines hex. */
-  --macro-protein: #f9745f;
-  --macro-fat: #f2c14e;
-  --macro-carbs: #45c78d;
+  /* Macro accents, DARK theme. Logical mapping: protein = green, fat = red,
+     carbs = yellow (driven by tokens so components never inline hex). */
+  --macro-protein: #45c78d;
+  --macro-fat: #f9745f;
+  --macro-carbs: #f2c14e;
   --sidebar: #0f1413;
   --sidebar-foreground: #f3f7f5;
   --sidebar-primary: #17d1a8;

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-// F005: the bottom nav renders four tabs, marks the active one via
+// F005: the bottom nav renders three tabs, marks the active one via
 // aria-current from the current pathname, and mounts the sliding liquid-glass
 // lens. The lens's exact pixel position is measured from the DOM at runtime
 // (0 in jsdom), so these tests assert structure/active-state, not geometry.
@@ -18,11 +18,11 @@ describe("BottomNav", () => {
     pathnameMock.mockReset();
   });
 
-  it("renders all four Serbian tabs as links", () => {
+  it("renders all three Serbian tabs as links", () => {
     pathnameMock.mockReturnValue("/danas");
     render(<BottomNav />);
 
-    for (const label of ["Početna", "Analitika", "Trčanje", "Profil"]) {
+    for (const label of ["Početna", "Analitika", "Profil"]) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
   });
@@ -59,7 +59,7 @@ describe("BottomNav", () => {
     // No nav tab owns an /dodaj route -> the lens fades out.
     expect(lens).toHaveStyle({ opacity: "0" });
     // And nothing is marked active.
-    for (const label of ["Početna", "Analitika", "Trčanje", "Profil"]) {
+    for (const label of ["Početna", "Analitika", "Profil"]) {
       expect(screen.getByRole("link", { name: label })).not.toHaveAttribute(
         "aria-current"
       );

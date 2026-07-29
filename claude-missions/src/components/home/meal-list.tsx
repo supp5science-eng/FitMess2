@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { MealCard } from "@/components/home/meal-card";
+import { useT } from "@/components/i18n/locale-provider";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import type { Log } from "@/lib/types/db";
 
@@ -17,20 +18,20 @@ export function MealList({
   onSaved: (updatedLog: Log) => void;
   onDeleted: (logId: string) => void;
 }) {
+  const { t } = useT();
+
   if (logs.length === 0) {
     return (
       <div
         data-testid="home-meals-empty"
         className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-background px-6 py-10 text-center"
       >
-        <p className="text-sm text-muted-foreground">
-          Još ništa nisi uneo/unela danas.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("home.meals.empty")}</p>
         <Link
           href="/dodaj/obrok"
           className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
         >
-          Slikaj obrok
+          {t("home.meals.empty.cta")}
         </Link>
       </div>
     );

@@ -17,6 +17,8 @@ import type { GoalType } from "@/lib/types/db";
 import { buildDateStrip } from "@/lib/home/date-strip";
 import { getLoggedDayKcals } from "@/lib/home/logged-days";
 import { getTodayData } from "@/lib/home/today";
+import { getT } from "@/lib/i18n/server";
+import type { Locale } from "@/lib/i18n/locale";
 import { getLoggedDayKeys } from "@/lib/streak/read-streak";
 import { computeStreak, type StreakSummary } from "@/lib/streak/streak";
 import { getStepsForDay, getStepsWeek } from "@/lib/steps/steps";
@@ -42,9 +44,25 @@ const SR_MONTHS_SHORT = [
   "dec",
 ];
 
-/** `"YYYY-MM-DD"` -> `"17. jul"` for the meals-section heading of a past day. */
-function shortDate(key: string): string {
+const EN_MONTHS_SHORT = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+/** `"YYYY-MM-DD"` -> `"17. jul"` (sr) / `"Jul 17"` (en) for a past day's heading. */
+function shortDate(key: string, locale: Locale): string {
   const [, month, day] = key.split("-").map(Number);
+  if (locale === "en") return `${EN_MONTHS_SHORT[month! - 1]} ${day}`;
   return `${day}. ${SR_MONTHS_SHORT[month! - 1]}`;
 }
 
@@ -80,6 +98,7 @@ export default async function DanasPage({
   searchParams: Promise<{ dan?: string | string[] }>;
 }) {
   const supabase = await createClient();
+  const { t, locale } = await getT();
   const userId = await getCurrentUserId(supabase);
 
   if (!userId) {
@@ -293,7 +312,11 @@ export default async function DanasPage({
       intro={intro}
       installPrompt={installPrompt}
       days={days}
-      mealsHeading={isToday ? "Obroci danas" : `Obroci · ${shortDate(selectedKey)}`}
+      mealsHeading={
+        isToday
+          ? t("home.mealsToday")
+          : t("home.mealsOn", { date: shortDate(selectedKey, locale) })
+      }
       adaptivePlan={adaptivePlan}
       planIntro={planIntro}
       dayKey={selectedKey}

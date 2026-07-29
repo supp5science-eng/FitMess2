@@ -111,36 +111,50 @@ export function visibleStepIds(goal: GoalType | null): OnboardingStepId[] {
   );
 }
 
-/** The five activity tiers, with short Serbian (ti-form) descriptions. */
+/** The five activity tiers, with short Serbian (ti-form) descriptions. The
+ * `*Key` fields mirror `label`/`description` as i18n message keys, resolved via
+ * `t()` in the view; the Serbian strings stay for logic/tests. */
 export const ACTIVITY_LEVEL_OPTIONS: {
   value: ActivityLevel;
   label: string;
+  labelKey: string;
   description: string;
+  descriptionKey: string;
 }[] = [
   {
     value: "sedentary",
     label: "Sedentaran",
+    labelKey: "activity.sedentary",
     description: "Malo ili nimalo vežbanja, pretežno sedenje.",
+    descriptionKey: "activity.sedentary.desc",
   },
   {
     value: "light",
     label: "Lagana aktivnost",
+    labelKey: "activity.light",
     description: "Lagane aktivnosti ili vežbanje 1-3x nedeljno.",
+    descriptionKey: "activity.light.desc",
   },
   {
     value: "moderate",
     label: "Umerena aktivnost",
+    labelKey: "activity.moderate",
     description: "Umereno vežbanje 3-5x nedeljno.",
+    descriptionKey: "activity.moderate.desc",
   },
   {
     value: "active",
     label: "Aktivan",
+    labelKey: "activity.active",
     description: "Intenzivno vežbanje 6-7x nedeljno.",
+    descriptionKey: "activity.active.desc",
   },
   {
     value: "very_active",
     label: "Veoma aktivan",
+    labelKey: "activity.veryActive",
     description: "Fizički posao ili trening dva puta dnevno.",
+    descriptionKey: "activity.veryActive.desc",
   },
 ];
 

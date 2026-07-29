@@ -66,6 +66,8 @@ export type ScoreComponentKey = "protein" | MicroKey;
 export interface ScoreComponent {
   key: ScoreComponentKey;
   labelSr: string;
+  /** i18n message key for the label, resolved via `t()` in the component. */
+  labelKey: string;
   /** "goal" = reach it, "limit" = stay under it. */
   kind: "goal" | "limit";
   /** Consumed density / target density. `null` when this nutrient has no data. */
@@ -81,8 +83,12 @@ export interface HealthScore {
   fillFraction: number;
   /** Serbian band label ("Odlično", "Dobro", ...) or null alongside a null score. */
   labelSr: string | null;
+  /** i18n key for the band label, resolved via `t()`; null alongside null score. */
+  bandKey: string | null;
   /** One calm Serbian sentence: what to do next, or why there's no score yet. */
   noteSr: string;
+  /** i18n key for the note, resolved via `t()` in the component. */
+  noteKey: string;
   /** Per-component breakdown, for the expandable detail rows. */
   components: ScoreComponent[];
 }
@@ -129,6 +135,34 @@ function bandLabelSr(score: number): string {
   if (score >= 5.5) return "Dobro";
   if (score >= 4) return "Može bolje";
   return "Ima prostora";
+}
+
+/** i18n key mirror of `bandLabelSr`, resolved via `t()` in the component. */
+function bandKeyFor(score: number): string {
+  if (score >= 8.5) return "score.band.excellent";
+  if (score >= 7) return "score.band.veryGood";
+  if (score >= 5.5) return "score.band.good";
+  if (score >= 4) return "score.band.couldBeBetter";
+  return "score.band.room";
+}
+
+/** i18n key mirror of `noteForWeakest`. */
+function noteKeyForWeakest(component: ScoreComponent | null): string {
+  if (!component) return "score.note.balanced";
+  switch (component.key) {
+    case "protein":
+      return "score.note.protein";
+    case "fiber":
+      return "score.note.fiber";
+    case "sugar":
+      return "score.note.sugar";
+    case "sodium":
+      return "score.note.sodium";
+    case "satFat":
+      return "score.note.satFat";
+    default:
+      return "score.note.balanced";
+  }
 }
 
 /**
@@ -183,6 +217,7 @@ export function computeHealthScore(input: HealthScoreInput): HealthScore {
   components.push({
     key: "protein",
     labelSr: "Proteini",
+    labelKey: "micro.protein",
     kind: "goal",
     ratio: proteinRatio,
     points: proteinRatio === null ? null : goalPoints(proteinRatio),
@@ -212,6 +247,7 @@ export function computeHealthScore(input: HealthScoreInput): HealthScore {
     components.push({
       key,
       labelSr: spec.labelSr,
+      labelKey: spec.labelKey,
       kind: spec.kind,
       ratio,
       points:
@@ -229,8 +265,10 @@ export function computeHealthScore(input: HealthScoreInput): HealthScore {
       score: null,
       fillFraction: 0,
       labelSr: null,
+      bandKey: null,
       noteSr:
         "Unesi par obroka pa ćemo izračunati ocenu za danas — gleda koliko je hrana bila kvalitetna, ne koliko je bilo kalorija.",
+      noteKey: "score.note.naFewMeals",
       components,
     };
   }
@@ -241,8 +279,10 @@ export function computeHealthScore(input: HealthScoreInput): HealthScore {
       score: null,
       fillFraction: 0,
       labelSr: null,
+      bandKey: null,
       noteSr:
         "Za veći deo današnjih unosa nemamo podatke o vlaknima, šećeru i soli, pa ocenu ne prikazujemo.",
+      noteKey: "score.note.naLowCoverage",
       components,
     };
   }
@@ -256,7 +296,9 @@ export function computeHealthScore(input: HealthScoreInput): HealthScore {
       score: null,
       fillFraction: 0,
       labelSr: null,
+      bandKey: null,
       noteSr: "Još nemamo dovoljno podataka za ocenu.",
+      noteKey: "score.note.naNotEnough",
       components,
     };
   }
@@ -282,7 +324,9 @@ export function computeHealthScore(input: HealthScoreInput): HealthScore {
     score,
     fillFraction: clamp01(score / MAX_SCORE),
     labelSr: bandLabelSr(score),
+    bandKey: bandKeyFor(score),
     noteSr: noteForWeakest(weakestIsNotable ? weakest : null),
+    noteKey: noteKeyForWeakest(weakestIsNotable ? weakest : null),
     components,
   };
 }

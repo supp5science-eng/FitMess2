@@ -107,6 +107,8 @@ function DayCircle({ cell }: { cell: DayCell }) {
 }
 
 function DayCellInner({ cell }: { cell: DayCell }) {
+  const { t } = useT();
+  const weekday = t("dow.short").split(" ")[cell.weekdayIndex] ?? cell.dayLabel;
   return (
     <span
       className={cn(
@@ -128,7 +130,7 @@ function DayCellInner({ cell }: { cell: DayCell }) {
                 : "text-muted-foreground"
         )}
       >
-        {cell.dayLabel}
+        {weekday}
       </span>
       <DayCircle cell={cell} />
     </span>

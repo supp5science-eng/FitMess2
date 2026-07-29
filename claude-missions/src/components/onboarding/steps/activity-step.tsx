@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import type { ActivityLevel } from "@/lib/types/db";
 import { ACTIVITY_LEVEL_OPTIONS } from "@/lib/onboarding/types";
 import { FieldError } from "@/components/onboarding/field-error";
@@ -28,13 +30,6 @@ function IntensityDots({ level }: { level: number }) {
   );
 }
 
-/** The five tiers get an icon each; harder tiers get more dots (see IntensityDots). */
-const ACTIVITY_OPTIONS: IconOptionItem<ActivityLevel>[] =
-  ACTIVITY_LEVEL_OPTIONS.map((option, index) => ({
-    ...option,
-    icon: <IntensityDots level={index + 1} />,
-  }));
-
 /** F015 step 5 (nivo aktivnosti) -- AS-019: collects one of 5 activity tiers. */
 export function ActivityStep({
   value,
@@ -45,19 +40,30 @@ export function ActivityStep({
   onChange: (value: ActivityLevel) => void;
   error?: string;
 }) {
+  const { t } = useT();
+  // The five tiers get an icon each; harder tiers get more dots. Labels resolve
+  // through `t()` so they follow the chosen language.
+  const options: IconOptionItem<ActivityLevel>[] = ACTIVITY_LEVEL_OPTIONS.map(
+    (option, index) => ({
+      value: option.value,
+      label: t(option.labelKey as MessageKey),
+      description: t(option.descriptionKey as MessageKey),
+      icon: <IntensityDots level={index + 1} />,
+    })
+  );
   return (
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-xl font-semibold text-foreground">
-          Koliko si aktivan/aktivna?
+          {t("onboarding.activity.title")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Izaberi opciju koja najbolje opisuje tvoju nedelju.
+          {t("onboarding.activity.subtitle")}
         </p>
       </div>
       <IconOptionGroup
-        legend="Nivo aktivnosti"
-        options={ACTIVITY_OPTIONS}
+        legend={t("onboarding.activity.legend")}
+        options={options}
         value={value}
         onChange={onChange}
         size="compact"

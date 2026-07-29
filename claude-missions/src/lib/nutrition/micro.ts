@@ -33,22 +33,43 @@ export interface MicroSpec {
   key: MicroKey;
   /** Serbian card label, e.g. "Vlakna". */
   labelSr: string;
+  /** i18n message key for the label, resolved via `t()` in the component. */
+  labelKey: string;
   /** Unit as shown to the user: grams for three, milligrams for sodium. */
   unit: "g" | "mg";
   kind: MicroKind;
 }
 
 export const MICRO_SPECS: Record<MicroKey, MicroSpec> = {
-  fiber: { key: "fiber", labelSr: "Vlakna", unit: "g", kind: "goal" },
-  sugar: { key: "sugar", labelSr: "Šećer", unit: "g", kind: "limit" },
+  fiber: {
+    key: "fiber",
+    labelSr: "Vlakna",
+    labelKey: "micro.fiber",
+    unit: "g",
+    kind: "goal",
+  },
+  sugar: {
+    key: "sugar",
+    labelSr: "Šećer",
+    labelKey: "micro.sugar",
+    unit: "g",
+    kind: "limit",
+  },
   // "So" (salt) is what a Serbian speaker reads off a declaration and thinks
   // about, but the NUMBER we track is sodium in mg (the internationally stated
   // limit, and what labels give as "natrijum"). `saltGramsFromSodiumMg` below
   // converts when we want to speak in salt.
-  sodium: { key: "sodium", labelSr: "So", unit: "mg", kind: "limit" },
+  sodium: {
+    key: "sodium",
+    labelSr: "So",
+    labelKey: "micro.sodium",
+    unit: "mg",
+    kind: "limit",
+  },
   satFat: {
     key: "satFat",
     labelSr: "Zasićene masti",
+    labelKey: "micro.satFat",
     unit: "g",
     kind: "limit",
   },

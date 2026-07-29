@@ -6,6 +6,7 @@ import {
   analyzePrizmaMeal,
   estimateMealFromImageAndVoice,
   finalizePrizmaMeal,
+  NO_FOOD_ERROR_SR,
   type CombinedVariant,
   type ImagePart,
   type UserPortion,
@@ -258,6 +259,11 @@ export async function analyzeMealAction(
 
   try {
     const data = await analyzePrizmaMeal(read.images, read.variant, read.reference);
+    // No food on the photo -> stop before the dial/questions and say so, rather
+    // than walking the user through describing a portion of nothing.
+    if (data.nemaHrane) {
+      return { ok: false, error_sr: NO_FOOD_ERROR_SR };
+    }
     return { ok: true, data };
   } catch (err) {
     console.error("[najtacnije] analyze failed:", err);

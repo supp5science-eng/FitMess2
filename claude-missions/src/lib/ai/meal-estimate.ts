@@ -108,6 +108,17 @@ export const mealEstimateSchema = z.object({
   zasicene_g: boundedNullable(300),
   sigurnost: z.enum(CONFIDENCE_VALUES).catch("srednja"),
   napomena: z.string().trim().max(300).catch("").default(""),
+  // Set by the photo flow when the image has no food/drink at all (a selfie, a
+  // meme, an empty table, a screenshot). Optional + default false, so every
+  // other flow that fills this schema (voice, combined, Prizma finalize) is
+  // unaffected -- only "Slikaj obrok" asks for it (via MEAL_PHOTO_RESPONSE_SCHEMA
+  // below) and only its action reads it.
+  //
+  // Strict boolean (NOT `z.coerce`): only a real `true` blocks the flow;
+  // anything odd falls back to false. A false negative (missing a no-food photo)
+  // just estimates as before, but a false positive would wrongly refuse a real
+  // meal -- so the safe default is "there is food".
+  nema_hrane: z.boolean().catch(false).default(false),
 });
 
 export type MealEstimate = z.infer<typeof mealEstimateSchema>;
@@ -208,6 +219,23 @@ export const MEAL_RESPONSE_SCHEMA = {
   ],
 } as const;
 
+// The "Slikaj obrok" photo flow gets its OWN response schema. The shared
+// MEAL_RESPONSE_SCHEMA above stays byte-for-byte identical -- the voice and
+// combined flows re-use it, and neither should be asked to judge "is there
+// food" (voice has no image at all). This one adds a `nema_hrane` gate the model
+// answers FIRST (propertyOrdering), so a photo with no food is caught before any
+// number is invented and the flow can say so plainly instead of hallucinating a
+// meal for a selfie or a meme.
+export const MEAL_PHOTO_RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    nema_hrane: { type: "BOOLEAN" },
+    ...MEAL_RESPONSE_SCHEMA.properties,
+  },
+  required: ["nema_hrane", ...MEAL_RESPONSE_SCHEMA.required],
+  propertyOrdering: ["nema_hrane", ...MEAL_RESPONSE_SCHEMA.propertyOrdering],
+} as const;
+
 /**
  * Rescales an estimate's micronutrients to the portion the user finally
  * confirmed. The confirm screens let the user correct the grams, and the macros
@@ -291,7 +319,10 @@ export const MICRO_PROMPT_RULES = `- "vlakna_g", "secer_g", "natrijum_mg", "zasi
   - "zasicene_g": zasićene masne kiseline u gramima (deo ukupne masti — mora biti manje od "mast_g"; masti životinjskog porekla, mlečni proizvodi, palmino i kokosovo ulje ih nose najviše).`;
 
 export const MEAL_PROMPT = `Ti si iskusan nutricionista koji procenjuje obroke sa fotografija.
-Na slici je hrana/obrok. Proceni nutritivne vrednosti ZA KOLIČINU KOJA SE VIDI na slici (ne za 100 g).
+
+PRVO PROVERI IMA LI HRANE NA SLICI. Ako na slici NEMA nikakve hrane ni pića (npr. selfi, meme, prazan tanjir, nasumičan predmet, ekran, dokument, životinja), postavi "nema_hrane": true, "naziv": "Nema hrane", a sve brojeve (procenjeni_grami, kcal, makroe, mikroe) na 0 — i tu stani, ne izmišljaj obrok. Ako hrane IMA, postavi "nema_hrane": false i normalno proceni.
+
+Kad ima hrane, proceni nutritivne vrednosti ZA KOLIČINU KOJA SE VIDI na slici (ne za 100 g).
 
 Pravila:
 - Naziv na srpskom (latinica), kratko i konkretno (npr. "Ćevapi sa lepinjom i lukom").

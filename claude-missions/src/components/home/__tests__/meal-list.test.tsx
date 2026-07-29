@@ -1,7 +1,11 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 vi.stubGlobal("fetch", vi.fn());
+
+// "Seen once" for meal photos is remembered in localStorage; keep tests
+// independent of each other's reveals.
+beforeEach(() => window.localStorage.clear());
 
 import { MealList } from "@/components/home/meal-list";
 import type { LogWithFood } from "@/lib/home/attach-food";
@@ -169,5 +173,55 @@ describe("Slikaj obrok: a meal log with a stored photo shows the photo + macros"
     expect(
       screen.queryByTestId("meal-card-macros-log-1")
     ).not.toBeInTheDocument();
+  });
+
+  it("opens a full-screen lightbox of the meal photo on tap, and closes it", () => {
+    const logs = [
+      makeLog({ id: "log-photo", name: "Ćevapi", food_id: null, food: null, hasPhoto: true }),
+    ];
+
+    render(<MealList logs={logs} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+
+    // Closed by default.
+    expect(
+      screen.queryByTestId("meal-card-photo-overlay-log-photo")
+    ).not.toBeInTheDocument();
+
+    // Tapping the photo opens the lightbox with the enlarged shot.
+    fireEvent.click(screen.getByTestId("meal-card-photo-button-log-photo"));
+    const overlay = screen.getByTestId("meal-card-photo-overlay-log-photo");
+    expect(overlay).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /Ćevapi/ })).toBeInTheDocument();
+
+    // The ✕ closes it again.
+    fireEvent.click(screen.getByTestId("meal-card-photo-close-log-photo"));
+    expect(
+      screen.queryByTestId("meal-card-photo-overlay-log-photo")
+    ).not.toBeInTheDocument();
+  });
+
+  it("veils the photo until it is first opened, then reveals it and remembers", () => {
+    const logs = [
+      makeLog({ id: "log-veil", name: "Sarma", food_id: null, food: null, hasPhoto: true }),
+    ];
+    const { rerender } = render(
+      <MealList logs={logs} onSaved={vi.fn()} onDeleted={vi.fn()} />
+    );
+
+    // Veiled on first sight: the reveal hint is shown.
+    expect(screen.getByText("Dodirni da vidiš")).toBeInTheDocument();
+
+    // Opening the photo marks it seen and un-veils it: the hint is gone, and the
+    // clear photo stands on its own (no enlarge badge anywhere).
+    fireEvent.click(screen.getByTestId("meal-card-photo-button-log-veil"));
+    expect(screen.queryByText("Dodirni da vidiš")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("meal-card-expand-log-veil")
+    ).not.toBeInTheDocument();
+
+    // And the reveal is remembered across a fresh render (persisted).
+    fireEvent.click(screen.getByTestId("meal-card-photo-close-log-veil"));
+    rerender(<MealList logs={logs} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+    expect(screen.queryByText("Dodirni da vidiš")).not.toBeInTheDocument();
   });
 });

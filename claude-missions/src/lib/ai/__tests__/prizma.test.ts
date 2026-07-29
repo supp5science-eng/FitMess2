@@ -222,6 +222,28 @@ describe("parsePrizmaAnalysis — the extra angle", () => {
   });
 });
 
+describe("parsePrizmaAnalysis — no food on the photo", () => {
+  it("flags a photo with no food (meal variant)", () => {
+    const result = parsePrizmaAnalysis(
+      { nema_hrane: true, pitanja: [] },
+      "obrok"
+    );
+    expect(result.nemaHrane).toBe(true);
+  });
+
+  it("defaults to 'there is food' when unflagged or not a real boolean", () => {
+    expect(parsePrizmaAnalysis({ pitanja: [] }, "obrok").nemaHrane).toBe(false);
+    // Only a strict `true` counts -- a stray string must not block a real meal.
+    expect(parsePrizmaAnalysis({ nema_hrane: "da" }, "obrok").nemaHrane).toBe(false);
+  });
+
+  it("never flags no-food on the label variant (a label isn't a plate)", () => {
+    expect(
+      parsePrizmaAnalysis({ nema_hrane: true }, "deklaracija").nemaHrane
+    ).toBe(false);
+  });
+});
+
 describe("describeShots", () => {
   it("names both viewpoints when two angles were captured", () => {
     const text = describeShots(2, "viljuska");

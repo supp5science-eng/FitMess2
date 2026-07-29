@@ -141,9 +141,6 @@ export default async function RootLayout({
   const cookieStore = await cookies();
   const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
   const locale = resolveLocale(cookieStore.get(LOCALE_COOKIE)?.value);
-  // The onboarding ring hand-off drops `fm_intro` just before landing on
-  // `/danas`; while it's present the launch splash yields to that animation.
-  const introActive = cookieStore.get("fm_intro") != null;
 
   return (
     <html
@@ -153,7 +150,7 @@ export default async function RootLayout({
     >
       <body className="min-h-full">
         <LocaleProvider locale={locale}>
-          <AppShell introActive={introActive}>{children}</AppShell>
+          <AppShell>{children}</AppShell>
         </LocaleProvider>
         <ServiceWorkerRegister />
         <HapticProvider />

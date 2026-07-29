@@ -162,6 +162,11 @@ export type PrizmaQuestionSource =
  * from committing to a mass before it has been told the shape.
  */
 export interface PrizmaAnalysis {
+  /** True when the photo shows no food at all (a selfie, a meme, an empty
+   * table) -- the flow stops here and says so instead of handing the user a
+   * dial for nothing. Never set for the `deklaracija` variant (a nutrition
+   * label is not "food on a plate", so the food check doesn't apply). */
+  nemaHrane: boolean;
   /** Best short name for the dish, used to label the dial. */
   naziv: string;
   /** Which dial the user should see, and what one unit of this food weighs. */
@@ -295,7 +300,11 @@ export function parsePrizmaAnalysis(
     .filter((q) => q.opcije.length >= 2)
     .sort((a, b) => b.uticaj_kcal - a.uticaj_kcal);
 
-  const base = { naziv, posuda, jedinica, razmera, vidim: seen, ugao };
+  // Only the meal ("obrok") variant judges "is there food" -- a nutrition label
+  // legitimately has no food on a plate, so the flag is forced off there.
+  const nemaHrane = variant === "obrok" && obj.nema_hrane === true;
+
+  const base = { nemaHrane, naziv, posuda, jedinica, razmera, vidim: seen, ugao };
 
   // No question is a good outcome, not a failure: the dial already carries the
   // portion, so a plate the model reads cleanly has nothing left worth asking.
@@ -337,6 +346,10 @@ export function parsePrizmaAnalysis(
 export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
+    // Judged FIRST (see propertyOrdering): is there any food at all? A photo
+    // with none is caught here, before the model inventories or classifies
+    // anything, so the flow can bail out cleanly.
+    nema_hrane: { type: "BOOLEAN" },
     vidim: {
       type: "ARRAY",
       items: {
@@ -391,6 +404,7 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
     ugao_zasto: { type: "STRING" },
   },
   required: [
+    "nema_hrane",
     "vidim",
     "naziv",
     "posuda",
@@ -399,6 +413,7 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
     "jedinica_grami",
   ],
   propertyOrdering: [
+    "nema_hrane",
     "vidim",
     "naziv",
     "posuda",
@@ -527,6 +542,8 @@ export const PRIZMA_ANALYZE_PROMPT = `Ti si iskusan nutricionista. Dobijaš foto
 TVOJ ZADATAK JE DA PREPOZNAŠ, NE DA PROCENIŠ.
 Koliko je hrane reći će ti sam korisnik u sledećem koraku — on stoji nad tanjirom i vidi ono što ti ne vidiš. Ti mu spremaš alat kojim će to reći i pitaš ga samo ono što ni on ni slika još nisu rekli. NE računaj kalorije ovde.
 
+KORAK 0 — IMA LI UOPŠTE HRANE? Ako na slici NEMA nikakve hrane ni pića (npr. selfi, meme, prazan tanjir, nasumičan predmet, ekran, dokument, životinja), postavi "nema_hrane": true i tu praktično stani — ostala polja popuni najbolje što umeš ili ostavi prazna, njih niko neće koristiti. Ako hrane IMA, postavi "nema_hrane": false i nastavi normalno sa koracima ispod.
+
 KORAK 1 — POPIŠI ŠTA VIDIŠ.
 U "vidim" navedi svaku komponentu obroka posebno, i za SVAKU odredi svoju sigurnost:
 - "visoka" = jasno vidiš šta je
@@ -578,7 +595,7 @@ U "vidim" navedi šta si očitao (npr. "kcal na 100 g", "ukupna masa pakovanja")
 U "naziv" upiši naziv proizvoda ako se vidi, inače kratak opis.
 
 KORAK 2 — POPUNI OBAVEZNA POLJA OBLIKA.
-Deklaracija nema oblik porcije, pa uvek vrati: "posuda": "ravan", "jedinica_naziv": "ceo proizvod", "jedinica_grami": ukupna masa pakovanja u gramima ako se vidi, inače 100. "tanjir_cm": 26, "razmera_po_referenci": false, "treba_ugao": false.
+Deklaracija nema oblik porcije, pa uvek vrati: "nema_hrane": false, "posuda": "ravan", "jedinica_naziv": "ceo proizvod", "jedinica_grami": ukupna masa pakovanja u gramima ako se vidi, inače 100. "tanjir_cm": 26, "razmera_po_referenci": false, "treba_ugao": false.
 
 KORAK 3 — PITAJ ONO ŠTO FALI.
 Sa deklaracije čitaš vrednosti na 100 g, ali ti gotovo uvek fali KOLIKO je proizvod ukupno težak i KOLIKO je pojedeno. Ovde je to dozvoljeno i poželjno pitati. Najviše ${MAX_QUESTIONS} kratka pitanja sa 2–4 ponuđena odgovora.

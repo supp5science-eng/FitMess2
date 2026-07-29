@@ -1,4 +1,14 @@
 import type { Locale } from "@/lib/i18n/locale";
+import { adminMessages } from "@/lib/i18n/messages-parts/admin";
+import { analyticsMessages } from "@/lib/i18n/messages-parts/analytics";
+import { appMessages } from "@/lib/i18n/messages-parts/app";
+import { authMessages } from "@/lib/i18n/messages-parts/auth";
+import { dodajMessages } from "@/lib/i18n/messages-parts/dodaj";
+import { foodMessages } from "@/lib/i18n/messages-parts/food";
+import { homeExtraMessages } from "@/lib/i18n/messages-parts/home";
+import { mediaMessages } from "@/lib/i18n/messages-parts/media";
+import { onboardingMessages } from "@/lib/i18n/messages-parts/onboarding";
+import { profilMessages } from "@/lib/i18n/messages-parts/profil";
 
 /**
  * UI copy dictionary. Serbian (`sr`) is the SOURCE OF TRUTH for the set of
@@ -6,9 +16,10 @@ import type { Locale } from "@/lib/i18n/locale";
  * build if an English string is missing (or a stray key is added). Add new
  * keys here, namespaced by surface (`nav.*`, `settings.*`, `home.*`, ...).
  *
- * Only strings that live in this dictionary switch language; the rest of the
- * app is still Serbian and is being migrated surface by surface. A key with no
- * translation for the active locale falls back to Serbian, then to the key.
+ * Larger per-surface copy sets live in `messages-parts/*` fragment modules
+ * (each `{ sr, en }` with identical key sets) and are spread in below; small
+ * shared/global keys stay inline here. A key with no translation for the
+ * active locale falls back to Serbian, then to the key.
  */
 const sr = {
   // Bottom navigation
@@ -74,6 +85,18 @@ const sr = {
   "macro.protein": "Proteini",
   "macro.fat": "Masti",
   "macro.carbs": "UH",
+
+  // Per-surface fragments (Serbian source strings)
+  ...authMessages.sr,
+  ...profilMessages.sr,
+  ...dodajMessages.sr,
+  ...onboardingMessages.sr,
+  ...homeExtraMessages.sr,
+  ...analyticsMessages.sr,
+  ...foodMessages.sr,
+  ...mediaMessages.sr,
+  ...adminMessages.sr,
+  ...appMessages.sr,
 } as const;
 
 export type MessageKey = keyof typeof sr;
@@ -136,6 +159,18 @@ const en: Record<MessageKey, string> = {
   "macro.protein": "Protein",
   "macro.fat": "Fat",
   "macro.carbs": "Carbs",
+
+  // Per-surface fragments (English translations)
+  ...authMessages.en,
+  ...profilMessages.en,
+  ...dodajMessages.en,
+  ...onboardingMessages.en,
+  ...homeExtraMessages.en,
+  ...analyticsMessages.en,
+  ...foodMessages.en,
+  ...mediaMessages.en,
+  ...adminMessages.en,
+  ...appMessages.en,
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { sr, en };

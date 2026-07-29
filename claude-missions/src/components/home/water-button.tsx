@@ -8,6 +8,8 @@ import {
   type MiniWeekDay,
 } from "@/components/home/mini-week-bars";
 import { ProgressRing } from "@/components/home/progress-ring";
+import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
 import { cn } from "@/lib/utils";
@@ -28,19 +30,18 @@ import { cn } from "@/lib/utils";
 // to >= 0) and returns the new total — the source of truth this component then
 // reflects.
 
-const SAVE_FAILED_ERROR_SR = "Nismo uspeli da sačuvamo vodu. Pokušaj ponovo.";
-
 /** Cap the amount a single confirm can add (matches the DB/route bound). */
 const MAX_ML = 20000;
 
 /** Fine-tune step for the − / + steppers. */
 const STEP_ML = 250;
 
-/** Quick-add presets, in the reference's order (glass → bottle → large). */
-const PRESETS: { ml: number; label: string; sub: string; icon: typeof GlassWater }[] = [
-  { ml: 250, label: "+1 čaša", sub: "250 mL", icon: GlassWater },
-  { ml: 500, label: "+1 flaša", sub: "500 mL", icon: Milk },
-  { ml: 750, label: "+1 velika flaša", sub: "750 mL", icon: Milk },
+/** Quick-add presets, in the reference's order (glass → bottle → large). The
+ * `labelKey` is resolved through `t()` inside the component. */
+const PRESETS: { ml: number; labelKey: string; sub: string; icon: typeof GlassWater }[] = [
+  { ml: 250, labelKey: "home.water.preset.glass", sub: "250 mL", icon: GlassWater },
+  { ml: 500, labelKey: "home.water.preset.bottle", sub: "500 mL", icon: Milk },
+  { ml: 750, labelKey: "home.water.preset.large", sub: "750 mL", icon: Milk },
 ];
 
 /** The sky arc, light -> dark (the "Voda" accent, mirroring Koraci's violet). */
@@ -88,6 +89,7 @@ export function WaterButton({
   /** Layout hook for the caller. */
   className?: string;
 }) {
+  const { t } = useT();
   const [totalMl, setTotalMl] = useState(initialMl);
   const [isOpen, setIsOpen] = useState(false);
   // The pending delta. Can be negative (remove water), floored so it can never
@@ -152,11 +154,11 @@ export function WaterButton({
       const body = (await response.json()) as VodaResponseBody;
 
       if (!response.ok || !body.ok || !body.data) {
-        return { error: body.error_sr || SAVE_FAILED_ERROR_SR };
+        return { error: body.error_sr || t("home.water.saveFailed") };
       }
       return { ml: body.data.ml };
     } catch {
-      return { error: SAVE_FAILED_ERROR_SR };
+      return { error: t("home.water.saveFailed") };
     }
   }
 
@@ -205,7 +207,11 @@ export function WaterButton({
       : day
   );
   const confirmLabel =
-    status === "saving" ? "Čuvanje..." : addMl < 0 ? "Ukloni" : "Dodaj";
+    status === "saving"
+      ? t("home.card.saving")
+      : addMl < 0
+        ? t("home.card.remove")
+        : t("home.card.add");
 
   return (
     <div className={cn("flex flex-col", className)}>
@@ -218,9 +224,14 @@ export function WaterButton({
           type="button"
           onClick={openSheet}
           data-testid="water-open-button"
-          aria-label={`Voda: ${formatWaterSr(totalMl)}${
-            goalMl ? ` od ${formatWaterSr(goalMl)}` : ""
-          }. Dodaj vodu.`}
+          aria-label={
+            goalMl
+              ? t("home.water.ariaWithGoal", {
+                  total: formatWaterSr(totalMl),
+                  goal: formatWaterSr(goalMl),
+                })
+              : t("home.water.aria", { total: formatWaterSr(totalMl) })
+          }
           className="flex w-full items-center gap-3.5 text-left active:translate-y-px"
         >
           <ProgressRing
@@ -236,14 +247,14 @@ export function WaterButton({
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="flex items-center gap-2">
               <span className="text-sm font-semibold text-muted-foreground">
-                Voda
+                {t("home.water.label")}
               </span>
               {goalMl && totalMl >= goalMl ? (
                 <span
                   data-testid="water-goal-reached"
                   className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[0.7rem] font-semibold text-sky-400"
                 >
-                  Cilj 🎉
+                  {t("home.card.goalReached")}
                 </span>
               ) : null}
             </span>
@@ -260,7 +271,7 @@ export function WaterButton({
                 data-testid="water-goal"
                 className="text-xs text-muted-foreground"
               >
-                Dnevni cilj: {formatWaterSr(goalMl)}
+                {t("home.card.dailyGoal", { goal: formatWaterSr(goalMl) })}
               </span>
             ) : null}
           </span>
@@ -334,12 +345,12 @@ export function WaterButton({
                 id="water-sheet-title"
                 className="text-lg font-semibold text-foreground"
               >
-                Unesi vodu
+                {t("home.water.sheetTitle")}
               </h2>
               <button
                 type="button"
                 onClick={closeSheet}
-                aria-label="Zatvori"
+                aria-label={t("home.close")}
                 data-testid="water-cancel-button"
                 className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
               >
@@ -354,7 +365,7 @@ export function WaterButton({
                 type="button"
                 onClick={() => bump(-STEP_ML)}
                 disabled={addMl <= -totalMl}
-                aria-label="Skini 250 mL"
+                aria-label={t("home.water.minusAria", { n: STEP_ML })}
                 data-testid="water-minus-button"
                 className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:opacity-40 active:translate-y-px"
               >
@@ -365,7 +376,7 @@ export function WaterButton({
                 <input
                   type="text"
                   inputMode="numeric"
-                  aria-label="Količina vode u mililitrima"
+                  aria-label={t("home.water.inputAria")}
                   data-testid="water-amount-input"
                   value={String(addMl)}
                   onChange={(event) => onAmountChange(event.target.value)}
@@ -381,7 +392,7 @@ export function WaterButton({
                 type="button"
                 onClick={() => bump(STEP_ML)}
                 disabled={addMl >= MAX_ML}
-                aria-label="Dodaj 250 mL"
+                aria-label={t("home.water.plusAria", { n: STEP_ML })}
                 data-testid="water-plus-button"
                 className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border bg-background text-foreground transition-colors hover:bg-muted disabled:opacity-40 active:translate-y-px"
               >
@@ -390,9 +401,9 @@ export function WaterButton({
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
-              {PRESETS.map(({ ml, label, sub, icon: Icon }, index) => (
+              {PRESETS.map(({ ml, labelKey, sub, icon: Icon }, index) => (
                 <button
-                  key={label}
+                  key={labelKey}
                   type="button"
                   onClick={() => bump(ml)}
                   data-testid={`water-preset-${ml}`}
@@ -403,7 +414,7 @@ export function WaterButton({
                     aria-hidden="true"
                   />
                   <span className="text-xs font-semibold leading-tight text-foreground">
-                    {label}
+                    {t(labelKey as MessageKey)}
                   </span>
                   <span className="text-[0.7rem] text-muted-foreground">
                     {sub}
@@ -437,8 +448,8 @@ export function WaterButton({
                 className="text-center text-xs text-muted-foreground"
               >
                 {addMl === 0
-                  ? `Uneseno: ${formatWaterSr(totalMl)}`
-                  : `Ukupno danas: ${formatWaterSr(resultMl)}`}
+                  ? t("home.water.loggedToday", { total: formatWaterSr(totalMl) })
+                  : t("home.water.totalToday", { total: formatWaterSr(resultMl) })}
               </p>
             </div>
           </div>

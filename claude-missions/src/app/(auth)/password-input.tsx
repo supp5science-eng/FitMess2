@@ -2,6 +2,8 @@
 
 import { useId, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 /** Eye / eye-off icons for the reveal toggle (hand-rolled to keep the auth
  * forms free of icon-library imports, matching the Google mark). */
 function EyeIcon() {
@@ -52,6 +54,7 @@ export function PasswordInput({
 }) {
   const [visible, setVisible] = useState(false);
   const id = useId();
+  const { t } = useT();
 
   return (
     <div className="auth-field">
@@ -77,7 +80,7 @@ export function PasswordInput({
           // Keep the input focused (and the iOS keyboard open) when tapping.
           onPointerDown={(event) => event.preventDefault()}
           onClick={() => setVisible((current) => !current)}
-          aria-label={visible ? "Sakrij lozinku" : "Prikaži lozinku"}
+          aria-label={visible ? t("auth.password.hide") : t("auth.password.show")}
           aria-pressed={visible}
         >
           {visible ? <EyeOffIcon /> : <EyeIcon />}

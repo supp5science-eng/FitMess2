@@ -4,6 +4,7 @@ import { ChevronDown } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useState, useTransition } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { FieldError } from "@/components/onboarding/field-error";
 import {
   rangeInclusive,
@@ -29,11 +30,6 @@ import { cn } from "@/lib/utils";
 
 import { saveProfileDataAction } from "./actions";
 
-const SEX_OPTIONS: { value: Sex; label: string }[] = [
-  { value: "female", label: "Žensko" },
-  { value: "male", label: "Muško" },
-];
-
 type Initial = {
   name: string | null;
   sex: Sex | null;
@@ -45,7 +41,13 @@ type Initial = {
 
 export function EditProfileForm({ initial }: { initial: Initial }) {
   const router = useRouter();
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
+
+  const sexOptions: { value: Sex; label: string }[] = [
+    { value: "female", label: t("profil.data.female") },
+    { value: "male", label: t("profil.data.male") },
+  ];
 
   const [name, setName] = useState(initial.name ?? "");
   const [sex, setSex] = useState<Sex | null>(initial.sex);
@@ -90,27 +92,28 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="ime">Ime</Label>
+        <Label htmlFor="ime">{t("profil.data.name")}</Label>
         <Input
           id="ime"
           value={name}
           onChange={(event) => setName(event.target.value)}
           autoComplete="given-name"
           maxLength={60}
-          placeholder="Tvoje ime"
+          placeholder={t("profil.data.namePlaceholder")}
         />
       </div>
 
       <ChoiceField
-        label="Pol"
+        label={t("profil.data.sex")}
+        placeholder={t("profil.data.choose")}
         value={sex}
         onChange={setSex}
-        options={SEX_OPTIONS}
+        options={sexOptions}
       />
 
       <SelectField
         id="godine"
-        label="Godine"
+        label={t("profil.data.age")}
         value={ageYears}
         onChange={setAgeYears}
         options={rangeInclusive(MIN_AGE_YEARS, MAX_AGE_YEARS)}
@@ -118,7 +121,7 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
 
       <SelectField
         id="visina"
-        label="Visina"
+        label={t("profil.data.height")}
         suffix="cm"
         value={heightCm}
         onChange={setHeightCm}
@@ -127,7 +130,7 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
 
       <SelectField
         id="tezina"
-        label="Težina"
+        label={t("profil.data.weight")}
         suffix="kg"
         value={weightKg}
         onChange={setWeightKg}
@@ -135,7 +138,8 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
       />
 
       <ChoiceField
-        label="Nivo aktivnosti"
+        label={t("profil.data.activity")}
+        placeholder={t("profil.data.choose")}
         value={activityLevel}
         onChange={setActivityLevel}
         options={ACTIVITY_LEVEL_OPTIONS}
@@ -145,11 +149,11 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
         <FieldError message={error} id="edit-profile-error" />
       ) : null}
       {saved ? (
-        <p className="text-sm font-medium text-primary">Sačuvano.</p>
+        <p className="text-sm font-medium text-primary">{t("profil.saved")}</p>
       ) : null}
 
       <Button type="submit" disabled={pending} className="h-11">
-        {pending ? "Čuvam…" : "Sačuvaj izmene"}
+        {pending ? t("profil.saving") : t("profil.data.submit")}
       </Button>
     </form>
   );
@@ -162,11 +166,13 @@ export function EditProfileForm({ initial }: { initial: Initial }) {
  */
 function ChoiceField<T extends string>({
   label,
+  placeholder,
   value,
   onChange,
   options,
 }: {
   label: string;
+  placeholder: string;
   value: T | null;
   onChange: (value: T | null) => void;
   options: readonly { value: T; label: string }[];
@@ -189,7 +195,7 @@ function ChoiceField<T extends string>({
           )}
         >
           <option value="" disabled>
-            Izaberi
+            {placeholder}
           </option>
           {options.map((option) => (
             <option key={option.value} value={option.value}>

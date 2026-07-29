@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { finishOnboardingAction } from "@/app/(app)/onboarding/pregled/actions";
 import type { CompleteOnboardingData } from "@/lib/onboarding/summary";
@@ -26,6 +27,7 @@ type SaveState = "saving" | "error";
  * `/upitnik` and on the `/onboarding/pregled` hand-off route.)
  */
 export function FinishAndRedirect({ data }: { data: CompleteOnboardingData }) {
+  const { t } = useT();
   const [state, setState] = useState<SaveState>("saving");
   const [error, setError] = useState<string | undefined>(undefined);
   const [nonce, setNonce] = useState(0);
@@ -57,14 +59,14 @@ export function FinishAndRedirect({ data }: { data: CompleteOnboardingData }) {
       },
       () => {
         if (cancelled) return;
-        setError("Nešto je pošlo naopako. Pokušaj ponovo.");
+        setError(t("onboarding.error.generic"));
         setState("error");
       }
     );
     return () => {
       cancelled = true;
     };
-  }, [data, nonce]);
+  }, [data, nonce, t]);
 
   if (state === "error") {
     return (
@@ -73,7 +75,7 @@ export function FinishAndRedirect({ data }: { data: CompleteOnboardingData }) {
         role="alert"
       >
         <p className="text-sm text-muted-foreground">
-          {error ?? "Nešto je pošlo naopako."}
+          {error ?? t("onboarding.error.genericShort")}
         </p>
         <Button
           type="button"
@@ -84,7 +86,7 @@ export function FinishAndRedirect({ data }: { data: CompleteOnboardingData }) {
             setNonce((n) => n + 1);
           }}
         >
-          Pokušaj ponovo
+          {t("onboarding.retry")}
         </Button>
       </main>
     );

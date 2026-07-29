@@ -1,3 +1,5 @@
+import { getT } from "@/lib/i18n/server";
+
 import { PhoneForm } from "./phone-form";
 
 /**
@@ -8,16 +10,14 @@ import { PhoneForm } from "./phone-form";
  * (`decideRouteAccess` only reaches the "no phone" branch after the
  * authenticated + verified checks), so this page needs no auth check of its own.
  */
-export default function TelefonPage() {
+export default async function TelefonPage() {
+  const { t } = await getT();
   return (
     <>
       <div className="auth-card">
         <div className="auth-head">
-          <h1>Još samo broj telefona</h1>
-          <p>
-            Unesi svoj broj telefona da završiš. Čuvamo ga samo da bismo mogli
-            da te kontaktiramo — nikad za prijavu.
-          </p>
+          <h1>{t("auth.phonePage.title")}</h1>
+          <p>{t("auth.phonePage.subtitle")}</p>
         </div>
         <PhoneForm />
       </div>

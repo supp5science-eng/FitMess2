@@ -1,3 +1,6 @@
+"use client";
+
+import { useT } from "@/components/i18n/locale-provider";
 import type { HealthScore } from "@/lib/nutrition/health-score";
 
 // "Ocena zdravosti" (2026-07-25): the card under the four micronutrient cards on
@@ -17,6 +20,7 @@ function formatScore(score: number): string {
 }
 
 export function HealthScoreCard({ score }: { score: HealthScore }) {
+  const { t } = useT();
   const hasScore = score.score !== null;
 
   return (
@@ -26,7 +30,7 @@ export function HealthScoreCard({ score }: { score: HealthScore }) {
     >
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-base font-semibold tracking-tight text-foreground">
-          Ocena zdravosti
+          {t("home.health.title")}
         </h3>
         <span
           data-testid="health-score-value"
@@ -52,8 +56,10 @@ export function HealthScoreCard({ score }: { score: HealthScore }) {
         role="img"
         aria-label={
           hasScore
-            ? `Ocena zdravosti ${formatScore(score.score as number)} od 10`
-            : "Ocena zdravosti još nije dostupna"
+            ? t("home.health.ariaScore", {
+                score: formatScore(score.score as number),
+              })
+            : t("home.health.ariaUnavailable")
         }
       >
         <div

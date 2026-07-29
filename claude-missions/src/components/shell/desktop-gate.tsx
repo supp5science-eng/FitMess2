@@ -1,6 +1,8 @@
 import { Archivo_Black, DM_Sans } from "next/font/google";
 import QRCode from "qrcode";
 
+import { getT } from "@/lib/i18n/server";
+
 /**
  * The desktop / non-phone experience for FitMess.
  *
@@ -25,6 +27,7 @@ const display = Archivo_Black({
 const body = DM_Sans({ subsets: ["latin", "latin-ext"], display: "swap" });
 
 export async function DesktopGate() {
+  const { t } = await getT();
   const qrSvg = await QRCode.toString(PRODUCTION_URL, {
     type: "svg",
     margin: 0,
@@ -77,18 +80,17 @@ export async function DesktopGate() {
         <h1
           className={`${display.className} text-balance text-2xl leading-tight text-neutral-900 sm:text-3xl`}
         >
-          FitMess radi samo na telefonu.
+          {t("app.desktop.title")}
         </h1>
         <p className="mx-auto mt-4 max-w-sm text-pretty text-base leading-relaxed text-neutral-500">
-          Napravljen je isključivo za mobilnu upotrebu. Skeniraj QR kod kamerom
-          telefona i kreni.
+          {t("app.desktop.body")}
         </p>
 
         {/* QR */}
         <div className="mt-8 flex justify-center">
           <div
             className="rounded-3xl border border-neutral-200 bg-white p-5"
-            aria-label={`QR kod za ${PRODUCTION_URL}`}
+            aria-label={t("app.desktop.qrAria", { url: PRODUCTION_URL })}
             role="img"
             // qrcode returns a trusted, self-generated SVG string (no user input).
             dangerouslySetInnerHTML={{ __html: qrSvg }}
@@ -96,7 +98,7 @@ export async function DesktopGate() {
         </div>
 
         <p className="mt-6 text-sm text-neutral-500">
-          Ili u pregledaču na telefonu otvori:
+          {t("app.desktop.openInBrowser")}
         </p>
         <p className="mt-1 break-all text-sm font-semibold text-primary">
           fitmess.app

@@ -12,6 +12,7 @@ import {
   upsertAccount,
   type RememberedAccount,
 } from "@/lib/auth/accounts";
+import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
 /**
@@ -34,6 +35,7 @@ export function AccountSwitcher({
   currentUserId: string;
   currentEmail: string | null;
 }) {
+  const { t } = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [accounts, setAccounts] = useState<RememberedAccount[]>([]);
@@ -149,10 +151,10 @@ export function AccountSwitcher({
           </span>
           <span className="flex min-w-0 flex-1 flex-col">
             <span className="truncate text-sm font-medium text-foreground">
-              Promeni nalog
+              {t("app.account.title")}
             </span>
             <span className="truncate text-xs text-muted-foreground">
-              Prebaci se na drugi nalog
+              {t("app.account.subtitle")}
             </span>
           </span>
           <ChevronRight
@@ -180,7 +182,7 @@ export function AccountSwitcher({
                     id="account-switcher-title"
                     className="text-lg font-semibold text-foreground"
                   >
-                    Promeni nalog
+                    {t("app.account.title")}
                   </h2>
                   <div className="flex items-center gap-1">
                     {accounts.some((a) => a.id !== currentUserId) ? (
@@ -189,13 +191,13 @@ export function AccountSwitcher({
                         onClick={() => setEditing((e) => !e)}
                         className="rounded-full px-3 py-1 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                       >
-                        {editing ? "Gotovo" : "Uredi"}
+                        {editing ? t("app.account.done") : t("app.account.edit")}
                       </button>
                     ) : null}
                     <button
                       type="button"
                       onClick={close}
-                      aria-label="Zatvori"
+                      aria-label={t("app.common.close")}
                       disabled={busyId !== null}
                       className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-40"
                     >
@@ -235,7 +237,7 @@ export function AccountSwitcher({
                             {acc.email}
                           </span>
                           <span className="truncate text-xs text-muted-foreground">
-                            {isCurrent ? "Trenutni nalog" : "Tapni da se prebaciš"}
+                            {isCurrent ? t("app.account.current") : t("app.account.tapToSwitch")}
                           </span>
                         </button>
 
@@ -250,7 +252,7 @@ export function AccountSwitcher({
                             onClick={() => forget(acc.id)}
                             className="shrink-0 rounded-full px-3 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                           >
-                            Ukloni
+                            {t("app.account.remove")}
                           </button>
                         ) : isCurrent ? (
                           <Check
@@ -278,12 +280,11 @@ export function AccountSwitcher({
                   <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted text-foreground">
                     <Plus className="size-5" aria-hidden="true" />
                   </span>
-                  Dodaj drugi nalog
+                  {t("app.account.addAnother")}
                 </button>
 
                 <p className="px-1 text-xs leading-relaxed text-muted-foreground">
-                  Nalozi se pamte samo na ovom uređaju. „Ukloni" ne briše nalog,
-                  samo ga sklanja sa ovog telefona.
+                  {t("app.account.note")}
                 </p>
               </div>
             </div>,

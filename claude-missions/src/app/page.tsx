@@ -1,6 +1,8 @@
 import Link from "next/link";
 
 import { HeroDemo } from "@/components/landing/hero-demo";
+import { getT } from "@/lib/i18n/server";
+import type { MessageKey } from "@/lib/i18n/messages";
 
 import "./landing.css";
 import "./landing-demo.css";
@@ -115,36 +117,37 @@ function IconWeek() {
 const FEATURES: {
   icon: React.ReactNode;
   tint: string;
-  title: string;
-  body: string;
+  titleKey: MessageKey;
+  bodyKey: MessageKey;
 }[] = [
   {
     icon: <IconPlan />,
     tint: "#17d1a8",
-    title: "Dnevni cilj skrojen za tebe",
-    body: "Kalorije i makroi na osnovu par pitanja o tebi.",
+    titleKey: "app.landing.feature.plan.title",
+    bodyKey: "app.landing.feature.plan.body",
   },
   {
     icon: <IconLog />,
     tint: "#45c78d",
-    title: "Unos obroka za par sekundi",
-    body: "Pretraga hrane, porcije i tvoji proizvodi.",
+    titleKey: "app.landing.feature.log.title",
+    bodyKey: "app.landing.feature.log.body",
   },
   {
     icon: <IconToday />,
     tint: "#f9745f",
-    title: "Prsten kalorija i makro trake",
-    body: "Potrošeno ↔ preostalo, na prvi pogled.",
+    titleKey: "app.landing.feature.ring.title",
+    bodyKey: "app.landing.feature.ring.body",
   },
   {
     icon: <IconWeek />,
     tint: "#f2c14e",
-    title: "Nedeljni pregled i trend težine",
-    body: "Gledaš nedelju, ne pojedinačan dan.",
+    titleKey: "app.landing.feature.week.title",
+    bodyKey: "app.landing.feature.week.body",
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const { t } = await getT();
   return (
     <div className="lp dark">
       <script
@@ -164,19 +167,20 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <h1 className="lp-title">Prati kalorije bez muke</h1>
+          <h1 className="lp-title">{t("app.landing.hero.title")}</h1>
 
           <div className="lp-cta">
             <Link className="lp-start" href="/upitnik">
-              Započni
+              {t("app.landing.hero.start")}
             </Link>
             <p className="lp-signin">
-              Već imaš nalog? <Link href="/prijava">Prijavi se</Link>
+              {t("app.landing.hero.haveAccount")}{" "}
+              <Link href="/prijava">{t("app.landing.hero.signIn")}</Link>
             </p>
           </div>
 
           <span className="lp-scroll" aria-hidden="true">
-            <span className="lp-scroll-label">Zaviri</span>
+            <span className="lp-scroll-label">{t("app.landing.hero.peek")}</span>
             <svg viewBox="0 0 24 24" className="lp-scroll-chevron" aria-hidden>
               <path
                 d="M6 9l6 6 6-6"
@@ -199,12 +203,12 @@ export default function LandingPage() {
             id="lp-features-h"
             className="lp-reveal mb-6 text-center text-[26px] font-extrabold tracking-tight text-foreground"
           >
-            Šta te čeka unutra
+            {t("app.landing.features.heading")}
           </h2>
           <ul className="grid gap-3">
             {FEATURES.map((f) => (
               <li
-                key={f.title}
+                key={f.titleKey}
                 className="lp-reveal flex items-center gap-4 rounded-2xl border border-border bg-card p-4"
               >
                 <span
@@ -215,10 +219,10 @@ export default function LandingPage() {
                 </span>
                 <div className="min-w-0">
                   <h3 className="text-[15.5px] font-semibold text-foreground">
-                    {f.title}
+                    {t(f.titleKey)}
                   </h3>
                   <p className="mt-0.5 text-[13.5px] leading-snug text-muted-foreground">
-                    {f.body}
+                    {t(f.bodyKey)}
                   </p>
                 </div>
               </li>
@@ -229,13 +233,13 @@ export default function LandingPage() {
         {/* ---------- Closing CTA (carries the zero-shame line) ---------- */}
         <section className="mx-auto w-full max-w-[460px] px-[22px] pb-14 text-center">
           <p className="lp-reveal text-lg font-bold text-foreground">
-            Nedelja je jedinica uspeha.
+            {t("app.landing.close.title")}
           </p>
           <p className="lp-reveal mx-auto mb-6 mt-1 max-w-[34ch] text-sm leading-snug text-muted-foreground">
-            Jedan loš obrok te ne ruši — samo miran, održiv tempo.
+            {t("app.landing.close.body")}
           </p>
           <Link className="lp-start" href="/upitnik">
-            Kreni besplatno
+            {t("app.landing.close.cta")}
           </Link>
         </section>
       </main>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { PaceDial } from "@/components/onboarding/pace-dial";
 import {
   PACE_DESCRIPTIONS,
@@ -42,6 +43,7 @@ export function TempoStep({
   onChangePace: (pace: WeightChangePace) => void;
   onChangeTimeframe: (weeks: number | null) => void;
 }) {
+  const { t } = useT();
   const deltaKg =
     data.weightKg !== null &&
     data.targetWeightKg !== null &&
@@ -107,19 +109,19 @@ export function TempoStep({
     }).dailyKcal;
   })();
 
-  const ariaValueText = `${PACE_LABELS[nearestPace]}, ${kgReadout(
-    weeklyKg
-  )} kg nedeljno`;
+  const ariaValueText = `${PACE_LABELS[nearestPace]}, ${t(
+    "onboarding.tempo.weeklyKg",
+    { kg: kgReadout(weeklyKg) }
+  )}`;
 
   return (
     <div className="flex flex-col gap-5">
       <div>
         <h2 className="text-xl font-semibold text-foreground">
-          Koliko brzo želiš da stigneš do cilja?
+          {t("onboarding.tempo.title")}
         </h2>
         <p className="text-sm text-muted-foreground">
-          Okreni prsten i izaberi tempo — od njega zavisi tvoj dnevni unos
-          kalorija.
+          {t("onboarding.tempo.subtitle")}
         </p>
       </div>
 
@@ -127,7 +129,7 @@ export function TempoStep({
         position={position}
         onPositionChange={setPosition}
         color={color}
-        ariaLabel="Tempo dostizanja cilja"
+        ariaLabel={t("onboarding.tempo.dialAria")}
         ariaValueText={ariaValueText}
       >
         <div className="flex flex-col items-center gap-0.5">
@@ -146,13 +148,17 @@ export function TempoStep({
               {dailyKcal.toLocaleString("sr-RS")}
             </span>
           ) : null}
-          <span className="text-[12px] text-muted-foreground">kcal dnevno</span>
+          <span className="text-[12px] text-muted-foreground">
+            {t("onboarding.plan.kcalPerDay")}
+          </span>
           <span className="mt-1.5 text-[12px] font-medium text-foreground">
-            {kgReadout(weeklyKg)} kg nedeljno
+            {t("onboarding.tempo.weeklyKg", { kg: kgReadout(weeklyKg) })}
           </span>
           {timeframeWeeks !== null ? (
             <span className="text-[12px] text-muted-foreground">
-              za ~{formatTimeToGoal(timeframeWeeks)}
+              {t("onboarding.tempo.eta", {
+                time: formatTimeToGoal(timeframeWeeks),
+              })}
             </span>
           ) : null}
         </div>

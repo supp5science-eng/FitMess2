@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Footprints, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
 
 import { useCountUp } from "@/components/home/animated-number";
+import { useT } from "@/components/i18n/locale-provider";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +64,7 @@ export function AdaptivePlanCard({
   /** Belgrade day key stored in the cookie so the reveal is once PER DAY. */
   dayKey?: string;
 }) {
+  const { t } = useT();
   // `playing` drives the CSS; `revealed` flips the count-up's target.
   const [playing, setPlaying] = useState(intro);
   const [revealed, setRevealed] = useState(!intro);
@@ -128,7 +130,7 @@ export function AdaptivePlanCard({
         style={nextDelay()}
       >
         <Sparkles className="size-4 text-primary" aria-hidden="true" />
-        Plan za danas je prilagođen
+        {t("home.adaptive.adjusted")}
       </p>
 
       <p className="apc-line mt-1.5 flex items-baseline gap-2" style={nextDelay()}>
@@ -140,7 +142,7 @@ export function AdaptivePlanCard({
           {Math.round(shownTarget)} kcal
         </span>
         <span className="text-xs text-muted-foreground">
-          redovni {plan.baseDailyTarget}
+          {t("home.adaptive.regular", { kcal: plan.baseDailyTarget })}
         </span>
       </p>
 
@@ -160,20 +162,26 @@ export function AdaptivePlanCard({
           <div className="apc-bar-today" />
         </div>
         <p className="mt-1.5 text-xs text-muted-foreground">
-          Ove nedelje potrošeno {Math.round(plan.spentBeforeToday)} od{" "}
-          {plan.weeklyBudget} kcal · još {plan.daysLeftIncludingToday}{" "}
-          {plan.daysLeftIncludingToday === 1 ? "dan" : "dana"}
+          {t("home.adaptive.weekSpent", {
+            spent: Math.round(plan.spentBeforeToday),
+            budget: plan.weeklyBudget,
+            days: plan.daysLeftIncludingToday,
+            unit:
+              plan.daysLeftIncludingToday === 1
+                ? t("home.adaptive.day")
+                : t("home.adaptive.days"),
+          })}
         </p>
       </div>
 
       <p className="apc-line mt-2 text-muted-foreground" style={nextDelay()}>
         {lifted
-          ? "Ranije ove nedelje si uneo manje nego što plan traži, pa je današnji cilj podignut — da nedelja ispuni svoje."
-          : "Zbog ranijeg prekoračenja, današnji cilj je snižen — da se nedelja vrati na prag."}
+          ? t("home.adaptive.lifted")
+          : t("home.adaptive.lowered")}
         {plan.carryInKcal > 0 ? (
           <>
             {" "}
-            Uračunat je i prenos od {plan.carryInKcal} kcal iz prošle nedelje.
+            {t("home.adaptive.carry", { kcal: plan.carryInKcal })}
           </>
         ) : null}
       </p>
@@ -189,11 +197,13 @@ export function AdaptivePlanCard({
             aria-hidden="true"
           />
           <span>
-            Ostatak pokrij kretanjem:{" "}
+            {t("home.adaptive.trainingLead")}{" "}
             <span className="font-medium text-foreground">
               ~{plan.trainingSuggestionKcal} kcal
             </span>{" "}
-            (≈ {plan.trainingWalkMinutes} min brzog hoda). Cilj koraka danas je{" "}
+            {t("home.adaptive.trainingWalk", {
+              min: plan.trainingWalkMinutes,
+            })}{" "}
             <span
               data-testid="adaptive-note-steps"
               className="font-medium text-foreground"

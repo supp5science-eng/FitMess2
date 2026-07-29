@@ -1,3 +1,5 @@
+"use client";
+
 import type { CSSProperties } from "react";
 import {
   ChartColumnBig,
@@ -6,6 +8,9 @@ import {
   Settings,
   Sparkles,
 } from "lucide-react";
+
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 
 /**
  * The landing page's hero "motion graphic": a fully code-drawn, infinitely
@@ -201,7 +206,7 @@ function MacroCol({
  * where ring/bars/numbers animate to the post-meal state and the new photo
  * meal card slides in).
  */
-function HomeScene({ end }: { end: boolean }) {
+function HomeScene({ end, t }: { end: boolean; t: TFunction }) {
   return (
     <section className={`lpd-sc ${end ? "lpd-sc-home2" : "lpd-sc-home1"}`}>
       {/* header: pear + wordmark (Archivo Black, "Mess" in the sedef gradient) */}
@@ -215,20 +220,20 @@ function HomeScene({ end }: { end: boolean }) {
 
       {/* date strip — mini day rings, today (čet) in the teal chip */}
       <div className="lpd-strip">
-        <MiniDay wd="pon" day={20} offset={10} />
-        <MiniDay wd="uto" day={21} offset={30} />
-        <MiniDay wd="sre" day={22} offset={0} />
-        <MiniDay wd="čet" day={23} offset={RING_OFFSET_BEFORE} today />
-        <MiniDay wd="pet" day={24} offset={100} future />
+        <MiniDay wd={t("app.demo.wd.mon")} day={20} offset={10} />
+        <MiniDay wd={t("app.demo.wd.tue")} day={21} offset={30} />
+        <MiniDay wd={t("app.demo.wd.wed")} day={22} offset={0} />
+        <MiniDay wd={t("app.demo.wd.thu")} day={23} offset={RING_OFFSET_BEFORE} today />
+        <MiniDay wd={t("app.demo.wd.fri")} day={24} offset={100} future />
       </div>
 
-      <span className="lpd-h2">Dnevni unos</span>
+      <span className="lpd-h2">{t("home.dailyIntake")}</span>
 
       {/* the calorie ring, flanked by Cilj / Preostalo */}
       <div className="lpd-ring-row">
         <span className="lpd-side">
           <span className="lpd-side-num">2200</span>
-          <span className="lpd-side-label">Cilj</span>
+          <span className="lpd-side-label">{t("ring.target")}</span>
         </span>
 
         <span className="lpd-ring">
@@ -262,7 +267,7 @@ function HomeScene({ end }: { end: boolean }) {
             <span className="lpd-ring-big">
               {end ? <Swap from="1250" to="1770" /> : "1250"}
             </span>
-            <span className="lpd-ring-label">Potrošeno</span>
+            <span className="lpd-ring-label">{t("ring.consumed")}</span>
           </span>
         </span>
 
@@ -270,19 +275,19 @@ function HomeScene({ end }: { end: boolean }) {
           <span className="lpd-side-num">
             {end ? <Swap from="950" to="430" /> : "950"}
           </span>
-          <span className="lpd-side-label">Preostalo</span>
+          <span className="lpd-side-label">{t("ring.remaining")}</span>
         </span>
       </div>
 
       {/* macro bars — Proteini / Masti / UH (consumed view: fill UP) */}
       <div className="lpd-macros">
-        <MacroCol label="Proteini" color="#45c78d" w0={47} w1={73} from={78} to={120} target={165} end={end} />
-        <MacroCol label="Masti" color="#f9745f" w0={54} w1={71} from={38} to={50} target={70} end={end} />
-        <MacroCol label="UH" color="#f2c14e" w0={56} w1={78} from={140} to={195} target={250} end={end} />
+        <MacroCol label={t("macro.protein")} color="#45c78d" w0={47} w1={73} from={78} to={120} target={165} end={end} />
+        <MacroCol label={t("macro.fat")} color="#f9745f" w0={54} w1={71} from={38} to={50} target={70} end={end} />
+        <MacroCol label={t("macro.carbs")} color="#f2c14e" w0={56} w1={78} from={140} to={195} target={250} end={end} />
       </div>
 
       {/* today's meals */}
-      <span className="lpd-h2 lpd-meals-h">Obroci danas</span>
+      <span className="lpd-h2 lpd-meals-h">{t("home.mealsToday")}</span>
       <div className="lpd-meals">
         {end ? (
           /* the freshly scanned meal — photo card, slides in on the timeline */
@@ -290,22 +295,22 @@ function HomeScene({ end }: { end: boolean }) {
             <MealPhoto className="lpd-card-photo" />
             <div className="lpd-card-row">
               <span className="lpd-card-names">
-                <span className="lpd-card-name">Piletina sa pirinčem</span>
+                <span className="lpd-card-name">{t("app.demo.meal.chickenRice")}</span>
                 <span className="lpd-card-portion">450 g</span>
               </span>
               <span className="lpd-card-kcal">520 kcal</span>
             </div>
             <div className="lpd-card-macros">
-              <span><b className="lpd-mp">42 g</b> Proteini</span>
-              <span><b className="lpd-mc">55 g</b> UH</span>
-              <span><b className="lpd-mf">12 g</b> Masti</span>
+              <span><b className="lpd-mp">42 g</b> {t("macro.protein")}</span>
+              <span><b className="lpd-mc">55 g</b> {t("macro.carbs")}</span>
+              <span><b className="lpd-mf">12 g</b> {t("macro.fat")}</span>
             </div>
           </div>
         ) : null}
         <div className="lpd-card">
           <div className="lpd-card-row">
             <span className="lpd-card-names">
-              <span className="lpd-card-name">Omlet sa sirom</span>
+              <span className="lpd-card-name">{t("app.demo.meal.omelet")}</span>
               <span className="lpd-card-portion">180 g</span>
             </span>
             <span className="lpd-card-kcal">420 kcal</span>
@@ -318,15 +323,15 @@ function HomeScene({ end }: { end: boolean }) {
         <span className="lpd-nav-pill">
           <span className="lpd-nav-item lpd-nav-active">
             <Home className="lpd-nav-icon" />
-            <span>Početna</span>
+            <span>{t("nav.home")}</span>
           </span>
           <span className="lpd-nav-item">
             <ChartColumnBig className="lpd-nav-icon" />
-            <span>Analitika</span>
+            <span>{t("nav.analytics")}</span>
           </span>
           <span className="lpd-nav-item">
             <Settings className="lpd-nav-icon" />
-            <span>Profil</span>
+            <span>{t("nav.profile")}</span>
           </span>
         </span>
         <span className={`lpd-plus${end ? "" : " lpd-plus-tap"}`}>
@@ -339,20 +344,20 @@ function HomeScene({ end }: { end: boolean }) {
 }
 
 /** Scene 2 — the camera viewfinder over the meal, shutter fires. */
-function CameraScene() {
+function CameraScene({ t }: { t: TFunction }) {
   return (
     <section className="lpd-sc lpd-sc-cam">
       <MealPhoto className="lpd-cam-photo" />
       <span className="lpd-cam-shade" />
 
       <div className="lpd-cam-head">
-        <span className="lpd-cam-title">Slikaj obrok</span>
-        <span className="lpd-cam-cancel">Otkaži</span>
+        <span className="lpd-cam-title">{t("app.demo.cam.title")}</span>
+        <span className="lpd-cam-cancel">{t("app.demo.cam.cancel")}</span>
       </div>
       {/* the real capture screen's own promise, as the viewfinder hint */}
       <span className="lpd-cam-hint">
         <Sparkles className="lpd-cam-hint-icon" />
-        AI će proceniti kalorije i makronutrijente
+        {t("app.demo.cam.hint")}
       </span>
 
       <span className="lpd-brackets" />
@@ -364,7 +369,7 @@ function CameraScene() {
 }
 
 /** Scene 3 — "Analiziram obrok…": the photo under a teal scan line. */
-function AnalyzeScene() {
+function AnalyzeScene({ t }: { t: TFunction }) {
   return (
     <section className="lpd-sc lpd-sc-scan">
       <div className="lpd-scan-card">
@@ -372,76 +377,77 @@ function AnalyzeScene() {
         <span className="lpd-scan-line" />
       </div>
       <span className="lpd-spinner" />
-      <span className="lpd-scan-text">Analiziram obrok…</span>
+      <span className="lpd-scan-text">{t("app.demo.analyze")}</span>
     </section>
   );
 }
 
 /** Scene 4 — the AI estimate, exactly like the confirm phase of the flow. */
-function ResultScene() {
+function ResultScene({ t }: { t: TFunction }) {
   return (
     <section className="lpd-sc lpd-sc-res">
       <div className="lpd-res-head">
-        <span className="lpd-res-title">Slikaj obrok</span>
-        <span className="lpd-cam-cancel">Otkaži</span>
+        <span className="lpd-res-title">{t("app.demo.cam.title")}</span>
+        <span className="lpd-cam-cancel">{t("app.demo.cam.cancel")}</span>
       </div>
 
       <span className="lpd-res-row lpd-res-r1 lpd-res-conf">
         <Sparkles className="lpd-res-conf-icon" />
-        Visoka sigurnost
+        {t("app.demo.res.confidence")}
       </span>
 
       <span className="lpd-res-row lpd-res-r2 lpd-res-chips">
-        <span className="lpd-chip">piletina</span>
-        <span className="lpd-chip">pirinač</span>
-        <span className="lpd-chip">brokoli</span>
+        <span className="lpd-chip">{t("app.demo.res.chip.chicken")}</span>
+        <span className="lpd-chip">{t("app.demo.res.chip.rice")}</span>
+        <span className="lpd-chip">{t("app.demo.res.chip.broccoli")}</span>
       </span>
 
       <span className="lpd-res-row lpd-res-r3 lpd-field">
-        <span className="lpd-field-label">Naziv</span>
-        <span className="lpd-field-box">Piletina sa pirinčem</span>
+        <span className="lpd-field-label">{t("app.demo.res.name")}</span>
+        <span className="lpd-field-box">{t("app.demo.meal.chickenRice")}</span>
       </span>
 
       <span className="lpd-res-row lpd-res-r4 lpd-field">
-        <span className="lpd-field-label">Gramaža (g)</span>
+        <span className="lpd-field-label">{t("app.demo.res.grams")}</span>
         <span className="lpd-field-box">450</span>
       </span>
 
       <span className="lpd-res-row lpd-res-r5 lpd-res-grid">
         <span className="lpd-field-box lpd-stat">
-          <span className="lpd-stat-label">Kalorije</span>
+          <span className="lpd-stat-label">{t("app.demo.res.kcal")}</span>
           <span className="lpd-stat-num">520</span>
         </span>
         <span className="lpd-field-box lpd-stat">
-          <span className="lpd-stat-label">Protein (g)</span>
+          <span className="lpd-stat-label">{t("app.demo.res.protein")}</span>
           <span className="lpd-stat-num lpd-mp">42</span>
         </span>
         <span className="lpd-field-box lpd-stat">
-          <span className="lpd-stat-label">Ugljeni hidrati (g)</span>
+          <span className="lpd-stat-label">{t("app.demo.res.carbs")}</span>
           <span className="lpd-stat-num lpd-mc">55</span>
         </span>
         <span className="lpd-field-box lpd-stat">
-          <span className="lpd-stat-label">Masti (g)</span>
+          <span className="lpd-stat-label">{t("app.demo.res.fat")}</span>
           <span className="lpd-stat-num lpd-mf">12</span>
         </span>
       </span>
 
-      <span className="lpd-res-row lpd-res-r6 lpd-res-cta">Dodaj u dan</span>
+      <span className="lpd-res-row lpd-res-r6 lpd-res-cta">{t("app.demo.res.add")}</span>
       <span className="lpd-res-row lpd-res-r6 lpd-res-note">
-        AI procena je približna — proveri i doteraj po potrebi.
+        {t("app.demo.res.note")}
       </span>
     </section>
   );
 }
 
 export function HeroDemo() {
+  const { t } = useT();
   return (
     <div className="lpd" aria-hidden="true">
-      <HomeScene end={false} />
-      <CameraScene />
-      <AnalyzeScene />
-      <ResultScene />
-      <HomeScene end />
+      <HomeScene end={false} t={t} />
+      <CameraScene t={t} />
+      <AnalyzeScene t={t} />
+      <ResultScene t={t} />
+      <HomeScene end t={t} />
       <StatusBar />
     </div>
   );

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { getT } from "@/lib/i18n/server";
+
 import { NewPasswordForm } from "./new-password-form";
 
 /**
@@ -14,18 +16,20 @@ import { NewPasswordForm } from "./new-password-form";
  * relies on. A visitor who opens this page without a valid recovery session
  * simply gets the "link expired, request a new one" error on submit.
  */
-export default function NovaLozinkaPage() {
+export default async function NovaLozinkaPage() {
+  const { t } = await getT();
   return (
     <>
       <div className="auth-card">
         <div className="auth-head">
-          <h1>Nova lozinka</h1>
-          <p>Postavi novu lozinku za svoj nalog.</p>
+          <h1>{t("auth.newPassword.title")}</h1>
+          <p>{t("auth.newPassword.subtitle")}</p>
         </div>
         <NewPasswordForm />
       </div>
       <p className="auth-alt">
-        Link je istekao? <Link href="/zaboravljena-lozinka">Zatraži novi</Link>
+        {t("auth.newPassword.linkExpired")}{" "}
+        <Link href="/zaboravljena-lozinka">{t("auth.newPassword.requestNew")}</Link>
       </p>
     </>
   );

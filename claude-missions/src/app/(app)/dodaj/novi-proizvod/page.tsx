@@ -1,4 +1,5 @@
 import { NewProductForm } from "@/components/food/new-product-form";
+import { getT } from "@/lib/i18n/server";
 
 // F031 built this route as a placeholder destination `ScanScreen`
 // (`src/components/scan/scan-screen.tsx`) routes to on a barcode-lookup
@@ -42,6 +43,7 @@ export default async function NoviProizvodPage({
     izvor?: string | string[];
   }>;
 }) {
+  const { t } = await getT();
   const params = await searchParams;
   const gtin = first(params.barkod);
   const fromLabel = first(params.izvor) === "deklaracija";
@@ -53,29 +55,30 @@ export default async function NoviProizvodPage({
     >
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Novi proizvod
+          {t("dodaj.newProduct.title")}
         </h1>
         {fromLabel ? (
           <p className="text-sm text-muted-foreground">
-            Popunili smo vrednosti sa deklaracije —{" "}
-            <span className="font-medium text-foreground">proveri</span> i
-            doteraj po potrebi pa sačuvaj.
+            {t("dodaj.newProduct.fromLabel.before")}
+            <span className="font-medium text-foreground">
+              {t("dodaj.newProduct.fromLabel.emphasis")}
+            </span>
+            {t("dodaj.newProduct.fromLabel.after")}
           </p>
         ) : gtin ? (
           <p className="text-sm text-muted-foreground">
-            Barkod{" "}
+            {t("dodaj.newProduct.gtin.before")}
             <span
               data-testid="novi-proizvod-gtin"
               className="font-medium text-foreground"
             >
               {gtin}
-            </span>{" "}
-            nije u našoj bazi. Dodaj ga i biće odmah dostupan svima.
+            </span>
+            {t("dodaj.newProduct.gtin.after")}
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Ova namirnica nije u našoj bazi. Dodaj je i biće odmah dostupna
-            svima.
+            {t("dodaj.newProduct.notInDb")}
           </p>
         )}
       </div>

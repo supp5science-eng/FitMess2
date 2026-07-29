@@ -4,6 +4,7 @@ import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ import { changePasswordAction } from "./actions";
 // confirmation and bounces back to Podešavanja.
 export function PasswordForm() {
   const router = useRouter();
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -33,7 +35,7 @@ export function PasswordForm() {
     startTransition(async () => {
       const result = await changePasswordAction({ password, confirmPassword });
       if (!result.ok) {
-        setError(result.error_sr ?? "Nešto nije uspelo. Pokušaj ponovo.");
+        setError(result.error_sr ?? t("profil.error.generic"));
         return;
       }
       setSaved(true);
@@ -46,7 +48,7 @@ export function PasswordForm() {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={pwId}>Nova lozinka</Label>
+        <Label htmlFor={pwId}>{t("profil.password.new")}</Label>
         <div className="relative">
           <Input
             id={pwId}
@@ -66,7 +68,7 @@ export function PasswordForm() {
             type="button"
             onPointerDown={(e) => e.preventDefault()}
             onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? "Sakrij lozinku" : "Prikaži lozinku"}
+            aria-label={visible ? t("profil.password.hide") : t("profil.password.show")}
             aria-pressed={visible}
             className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground"
           >
@@ -77,11 +79,11 @@ export function PasswordForm() {
             )}
           </button>
         </div>
-        <p className="text-xs text-muted-foreground">Bar 8 karaktera.</p>
+        <p className="text-xs text-muted-foreground">{t("profil.password.minChars")}</p>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor={confirmId}>Ponovi novu lozinku</Label>
+        <Label htmlFor={confirmId}>{t("profil.password.confirm")}</Label>
         <Input
           id={confirmId}
           type={visible ? "text" : "password"}
@@ -104,12 +106,12 @@ export function PasswordForm() {
       ) : null}
       {saved ? (
         <p role="status" className="text-sm font-medium text-primary">
-          Lozinka je promenjena.
+          {t("profil.password.saved")}
         </p>
       ) : null}
 
       <Button type="submit" disabled={pending || saved}>
-        {pending ? "Čuvam…" : "Sačuvaj novu lozinku"}
+        {pending ? t("profil.saving") : t("profil.password.submit")}
       </Button>
     </form>
   );

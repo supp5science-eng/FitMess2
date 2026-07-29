@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { BarcodeScanner } from "@/components/scan/barcode-scanner";
 import { PortionPicker } from "@/components/food/portion-picker";
+import { useT } from "@/components/i18n/locale-provider";
 import type { Food } from "@/lib/types/db";
 
 // F031 / AS-053 (a found barcode shows the food + portion picker), AS-054
@@ -35,9 +36,6 @@ import type { Food } from "@/lib/types/db";
 // error with a retry affordance that goes back to a live scan -- never a
 // blank/broken screen, never silently treated as "not found."
 
-const LOOKUP_FAILED_ERROR_SR =
-  "Nismo uspeli da proverimo barkod. Pokušaj ponovo.";
-
 interface BarcodeLookupResponseBody {
   ok: boolean;
   data?: Food | null;
@@ -51,6 +49,7 @@ type LookupState =
   | { status: "error" };
 
 export function ScanScreen() {
+  const { t } = useT();
   const router = useRouter();
   const [state, setState] = useState<LookupState>({ status: "scanning" });
 
@@ -91,7 +90,7 @@ export function ScanScreen() {
         data-testid="scanner-lookup-loading"
       >
         <p className="text-sm text-muted-foreground">
-          Proveravamo barkod...
+          {t("media.scanLookup.checking")}
         </p>
       </main>
     );
@@ -104,7 +103,7 @@ export function ScanScreen() {
         data-testid="scanner-lookup-error"
       >
         <p role="alert" className="text-sm font-medium text-destructive">
-          {LOOKUP_FAILED_ERROR_SR}
+          {t("media.scanLookup.failed")}
         </p>
         <button
           type="button"
@@ -112,13 +111,13 @@ export function ScanScreen() {
           onClick={() => setState({ status: "scanning" })}
           className="liquid-glass inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground shadow-[0_6px_18px_-8px_rgba(0,0,0,0.55)]"
         >
-          Pokušaj ponovo
+          {t("media.scanLookup.retry")}
         </button>
         <Link
           href="/dodaj/pretraga"
           className="text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
         >
-          Pretraži hranu
+          {t("media.scanLookup.searchFood")}
         </Link>
       </main>
     );

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { getT } from "@/lib/i18n/server";
 import { ACTIVITY_LEVEL_OPTIONS } from "@/lib/onboarding/types";
 import {
   getCustomStepGoal,
@@ -24,6 +25,7 @@ import { StepGoalForm } from "./step-goal-form";
  */
 export default async function CiljKorakaPage() {
   const supabase = await createClient();
+  const { t } = await getT();
   const userId = await getCurrentUserId(supabase);
 
   let activityLevel: ActivityLevel | null = null;
@@ -59,15 +61,15 @@ export default async function CiljKorakaPage() {
         className="inline-flex items-center gap-1 self-start text-sm text-muted-foreground hover:text-foreground"
       >
         <ChevronLeft className="size-4" aria-hidden={true} />
-        Podešavanja
+        {t("settings.title")}
       </Link>
 
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Cilj koraka
+          {t("settings.steps")}
         </h1>
         <p className="text-sm leading-relaxed text-muted-foreground">
-          Koliko koraka dnevno ti brojimo kao pun dan.
+          {t("profil.steps.subtitle")}
         </p>
       </div>
 
@@ -82,18 +84,13 @@ export default async function CiljKorakaPage() {
           answers the question the number itself provokes. */}
       <section className="flex flex-col gap-2 rounded-2xl border border-border bg-card px-4 py-4">
         <h2 className="text-sm font-medium text-foreground">
-          Odakle uopšte 10.000 koraka?
+          {t("profil.steps.originTitle")}
         </h2>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Iz reklame, ne iz medicine — 1965. u Japanu je prodavan pedometar pod
-          imenom „manpo-kei&ldquo;, što znači „merač od 10.000 koraka&ldquo;, i broj se
-          zalepio. Novija istraživanja pokazuju da korist naglo raste otprilike
-          do 6.000–8.000 koraka dnevno, a posle toga se izravnava.
+          {t("profil.steps.originP1")}
         </p>
         <p className="text-xs leading-relaxed text-muted-foreground">
-          Zato ti mi predlažemo cilj prema tvom nivou aktivnosti, a ne isti broj
-          svima. Cilj koji promašiš svaki dan nije cilj — samo razlog da
-          prestaneš da gledaš karticu.
+          {t("profil.steps.originP2")}
         </p>
       </section>
     </main>

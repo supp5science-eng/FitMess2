@@ -7,6 +7,7 @@ import { Loader2, PackageCheck } from "lucide-react";
 import { BarcodeScanner } from "@/components/scan/barcode-scanner";
 import { NewProductForm } from "@/components/food/new-product-form";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n/locale-provider";
 import type { Food } from "@/lib/types/db";
 
 import { estimateLabelAction } from "./actions";
@@ -32,12 +33,6 @@ import "./dodaj-proizvod-flow.css";
 //     seam hands the saved food back here so we can show the success screen
 //     instead of the portion picker.
 
-const LOOKUP_FAILED_ERROR_SR =
-  "Nismo uspeli da proverimo barkod. Pokušaj ponovo.";
-
-const SCAN_SUBTITLE_SR =
-  "Skeniraj ili otpremi barkod. Ovde dodaješ proizvode koji imaju deklaraciju i barkod.";
-
 interface BarcodeLookupResponseBody {
   ok: boolean;
   data?: Food | null;
@@ -53,6 +48,7 @@ type Step =
   | { name: "error" };
 
 export function DodajProizvodFlow() {
+  const { t } = useT();
   const [step, setStep] = useState<Step>({ name: "scan" });
 
   async function onDetected(gtin: string) {
@@ -88,8 +84,8 @@ export function DodajProizvodFlow() {
     return (
       <BarcodeScanner
         onDetected={onDetected}
-        title="Dodaj proizvod"
-        subtitle={SCAN_SUBTITLE_SR}
+        title={t("dodaj.product.title")}
+        subtitle={t("dodaj.product.scanSubtitle")}
       />
     );
   }
@@ -101,7 +97,7 @@ export function DodajProizvodFlow() {
         data-testid="dodaj-proizvod-checking"
       >
         <Loader2 className="size-8 animate-spin text-primary" aria-hidden="true" />
-        <p className="text-sm text-muted-foreground">Proveravamo barkod…</p>
+        <p className="text-sm text-muted-foreground">{t("dodaj.product.checking")}</p>
       </main>
     );
   }
@@ -113,14 +109,14 @@ export function DodajProizvodFlow() {
         data-testid="dodaj-proizvod-error"
       >
         <p role="alert" className="text-sm font-medium text-destructive">
-          {LOOKUP_FAILED_ERROR_SR}
+          {t("dodaj.product.lookupFailed")}
         </p>
         <Button
           type="button"
           onClick={restart}
           data-testid="dodaj-proizvod-error-retry"
         >
-          Pokušaj ponovo
+          {t("dodaj.retry")}
         </Button>
       </main>
     );
@@ -133,15 +129,15 @@ export function DodajProizvodFlow() {
         data-testid="dodaj-proizvod-exists"
       >
         <p className="text-sm text-foreground">
-          <span className="font-medium">{step.food.name_sr}</span> već postoji u
-          bazi — ne moraš ponovo da ga dodaješ.
+          <span className="font-medium">{step.food.name_sr}</span>
+          {t("dodaj.product.exists.suffix")}
         </p>
         <Link
           href={`/dodaj/porcija/${step.food.id}`}
           data-testid="dodaj-proizvod-open-existing"
           className="liquid-glass inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
         >
-          Otvori proizvod
+          {t("dodaj.product.openProduct")}
         </Link>
         <button
           type="button"
@@ -149,7 +145,7 @@ export function DodajProizvodFlow() {
           data-testid="dodaj-proizvod-scan-another"
           className="text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
         >
-          Dodaj drugi proizvod
+          {t("dodaj.product.addAnother")}
         </button>
       </main>
     );
@@ -163,17 +159,17 @@ export function DodajProizvodFlow() {
       >
         <div>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Novi proizvod
+            {t("dodaj.newProduct.title")}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Barkod{" "}
+            {t("dodaj.newProduct.gtin.before")}
             <span
               data-testid="dodaj-proizvod-gtin"
               className="font-medium text-foreground"
             >
               {step.gtin}
-            </span>{" "}
-            nije u bazi. Popuni vrednosti ili slikaj deklaraciju, pa sačuvaj.
+            </span>
+            {t("dodaj.product.gtinNotInDb")}
           </p>
         </div>
 
@@ -205,10 +201,10 @@ export function DodajProizvodFlow() {
         </svg>
       </div>
 
-      <h1 className="dp-success__title">Proizvod dodat</h1>
+      <h1 className="dp-success__title">{t("dodaj.product.success.title")}</h1>
       <p className="dp-success__subtitle">
-        <span className="font-medium text-foreground">{step.food.name_sr}</span>{" "}
-        je sada u bazi i dostupan svima.
+        <span className="font-medium text-foreground">{step.food.name_sr}</span>
+        {t("dodaj.product.success.suffix")}
       </p>
 
       <div className="dp-success__actions">
@@ -219,14 +215,14 @@ export function DodajProizvodFlow() {
           className="w-full"
         >
           <PackageCheck aria-hidden="true" />
-          Dodaj još jedan
+          {t("dodaj.product.addOneMore")}
         </Button>
         <Link
           href="/danas"
           data-testid="dodaj-proizvod-done"
           className="liquid-glass inline-flex w-full items-center justify-center rounded-lg border border-border bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
         >
-          Gotovo
+          {t("dodaj.done")}
         </Link>
       </div>
     </main>

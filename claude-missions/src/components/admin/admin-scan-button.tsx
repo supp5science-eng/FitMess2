@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { BarcodeScanner } from "@/components/scan/barcode-scanner";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n/locale-provider";
 
 // F035 / AS-064: the admin "scan barcode to create or open" entry point. Reuses
 // the unmodified F030 `BarcodeScanner` (same `onDetected(gtin)` contract the
@@ -13,6 +14,7 @@ import { Button } from "@/components/ui/button";
 // MISS -> open the create form with the GTIN pre-filled (mark-verified-on-save).
 
 export function AdminScanButton() {
+  const { t } = useT();
   const router = useRouter();
   const [scanning, setScanning] = useState(false);
 
@@ -47,7 +49,7 @@ export function AdminScanButton() {
           onClick={() => setScanning(false)}
           className="self-start"
         >
-          Otkaži skeniranje
+          {t("admin.scan.cancel")}
         </Button>
       </div>
     );
@@ -55,7 +57,7 @@ export function AdminScanButton() {
 
   return (
     <Button type="button" variant="outline" onClick={() => setScanning(true)}>
-      Skeniraj barkod
+      {t("admin.scan.button")}
     </Button>
   );
 }

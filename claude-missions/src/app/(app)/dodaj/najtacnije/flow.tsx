@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
+import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
+import type { TFunction } from "@/lib/i18n/translate";
 import { PortionDial } from "@/components/ai/portion-dial";
 import { ShotGuide } from "@/components/ai/shot-guide";
 import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
@@ -84,28 +87,22 @@ interface Nutrition {
   fat: number;
 }
 
-const CONFIDENCE_LABEL: Record<CombinedMealEstimate["sigurnost"], string> = {
-  niska: "Niska sigurnost",
-  srednja: "Srednja sigurnost",
-  visoka: "Visoka sigurnost",
-};
-
 const MAX_IMAGES = 5;
 // Safety cap so a forgotten "Zaustavi" can't record forever.
 const MAX_RECORDING_MS = 60_000;
 /** Remembers that the user asked to stop seeing the capture guides. */
 const SKIP_GUIDE_KEY = "fm_ipeach_skip_guide";
 
-const REFERENCE_CHOICES: { value: ReferenceObject; label: string }[] = [
-  { value: "viljuska", label: "Viljuška" },
-  { value: "kasika", label: "Kašika" },
-  { value: "kartica", label: "Kartica" },
-  { value: "nista", label: "Ništa" },
+const REFERENCE_CHOICES: { value: ReferenceObject; labelKey: MessageKey }[] = [
+  { value: "viljuska", labelKey: "dodaj.prizma.ref.fork" },
+  { value: "kasika", labelKey: "dodaj.prizma.ref.spoon" },
+  { value: "kartica", labelKey: "dodaj.prizma.ref.card" },
+  { value: "nista", labelKey: "dodaj.prizma.ref.none" },
 ];
 
-const PHOTO_ISSUE_TEXT: Record<PhotoIssue, string> = {
-  mutna: "Slika deluje mutno",
-  tamna: "Slika je tamna",
+const PHOTO_ISSUE_KEY: Record<PhotoIssue, MessageKey> = {
+  mutna: "dodaj.prizma.issue.blurry",
+  tamna: "dodaj.prizma.issue.dark",
 };
 
 const round1 = (n: number) => Math.round(n * 10) / 10;
@@ -152,6 +149,12 @@ function totalsOf(parts: MealComponent[]) {
 }
 
 export function NajtacnijeFlow() {
+  const { t } = useT();
+  const CONFIDENCE_LABEL: Record<CombinedMealEstimate["sigurnost"], string> = {
+    niska: t("dodaj.confidence.low"),
+    srednja: t("dodaj.confidence.medium"),
+    visoka: t("dodaj.confidence.high"),
+  };
   const router = useRouter();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -352,9 +355,7 @@ export function NajtacnijeFlow() {
         MAX_RECORDING_MS
       );
     } catch {
-      setError(
-        "Nismo dobili pristup mikrofonu. Dozvoli mikrofon u podešavanjima pa pokušaj ponovo."
-      );
+      setError(t("dodaj.mic.denied"));
       setIsRecording(false);
     }
   }
@@ -373,7 +374,7 @@ export function NajtacnijeFlow() {
       wavBlobRef.current = await recording.stop();
       setRecordedSeconds(elapsed);
     } catch {
-      setError("Nismo uspeli da obradimo snimak. Pokušaj ponovo.");
+      setError(t("dodaj.audio.processFailed"));
       wavBlobRef.current = null;
       setRecordedSeconds(null);
     } finally {
@@ -436,7 +437,7 @@ export function NajtacnijeFlow() {
 
   async function handleAnalyze() {
     if (files.length === 0) {
-      setError("Dodaj bar jednu sliku.");
+      setError(t("dodaj.prizma.addPhoto"));
       return;
     }
     setError(null);
@@ -465,7 +466,7 @@ export function NajtacnijeFlow() {
       setRecordedSeconds(null);
       setPhase("estimate");
     } catch {
-      setError("Nismo uspeli da analiziramo. Pokušaj ponovo.");
+      setError(t("dodaj.prizma.analyzeFailed"));
       setPhase(mode === "deklaracija" ? "capture" : "review1");
     }
   }
@@ -518,15 +519,15 @@ export function NajtacnijeFlow() {
 
   async function handleFinalize() {
     if (mode === "obrok" && prep === null) {
-      setError("Izaberi kako je pripremljeno — to najviše menja kalorije.");
+      setError(t("dodaj.prizma.choosePrep"));
       return;
     }
     if (!questionsAnswered) {
-      setError("Odgovori na pitanja — tapni opcije ili odgovori glasom.");
+      setError(t("dodaj.prizma.answerQuestions"));
       return;
     }
     if (needsDetail && !hasVoiceOrText) {
-      setError(`Rekao si „${OTHER_LABEL}" — dopiši ili reci šta je bilo.`);
+      setError(t("dodaj.prizma.saidOther", { label: OTHER_LABEL }));
       return;
     }
     setError(null);
@@ -549,7 +550,7 @@ export function NajtacnijeFlow() {
       }
       applyEstimate(result.data);
     } catch {
-      setError("Nismo uspeli da procenimo. Pokušaj ponovo.");
+      setError(t("dodaj.prizma.estimateFailed"));
       setPhase("estimate");
     }
   }
@@ -676,7 +677,7 @@ export function NajtacnijeFlow() {
           <button
             type="button"
             onClick={restoreGuides}
-            aria-label="Prikaži vodič za slikanje"
+            aria-label={t("dodaj.prizma.showGuide")}
             className="rounded-full p-1 text-muted-foreground transition-colors hover:text-foreground"
           >
             <HelpCircle className="size-5" aria-hidden="true" />
@@ -685,7 +686,7 @@ export function NajtacnijeFlow() {
             href="/danas"
             className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
-            Otkaži
+            {t("dodaj.cancel")}
           </Link>
         </div>
       </header>
@@ -729,8 +730,7 @@ export function NajtacnijeFlow() {
       {phase === "mode" ? (
         <div className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">
-            Slikaš jednom, kažeš koliko ima i odgovoriš na par pitanja — zato je
-            ovo najtačnija procena u aplikaciji.
+            {t("dodaj.prizma.modeIntro")}
           </p>
           <button
             type="button"
@@ -739,9 +739,9 @@ export function NajtacnijeFlow() {
           >
             <UtensilsCrossed className="size-6 shrink-0 text-primary" aria-hidden="true" />
             <span className="flex flex-col">
-              <span className="text-base font-medium text-foreground">Obrok</span>
+              <span className="text-base font-medium text-foreground">{t("dodaj.prizma.mealOption")}</span>
               <span className="text-sm text-muted-foreground">
-                Slikaj tanjir pa nam reci koliko ima
+                {t("dodaj.prizma.mealHint")}
               </span>
             </span>
           </button>
@@ -756,10 +756,10 @@ export function NajtacnijeFlow() {
             <ScanText className="size-6 shrink-0 text-primary" aria-hidden="true" />
             <span className="flex flex-col">
               <span className="text-base font-medium text-foreground">
-                Deklaracija
+                {t("dodaj.prizma.labelOption")}
               </span>
               <span className="text-sm text-muted-foreground">
-                Slikaj nutritivnu tabelu pa odgovori na pitanja
+                {t("dodaj.prizma.labelHint")}
               </span>
             </span>
           </button>
@@ -769,15 +769,16 @@ export function NajtacnijeFlow() {
       {/* --- Guide: straight down ---------------------------------------- */}
       {phase === "guide1" ? (
         <GuideStep
-          title="Slikaj pravo odozgo"
-          subtitle="Tako vidim šta je na tanjiru i kako je raspoređeno."
+          t={t}
+          title={t("dodaj.prizma.guide1.title")}
+          subtitle={t("dodaj.prizma.guide1.subtitle")}
           variant="top"
           tips={[
-            "Stavi viljušku ili kašiku PORED tanjira — po njoj merim veličinu",
-            "Ceo tanjir u kadru",
-            "Dobro svetlo — bez senke preko tanjira",
+            t("dodaj.prizma.guide1.tip1"),
+            t("dodaj.prizma.guide1.tip2"),
+            t("dodaj.prizma.guide1.tip3"),
           ]}
-          cta="Jasno — otvori kameru"
+          cta={t("dodaj.prizma.guide1.cta")}
           onStart={() => openCamera("review1")}
           onUpload={() => openGallery("review1")}
           onDismissGuides={dismissGuides}
@@ -793,7 +794,7 @@ export function NajtacnijeFlow() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previews[0]}
-                alt="Slika odozgo"
+                alt={t("dodaj.prizma.photoAltTop")}
                 className="max-h-56 w-full rounded-2xl object-cover"
               />
               <div className="absolute bottom-3 right-3 flex items-center gap-2">
@@ -802,7 +803,7 @@ export function NajtacnijeFlow() {
                 <button
                   type="button"
                   onClick={() => openGallery("review1", 0)}
-                  aria-label="Izaberi drugu sliku"
+                  aria-label={t("dodaj.prizma.chooseAnother")}
                   className="grid size-9 place-items-center rounded-full bg-background/85 text-foreground backdrop-blur"
                 >
                   <ImageUp className="size-4" aria-hidden="true" />
@@ -813,7 +814,7 @@ export function NajtacnijeFlow() {
                   className="flex items-center gap-1.5 rounded-full bg-background/85 px-3 py-2 text-xs font-medium text-foreground backdrop-blur"
                 >
                   <RotateCcw className="size-3.5" aria-hidden="true" />
-                  Slikaj ponovo
+                  {t("dodaj.retakePhoto")}
                 </button>
               </div>
             </div>
@@ -823,10 +824,10 @@ export function NajtacnijeFlow() {
 
           <div className="flex flex-col gap-2.5">
             <span className="text-base font-medium text-foreground">
-              Ima li nečega pored tanjira?
+              {t("dodaj.prizma.besidePlate")}
             </span>
             <p className="-mt-1 text-xs text-muted-foreground">
-              Po tome merim koliko je tanjir velik — bez toga samo pogađam.
+              {t("dodaj.prizma.besideHint")}
             </p>
             <div className="flex flex-wrap gap-2">
               {REFERENCE_CHOICES.map((choice) => {
@@ -843,7 +844,7 @@ export function NajtacnijeFlow() {
                     }`}
                   >
                     {on ? <Check className="size-3.5" aria-hidden="true" /> : null}
-                    {choice.label}
+                    {t(choice.labelKey)}
                   </button>
                 );
               })}
@@ -857,7 +858,7 @@ export function NajtacnijeFlow() {
             className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground disabled:opacity-60"
           >
             <Sparkles className="size-5" aria-hidden="true" />
-            Dalje
+            {t("dodaj.next")}
           </button>
         </div>
       ) : null}
@@ -865,18 +866,16 @@ export function NajtacnijeFlow() {
       {/* --- The extra angle: only when the model says it would help ------ */}
       {phase === "guide2" ? (
         <GuideStep
-          title="Još jedna slika, iz ugla"
-          subtitle={
-            angleAsk ||
-            "Odozgo se ne vidi šta je ispod — iz ugla se vidi i visina."
-          }
+          t={t}
+          title={t("dodaj.prizma.guide2.title")}
+          subtitle={angleAsk || t("dodaj.prizma.guide2.subtitle")}
           variant="angle"
           tips={[
-            "Viljuška neka ostane PORED tanjira, kao na prvoj slici",
-            "Spusti telefon na oko 45°",
-            "Isti tanjir — ne pomeraj hranu",
+            t("dodaj.prizma.guide2.tip1"),
+            t("dodaj.prizma.guide2.tip2"),
+            t("dodaj.prizma.guide2.tip3"),
           ]}
-          cta="Otvori kameru"
+          cta={t("dodaj.openCamera")}
           onStart={() => openCamera("estimate")}
           onUpload={() => openGallery("estimate")}
           onDismissGuides={dismissGuides}
@@ -889,11 +888,10 @@ export function NajtacnijeFlow() {
         <div className="flex flex-col gap-4">
           <div className="rounded-2xl border border-primary/30 bg-primary/5 px-4 py-4">
             <p className="text-sm font-medium text-foreground">
-              Slikaj deklaraciju (nutritivnu tabelu)
+              {t("dodaj.prizma.capture.title")}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Dodaj i sliku pakovanja ako se na njemu vidi ukupna masa. AI će te
-              pitati koliko si pojeo.
+              {t("dodaj.prizma.capture.hint")}
             </p>
           </div>
 
@@ -904,13 +902,13 @@ export function NajtacnijeFlow() {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={url}
-                    alt={`Slika ${i + 1}`}
+                    alt={t("dodaj.prizma.photoAltN", { n: i + 1 })}
                     className="size-full rounded-xl object-cover"
                   />
                   <button
                     type="button"
                     onClick={() => removePhoto(i)}
-                    aria-label={`Ukloni sliku ${i + 1}`}
+                    aria-label={t("dodaj.prizma.removePhotoN", { n: i + 1 })}
                     className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full bg-foreground text-background shadow"
                   >
                     <X className="size-3.5" aria-hidden="true" />
@@ -921,7 +919,7 @@ export function NajtacnijeFlow() {
                 <button
                   type="button"
                   onClick={() => openCamera("capture")}
-                  aria-label="Dodaj još jednu sliku"
+                  aria-label={t("dodaj.prizma.addPhotoAria")}
                   className="grid aspect-square place-items-center rounded-xl border border-dashed border-border text-muted-foreground transition-colors hover:bg-muted"
                 >
                   <Camera className="size-6" aria-hidden="true" />
@@ -936,10 +934,10 @@ export function NajtacnijeFlow() {
             >
               <Camera className="size-9 text-primary" aria-hidden="true" />
               <span className="text-base font-medium text-foreground">
-                Otvori kameru
+                {t("dodaj.openCamera")}
               </span>
               <span className="text-sm text-muted-foreground">
-                Neka tabela bude oštra i cela u kadru
+                {t("dodaj.prizma.tableSharp")}
               </span>
             </button>
           )}
@@ -951,7 +949,7 @@ export function NajtacnijeFlow() {
             className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
           >
             <ImageUp className="size-4" aria-hidden="true" />
-            Otpremi postojeće slike
+            {t("dodaj.prizma.uploadExistingPlural")}
           </button>
 
           {files.length > 0 ? (
@@ -961,7 +959,7 @@ export function NajtacnijeFlow() {
               className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground"
             >
               <Sparkles className="size-5" aria-hidden="true" />
-              Analiziraj
+              {t("dodaj.prizma.analyze")}
             </button>
           ) : null}
         </div>
@@ -969,12 +967,12 @@ export function NajtacnijeFlow() {
 
       {phase === "analyzing" ? (
         <AiThinking
-          title="Gledam tvoj tanjir…"
+          title={t("dodaj.prizma.analyzing.title")}
           lines={[
-            "Prepoznajem šta je na tanjiru…",
-            "Merim tanjir po viljušci…",
-            "Spremam ti klizač za količinu…",
-            "Gledam šta mi još nije jasno…",
+            t("dodaj.prizma.analyzing.line1"),
+            t("dodaj.prizma.analyzing.line2"),
+            t("dodaj.prizma.analyzing.line3"),
+            t("dodaj.prizma.analyzing.line4"),
           ]}
         />
       ) : null}
@@ -989,7 +987,7 @@ export function NajtacnijeFlow() {
                 <img
                   key={url}
                   src={url}
-                  alt={`Slika ${i + 1}`}
+                  alt={t("dodaj.prizma.photoAltN", { n: i + 1 })}
                   className="size-16 shrink-0 rounded-xl object-cover"
                 />
               ))}
@@ -1000,11 +998,12 @@ export function NajtacnijeFlow() {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <h2 className="text-xl font-semibold tracking-tight text-foreground">
-                  {dish ? `${dish} — koliko ima?` : "Koliko otprilike ima?"}
+                  {dish
+                    ? t("dodaj.prizma.howMuch", { dish })
+                    : t("dodaj.prizma.howMuchGeneric")}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Vidim šta je na tanjiru, ali ne i koliko toga ima. Ti to vidiš
-                  — reci grubo, ja ću odatle da izračunam.
+                  {t("dodaj.prizma.howMuchHint")}
                 </p>
               </div>
 
@@ -1016,11 +1015,10 @@ export function NajtacnijeFlow() {
 
               <div className="flex flex-col gap-2.5">
                 <span className="text-base font-medium text-foreground">
-                  Kako je pripremljeno?
+                  {t("dodaj.prizma.prepQuestion")}
                 </span>
                 <p className="-mt-1 text-xs text-muted-foreground">
-                  Mast se ne vidi na slici, a nosi najviše kalorija — kašika ulja
-                  je 126 kcal.
+                  {t("dodaj.prizma.prepHint")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {PREP_METHODS.map((method) => {
@@ -1051,8 +1049,8 @@ export function NajtacnijeFlow() {
           {angleAsk !== null && files.length < MAX_IMAGES ? (
             <div className="flex flex-col gap-3 rounded-2xl border border-primary/30 bg-primary/5 px-4 py-4">
               <p className="text-sm text-foreground">
-                {angleAsk || "Odozgo ne vidim šta je ispod."} Jedna slika iz ugla
-                bi to rešila.
+                {angleAsk || t("dodaj.prizma.angleFallback")}{" "}
+                {t("dodaj.prizma.angleSolve")}
               </p>
               <div className="flex flex-col gap-1.5">
                 <button
@@ -1061,14 +1059,14 @@ export function NajtacnijeFlow() {
                   className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground"
                 >
                   <Camera className="size-4" aria-hidden="true" />
-                  Slikaj iz ugla
+                  {t("dodaj.prizma.shootAngle")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setAngleAsk(null)}
                   className="rounded-xl px-6 py-2 text-sm font-medium text-muted-foreground hover:text-foreground"
                 >
-                  Preskoči
+                  {t("dodaj.skip")}
                 </button>
               </div>
             </div>
@@ -1078,7 +1076,7 @@ export function NajtacnijeFlow() {
             <div className="flex flex-col gap-5">
               <div className="flex items-center gap-2 text-sm text-primary">
                 <Sparkles className="size-4" aria-hidden="true" />
-                <span>Ovo ne mogu da vidim sa slike</span>
+                <span>{t("dodaj.prizma.cantSee")}</span>
               </div>
 
               <div className="flex flex-col gap-6">
@@ -1095,7 +1093,7 @@ export function NajtacnijeFlow() {
                           </span>
                           {q.vise_odgovora ? (
                             <span className="shrink-0 text-xs text-muted-foreground">
-                              može više
+                              {t("dodaj.prizma.multi")}
                             </span>
                           ) : null}
                         </div>
@@ -1143,7 +1141,9 @@ export function NajtacnijeFlow() {
               {/* Voice/text: the way out when the chips don't cover it. */}
               <div className="flex flex-col gap-2 rounded-2xl border border-border bg-muted/40 px-4 py-4">
                 <span className="text-sm font-medium text-foreground">
-                  {needsDetail ? "Reci šta je bilo" : "…ili odgovori glasom na sve"}
+                  {needsDetail
+                    ? t("dodaj.prizma.sayWhat")
+                    : t("dodaj.prizma.orVoiceAll")}
                 </span>
                 {!isRecording ? (
                   <button
@@ -1153,8 +1153,8 @@ export function NajtacnijeFlow() {
                   >
                     <Mic className="size-5 text-primary" aria-hidden="true" />
                     {recordedSeconds != null
-                      ? `Snimljeno (${recordedSeconds}s) — snimi ponovo`
-                      : "Reci glasom"}
+                      ? t("dodaj.prizma.recorded", { sec: recordedSeconds })
+                      : t("dodaj.prizma.sayByVoice")}
                   </button>
                 ) : (
                   <button
@@ -1163,17 +1163,19 @@ export function NajtacnijeFlow() {
                     className="flex items-center justify-center gap-2 rounded-xl bg-destructive px-6 py-3 text-sm font-semibold text-destructive-foreground animate-pulse"
                   >
                     <Square className="size-4 fill-current" aria-hidden="true" />
-                    Snimam… {formatSeconds(seconds)} — zaustavi
+                    {t("dodaj.prizma.recordingStop", {
+                      time: formatSeconds(seconds),
+                    })}
                   </button>
                 )}
                 {recordedSeconds != null && !isRecording ? (
-                  <p className="text-xs text-primary">Snimak spreman ✓</p>
+                  <p className="text-xs text-primary">{t("dodaj.prizma.recordReady")}</p>
                 ) : null}
                 <textarea
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   rows={2}
-                  placeholder="…ili dopiši nešto (opciono)"
+                  placeholder={t("dodaj.prizma.notePlaceholder")}
                   className="mt-1 rounded-xl border border-border bg-background px-4 py-2.5 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 />
               </div>
@@ -1188,7 +1190,7 @@ export function NajtacnijeFlow() {
               className="flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground disabled:opacity-60"
             >
               <Sparkles className="size-5" aria-hidden="true" />
-              Izračunaj
+              {t("dodaj.prizma.calculate")}
             </button>
             <button
               type="button"
@@ -1196,7 +1198,7 @@ export function NajtacnijeFlow() {
               disabled={isRecording}
               className="rounded-xl px-6 py-3 text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
             >
-              Nazad na slike
+              {t("dodaj.prizma.backToPhotos")}
             </button>
           </div>
         </div>
@@ -1204,12 +1206,12 @@ export function NajtacnijeFlow() {
 
       {phase === "finalizing" ? (
         <AiThinking
-          title="Računam tvoju porciju…"
+          title={t("dodaj.prizma.finalizing.title")}
           lines={[
-            "Spajam sliku i tvoje odgovore…",
-            "Razlažem obrok na sastojke…",
-            "Sabiram makronutrijente…",
-            "Skoro gotovo…",
+            t("dodaj.prizma.finalizing.line1"),
+            t("dodaj.prizma.finalizing.line2"),
+            t("dodaj.prizma.finalizing.line3"),
+            t("dodaj.almostDone"),
           ]}
         />
       ) : null}
@@ -1220,7 +1222,7 @@ export function NajtacnijeFlow() {
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={previews[0]}
-              alt="Tvoj obrok"
+              alt={t("dodaj.meal.photoAlt")}
               className="max-h-48 w-full rounded-2xl object-cover"
             />
           ) : null}
@@ -1231,7 +1233,7 @@ export function NajtacnijeFlow() {
           </div>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-foreground">Naziv</span>
+            <span className="text-sm font-medium text-foreground">{t("dodaj.field.name")}</span>
             <input
               type="text"
               value={name}
@@ -1246,10 +1248,10 @@ export function NajtacnijeFlow() {
             <div className="flex flex-col gap-2">
               <div className="flex items-baseline justify-between gap-2">
                 <span className="text-sm font-medium text-foreground">
-                  Od čega se sastoji
+                  {t("dodaj.prizma.breakdown")}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  skloni što nisi jeo
+                  {t("dodaj.prizma.removeUneaten")}
                 </span>
               </div>
               <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
@@ -1263,8 +1265,10 @@ export function NajtacnijeFlow() {
                         {c.naziv}
                       </span>
                       <span className="text-xs text-muted-foreground">
-                        {Math.round(c.grami)} g · P {round1(c.protein_g)} · UH{" "}
-                        {round1(c.uh_g)} · M {round1(c.mast_g)}
+                        {Math.round(c.grami)} g · {t("dodaj.macroAbbr.protein")}{" "}
+                        {round1(c.protein_g)} · {t("dodaj.macroAbbr.carbs")}{" "}
+                        {round1(c.uh_g)} · {t("dodaj.macroAbbr.fat")}{" "}
+                        {round1(c.mast_g)}
                       </span>
                     </div>
                     <span className="shrink-0 text-sm font-semibold text-foreground">
@@ -1273,7 +1277,7 @@ export function NajtacnijeFlow() {
                     <button
                       type="button"
                       onClick={() => removeComponent(i)}
-                      aria-label={`Skloni ${c.naziv}`}
+                      aria-label={t("dodaj.prizma.removeItem", { name: c.naziv })}
                       className="shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
                       <X className="size-4" aria-hidden="true" />
@@ -1297,7 +1301,7 @@ export function NajtacnijeFlow() {
 
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-foreground">
-              Gramaža (g)
+              {t("dodaj.field.grams")}
             </span>
             <input
               type="number"
@@ -1313,23 +1317,23 @@ export function NajtacnijeFlow() {
 
           <div className="grid grid-cols-2 gap-3">
             <MacroField
-              label="Kalorije"
+              label={t("dodaj.field.kcal")}
               value={nutrition.kcal}
               decimals={0}
               onChange={(v) => setNutrition((n) => ({ ...n, kcal: v }))}
             />
             <MacroField
-              label="Protein (g)"
+              label={t("dodaj.field.protein")}
               value={nutrition.protein}
               onChange={(v) => setNutrition((n) => ({ ...n, protein: v }))}
             />
             <MacroField
-              label="Ugljeni hidrati (g)"
+              label={t("dodaj.field.carbs")}
               value={nutrition.carbs}
               onChange={(v) => setNutrition((n) => ({ ...n, carbs: v }))}
             />
             <MacroField
-              label="Masti (g)"
+              label={t("dodaj.field.fat")}
               value={nutrition.fat}
               onChange={(v) => setNutrition((n) => ({ ...n, fat: v }))}
             />
@@ -1344,7 +1348,7 @@ export function NajtacnijeFlow() {
             <div className="flex flex-col gap-1.5 rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3.5">
               <div className="flex items-center gap-2 text-sm font-medium text-primary">
                 <Sparkles className="size-4" aria-hidden="true" />
-                <span>Kako sam došao do procene</span>
+                <span>{t("dodaj.prizma.howReached")}</span>
               </div>
               <p className="text-sm leading-relaxed text-foreground/80">
                 {estimate.napomena}
@@ -1361,11 +1365,11 @@ export function NajtacnijeFlow() {
             {phase === "saving" ? (
               <Loader2 className="size-5 animate-spin" aria-hidden="true" />
             ) : null}
-            Dodaj u dan
+            {t("dodaj.addToDay")}
           </button>
 
           <p className="text-center text-xs text-muted-foreground">
-            AI procena je približna — proveri i doteraj po potrebi.
+            {t("dodaj.aiApproxNote")}
           </p>
         </div>
       ) : null}
@@ -1375,6 +1379,7 @@ export function NajtacnijeFlow() {
 
 /** One of the teaching screens: animation, what to do, why, and the CTA. */
 function GuideStep({
+  t,
   title,
   subtitle,
   variant,
@@ -1385,6 +1390,7 @@ function GuideStep({
   onDismissGuides,
   onBack,
 }: {
+  t: TFunction;
   title: string;
   subtitle: string;
   variant: "top" | "angle";
@@ -1432,7 +1438,7 @@ function GuideStep({
           className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
         >
           <ImageUp className="size-4" aria-hidden="true" />
-          Otpremi postojeću sliku
+          {t("dodaj.uploadExisting")}
         </button>
         <div className="flex items-center justify-between gap-3 pt-1">
           <button
@@ -1440,14 +1446,14 @@ function GuideStep({
             onClick={onBack}
             className="text-sm font-medium text-muted-foreground hover:text-foreground"
           >
-            Nazad
+            {t("dodaj.back")}
           </button>
           <button
             type="button"
             onClick={onDismissGuides}
             className="text-xs text-muted-foreground hover:text-foreground"
           >
-            Znam već — ne prikazuj vodič
+            {t("dodaj.prizma.knowAlready")}
           </button>
         </div>
       </div>
@@ -1457,13 +1463,14 @@ function GuideStep({
 
 /** Gentle heads-up about a soft or dark photo. Never blocks. */
 function PhotoWarning({ issues }: { issues: PhotoIssue[] }) {
+  const { t } = useT();
   if (issues.length === 0) return null;
   return (
     <div className="flex gap-2.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3">
       <TriangleAlert className="size-4 shrink-0 text-amber-500" aria-hidden="true" />
       <p className="text-sm text-foreground">
-        {issues.map((i) => PHOTO_ISSUE_TEXT[i]).join(" · ")} — procena će biti
-        tačnija ako slikaš ponovo.
+        {issues.map((i) => t(PHOTO_ISSUE_KEY[i])).join(" · ")}
+        {t("dodaj.prizma.photoWarnSuffix")}
       </p>
     </div>
   );

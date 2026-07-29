@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
 // The horizontal, swipeable pager that holds the home tab's "Dnevni unos" block
@@ -60,6 +61,7 @@ export function IntakePager({
   pages: IntakePagerPage[];
   className?: string;
 }) {
+  const { t } = useT();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const frameRef = useRef<number | null>(null);
@@ -152,7 +154,7 @@ export function IntakePager({
                 key={page.id}
                 type="button"
                 onClick={() => goTo(index)}
-                aria-label={`Prikaži: ${page.labelSr}`}
+                aria-label={t("home.pager.show", { label: page.labelSr })}
                 aria-current={selected ? "true" : undefined}
                 className="flex size-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >

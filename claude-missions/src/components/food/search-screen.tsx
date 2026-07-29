@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { FoodListItem } from "@/components/food/food-list-item";
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,7 +24,6 @@ import type { Food } from "@/lib/types/db";
 // live search-as-you-type interaction is client state.
 
 const SEARCH_DEBOUNCE_MS = 300;
-const SEARCH_FAILED_ERROR_SR = "Pretraga trenutno ne radi. Pokušaj ponovo.";
 
 type SearchStatus = "idle" | "loading" | "success" | "error";
 
@@ -34,6 +34,7 @@ interface SearchResponseBody {
 }
 
 export function SearchScreen({ initialRecents }: { initialRecents: Food[] }) {
+  const { t } = useT();
   const [query, setQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [attempt, setAttempt] = useState(0);
@@ -80,7 +81,7 @@ export function SearchScreen({ initialRecents }: { initialRecents: Food[] }) {
 
         if (!response.ok || !body.ok) {
           setStatus("error");
-          setErrorMessage(body.error_sr || SEARCH_FAILED_ERROR_SR);
+          setErrorMessage(body.error_sr || t("food.search.failedError"));
           return;
         }
 
@@ -89,7 +90,7 @@ export function SearchScreen({ initialRecents }: { initialRecents: Food[] }) {
       } catch {
         if (!cancelled) {
           setStatus("error");
-          setErrorMessage(SEARCH_FAILED_ERROR_SR);
+          setErrorMessage(t("food.search.failedError"));
         }
       }
     }
@@ -124,26 +125,26 @@ export function SearchScreen({ initialRecents }: { initialRecents: Food[] }) {
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Dodaj hranu
+          {t("food.search.title")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Pretraži namirnicu ili brzo dodaj nešto što si nedavno jeo/la.
+          {t("food.search.subtitle")}
         </p>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <Label htmlFor="food-search-input">Pretraga hrane</Label>
+        <Label htmlFor="food-search-input">{t("food.search.label")}</Label>
         <Input
           id="food-search-input"
           data-testid="search-input"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Npr. pileća supa, jabuka, jogurt..."
+          placeholder={t("food.search.placeholder")}
           autoComplete="off"
           aria-describedby="food-search-help"
         />
         <span id="food-search-help" className="sr-only">
-          Upiši naziv namirnice na srpskom, latinicom ili ćirilicom.
+          {t("food.search.help")}
         </span>
       </div>
 
@@ -166,11 +167,12 @@ export function SearchScreen({ initialRecents }: { initialRecents: Food[] }) {
 }
 
 function RecentsSection({ recents }: { recents: Food[] }) {
+  const { t } = useT();
   if (recents.length === 0) {
     return (
       <EmptyHint
         testId="search-empty-state"
-        body="Još nemaš nijednu nedavno korišćenu namirnicu. Otkucaj naziv iznad da pretražiš — uskoro ćeš moći i da skeniraš bar-kod ili fotografišeš nalepnicu."
+        body={t("food.search.recentsEmpty")}
       />
     );
   }
@@ -178,7 +180,7 @@ function RecentsSection({ recents }: { recents: Food[] }) {
   return (
     <div className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-foreground">
-        Nedavno korišćeno
+        {t("food.search.recentsHeading")}
       </h2>
       <ul className="flex flex-col gap-2" data-testid="recents-list">
         {recents.map((food) => (
@@ -204,6 +206,7 @@ function SearchResultsSection({
   errorMessage?: string;
   onRetry: () => void;
 }) {
+  const { t } = useT();
   if (status === "loading" || status === "idle") {
     return (
       <ul
@@ -236,7 +239,7 @@ function SearchResultsSection({
           onClick={onRetry}
           data-testid="search-retry-button"
         >
-          Pokušaj ponovo
+          {t("food.search.retry")}
         </Button>
       </div>
     );
@@ -246,8 +249,8 @@ function SearchResultsSection({
     return (
       <EmptyHint
         testId="search-no-results"
-        heading={`Nema rezultata za "${query}".`}
-        body="Probaj drugačiji naziv ili proveri kucanje — uskoro ćeš moći i da skeniraš bar-kod ili fotografišeš nalepnicu."
+        heading={t("food.search.noResultsHeading", { query })}
+        body={t("food.search.noResultsBody")}
       />
     );
   }

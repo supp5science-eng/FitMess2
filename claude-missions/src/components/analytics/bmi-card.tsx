@@ -1,3 +1,5 @@
+import { getT } from "@/lib/i18n/server";
+
 // Analitika: the "Tvoj BMI" card. Body-mass-index value + WHO category, a
 // four-zone colour bar with a marker at the user's position, and a legend with
 // the standard thresholds. Presentational: the raw BMI number is computed by
@@ -9,10 +11,10 @@
 // in light and dark. `adjective` agrees with feminine "težina" for the headline
 // sentence; `legend` is the zone name shown under the bar.
 const ZONES = [
-  { key: "under", color: "#5B8DEF", legend: "Pothranjenost", range: "<18,5", adjective: "premala" },
-  { key: "healthy", color: "#22B573", legend: "Zdravo", range: "18,5–24,9", adjective: "zdrava" },
-  { key: "over", color: "#E0B252", legend: "Prekomerna", range: "25,0–29,9", adjective: "prekomerna" },
-  { key: "obese", color: "#E0685E", legend: "Gojaznost", range: ">30,0", adjective: "previsoka" },
+  { key: "under", color: "#5B8DEF", range: "<18,5" },
+  { key: "healthy", color: "#22B573", range: "18,5–24,9" },
+  { key: "over", color: "#E0B252", range: "25,0–29,9" },
+  { key: "obese", color: "#E0685E", range: ">30,0" },
 ] as const;
 
 // Visual scale for the bar/marker: BMI 15..40. Segment widths and the marker
@@ -36,17 +38,38 @@ function segmentWidths(): number[] {
   return edges.slice(0, -1).map((edge, i) => ((edges[i + 1]! - edge) / span) * 100);
 }
 
-export function BmiCard({ bmi }: { bmi: number | null }) {
-  const help =
-    "Indeks telesne mase (ITM) je odnos težine i visine. Orijentaciona mera — ne razlikuje mišićnu od masne mase.";
+export async function BmiCard({ bmi }: { bmi: number | null }) {
+  const { t } = await getT();
+  const help = t("analytics.bmi.help");
+  const title = t("analytics.bmi.title");
+  const zoneLabels: Record<
+    (typeof ZONES)[number]["key"],
+    { legend: string; adjective: string }
+  > = {
+    under: {
+      legend: t("analytics.bmi.zone.under.legend"),
+      adjective: t("analytics.bmi.zone.under.adjective"),
+    },
+    healthy: {
+      legend: t("analytics.bmi.zone.healthy.legend"),
+      adjective: t("analytics.bmi.zone.healthy.adjective"),
+    },
+    over: {
+      legend: t("analytics.bmi.zone.over.legend"),
+      adjective: t("analytics.bmi.zone.over.adjective"),
+    },
+    obese: {
+      legend: t("analytics.bmi.zone.obese.legend"),
+      adjective: t("analytics.bmi.zone.obese.adjective"),
+    },
+  };
 
   if (bmi == null) {
     return (
       <section className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-6">
-        <Header help={help} />
+        <Header help={help} title={title} />
         <p data-testid="bmi-empty" className="max-w-[40ch] text-sm text-muted-foreground">
-          Dopuni visinu i težinu u upitniku pa ćemo ti ovde izračunati indeks
-          telesne mase.
+          {t("analytics.bmi.empty")}
         </p>
       </section>
     );
@@ -65,7 +88,7 @@ export function BmiCard({ bmi }: { bmi: number | null }) {
 
   return (
     <section className="flex flex-col gap-5 rounded-3xl border border-border bg-card p-6">
-      <Header help={help} />
+      <Header help={help} title={title} />
 
       {/* Value + category pill */}
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -76,13 +99,13 @@ export function BmiCard({ bmi }: { bmi: number | null }) {
           {bmiLabel}
         </span>
         <span className="flex items-center gap-2 text-base text-muted-foreground">
-          Tvoja težina je
+          {t("analytics.bmi.yourWeightIs")}
           <span
             data-testid="bmi-category"
             className="rounded-full px-3 py-1 text-sm font-semibold capitalize"
             style={{ color: zone.color, backgroundColor: `${zone.color}22` }}
           >
-            {zone.adjective}
+            {zoneLabels[zone.key].adjective}
           </span>
         </span>
       </div>
@@ -118,7 +141,7 @@ export function BmiCard({ bmi }: { bmi: number | null }) {
             />
             <div className="flex min-w-0 flex-col leading-tight">
               <span className="text-xs font-medium text-foreground">
-                {z.legend}
+                {zoneLabels[z.key].legend}
               </span>
               <span className="text-[11px] text-muted-foreground">
                 {z.range}
@@ -133,10 +156,10 @@ export function BmiCard({ bmi }: { bmi: number | null }) {
 
 /** Card header: title + a circled "?" carrying the plain-language explanation
  * (native tooltip + accessible label; no client JS, no icon dependency). */
-function Header({ help }: { help: string }) {
+function Header({ help, title }: { help: string; title: string }) {
   return (
     <div className="flex items-start justify-between">
-      <h2 className="text-lg font-semibold text-foreground">Tvoj BMI</h2>
+      <h2 className="text-lg font-semibold text-foreground">{title}</h2>
       <span
         role="img"
         aria-label={help}

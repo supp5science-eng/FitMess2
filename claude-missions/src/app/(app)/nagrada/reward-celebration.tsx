@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { buttonVariants } from "@/components/ui/button";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import { MEALS_FOR_FULL_DAY, streakMilestone } from "@/lib/awards/streak";
 import { cn } from "@/lib/utils";
 
@@ -104,9 +106,10 @@ export function RewardCelebration({
   streak: number;
   loggedMeals: number;
 }) {
+  const { t } = useT();
   const shownStreak = useCountUp(earned ? streak : 0);
 
-  if (!earned) return <NotYet loggedMeals={loggedMeals} />;
+  if (!earned) return <NotYet loggedMeals={loggedMeals} t={t} />;
 
   const milestone = streakMilestone(streak);
 
@@ -170,10 +173,10 @@ export function RewardCelebration({
         style={{ "--fm-rise-delay": "0.5s" } as React.CSSProperties}
       >
         <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-          Pun dan!
+          {t("media.reward.title")}
         </h1>
         <p className="text-base text-muted-foreground">
-          Upisao si sva tri obroka. Značka je tvoja.
+          {t("media.reward.subtitle")}
         </p>
       </div>
 
@@ -185,12 +188,17 @@ export function RewardCelebration({
           className="text-5xl font-bold tabular-nums text-foreground"
           // The live number changes every frame; announcing each tick would be
           // noise, so the accessible name is the final value, stated once.
-          aria-label={`${streak} ${streak === 1 ? "dan" : "dana"} zaredom`}
+          aria-label={t("media.reward.streakAria", {
+            streak,
+            noun: streak === 1 ? t("media.reward.dayOne") : t("media.reward.dayMany"),
+          })}
         >
           <span aria-hidden="true">{shownStreak}</span>
         </span>
         <span className="text-sm font-medium text-muted-foreground">
-          {streak === 1 ? "dan zaredom" : "dana zaredom"}
+          {streak === 1
+            ? t("media.reward.dayInARowOne")
+            : t("media.reward.dayInARowMany")}
         </span>
         {milestone ? (
           <span className="mt-1 text-sm font-medium text-primary">
@@ -207,13 +215,13 @@ export function RewardCelebration({
           href="/danas"
           className={cn(buttonVariants(), "h-12 w-full text-base")}
         >
-          Nastavi
+          {t("media.reward.continue")}
         </Link>
         <Link
           href="/analitika"
           className={cn(buttonVariants({ variant: "ghost" }), "h-11 w-full")}
         >
-          Pogledaj Analitiku
+          {t("media.reward.viewAnalytics")}
         </Link>
       </div>
     </main>
@@ -222,7 +230,13 @@ export function RewardCelebration({
 
 /** Opened before the day is earned — usually a notification tapped the next
  * morning. Says what is missing, and gets out of the way. */
-function NotYet({ loggedMeals }: { loggedMeals: number }) {
+function NotYet({
+  loggedMeals,
+  t,
+}: {
+  loggedMeals: number;
+  t: TFunction;
+}) {
   const left = Math.max(0, MEALS_FOR_FULL_DAY - loggedMeals);
 
   return (
@@ -233,12 +247,12 @@ function NotYet({ loggedMeals }: { loggedMeals: number }) {
 
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Još malo
+          {t("media.reward.notYetTitle")}
         </h1>
         <p className="text-base text-muted-foreground">
           {left === 1
-            ? "Fali ti još jedan obrok do pune značke za danas."
-            : `Fali ti još ${left} obroka do pune značke za danas.`}
+            ? t("media.reward.oneMealLeft")
+            : t("media.reward.mealsLeft", { count: left })}
         </p>
       </div>
 
@@ -247,13 +261,13 @@ function NotYet({ loggedMeals }: { loggedMeals: number }) {
           href="/dodaj"
           className={cn(buttonVariants(), "h-12 w-full text-base")}
         >
-          Upiši obrok
+          {t("media.reward.logMeal")}
         </Link>
         <Link
           href="/danas"
           className={cn(buttonVariants({ variant: "ghost" }), "h-11 w-full")}
         >
-          Nazad na Danas
+          {t("media.reward.backToToday")}
         </Link>
       </div>
     </main>

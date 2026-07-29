@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 import "./app-splash.css";
 
 // Launch splash. The FitMess pear mark + "FitMess" wordmark (with the
@@ -40,6 +42,7 @@ function shouldRenderInitially(): boolean {
 }
 
 export function AppSplash() {
+  const { t } = useT();
   const [render] = useState(shouldRenderInitially);
 
   useEffect(() => {
@@ -58,7 +61,7 @@ export function AppSplash() {
       className="fm-splash"
       role="status"
       aria-live="polite"
-      aria-label="FitMess se učitava"
+      aria-label={t("app.splash.aria")}
     >
       <div className="fm-splash__stage" aria-hidden="true">
         {/* The pear mark used in the header lockup, at launch size. Decorative:
@@ -80,7 +83,7 @@ export function AppSplash() {
           >
             Fit<span className="fm-wordmark-accent fm-splash__mess">Mess</span>
           </div>
-          <p className="fm-splash__tagline">Jedi, radi, treniraj i uživaj</p>
+          <p className="fm-splash__tagline">{t("app.splash.tagline")}</p>
         </div>
       </div>
     </div>

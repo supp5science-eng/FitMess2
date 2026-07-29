@@ -3,19 +3,25 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { macroTargets, planForGoal } from "@/lib/budget/engine";
+import type { MessageKey } from "@/lib/i18n/messages";
 import type { GoalType, Sex } from "@/lib/types/db";
 
 import { saveGoalAction } from "./actions";
 
-const GOAL_OPTIONS: { value: GoalType; label: string; description: string }[] = [
-  { value: "lose", label: "Smršaj", description: "Kontrolisan kalorijski deficit." },
-  { value: "tone", label: "Zategni se", description: "Blagi deficit za čvrstu liniju." },
-  { value: "gain", label: "Nabaci mišiće", description: "Kalorijski višak za čistu masu." },
-  { value: "maintain", label: "Održavanje", description: "Zadrži trenutnu težinu." },
+const GOAL_OPTIONS: {
+  value: GoalType;
+  labelKey: MessageKey;
+  descKey: MessageKey;
+}[] = [
+  { value: "lose", labelKey: "profil.goal.lose.label", descKey: "profil.goal.lose.desc" },
+  { value: "tone", labelKey: "profil.goal.tone.label", descKey: "profil.goal.tone.desc" },
+  { value: "gain", labelKey: "profil.goal.gain.label", descKey: "profil.goal.gain.desc" },
+  { value: "maintain", labelKey: "profil.goal.maintain.label", descKey: "profil.goal.maintain.desc" },
 ];
 
 export function GoalForm({
@@ -34,6 +40,7 @@ export function GoalForm({
   initialTimeframeWeeks: number | null;
 }) {
   const router = useRouter();
+  const { t } = useT();
   const [pending, startTransition] = useTransition();
   const [goal, setGoal] = useState<GoalType>(initialGoal);
   const [targetWeight, setTargetWeight] = useState(
@@ -89,7 +96,7 @@ export function GoalForm({
         timeframeWeeks: isWeightChange ? weeksNum : null,
       });
       if (!result.ok) {
-        setError(result.error_sr ?? "Nešto nije uspelo. Pokušaj ponovo.");
+        setError(result.error_sr ?? t("profil.error.generic"));
         return;
       }
       setSaved(true);
@@ -100,7 +107,7 @@ export function GoalForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <Label>Cilj</Label>
+        <Label>{t("profil.goal.fieldLabel")}</Label>
         <div className="flex flex-col gap-2">
           {GOAL_OPTIONS.map((option) => {
             const active = goal === option.value;
@@ -121,10 +128,10 @@ export function GoalForm({
                     active ? "text-primary" : "text-foreground"
                   }`}
                 >
-                  {option.label}
+                  {t(option.labelKey)}
                 </span>
                 <span className="text-xs text-muted-foreground">
-                  {option.description}
+                  {t(option.descKey)}
                 </span>
               </button>
             );
@@ -135,25 +142,25 @@ export function GoalForm({
       {isWeightChange ? (
         <div className="flex gap-3">
           <div className="flex flex-1 flex-col gap-1.5">
-            <Label htmlFor="ciljna-tezina">Ciljna težina (kg)</Label>
+            <Label htmlFor="ciljna-tezina">{t("profil.goal.targetWeight")}</Label>
             <Input
               id="ciljna-tezina"
               type="number"
               inputMode="decimal"
               value={targetWeight}
               onChange={(e) => setTargetWeight(e.target.value)}
-              placeholder={goal === "gain" ? "npr. 85" : "npr. 75"}
+              placeholder={goal === "gain" ? t("profil.goal.egGain") : t("profil.goal.egLose")}
             />
           </div>
           <div className="flex flex-1 flex-col gap-1.5">
-            <Label htmlFor="rok">Rok (nedelja)</Label>
+            <Label htmlFor="rok">{t("profil.goal.timeframe")}</Label>
             <Input
               id="rok"
               type="number"
               inputMode="numeric"
               value={timeframe}
               onChange={(e) => setTimeframe(e.target.value)}
-              placeholder="npr. 12"
+              placeholder={t("profil.goal.timeframePlaceholder")}
             />
           </div>
         </div>
@@ -161,7 +168,7 @@ export function GoalForm({
 
       <div className="rounded-2xl border border-border bg-card p-5">
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-          Novi dnevni plan
+          {t("profil.goal.newPlan")}
         </p>
         {preview ? (
           <>
@@ -172,12 +179,16 @@ export function GoalForm({
               </span>
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              P {preview.proteinG} · UH {preview.carbsG} · M {preview.fatG} g
+              {t("profil.goal.macroLine", {
+                protein: preview.proteinG,
+                carbs: preview.carbsG,
+                fat: preview.fatG,
+              })}
             </p>
           </>
         ) : (
           <p className="mt-1 text-sm text-muted-foreground">
-            Unesi ciljnu težinu i rok da vidiš novi plan.
+            {t("profil.goal.previewHint")}
           </p>
         )}
       </div>
@@ -189,12 +200,12 @@ export function GoalForm({
       ) : null}
       {saved ? (
         <p role="status" className="text-sm font-medium text-primary">
-          Cilj je sačuvan. Plan je preračunat.
+          {t("profil.goal.saved")}
         </p>
       ) : null}
 
       <Button type="submit" disabled={pending || saved || !canPreview}>
-        {pending ? "Čuvam…" : "Sačuvaj cilj"}
+        {pending ? t("profil.saving") : t("profil.saveGoal")}
       </Button>
     </form>
   );

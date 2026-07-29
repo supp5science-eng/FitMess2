@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
+
 import "./ai-thinking.css";
 
 /**
@@ -12,34 +14,35 @@ import "./ai-thinking.css";
  * on-brand instead of a bare spinner. See `ai-thinking.css` for the motion.
  */
 
-const DEFAULT_LINES = [
-  "Analiziram slike…",
-  "Prepoznajem sastojke…",
-  "Računam makronutrijente…",
-  "Skoro gotovo…",
-];
-
 export function AiThinking({
-  title = "Procenjujem…",
-  lines = DEFAULT_LINES,
+  title,
+  lines,
   className = "",
 }: {
   title?: string;
   lines?: string[];
   className?: string;
 }) {
+  const { t } = useT();
+  const resolvedTitle = title ?? t("media.aiThinking.title");
+  const resolvedLines = lines ?? [
+    t("media.aiThinking.line1"),
+    t("media.aiThinking.line2"),
+    t("media.aiThinking.line3"),
+    t("media.aiThinking.line4"),
+  ];
   const [i, setI] = useState(0);
 
   useEffect(() => {
-    if (lines.length <= 1) return;
+    if (resolvedLines.length <= 1) return;
     const id = setInterval(
-      () => setI((n) => (n + 1) % lines.length),
+      () => setI((n) => (n + 1) % resolvedLines.length),
       1400
     );
     return () => clearInterval(id);
-  }, [lines.length]);
+  }, [resolvedLines.length]);
 
-  const line = lines[Math.min(i, lines.length - 1)] ?? "";
+  const line = resolvedLines[Math.min(i, resolvedLines.length - 1)] ?? "";
 
   return (
     <div className={`ai-think ${className}`.trim()} role="status" aria-live="polite">
@@ -51,7 +54,9 @@ export function AiThinking({
       </div>
 
       <div className="flex flex-col items-center gap-1.5">
-        <p className="text-base font-semibold text-foreground">{title}</p>
+        <p className="text-base font-semibold text-foreground">
+          {resolvedTitle}
+        </p>
         {/* `key` remounts the node so the fade re-plays on every change. */}
         <p key={i} className="ai-think-line text-sm text-muted-foreground">
           {line}

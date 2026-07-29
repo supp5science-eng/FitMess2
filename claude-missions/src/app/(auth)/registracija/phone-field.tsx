@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { DEFAULT_DIAL_CODE, DIAL_CODES } from "@/lib/auth/dial-codes";
 
 /**
@@ -16,16 +17,17 @@ import { DEFAULT_DIAL_CODE, DIAL_CODES } from "@/lib/auth/dial-codes";
  */
 export function PhoneField({ invalid }: { invalid?: true | undefined }) {
   const [local, setLocal] = useState("");
+  const { t } = useT();
 
   return (
     <div className="auth-field">
-      <label htmlFor="signup-phone">Broj telefona</label>
+      <label htmlFor="signup-phone">{t("auth.phone.label")}</label>
       <div className="auth-phone">
         <select
           name="phone_cc"
           defaultValue={DEFAULT_DIAL_CODE}
           className="auth-input auth-phone-cc"
-          aria-label="Pozivni broj države"
+          aria-label={t("auth.phone.dialCodeAria")}
         >
           {DIAL_CODES.map((country) => (
             <option key={`${country.code} ${country.name}`} value={country.code}>

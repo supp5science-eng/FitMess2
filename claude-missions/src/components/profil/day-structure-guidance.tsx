@@ -1,4 +1,5 @@
 import { suggestedDayStructure } from "@/lib/budget/rules";
+import { useT } from "@/components/i18n/locale-provider";
 
 /**
  * F017: optional, non-binding day-structure guidance shown on
@@ -12,27 +13,27 @@ import { suggestedDayStructure } from "@/lib/budget/rules";
  * keep it clearly optional, never obligation."
  */
 export function DayStructureGuidance({ dailyKcal }: { dailyKcal: number }) {
+  const { t } = useT();
   const structure = suggestedDayStructure(dailyKcal);
 
   const parts: { label: string; kcal: number; testId: string }[] = [
-    { label: "Doručak", kcal: structure.breakfastKcal, testId: "guidance-breakfast" },
-    { label: "Ručak", kcal: structure.lunchKcal, testId: "guidance-lunch" },
-    { label: "Užina", kcal: structure.snackKcal, testId: "guidance-snack" },
-    { label: "Večera", kcal: structure.dinnerKcal, testId: "guidance-dinner" },
+    { label: t("app.day.breakfast"), kcal: structure.breakfastKcal, testId: "guidance-breakfast" },
+    { label: t("app.day.lunch"), kcal: structure.lunchKcal, testId: "guidance-lunch" },
+    { label: t("app.day.snack"), kcal: structure.snackKcal, testId: "guidance-snack" },
+    { label: t("app.day.dinner"), kcal: structure.dinnerKcal, testId: "guidance-dinner" },
   ];
 
   return (
     <section
       data-testid="day-structure-guidance"
-      aria-label="Predlog rasporeda obroka -- nije obavezujuće"
+      aria-label={t("app.day.aria")}
       className="flex flex-col gap-2 rounded-xl border border-dashed border-border bg-muted/30 px-4 py-4"
     >
       <p className="text-sm font-medium text-foreground">
-        Predlog rasporeda obroka
+        {t("app.day.heading")}
       </p>
       <p className="text-xs text-muted-foreground">
-        Ovo je samo orijentacija, ne obaveza -- rasporedi kalorije kako tebi
-        odgovara.
+        {t("app.day.body")}
       </p>
       <div className="grid grid-cols-4 gap-2">
         {parts.map((part) => (

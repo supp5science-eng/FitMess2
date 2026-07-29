@@ -6,6 +6,8 @@ import { CameraOff, RefreshCw, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import { decodeBarcode } from "@/lib/scan/barcode-detector";
 
 // F030 / AS-052, AS-058: the reusable, camera-driving barcode scanner
@@ -24,36 +26,21 @@ import { decodeBarcode } from "@/lib/scan/barcode-detector";
 
 const SCAN_INTERVAL_MS = 350;
 
-const DENIED_MESSAGE_SR =
-  "Nemamo pristup kameri. Dozvoli pristup kameri u podešavanjima pregledača, ili pretraži ručno.";
-const NO_CAMERA_MESSAGE_SR =
-  "Nije pronađena kamera na ovom uređaju. Pretraži ručno.";
-const GENERIC_UNAVAILABLE_MESSAGE_SR =
-  "Skener trenutno ne radi na ovom uređaju. Pretraži ručno.";
-const DECODE_ERROR_MESSAGE_SR = "Skeniranje trenutno ne radi. Pokušaj ponovo.";
-
-const DEFAULT_TITLE_SR = "Skeniraj barkod";
-const DEFAULT_SUBTITLE_SR = "Uperi kameru u barkod proizvoda.";
-const UPLOAD_NOT_FOUND_MESSAGE_SR =
-  "Nismo našli barkod na slici. Slikaj izbliza, ravno, dobro osvetljeno — pa pokušaj ponovo.";
-const UPLOAD_FAILED_MESSAGE_SR =
-  "Nismo uspeli da očitamo sliku. Pokušaj ponovo.";
-
 type ScanStatus = "requesting" | "scanning" | "denied" | "error";
 
-function messageForCameraError(error: unknown): string {
+function messageForCameraError(error: unknown, t: TFunction): string {
   const name = error instanceof DOMException ? error.name : undefined;
   if (name === "NotAllowedError" || name === "PermissionDeniedError") {
-    return DENIED_MESSAGE_SR;
+    return t("media.scanner.denied");
   }
   if (
     name === "NotFoundError" ||
     name === "DevicesNotFoundError" ||
     name === "OverconstrainedError"
   ) {
-    return NO_CAMERA_MESSAGE_SR;
+    return t("media.scanner.noCamera");
   }
-  return GENERIC_UNAVAILABLE_MESSAGE_SR;
+  return t("media.scanner.generic");
 }
 
 export interface BarcodeScannerProps {
@@ -67,9 +54,12 @@ export interface BarcodeScannerProps {
 
 export function BarcodeScanner({
   onDetected,
-  title = DEFAULT_TITLE_SR,
-  subtitle = DEFAULT_SUBTITLE_SR,
+  title,
+  subtitle,
 }: BarcodeScannerProps) {
+  const { t } = useT();
+  const resolvedTitle = title ?? t("media.scanner.defaultTitle");
+  const resolvedSubtitle = subtitle ?? t("media.scanner.defaultSubtitle");
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -77,8 +67,8 @@ export function BarcodeScanner({
   const uploadInputRef = useRef<HTMLInputElement | null>(null);
 
   const [status, setStatus] = useState<ScanStatus>("requesting");
-  const [statusMessage, setStatusMessage] = useState(
-    GENERIC_UNAVAILABLE_MESSAGE_SR
+  const [statusMessage, setStatusMessage] = useState(() =>
+    t("media.scanner.generic")
   );
   const [attempt, setAttempt] = useState(0);
   const [uploadBusy, setUploadBusy] = useState(false);
@@ -108,7 +98,7 @@ export function BarcodeScanner({
 
       if (!mediaDevices || typeof mediaDevices.getUserMedia !== "function") {
         if (!cancelled) {
-          setStatusMessage(NO_CAMERA_MESSAGE_SR);
+          setStatusMessage(t("media.scanner.noCamera"));
           setStatus("denied");
         }
         return;
@@ -122,7 +112,7 @@ export function BarcodeScanner({
         });
       } catch (error) {
         if (!cancelled) {
-          setStatusMessage(messageForCameraError(error));
+          setStatusMessage(messageForCameraError(error, t));
           setStatus("denied");
         }
         return;
@@ -180,7 +170,7 @@ export function BarcodeScanner({
             stopStream();
             console.error("[F030 BarcodeScanner] decodeBarcode failed:", error);
             if (!cancelled) {
-              setStatusMessage(DECODE_ERROR_MESSAGE_SR);
+              setStatusMessage(t("media.scanner.decodeError"));
               setStatus("error");
             }
           });
@@ -194,7 +184,7 @@ export function BarcodeScanner({
       stoppedRef.current = true;
       stopStream();
     };
-  }, [attempt, onDetected, stopStream]);
+  }, [attempt, onDetected, stopStream, t]);
 
   // F031 fix (see the long comment above `setStatus("scanning")`): attaches
   // the already-granted camera `stream` to the `<video>` element ONCE that
@@ -239,7 +229,7 @@ export function BarcodeScanner({
     try {
       const result = await decodeBarcode(file);
       if (!result) {
-        setUploadMessage(UPLOAD_NOT_FOUND_MESSAGE_SR);
+        setUploadMessage(t("media.scanner.uploadNotFound"));
         setUploadBusy(false);
         return;
       }
@@ -248,7 +238,7 @@ export function BarcodeScanner({
       onDetected(result.value);
     } catch (error) {
       console.error("[F030 BarcodeScanner] upload decode failed:", error);
-      setUploadMessage(UPLOAD_FAILED_MESSAGE_SR);
+      setUploadMessage(t("media.scanner.uploadFailed"));
       setUploadBusy(false);
     }
   }
@@ -276,7 +266,9 @@ export function BarcodeScanner({
           data-testid="scanner-upload-button"
         >
           <Upload aria-hidden="true" />
-          {uploadBusy ? "Očitavam sliku…" : "Otpremi sliku barkoda"}
+          {uploadBusy
+            ? t("media.scanner.readingImage")
+            : t("media.scanner.uploadButton")}
         </Button>
         {uploadMessage ? (
           <p
@@ -300,7 +292,7 @@ export function BarcodeScanner({
       >
         <Skeleton className="h-64 w-full max-w-xs rounded-2xl" />
         <p className="text-sm text-muted-foreground">
-          Tražimo pristup kameri...
+          {t("media.scanner.requesting")}
         </p>
       </main>
     );
@@ -325,7 +317,7 @@ export function BarcodeScanner({
           data-testid="scanner-manual-search-link"
           className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
         >
-          Pretraži ručno
+          {t("media.scanner.searchManually")}
         </Link>
       </main>
     );
@@ -351,7 +343,7 @@ export function BarcodeScanner({
           data-testid="scanner-retry-button"
         >
           <RefreshCw aria-hidden="true" />
-          Pokušaj ponovo
+          {t("media.scanner.retry")}
         </Button>
         {renderUpload()}
         <Link
@@ -359,7 +351,7 @@ export function BarcodeScanner({
           data-testid="scanner-manual-search-link"
           className="text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
         >
-          Ili pretraži ručno
+          {t("media.scanner.orSearchManually")}
         </Link>
       </main>
     );
@@ -371,8 +363,10 @@ export function BarcodeScanner({
       data-testid="scanner-screen"
     >
       <div>
-        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-        <p className="text-sm text-muted-foreground">{subtitle}</p>
+        <h1 className="text-xl font-semibold text-foreground">
+          {resolvedTitle}
+        </h1>
+        <p className="text-sm text-muted-foreground">{resolvedSubtitle}</p>
       </div>
       <div className="relative aspect-3/4 w-full overflow-hidden rounded-2xl bg-black">
         <video
@@ -382,7 +376,7 @@ export function BarcodeScanner({
           playsInline
           muted
           autoPlay
-          aria-label="Prikaz kamere za skeniranje barkoda"
+          aria-label={t("media.scanner.videoAria")}
         />
         <div
           data-testid="scanner-viewfinder"
@@ -397,7 +391,7 @@ export function BarcodeScanner({
         data-testid="scanner-manual-search-link"
         className="text-center text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
       >
-        Ne vidiš barkod? Pretraži ručno.
+        {t("media.scanner.noBarcodeSearch")}
       </Link>
     </main>
   );

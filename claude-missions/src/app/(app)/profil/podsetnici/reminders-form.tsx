@@ -3,6 +3,7 @@
 import { Check, Moon, Send, Smartphone, Sun, Trophy } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import {
   disablePush,
@@ -67,6 +68,7 @@ export function RemindersForm({
   initial: ReminderPreferences;
   vapidPublicKey: string;
 }) {
+  const { t } = useT();
   const [preferences, setPreferences] = useState<ReminderPreferences>({
     ...initial,
     morningTime: fallbackTime(initial.morningTime, "10:00"),
@@ -157,7 +159,7 @@ export function RemindersForm({
     if (!saved.ok) {
       setStatus({
         kind: "error",
-        message: saved.error_sr ?? "Nešto je pošlo naopako.",
+        message: saved.error_sr ?? t("profil.reminders.errorGeneric"),
       });
       return;
     }
@@ -180,15 +182,13 @@ export function RemindersForm({
           ? { kind: "saved" }
           : {
               kind: "error",
-              message:
-                body?.error_sr ??
-                "Nismo uspeli da pošaljemo probnu notifikaciju.",
+              message: body?.error_sr ?? t("profil.reminders.testError"),
             }
       );
     } catch {
       setTestStatus({
         kind: "error",
-        message: "Nismo uspeli da pošaljemo probnu notifikaciju.",
+        message: t("profil.reminders.testError"),
       });
     }
   }
@@ -198,8 +198,8 @@ export function RemindersForm({
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <ReminderRow
           icon={<Sun className="size-5" aria-hidden="true" />}
-          title="Jutarnji podsetnik"
-          description="Podseti me da upišem doručak."
+          title={t("profil.reminders.morningTitle")}
+          description={t("profil.reminders.morningDesc")}
           testId="reminder-morning"
           enabled={preferences.morningEnabled}
           disabled={busy || (!preferences.morningEnabled && !canArm)}
@@ -214,8 +214,8 @@ export function RemindersForm({
         <ReminderRow
           className="border-t border-border pt-3"
           icon={<Moon className="size-5" aria-hidden="true" />}
-          title="Večernji pregled"
-          description="Koliko ti je kalorija ostalo i šta si upisao."
+          title={t("profil.reminders.eveningTitle")}
+          description={t("profil.reminders.eveningDesc")}
           testId="reminder-evening"
           enabled={preferences.eveningEnabled}
           disabled={busy || (!preferences.eveningEnabled && !canArm)}
@@ -231,8 +231,8 @@ export function RemindersForm({
         <ReminderRow
           className="border-t border-border pt-3"
           icon={<Trophy className="size-5" aria-hidden="true" />}
-          title="Nagrada za pun dan"
-          description="Javi mi kad upišem treći obrok."
+          title={t("profil.reminders.awardTitle")}
+          description={t("profil.reminders.awardDesc")}
           testId="reminder-award"
           enabled={preferences.awardEnabled}
           disabled={busy || (!preferences.awardEnabled && !canArm)}
@@ -248,7 +248,7 @@ export function RemindersForm({
           not configured. */}
       {notice === "unsupported" ? (
         <p className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">
-          Ovaj pregledač ne podržava notifikacije.
+          {t("profil.reminders.unsupported")}
         </p>
       ) : null}
 
@@ -258,11 +258,7 @@ export function RemindersForm({
           className="flex items-start gap-2 rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground"
         >
           <Smartphone className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <span>
-            Na iPhone-u notifikacije rade samo kad je FitMess dodat na početni
-            ekran. Otvori Podeli → {"„Dodaj na početni ekran”"}, pa uključi
-            podsetnike iz instalirane aplikacije.
-          </span>
+          <span>{t("profil.reminders.needsInstall")}</span>
         </p>
       ) : null}
 
@@ -271,14 +267,13 @@ export function RemindersForm({
           data-testid="reminder-blocked"
           className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground"
         >
-          Notifikacije su blokirane za FitMess. Uključi ih u podešavanjima
-          telefona (Notifikacije → FitMess) pa se vrati ovde.
+          {t("profil.reminders.blocked")}
         </p>
       ) : null}
 
       {notice === "missing-key" ? (
         <p className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">
-          Notifikacije još nisu podešene na serveru.
+          {t("profil.reminders.missingKey")}
         </p>
       ) : null}
 
@@ -298,7 +293,7 @@ export function RemindersForm({
           className="flex items-center gap-1.5 text-sm text-muted-foreground"
         >
           <Check className="size-4 text-primary" aria-hidden="true" />
-          Sačuvano.
+          {t("profil.saved")}
         </p>
       ) : null}
 
@@ -316,8 +311,8 @@ export function RemindersForm({
           >
             <Send className="size-4" aria-hidden="true" />
             {testStatus.kind === "working"
-              ? "Šaljem..."
-              : "Pošalji probnu notifikaciju"}
+              ? t("profil.reminders.sending")
+              : t("profil.reminders.sendTest")}
           </Button>
 
           {testStatus.kind === "saved" ? (
@@ -325,7 +320,7 @@ export function RemindersForm({
               data-testid="reminder-test-sent"
               className="text-center text-sm text-muted-foreground"
             >
-              Poslato — trebalo bi da stigne za koji sekund.
+              {t("profil.reminders.testSent")}
             </p>
           ) : null}
           {testStatus.kind === "error" ? (
@@ -371,6 +366,7 @@ function ReminderRow({
   timeDisabled?: boolean;
   className?: string;
 }) {
+  const { t } = useT();
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       <div className="flex items-start gap-3">
@@ -420,7 +416,7 @@ function ReminderRow({
       {time && onTimeChange && enabled ? (
         <label className="flex items-center justify-between gap-3 pl-13">
           <span className="text-sm font-medium text-muted-foreground">
-            Vreme
+            {t("profil.reminders.time")}
           </span>
           <select
             value={time}

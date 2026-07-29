@@ -3,16 +3,18 @@
 import { useActionState } from "react";
 import { useFormStatus } from "react-dom";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import { SR_AUTH_MESSAGES } from "@/lib/auth/errors";
 import { forgotPasswordAction, type AuthFormState } from "../actions";
 
 const initialState: AuthFormState = null;
 
-function SubmitButton() {
+function SubmitButton({ t }: { t: TFunction }) {
   const { pending } = useFormStatus();
   return (
     <button type="submit" className="auth-btn auth-btn-primary" disabled={pending}>
-      {pending ? "Slanje…" : "Pošalji link"}
+      {pending ? t("auth.sending") : t("auth.forgot.submit")}
     </button>
   );
 }
@@ -25,18 +27,19 @@ function SubmitButton() {
 export function ForgotPasswordForm({ email }: { email?: string }) {
   const [state, formAction] = useActionState(forgotPasswordAction, initialState);
   const invalid = state?.ok === false || undefined;
+  const { t } = useT();
 
   return (
     <form action={formAction} className="auth-form" noValidate>
       <div className="auth-field">
-        <label htmlFor="forgot-email">Email</label>
+        <label htmlFor="forgot-email">{t("auth.forgot.emailLabel")}</label>
         <input
           id="forgot-email"
           name="email"
           type="email"
           inputMode="email"
           className="auth-input"
-          placeholder="ti@email.com"
+          placeholder={t("auth.forgot.emailPlaceholder")}
           autoComplete="email"
           autoCapitalize="none"
           autoCorrect="off"
@@ -56,7 +59,7 @@ export function ForgotPasswordForm({ email }: { email?: string }) {
           {state.error_sr}
         </p>
       ) : null}
-      <SubmitButton />
+      <SubmitButton t={t} />
     </form>
   );
 }

@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import type { Food } from "@/lib/types/db";
 
 // F035 (agreed addition): search the WHOLE catalog (verified + unverified +
@@ -23,6 +25,7 @@ interface FoodResponse {
 }
 
 export function AdminFoodSearch() {
+  const { t } = useT();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Food[]>([]);
   const [status, setStatus] = useState<Status>("idle");
@@ -92,27 +95,27 @@ export function AdminFoodSearch() {
   return (
     <section className="flex flex-col gap-3">
       <h2 className="text-sm font-semibold text-foreground">
-        Pretraga cele baze
+        {t("admin.search.title")}
       </h2>
       <Input
         type="search"
         inputMode="search"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Naziv, brend ili barkod…"
-        aria-label="Pretraga namirnica"
+        placeholder={t("admin.search.placeholder")}
+        aria-label={t("admin.search.aria")}
       />
 
       {status === "loading" ? (
-        <p className="text-sm text-muted-foreground">Tražim…</p>
+        <p className="text-sm text-muted-foreground">{t("admin.search.loading")}</p>
       ) : null}
       {status === "error" ? (
         <p role="alert" className="text-sm text-destructive">
-          Nismo uspeli da pretražimo. Pokušaj ponovo.
+          {t("admin.search.error")}
         </p>
       ) : null}
       {status === "idle" && query.trim().length >= MIN_QUERY && results.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nema rezultata.</p>
+        <p className="text-sm text-muted-foreground">{t("admin.search.noResults")}</p>
       ) : null}
 
       <ul className="flex flex-col gap-2">
@@ -138,7 +141,7 @@ export function AdminFoodSearch() {
                   {food.kcal_100g} kcal / 100g
                 </p>
               </div>
-              <StatusBadge food={food} />
+              <StatusBadge food={food} t={t} />
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -146,7 +149,7 @@ export function AdminFoodSearch() {
                 href={`/admin/hrana/${food.id}`}
                 className="text-xs font-medium text-primary underline-offset-4 hover:underline"
               >
-                Izmeni
+                {t("admin.edit")}
               </Link>
               {food.is_removed ? (
                 <Button
@@ -156,7 +159,7 @@ export function AdminFoodSearch() {
                   disabled={pendingId === food.id}
                   onClick={() => runAction(food, "restore")}
                 >
-                  Vrati
+                  {t("admin.restore")}
                 </Button>
               ) : (
                 <>
@@ -167,7 +170,7 @@ export function AdminFoodSearch() {
                       disabled={pendingId === food.id}
                       onClick={() => runAction(food, "verify")}
                     >
-                      Potvrdi
+                      {t("admin.verify")}
                     </Button>
                   ) : null}
                   <Button
@@ -177,7 +180,7 @@ export function AdminFoodSearch() {
                     disabled={pendingId === food.id}
                     onClick={() => runAction(food, "remove")}
                   >
-                    Ukloni
+                    {t("admin.remove")}
                   </Button>
                 </>
               )}
@@ -189,12 +192,12 @@ export function AdminFoodSearch() {
   );
 }
 
-function StatusBadge({ food }: { food: Food }) {
+function StatusBadge({ food, t }: { food: Food; t: TFunction }) {
   const { label, className } = food.is_removed
-    ? { label: "Uklonjeno", className: "bg-destructive/10 text-destructive" }
+    ? { label: t("admin.status.removed"), className: "bg-destructive/10 text-destructive" }
     : food.verified
-      ? { label: "Provereno", className: "bg-primary/10 text-primary" }
-      : { label: "Neprovereno", className: "bg-muted text-muted-foreground" };
+      ? { label: t("admin.status.verified"), className: "bg-primary/10 text-primary" }
+      : { label: t("admin.status.unverified"), className: "bg-muted text-muted-foreground" };
   return (
     <span
       className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium ${className}`}

@@ -3,11 +3,13 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import { verifyEmailCodeAction, type AuthFormState } from "../../actions";
 
 const initialState: AuthFormState = null;
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
+function SubmitButton({ disabled, t }: { disabled: boolean; t: TFunction }) {
   const { pending } = useFormStatus();
   return (
     <button
@@ -15,7 +17,7 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
       className="auth-btn auth-btn-primary"
       disabled={pending || disabled}
     >
-      {pending ? "Potvrđivanje…" : "Potvrdi nalog"}
+      {pending ? t("auth.verifyCode.submitting") : t("auth.verifyCode.submit")}
     </button>
   );
 }
@@ -35,12 +37,13 @@ export function VerifyCodeForm({ email }: { email: string }) {
   const [state, formAction] = useActionState(verifyEmailCodeAction, initialState);
   const [code, setCode] = useState("");
   const invalid = state?.ok === false || undefined;
+  const { t } = useT();
 
   return (
     <form action={formAction} className="auth-form" noValidate>
       <input type="hidden" name="email" value={email} />
       <div className="auth-field">
-        <label htmlFor="verify-code">Kod iz mejla</label>
+        <label htmlFor="verify-code">{t("auth.verifyCode.label")}</label>
         <input
           id="verify-code"
           name="code"
@@ -73,7 +76,7 @@ export function VerifyCodeForm({ email }: { email: string }) {
           {state.error_sr}
         </p>
       ) : null}
-      <SubmitButton disabled={code.length !== 6} />
+      <SubmitButton disabled={code.length !== 6} t={t} />
     </form>
   );
 }

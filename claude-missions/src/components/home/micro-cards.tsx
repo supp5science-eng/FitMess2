@@ -1,5 +1,9 @@
+"use client";
+
 import { Beef, Candy, Soup, Wheat } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import {
   computeMicroCardState,
   formatMicroAmount,
@@ -112,31 +116,37 @@ function MicroBar({
  * far over instead of a stuck "0", the same way the ring shows a negative
  * remaining -- honest, and it's the number that would make someone act.
  */
-function headlineFor(card: MicroCardState): { value: string; sub: string } {
+function headlineFor(
+  card: MicroCardState,
+  t: TFunction
+): { value: string; sub: string } {
   const { unit, kind } = card.spec;
   // The nutrient's NAME now sits in the card's own header row, so this line
   // only has to say what the number means -- which is what let the card lose a
   // wrapped second line ("Zasićene masti · nema podataka" used to run onto two
   // rows and stretch the whole grid row with it).
   if (!card.hasData) {
-    return { value: "—", sub: "nema podataka" };
+    return { value: "—", sub: t("home.micro.noData") };
   }
   if (card.isOver) {
     const over = formatMicroAmount(Math.abs(card.remaining), unit);
     return {
       value: over,
-      sub: kind === "goal" ? "iznad cilja" : "preko granice",
+      sub:
+        kind === "goal"
+          ? t("home.micro.aboveGoal")
+          : t("home.micro.overLimit"),
     };
   }
   return {
     value: formatMicroAmount(card.remaining, unit),
-    sub: "preostalo",
+    sub: t("home.micro.remaining"),
   };
 }
 
-function MicroCard({ card }: { card: MicroCardState }) {
+function MicroCard({ card, t }: { card: MicroCardState; t: TFunction }) {
   const style = MICRO_STYLE[card.key];
-  const { value, sub } = headlineFor(card);
+  const { value, sub } = headlineFor(card, t);
   // A passed LIMIT gets a soft warning tint; a passed GOAL (fiber) is a win and
   // gets the plain card.
   const warn = card.isOver && card.spec.kind === "limit";
@@ -186,7 +196,7 @@ function MicroCard({ card }: { card: MicroCardState }) {
         <span className="text-[0.65rem] tabular-nums text-muted-foreground">
           {card.hasData
             ? `${Math.round(card.consumed)} / ${card.target}`
-            : `cilj ${card.target}`}
+            : t("home.micro.goal", { target: card.target })}
         </span>
       </div>
     </div>
@@ -204,6 +214,7 @@ export function MicroCards({
   micros: MicroTotals;
   targets: MicroTargets;
 }) {
+  const { t } = useT();
   const cards = MICRO_KEYS.map((key) =>
     computeMicroCardState(key, micros.totals[key], targets[key])
   );
@@ -216,7 +227,7 @@ export function MicroCards({
     <div data-testid="micro-cards" className="flex flex-col gap-2.5">
       <div className="grid grid-cols-2 gap-2.5">
         {cards.map((card) => (
-          <MicroCard key={card.key} card={card} />
+          <MicroCard key={card.key} card={card} t={t} />
         ))}
       </div>
       {partial ? (
@@ -225,8 +236,8 @@ export function MicroCards({
           className="px-1 text-[0.7rem] leading-snug text-muted-foreground"
         >
           {coveragePercent > 0
-            ? `Podaci pokrivaju ~${coveragePercent}% današnjih kalorija — za ostatak još nemamo vlakna, šećer i so.`
-            : "Za današnje unose još nemamo podatke o vlaknima, šećeru i soli."}
+            ? t("home.micro.coveragePartial", { percent: coveragePercent })
+            : t("home.micro.coverageNone")}
         </p>
       ) : null}
     </div>

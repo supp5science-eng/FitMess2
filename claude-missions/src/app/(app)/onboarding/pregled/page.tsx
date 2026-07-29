@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { PlanReveal } from "@/components/onboarding/plan-reveal";
+import { getT } from "@/lib/i18n/server";
 import {
   isOnboardingDataComplete,
   parseOnboardingSearchParams,
@@ -30,22 +31,22 @@ export default async function OnboardingPregledPage({
 }) {
   const rawParams = await searchParams;
   const data = parseOnboardingSearchParams(rawParams);
+  const { t } = await getT();
 
   if (!isOnboardingDataComplete(data)) {
     return (
       <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
         <h1 className="text-xl font-semibold text-foreground">
-          Nedostaju neki podaci
+          {t("onboarding.summary.incompleteTitle")}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Izgleda da nismo dobili sve podatke iz upitnika. Vrati se na
-          početak i popuni ga ponovo -- traje samo par minuta.
+          {t("onboarding.summary.incompleteBody")}
         </p>
         <Link
           href="/onboarding"
           className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
         >
-          Nazad na upitnik
+          {t("onboarding.summary.backToQuestionnaire")}
         </Link>
       </main>
     );

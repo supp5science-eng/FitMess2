@@ -4,6 +4,8 @@ import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import type { AdminQueueFood } from "@/lib/food/admin-review";
 
 // F034 / AS-060 (lists unverified foods), AS-062 (verify), AS-063 (remove)
@@ -21,11 +23,6 @@ import type { AdminQueueFood } from "@/lib/food/admin-review";
 // global state mutated, matching the clarified "no unintended navigation
 // or global state mutation" side-effect answer.
 
-const VERIFY_FAILED_ERROR_SR =
-  "Nismo uspeli da potvrdimo namirnicu. Pokušaj ponovo.";
-const REMOVE_FAILED_ERROR_SR =
-  "Nismo uspeli da uklonimo namirnicu. Pokušaj ponovo.";
-
 type RowAction = "verify" | "remove";
 type RowStatus = "idle" | "pending" | "error";
 
@@ -39,6 +36,7 @@ export function AdminFoodQueue({
 }: {
   initialFoods: AdminQueueFood[];
 }) {
+  const { t } = useT();
   const [foods, setFoods] = useState<AdminQueueFood[]>(initialFoods);
   const [rowStatus, setRowStatus] = useState<Record<string, RowStatus>>({});
   const [rowError, setRowError] = useState<Record<string, string>>({});
@@ -52,7 +50,9 @@ export function AdminFoodQueue({
     });
 
     const fallback =
-      action === "verify" ? VERIFY_FAILED_ERROR_SR : REMOVE_FAILED_ERROR_SR;
+      action === "verify"
+        ? t("admin.queue.verifyFailed")
+        : t("admin.queue.removeFailed");
 
     try {
       const response = await fetch(`/api/admin/foods/${foodId}/${action}`, {
@@ -85,12 +85,12 @@ export function AdminFoodQueue({
     <div className="flex flex-col gap-4">
       <p className="text-sm text-muted-foreground">
         {foods.length > 0
-          ? `${foods.length} u redu za proveru.`
-          : "Namirnice koje korisnici dodaju čekaju ovde na tvoju proveru."}
+          ? t("admin.queue.countInQueue", { count: foods.length })
+          : t("admin.queue.waitingHint")}
       </p>
 
       {foods.length === 0 ? (
-        <EmptyState />
+        <EmptyState t={t} />
       ) : (
         <ul className="flex flex-col gap-3" data-testid="admin-hrana-queue-list">
           {foods.map((food) => (
@@ -101,6 +101,7 @@ export function AdminFoodQueue({
               errorMessage={rowError[food.id]}
               onVerify={() => runAction(food.id, "verify")}
               onRemove={() => runAction(food.id, "remove")}
+              t={t}
             />
           ))}
         </ul>
@@ -109,7 +110,7 @@ export function AdminFoodQueue({
   );
 }
 
-function EmptyState() {
+function EmptyState({ t }: { t: TFunction }) {
   return (
     <div
       role="status"
@@ -117,11 +118,10 @@ function EmptyState() {
       className="flex flex-col items-center gap-2 rounded-xl border border-dashed border-border px-6 py-10 text-center"
     >
       <p className="text-sm font-medium text-foreground">
-        Nema namirnica za proveru.
+        {t("admin.queue.emptyTitle")}
       </p>
       <p className="text-sm text-muted-foreground">
-        Sve korisničke prijave su pregledane. Nove prijave će se pojaviti
-        ovde čim ih neko doda.
+        {t("admin.queue.emptyDesc")}
       </p>
     </div>
   );
@@ -133,12 +133,14 @@ function QueueRow({
   errorMessage,
   onVerify,
   onRemove,
+  t,
 }: {
   food: AdminQueueFood;
   status: RowStatus;
   errorMessage?: string;
   onVerify: () => void;
   onRemove: () => void;
+  t: TFunction;
 }) {
   const kcal = Math.round(food.kcal_100g);
   const isPending = status === "pending";
@@ -162,7 +164,7 @@ function QueueRow({
               data-testid={`admin-hrana-badge-neprovereno-${food.id}`}
               className="border-amber-300 bg-amber-50 text-amber-700"
             >
-              neprovereno
+              {t("admin.queue.badgeUnverified")}
             </Badge>
           </div>
           {food.brand ? (
@@ -174,21 +176,27 @@ function QueueRow({
             data-testid={`admin-hrana-macros-${food.id}`}
             className="text-xs text-muted-foreground"
           >
-            {kcal} kcal • {food.protein_100g}g P • {food.carbs_100g}g UH •{" "}
-            {food.fat_100g}g M (na 100g)
+            {t("admin.queue.macros", {
+              kcal,
+              protein: food.protein_100g,
+              carbs: food.carbs_100g,
+              fat: food.fat_100g,
+            })}
           </span>
           <span
             data-testid={`admin-hrana-submitter-${food.id}`}
             className="text-xs text-muted-foreground"
           >
-            Poslao/la: {food.submitterEmail ?? "nepoznat korisnik"}
+            {t("admin.queue.submitter", {
+              email: food.submitterEmail ?? t("admin.queue.unknownUser"),
+            })}
           </span>
         </div>
         {food.label_photo_path ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={food.label_photo_path}
-            alt={`Fotografija nalepnice za ${food.name_sr}`}
+            alt={t("admin.queue.photoAlt", { name: food.name_sr })}
             data-testid={`admin-hrana-label-photo-${food.id}`}
             className="h-16 w-16 shrink-0 rounded-lg border border-border object-cover"
           />
@@ -212,7 +220,7 @@ function QueueRow({
           disabled={isPending}
           data-testid={`admin-hrana-verify-${food.id}`}
         >
-          {isPending ? "Čuvanje..." : "Potvrdi"}
+          {isPending ? t("admin.saving") : t("admin.verify")}
         </Button>
         <Button
           type="button"
@@ -221,7 +229,7 @@ function QueueRow({
           disabled={isPending}
           data-testid={`admin-hrana-remove-${food.id}`}
         >
-          {isPending ? "Čuvanje..." : "Ukloni"}
+          {isPending ? t("admin.saving") : t("admin.remove")}
         </Button>
       </div>
     </li>

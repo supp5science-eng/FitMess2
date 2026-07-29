@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { getT } from "@/lib/i18n/server";
+
 /**
  * F033 / AS-059: the Serbian "access denied" page -- where `requireAdmin()`
  * (`src/lib/auth/admin.ts`) sends an authenticated but non-admin visitor who
@@ -15,21 +17,22 @@ import Link from "next/link";
  * redirected an anonymous request to `/prijava` before this page's code
  * ever ran.
  */
-export default function NemasPristupPage() {
+export default async function NemasPristupPage() {
+  const { t } = await getT();
   return (
     <main
       data-testid="nemas-pristup-page"
       className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center"
     >
-      <h1 className="text-lg font-semibold text-foreground">Nemaš pristup</h1>
+      <h1 className="text-lg font-semibold text-foreground">{t("app.noAccess.title")}</h1>
       <p data-testid="nemas-pristup-body" className="text-sm text-muted-foreground">
-        Nemaš dozvolu da vidiš ovu stranicu.
+        {t("app.noAccess.body")}
       </p>
       <Link
         href="/danas"
         className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
       >
-        Nazad na Danas
+        {t("app.noAccess.back")}
       </Link>
     </main>
   );

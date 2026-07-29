@@ -3,8 +3,10 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Check, Download, Loader2, Share2, X } from "lucide-react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
+import type { MessageKey } from "@/lib/i18n/messages";
 import type { CardFormat } from "@/lib/share/card";
 import {
   canShareFiles,
@@ -32,9 +34,13 @@ import { cn } from "@/lib/utils";
 
 type Phase = "idle" | "building" | "ready" | "shared" | "error";
 
-const FORMAT_OPTIONS: { value: CardFormat; label: string; hint: string }[] = [
-  { value: "story", label: "Story", hint: "9:16" },
-  { value: "post", label: "Objava", hint: "1:1" },
+const FORMAT_OPTIONS: {
+  value: CardFormat;
+  labelKey: MessageKey;
+  hint: string;
+}[] = [
+  { value: "story", labelKey: "food.share.formatStory", hint: "9:16" },
+  { value: "post", labelKey: "food.share.formatPost", hint: "1:1" },
 ];
 
 export function ShareMealSheet({
@@ -45,6 +51,7 @@ export function ShareMealSheet({
   /** Only for the native share-sheet title; the card text is read server-side. */
   mealName: string;
 }) {
+  const { t } = useT();
   const [open, setOpen] = useState(false);
   const [format, setFormat] = useState<CardFormat>("story");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -137,11 +144,11 @@ export function ShareMealSheet({
   const canAct = phase === "ready" || shared;
   const actionLabel = downloadOnly
     ? shared
-      ? "Sačuvaj ponovo"
-      : "Sačuvaj"
+      ? t("food.share.saveAgain")
+      : t("food.share.save")
     : shared
-      ? "Podeli ponovo"
-      : "Podeli";
+      ? t("food.share.shareAgain")
+      : t("food.share.share");
 
   return (
     <>
@@ -152,7 +159,7 @@ export function ShareMealSheet({
         data-testid={`share-meal-open-${logId}`}
       >
         <Share2 aria-hidden="true" />
-        Podeli
+        {t("food.share.share")}
       </Button>
 
       {open
@@ -165,7 +172,7 @@ export function ShareMealSheet({
               <div
                 role="dialog"
                 aria-modal="true"
-                aria-label="Podeli karticu obroka"
+                aria-label={t("food.share.dialogAria")}
                 onClick={(event) => event.stopPropagation()}
                 className="w-full max-w-md rounded-t-3xl border-t border-border bg-background p-5 pb-8 shadow-2xl"
               >
@@ -173,12 +180,12 @@ export function ShareMealSheet({
 
                 <div className="mb-4 flex items-center justify-between gap-3">
                   <h2 className="text-base font-semibold text-foreground">
-                    Podeli obrok
+                    {t("food.share.heading")}
                   </h2>
                   <div className="flex items-center gap-2">
                     <div
                       role="group"
-                      aria-label="Format kartice"
+                      aria-label={t("food.share.formatAria")}
                       className="flex items-center gap-1 rounded-full border border-border bg-background p-1"
                     >
                       {FORMAT_OPTIONS.map((option) => {
@@ -196,7 +203,7 @@ export function ShareMealSheet({
                                 : "text-muted-foreground hover:text-foreground"
                             )}
                           >
-                            {option.label}
+                            {t(option.labelKey)}
                             <span
                               className={cn(
                                 "text-[10px]",
@@ -214,7 +221,7 @@ export function ShareMealSheet({
                     <button
                       type="button"
                       onClick={closeSheet}
-                      aria-label="Zatvori"
+                      aria-label={t("food.share.close")}
                       className="grid size-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
                       <X className="size-4" aria-hidden="true" />
@@ -230,20 +237,21 @@ export function ShareMealSheet({
                 >
                   {phase === "error" ? (
                     <p className="px-6 text-center text-sm text-destructive">
-                      Nismo uspeli da napravimo karticu. Zatvori pa pokušaj
-                      ponovo.
+                      {t("food.share.buildError")}
                     </p>
                   ) : previewUrl && !building ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={previewUrl}
-                      alt="Pregled kartice za deljenje"
+                      alt={t("food.share.previewAlt")}
                       className="max-h-full rounded-xl object-contain shadow-lg"
                     />
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Loader2 className="size-6 animate-spin" aria-hidden="true" />
-                      <span className="text-xs">Pravim karticu…</span>
+                      <span className="text-xs">
+                        {t("food.share.building")}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -276,9 +284,9 @@ export function ShareMealSheet({
                 >
                   {shared
                     ? downloadOnly
-                      ? "Sačuvano. 🔥"
-                      : "Podeljeno. 🔥"
-                    : "Tvoja fotka, tvoji brojevi — spremno za priču."}
+                      ? t("food.share.savedStatus")
+                      : t("food.share.sharedStatus")
+                    : t("food.share.idleStatus")}
                 </p>
               </div>
             </div>

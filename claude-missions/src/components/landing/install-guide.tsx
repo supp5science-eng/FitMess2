@@ -1,6 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 
 import "./install-guide.css";
 
@@ -25,18 +28,31 @@ type Platform = "ios" | "android";
 
 const STEP_MS = 2600;
 
-const STEPS: Record<Platform, { key: string; text: React.ReactNode }[]> = {
-  ios: [
-    { key: "share", text: <>Tapni <b>Podeli</b> u dnu Safari-ja</> },
-    { key: "add", text: <>Izaberi <b>Dodaj na početni ekran</b></> },
-    { key: "done", text: <>Potvrdi na <b>Dodaj</b> — i gotovo!</> },
-  ],
-  android: [
-    { key: "menu", text: <>Tapni meni <b>⋮</b> gore desno</> },
-    { key: "install", text: <>Izaberi <b>Instaliraj aplikaciju</b></> },
-    { key: "done", text: <>Potvrdi na <b>Instaliraj</b> — i gotovo!</> },
-  ],
+const STEPS: Record<Platform, { key: string }[]> = {
+  ios: [{ key: "share" }, { key: "add" }, { key: "done" }],
+  android: [{ key: "menu" }, { key: "install" }, { key: "done" }],
 };
+
+/** The per-step instruction text, rebuilt from translation keys (the bolded
+ * word is a `<b>` around a separate key, so word order can differ by language). */
+function stepText(platform: Platform, key: string, t: TFunction): ReactNode {
+  switch (`${platform}.${key}`) {
+    case "ios.share":
+      return <>{t("app.ig.step.ios.share.a")} <b>{t("app.ig.step.ios.share.b")}</b> {t("app.ig.step.ios.share.c")}</>;
+    case "ios.add":
+      return <>{t("app.ig.step.ios.add.a")} <b>{t("app.ig.step.ios.add.b")}</b></>;
+    case "ios.done":
+      return <>{t("app.ig.step.ios.done.a")} <b>{t("app.ig.step.ios.done.b")}</b> {t("app.ig.step.ios.done.c")}</>;
+    case "android.menu":
+      return <>{t("app.ig.step.android.menu.a")} <b>⋮</b> {t("app.ig.step.android.menu.c")}</>;
+    case "android.install":
+      return <>{t("app.ig.step.android.install.a")} <b>{t("app.ig.step.android.install.b")}</b></>;
+    case "android.done":
+      return <>{t("app.ig.step.android.done.a")} <b>{t("app.ig.step.android.done.b")}</b> {t("app.ig.step.android.done.c")}</>;
+    default:
+      return null;
+  }
+}
 
 export function InstallGuide({
   platform,
@@ -45,6 +61,7 @@ export function InstallGuide({
   platform: Platform;
   onClose: () => void;
 }) {
+  const { t } = useT();
   const steps = STEPS[platform];
   const [step, setStep] = useState(0);
 
@@ -79,7 +96,7 @@ export function InstallGuide({
       className="ig-overlay"
       role="dialog"
       aria-modal="true"
-      aria-label="Kako da instaliraš FitMess"
+      aria-label={t("app.ig.ariaLabel")}
       onClick={onClose}
     >
       <div className="ig-card" onClick={(e) => e.stopPropagation()}>
@@ -87,7 +104,7 @@ export function InstallGuide({
           type="button"
           className="ig-x"
           onClick={onClose}
-          aria-label="Zatvori"
+          aria-label={t("app.common.close")}
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
             <path d="M18 6 6 18M6 6l12 12" />
@@ -95,14 +112,14 @@ export function InstallGuide({
         </button>
 
         <div className="ig-head">
-          <h3 className="ig-title">Instaliraj FitMess</h3>
+          <h3 className="ig-title">{t("app.install.cta")}</h3>
           <span className="ig-badge">{browserLabel}</span>
         </div>
 
         {platform === "ios" ? (
-          <IosPhone step={step} />
+          <IosPhone step={step} t={t} />
         ) : (
-          <AndroidPhone step={step} />
+          <AndroidPhone step={step} t={t} />
         )}
 
         <ol className="ig-steps">
@@ -113,18 +130,18 @@ export function InstallGuide({
               aria-current={i === step ? "step" : undefined}
             >
               <span className="ig-num">{i + 1}</span>
-              <span className="ig-text">{s.text}</span>
+              <span className="ig-text">{stepText(platform, s.key, t)}</span>
             </li>
           ))}
         </ol>
 
-        <div className="ig-dots" role="tablist" aria-label="Koraci">
+        <div className="ig-dots" role="tablist" aria-label={t("app.ig.steps.aria")}>
           {steps.map((s, i) => (
             <button
               key={s.key}
               type="button"
               className={`ig-dot${i === step ? " is-active" : ""}`}
-              aria-label={`Korak ${i + 1}`}
+              aria-label={t("app.ig.step.aria", { n: i + 1 })}
               aria-selected={i === step}
               role="tab"
               onClick={() => setStep(i)}
@@ -134,10 +151,10 @@ export function InstallGuide({
 
         {platform === "ios" ? (
           <p className="ig-foot">
-            Mora <b>Safari</b> — na iPhone-u samo on ume da doda na ekran.
+            {t("app.ig.foot.ios.a")} <b>{t("app.ig.foot.ios.b")}</b> {t("app.ig.foot.ios.c")}
           </p>
         ) : (
-          <p className="ig-foot">Najbolje radi u <b>Chrome</b>-u.</p>
+          <p className="ig-foot">{t("app.ig.foot.android.a")} <b>{t("app.ig.foot.android.b")}</b>{t("app.ig.foot.android.c")}</p>
         )}
       </div>
     </div>
@@ -192,7 +209,7 @@ function AppTile() {
   );
 }
 
-function IosPhone({ step }: { step: number }) {
+function IosPhone({ step, t }: { step: number; t: TFunction }) {
   return (
     <Phone step={step} platform="ios">
       {/* Step 1: Safari with the Share button pulsing */}
@@ -218,9 +235,9 @@ function IosPhone({ step }: { step: number }) {
         <WebLines className="is-dim" />
         <div className="ig-sheet">
           <span className="ig-sheet-grip" />
-          <div className="ig-sheet-row">Kopiraj</div>
+          <div className="ig-sheet-row">{t("app.os.copy")}</div>
           <div className="ig-sheet-row ig-target">
-            <span>Dodaj na početni ekran</span>
+            <span>{t("app.os.addToHome")}</span>
             <span className="ig-plus">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                 <path d="M12 5v14M5 12h14" />
@@ -228,7 +245,7 @@ function IosPhone({ step }: { step: number }) {
             </span>
             <span className="ig-tap" />
           </div>
-          <div className="ig-sheet-row">Označi stranicu</div>
+          <div className="ig-sheet-row">{t("app.os.bookmark")}</div>
         </div>
       </div>
 
@@ -243,7 +260,7 @@ function IosPhone({ step }: { step: number }) {
   );
 }
 
-function AndroidPhone({ step }: { step: number }) {
+function AndroidPhone({ step, t }: { step: number; t: TFunction }) {
   return (
     <Phone step={step} platform="android">
       {/* Step 1: Chrome top bar with the ⋮ menu pulsing */}
@@ -265,9 +282,9 @@ function AndroidPhone({ step }: { step: number }) {
         </div>
         <WebLines className="is-dim" />
         <div className="ig-menu">
-          <div className="ig-menu-row">Nova kartica</div>
+          <div className="ig-menu-row">{t("app.os.newTab")}</div>
           <div className="ig-menu-row ig-target">
-            <span>Instaliraj aplikaciju</span>
+            <span>{t("app.os.installApp")}</span>
             <span className="ig-plus">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
                 <path d="M12 3v12" /><path d="m8 11 4 4 4-4" /><path d="M5 21h14" />
@@ -275,7 +292,7 @@ function AndroidPhone({ step }: { step: number }) {
             </span>
             <span className="ig-tap" />
           </div>
-          <div className="ig-menu-row">Istorija</div>
+          <div className="ig-menu-row">{t("app.os.history")}</div>
         </div>
       </div>
 

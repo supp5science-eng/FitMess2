@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from "react";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { positionToPace } from "@/lib/onboarding/pace";
 import { tickFeedback } from "@/lib/onboarding/tick";
 
@@ -71,6 +72,7 @@ export function PaceDial({
   /** Center content (label + kcal readout). */
   children: ReactNode;
 }) {
+  const { t } = useT();
   const svgRef = useRef<SVGSVGElement>(null);
   const dragging = useRef(false);
   // Fire a detent tick only when the nearest pace ZONE changes, so a slow drag
@@ -196,8 +198,8 @@ export function PaceDial({
 
         {/* Direction hints at the two gap ends */}
         <div className="pointer-events-none absolute inset-x-5 bottom-2 flex justify-between text-[11px] font-medium text-muted-foreground">
-          <span>sporije</span>
-          <span>brže</span>
+          <span>{t("onboarding.pace.slower")}</span>
+          <span>{t("onboarding.pace.faster")}</span>
         </div>
       </div>
 

@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+import { getT } from "@/lib/i18n/server";
+
 import { ForgotPasswordForm } from "./forgot-password-form";
 
 /**
@@ -16,21 +18,20 @@ export default async function ZaboravljenaLozinkaPage({
   searchParams: Promise<{ email?: string }>;
 }) {
   const { email } = await searchParams;
+  const { t } = await getT();
 
   return (
     <>
       <div className="auth-card">
         <div className="auth-head">
-          <h1>Zaboravljena lozinka</h1>
-          <p>
-            Unesi email adresu naloga i poslaćemo ti link za postavljanje nove
-            lozinke.
-          </p>
+          <h1>{t("auth.forgot.title")}</h1>
+          <p>{t("auth.forgot.subtitle")}</p>
         </div>
         <ForgotPasswordForm email={email} />
       </div>
       <p className="auth-alt">
-        Setio/la si se lozinke? <Link href="/prijava">Prijavi se</Link>
+        {t("auth.forgot.remembered")}{" "}
+        <Link href="/prijava">{t("auth.link.signIn")}</Link>
       </p>
     </>
   );

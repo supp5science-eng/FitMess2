@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { ChartHint, ChartReadout } from "@/components/analytics/chart-readout";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import {
   formatWaterSr,
   type WaterDay,
@@ -32,13 +34,18 @@ const CIRC = 2 * Math.PI * R;
 const CHART_H = 88;
 
 /** The read-out's second line: goal progress, or an honest "nothing logged". */
-function secondaryFor(day: WaterDay, goalMl: number): string {
-  if (day.ml === 0) return "Tog dana nije uneta voda.";
-  if (day.reached) return `Cilj (${formatWaterSr(goalMl)}) ispunjen 🎉`;
-  return `${Math.round(day.pct * 100)}% od cilja ${formatWaterSr(goalMl)}`;
+function secondaryFor(day: WaterDay, goalMl: number, t: TFunction): string {
+  if (day.ml === 0) return t("analytics.water.noWaterThatDay");
+  if (day.reached)
+    return t("analytics.water.goalReached", { goal: formatWaterSr(goalMl) });
+  return t("analytics.water.pctOfGoal", {
+    pct: Math.round(day.pct * 100),
+    goal: formatWaterSr(goalMl),
+  });
 }
 
 export function WaterCard({ week }: { week: WaterWeek | null }) {
+  const { t } = useT();
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
   if (!week) {
@@ -46,7 +53,7 @@ export function WaterCard({ week }: { week: WaterWeek | null }) {
       <section className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-6">
         <Header />
         <p className="text-sm text-muted-foreground">
-          Dodaj težinu u upitniku pa ćemo ti postaviti dnevni cilj za vodu.
+          {t("analytics.water.empty")}
         </p>
       </section>
     );
@@ -55,8 +62,8 @@ export function WaterCard({ week }: { week: WaterWeek | null }) {
   const selected = week.days.find((d) => d.dayKey === selectedKey) ?? null;
   const dashOffset = CIRC * (1 - week.pct);
   const hint = week.reachedToday
-    ? "Cilj ispunjen 🎉"
-    : `Još ${formatWaterSr(week.remainingMl)} do cilja`;
+    ? t("analytics.water.goalReachedShort")
+    : t("analytics.water.remaining", { amount: formatWaterSr(week.remainingMl) });
 
   return (
     <section className="flex flex-col gap-5 rounded-3xl border border-border bg-card p-6">
@@ -116,7 +123,7 @@ export function WaterCard({ week }: { week: WaterWeek | null }) {
             {formatWaterSr(week.todayMl)}
           </span>
           <span className="text-sm text-muted-foreground">
-            od {formatWaterSr(week.goalMl)} cilj
+            {t("analytics.water.ofGoal", { goal: formatWaterSr(week.goalMl) })}
           </span>
           <span
             className="mt-0.5 text-[11px] font-medium"
@@ -192,25 +199,26 @@ export function WaterCard({ week }: { week: WaterWeek | null }) {
         <ChartReadout
           label={selected.longLabel}
           primary={formatWaterSr(selected.ml)}
-          secondary={secondaryFor(selected, week.goalMl)}
+          secondary={secondaryFor(selected, week.goalMl, t)}
           accentColor={selected.reached ? SKY : undefined}
           onClear={() => setSelectedKey(null)}
           testId="water-readout"
         />
       ) : (
         <ChartHint testId="water-hint">
-          Dodirni stubić da vidiš koliko si tog dana popio/la.
+          {t("analytics.water.hint")}
         </ChartHint>
       )}
 
       <p className="text-center text-[11px] text-muted-foreground">
-        Nedeljni prosek: {formatWaterSr(week.weekAvgMl)} / dan
+        {t("analytics.water.weekAvg", { avg: formatWaterSr(week.weekAvgMl) })}
       </p>
     </section>
   );
 }
 
 function Header() {
+  const { t } = useT();
   return (
     <div className="flex items-center gap-2.5">
       <span
@@ -220,8 +228,12 @@ function Header() {
       >
         💧
       </span>
-      <h2 className="text-lg font-semibold text-foreground">Voda</h2>
-      <span className="ml-auto text-xs text-muted-foreground">Danas · 7 dana</span>
+      <h2 className="text-lg font-semibold text-foreground">
+        {t("analytics.water.title")}
+      </h2>
+      <span className="ml-auto text-xs text-muted-foreground">
+        {t("analytics.water.subtitle")}
+      </span>
     </div>
   );
 }

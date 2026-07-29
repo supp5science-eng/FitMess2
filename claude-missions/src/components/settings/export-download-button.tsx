@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Download, FileDown, Loader2 } from "lucide-react";
 
 import { exportErrorText } from "@/lib/export/error-messages";
+import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
 /**
@@ -58,6 +59,7 @@ export function ExportDownloadButton({
   variant?: "primary" | "quiet";
   testId?: string;
 }) {
+  const { t } = useT();
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<File | null>(null);
@@ -106,7 +108,7 @@ export function ExportDownloadButton({
   }
 
   const busy = phase === "preparing";
-  const text = busy ? "Pripremam…" : phase === "ready" ? readyLabel : label;
+  const text = busy ? t("app.export.preparing") : phase === "ready" ? readyLabel : label;
   const Icon = variant === "primary" ? FileDown : Download;
 
   return (
@@ -147,7 +149,7 @@ export function ExportDownloadButton({
       >
         {error ??
           (phase === "ready"
-            ? "Fajl je spreman — dodirni još jednom da izabereš gde da ga sačuvaš."
+            ? t("app.export.ready")
             : phase === "done"
               ? doneText
               : "")}

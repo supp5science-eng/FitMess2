@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { AdminFoodForm } from "@/components/admin/admin-food-form";
 import { createAdminClient } from "@/lib/supabase/server";
+import { getT } from "@/lib/i18n/server";
+import type { TFunction } from "@/lib/i18n/translate";
 import type { Food } from "@/lib/types/db";
 
 /**
@@ -19,6 +21,7 @@ export default async function AdminEditFoodPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const { t } = await getT();
   const admin = createAdminClient();
   const { data, error } = await admin
     .from("foods")
@@ -28,18 +31,18 @@ export default async function AdminEditFoodPage({
 
   if (error) {
     console.error("[F035 /admin/hrana/[id]] load failed:", error.message);
-    return <NotFoundState message="Nismo uspeli da učitamo namirnicu." />;
+    return <NotFoundState message={t("admin.edit.loadError")} t={t} />;
   }
   if (!data) {
-    return <NotFoundState message="Namirnica nije pronađena." />;
+    return <NotFoundState message={t("admin.edit.notFound")} t={t} />;
   }
 
   const food = data as Food;
   const statusLabel = food.is_removed
-    ? "Uklonjeno"
+    ? t("admin.status.removed")
     : food.verified
-      ? "Provereno"
-      : "Neprovereno";
+      ? t("admin.status.verified")
+      : t("admin.status.unverified");
 
   return (
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
@@ -48,14 +51,14 @@ export default async function AdminEditFoodPage({
           href="/admin/hrana"
           className="text-xs font-medium text-muted-foreground underline-offset-4 hover:underline"
         >
-          ← Hrana
+          ← {t("admin.hrana.title")}
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Izmena: {food.name_sr}
+          {t("admin.edit.title", { name: food.name_sr })}
         </h1>
         <span className="text-xs text-muted-foreground">
-          Status: {statusLabel}
-          {food.source ? ` · izvor: ${food.source}` : ""}
+          {t("admin.edit.status", { status: statusLabel })}
+          {food.source ? ` · ${t("admin.edit.source")}: ${food.source}` : ""}
         </span>
       </div>
       <AdminFoodForm mode="edit" food={food} />
@@ -63,7 +66,7 @@ export default async function AdminEditFoodPage({
   );
 }
 
-function NotFoundState({ message }: { message: string }) {
+function NotFoundState({ message, t }: { message: string; t: TFunction }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
       <p role="alert" className="text-sm text-destructive">
@@ -73,7 +76,7 @@ function NotFoundState({ message }: { message: string }) {
         href="/admin/hrana"
         className="text-sm font-medium text-primary underline-offset-4 hover:underline"
       >
-        Nazad na listu
+        {t("admin.backToList")}
       </Link>
     </main>
   );

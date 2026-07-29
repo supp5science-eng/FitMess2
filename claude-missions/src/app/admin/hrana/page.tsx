@@ -9,6 +9,8 @@ import { listUnverifiedFoods } from "@/lib/food/admin-review";
 import { createAdminClient } from "@/lib/supabase/server";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getT } from "@/lib/i18n/server";
+import type { TFunction } from "@/lib/i18n/translate";
 
 /**
  * F034 / AS-060: `/admin/hrana` -- the admin review queue. Reachable only
@@ -36,12 +38,13 @@ const ZERO_STATS = {
 } as const;
 
 export default async function AdminHranaPage() {
+  const { t } = await getT();
   const admin = createAdminClient();
   const { data, error } = await listUnverifiedFoods(admin);
 
   if (error) {
     console.error("[F034 /admin/hrana] listUnverifiedFoods failed:", error.message);
-    return <LoadErrorState />;
+    return <LoadErrorState t={t} />;
   }
 
   // A stats failure must never blank the page -- fall back to zeros.
@@ -57,13 +60,13 @@ export default async function AdminHranaPage() {
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
       <div className="flex items-start justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Hrana
+          {t("admin.hrana.title")}
         </h1>
         <Link
           href="/admin/hrana/novi"
           className={cn(buttonVariants({ variant: "default", size: "sm" }))}
         >
-          + Novi proizvod
+          + {t("admin.hrana.newProduct")}
         </Link>
       </div>
 
@@ -75,7 +78,7 @@ export default async function AdminHranaPage() {
 
       <section className="flex flex-col gap-3">
         <h2 className="text-sm font-semibold text-foreground">
-          Red za proveru
+          {t("admin.hrana.reviewQueue")}
         </h2>
         <AdminFoodQueue initialFoods={data ?? []} />
       </section>
@@ -83,7 +86,7 @@ export default async function AdminHranaPage() {
   );
 }
 
-function LoadErrorState() {
+function LoadErrorState({ t }: { t: TFunction }) {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-10 text-center">
       <p
@@ -91,13 +94,13 @@ function LoadErrorState() {
         data-testid="admin-hrana-load-error"
         className="text-sm text-destructive"
       >
-        Nismo uspeli da učitamo red za proveru. Pokušaj ponovo.
+        {t("admin.hrana.loadError")}
       </p>
       <Link
         href="/admin/hrana"
         className="inline-flex items-center justify-center rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground"
       >
-        Pokušaj ponovo
+        {t("admin.retry")}
       </Link>
     </main>
   );

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { requireAdmin } from "@/lib/auth/admin";
+import { getT } from "@/lib/i18n/server";
 
 /**
  * F033: the `/admin` area's server-side access boundary (AS-059, AS-067).
@@ -22,6 +23,7 @@ export default async function AdminLayout({
   children: ReactNode;
 }) {
   await requireAdmin();
+  const { t } = await getT();
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
@@ -36,10 +38,10 @@ export default async function AdminLayout({
           href="/danas"
           className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary"
         >
-          <span aria-hidden="true">←</span> Nazad u aplikaciju
+          <span aria-hidden="true">←</span> {t("admin.layout.back")}
         </Link>
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-          Admin
+          {t("admin.layout.badge")}
         </span>
       </header>
       <div className="flex flex-1 flex-col">{children}</div>

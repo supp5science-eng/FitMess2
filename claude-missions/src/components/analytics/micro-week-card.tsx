@@ -4,6 +4,8 @@ import { Beef, Candy, Soup, Wheat } from "lucide-react";
 import { useState } from "react";
 
 import { ChartHint, ChartReadout } from "@/components/analytics/chart-readout";
+import { useT } from "@/components/i18n/locale-provider";
+import type { TFunction } from "@/lib/i18n/translate";
 import {
   formatMicroAmount,
   saltGramsFromSodiumMg,
@@ -64,12 +66,18 @@ const STYLE: Record<
 };
 
 /** Short tab labels ("Zasićene masti" is too wide for a quarter of the row). */
-const TAB_LABEL: Record<MicroKey, string> = {
-  fiber: "Vlakna",
-  sugar: "Šećer",
-  sodium: "So",
-  satFat: "Zasićene",
-};
+function tabLabel(key: MicroKey, t: TFunction): string {
+  switch (key) {
+    case "fiber":
+      return t("analytics.micro.tab.fiber");
+    case "sugar":
+      return t("analytics.micro.tab.sugar");
+    case "sodium":
+      return t("analytics.micro.tab.sodium");
+    case "satFat":
+      return t("analytics.micro.tab.satFat");
+  }
+}
 
 /** The calm amber used for a day/average past a ceiling. */
 const OVER = "#f59e0b";
@@ -77,6 +85,7 @@ const OVER = "#f59e0b";
 const CHART_HEIGHT = 132; // px
 
 export function MicroWeekCard({ week }: { week: MicroWeek | null }) {
+  const { t } = useT();
   const [selected, setSelected] = useState<MicroKey>("fiber");
   // The tapped day, shared across tabs: switching nutrient keeps the day and
   // just re-reads it, which is exactly what "what was Wednesday like?" wants.
@@ -87,8 +96,7 @@ export function MicroWeekCard({ week }: { week: MicroWeek | null }) {
       <section className="flex flex-col gap-3 rounded-3xl border border-border bg-card p-6">
         <Header />
         <p className="text-sm text-muted-foreground">
-          Nismo uspeli da učitamo mikronutrijente. Osveži stranicu pa pokušaj
-          ponovo.
+          {t("analytics.micro.loadError")}
         </p>
       </section>
     );
@@ -107,7 +115,7 @@ export function MicroWeekCard({ week }: { week: MicroWeek | null }) {
       {/* Nutrient selector */}
       <div
         role="tablist"
-        aria-label="Izbor mikronutrijenta"
+        aria-label={t("analytics.micro.selector")}
         className="flex gap-1 rounded-full bg-muted/60 p-1"
       >
         {week.nutrients.map((n) => {
@@ -128,7 +136,7 @@ export function MicroWeekCard({ week }: { week: MicroWeek | null }) {
                   : "text-muted-foreground hover:text-foreground"
               )}
             >
-              {TAB_LABEL[n.key]}
+              {tabLabel(n.key, t)}
             </button>
           );
         })}
@@ -139,8 +147,7 @@ export function MicroWeekCard({ week }: { week: MicroWeek | null }) {
           data-testid="micro-week-empty"
           className="py-8 text-center text-sm text-muted-foreground"
         >
-          Još nemamo podatke o vlaknima, šećeru i soli za ovu nedelju. Pojaviće
-          se čim počneš da beležiš obroke.
+          {t("analytics.micro.empty")}
         </p>
       ) : (
         <NutrientBody
@@ -164,6 +171,7 @@ function NutrientBody({
   selectedDayKey: string | null;
   onSelectDay: (dayKey: string) => void;
 }) {
+  const { t } = useT();
   const style = STYLE[nutrient.key];
   const { unit, kind, labelSr } = nutrient.spec;
   const over = nutrient.status === "over";
@@ -184,11 +192,15 @@ function NutrientBody({
               : formatMicroAmount(nutrient.average, unit)}
           </span>
           <span className="text-sm text-muted-foreground">
-            {labelSr} · prosečno dnevno
+            {t("analytics.micro.avgDaily", { label: labelSr })}
           </span>
           {nutrient.key === "sodium" && nutrient.average !== null ? (
             <span className="text-[11px] text-muted-foreground">
-              ≈ {saltGramsFromSodiumMg(nutrient.average).toFixed(1).replace(".", ",")} g soli
+              {t("analytics.micro.saltApprox", {
+                grams: saltGramsFromSodiumMg(nutrient.average)
+                  .toFixed(1)
+                  .replace(".", ","),
+              })}
             </span>
           ) : null}
         </div>
@@ -200,7 +212,9 @@ function NutrientBody({
             style.text
           )}
         >
-          {kind === "goal" ? "cilj" : "granica"}{" "}
+          {kind === "goal"
+            ? t("analytics.micro.goal")
+            : t("analytics.micro.limit")}{" "}
           {formatMicroAmount(nutrient.target, unit)}
         </span>
       </div>
@@ -211,7 +225,7 @@ function NutrientBody({
         className="text-sm font-medium"
         style={{ color: over ? OVER : "var(--muted-foreground)" }}
       >
-        {statusSentence(nutrient)}
+        {statusSentence(nutrient, t)}
       </p>
 
       {/* 7-day bars with a dashed target line */}
@@ -239,7 +253,7 @@ function NutrientBody({
                   aria-pressed={active}
                   aria-label={`${day.longLabel}: ${
                     missing
-                      ? "nema dovoljno podataka"
+                      ? t("analytics.micro.aria.notEnough")
                       : formatMicroAmount(day.value ?? 0, unit)
                   }`}
                   data-testid={`micro-week-day-${day.dayKey}`}
@@ -303,10 +317,10 @@ function NutrientBody({
           label={selectedDay.longLabel}
           primary={
             selectedDay.value === null
-              ? "Nema dovoljno podataka"
+              ? t("analytics.micro.notEnoughData")
               : `${formatMicroAmount(selectedDay.value, unit)} · ${labelSr.toLowerCase()}`
           }
-          secondary={daySecondary(selectedDay, nutrient)}
+          secondary={daySecondary(selectedDay, nutrient, t)}
           accentColor={
             selectedDay.value !== null && kind === "limit" && !selectedDay.inTarget
               ? OVER
@@ -317,7 +331,7 @@ function NutrientBody({
         />
       ) : (
         <ChartHint testId="micro-week-hint">
-          Dodirni stubić da vidiš tačnu vrednost tog dana.
+          {t("analytics.micro.hint")}
         </ChartHint>
       )}
 
@@ -326,21 +340,30 @@ function NutrientBody({
         data-testid="micro-week-footer"
         className="text-center text-[11px] leading-snug text-muted-foreground"
       >
-        {nutrient.daysWithData > 0 ? (
-          <>
-            {nutrient.daysInTarget} od {nutrient.daysWithData}{" "}
-            {nutrient.daysWithData === 1 ? "izmerenog dana" : "izmerenih dana"}{" "}
-            {kind === "goal" ? "u cilju" : "u granici"}.
-          </>
-        ) : (
-          <>Nijedan dan ove nedelje nema dovoljno podataka.</>
-        )}
+        {nutrient.daysWithData > 0
+          ? t("analytics.micro.footer.summary", {
+              inTarget: nutrient.daysInTarget,
+              total: nutrient.daysWithData,
+              measured:
+                nutrient.daysWithData === 1
+                  ? t("analytics.micro.footer.dayMeasuredOne")
+                  : t("analytics.micro.footer.dayMeasuredMany"),
+              target:
+                kind === "goal"
+                  ? t("analytics.micro.footer.inGoal")
+                  : t("analytics.micro.footer.inLimit"),
+            })
+          : t("analytics.micro.footer.noData")}
         {nutrient.daysWithoutData > 0 ? (
           <>
             {" "}
-            Za {nutrient.daysWithoutData}{" "}
-            {nutrient.daysWithoutData === 1 ? "dan" : "dana"} nemamo dovoljno
-            podataka pa ih ne računamo.
+            {t("analytics.micro.footer.missing", {
+              n: nutrient.daysWithoutData,
+              day:
+                nutrient.daysWithoutData === 1
+                  ? t("analytics.micro.footer.dayOne")
+                  : t("analytics.micro.footer.dayMany"),
+            })}
           </>
         ) : null}
       </p>
@@ -353,47 +376,68 @@ function NutrientBody({
  * when we couldn't measure it -- how much of that day we actually know about.
  * Saying "podaci pokrivaju 30% dana" is the honest version of a missing bar.
  */
-function daySecondary(day: MicroWeekDay, nutrient: MicroNutrientWeek): string {
+function daySecondary(
+  day: MicroWeekDay,
+  nutrient: MicroNutrientWeek,
+  t: TFunction
+): string {
   const { unit, kind } = nutrient.spec;
   if (day.value === null) {
     return day.coverage > 0
-      ? `Podaci pokrivaju samo ~${Math.round(day.coverage * 100)}% tog dana, pa ga ne računamo.`
-      : "Za taj dan nemamo podatke o ovom nutrijentu.";
+      ? t("analytics.micro.day.partialCoverage", {
+          pct: Math.round(day.coverage * 100),
+        })
+      : t("analytics.micro.day.noNutrient");
   }
   const diff = Math.abs(day.value - nutrient.target);
   if (kind === "goal") {
     return day.inTarget
-      ? `Cilj (${formatMicroAmount(nutrient.target, unit)}) ispunjen 🎉`
-      : `Fali ${formatMicroAmount(diff, unit)} do cilja ${formatMicroAmount(nutrient.target, unit)}`;
+      ? t("analytics.micro.day.goalMet", {
+          target: formatMicroAmount(nutrient.target, unit),
+        })
+      : t("analytics.micro.day.goalShort", {
+          diff: formatMicroAmount(diff, unit),
+          target: formatMicroAmount(nutrient.target, unit),
+        });
   }
   return day.inTarget
-    ? `Ispod granice (${formatMicroAmount(nutrient.target, unit)})`
-    : `${formatMicroAmount(diff, unit)} preko granice ${formatMicroAmount(nutrient.target, unit)}`;
+    ? t("analytics.micro.day.underLimit", {
+        target: formatMicroAmount(nutrient.target, unit),
+      })
+    : t("analytics.micro.day.overLimit", {
+        diff: formatMicroAmount(diff, unit),
+        target: formatMicroAmount(nutrient.target, unit),
+      });
 }
 
-/** One plain Serbian sentence about where the week's average landed. */
-function statusSentence(nutrient: MicroNutrientWeek): string {
+/** One plain sentence about where the week's average landed. */
+function statusSentence(nutrient: MicroNutrientWeek, t: TFunction): string {
   const { unit, labelSr } = nutrient.spec;
   const average = nutrient.average;
   if (average === null) {
-    return `Još nemamo dovoljno podataka za ${labelSr.toLowerCase()}.`;
+    return t("analytics.micro.status.noData", { label: labelSr.toLowerCase() });
   }
   const diff = Math.abs(average - nutrient.target);
   switch (nutrient.status) {
     case "ok":
       return nutrient.spec.kind === "goal"
-        ? "U proseku dostižeš dnevni cilj — samo tako. 🎉"
-        : "U proseku si ispod dnevne granice.";
+        ? t("analytics.micro.status.okGoal")
+        : t("analytics.micro.status.okLimit");
     case "under":
-      return `U proseku ti fali ${formatMicroAmount(diff, unit)} dnevno do cilja.`;
+      return t("analytics.micro.status.under", {
+        amount: formatMicroAmount(diff, unit),
+      });
     case "over":
-      return `U proseku ${formatMicroAmount(diff, unit)} dnevno preko granice.`;
+      return t("analytics.micro.status.over", {
+        amount: formatMicroAmount(diff, unit),
+      });
     default:
       return "";
   }
 }
 
 function Header() {
+  const { t } = useT();
   return (
     <div className="flex items-center gap-2.5">
       <span
@@ -402,8 +446,12 @@ function Header() {
       >
         <Wheat className="size-4" />
       </span>
-      <h2 className="text-lg font-semibold text-foreground">Mikronutrijenti</h2>
-      <span className="ml-auto text-xs text-muted-foreground">7 dana</span>
+      <h2 className="text-lg font-semibold text-foreground">
+        {t("analytics.micro.title")}
+      </h2>
+      <span className="ml-auto text-xs text-muted-foreground">
+        {t("analytics.micro.sevenDays")}
+      </span>
     </div>
   );
 }

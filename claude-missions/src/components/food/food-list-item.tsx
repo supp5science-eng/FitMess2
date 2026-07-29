@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { Badge } from "@/components/ui/badge";
 import type { Food } from "@/lib/types/db";
 
@@ -25,6 +28,7 @@ export function FoodListItem({
    * (AS-040) -- shown as a small "nedavno" tag alongside the name. */
   isRecent?: boolean;
 }) {
+  const { t } = useT();
   const kcal = Math.round(food.kcal_100g);
 
   return (
@@ -57,7 +61,7 @@ export function FoodListItem({
                 data-testid={`food-badge-neprovereno-${food.id}`}
                 className="border-amber-300 bg-amber-50 text-amber-700"
               >
-                neprovereno
+                {t("food.item.unverified")}
               </Badge>
             ) : null}
             {isRecent ? (
@@ -65,7 +69,7 @@ export function FoodListItem({
                 variant="secondary"
                 data-testid={`food-badge-recent-${food.id}`}
               >
-                nedavno
+                {t("food.item.recent")}
               </Badge>
             ) : null}
           </div>

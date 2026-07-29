@@ -1,3 +1,6 @@
+"use client";
+
+import { useT } from "@/components/i18n/locale-provider";
 import type { StreakDay } from "@/lib/streak/streak";
 import { cn } from "@/lib/utils";
 
@@ -9,14 +12,21 @@ import { cn } from "@/lib/utils";
 // carries one honest text label for screen readers, and the surrounding card
 // always states the streak in words.
 
-const SR_WEEKDAY_SHORT = ["ned", "pon", "uto", "sre", "čet", "pet", "sub"];
+const WEEKDAY_KEYS = [
+  "media.streakDots.weekday.sun",
+  "media.streakDots.weekday.mon",
+  "media.streakDots.weekday.tue",
+  "media.streakDots.weekday.wed",
+  "media.streakDots.weekday.thu",
+  "media.streakDots.weekday.fri",
+  "media.streakDots.weekday.sat",
+] as const;
 
-/** `"2026-07-28"` -> `"uto"`. Pure calendar arithmetic on the key (already a
- * Belgrade day), never a timezone read. */
-function weekdayShort(dayKey: string): string {
+/** `"2026-07-28"` -> weekday index (0 = Sunday). Pure calendar arithmetic on
+ * the key (already a Belgrade day), never a timezone read. */
+function weekdayIndex(dayKey: string): number {
   const [year, month, day] = dayKey.split("-").map(Number);
-  const index = new Date(Date.UTC(year!, month! - 1, day!)).getUTCDay();
-  return SR_WEEKDAY_SHORT[index]!;
+  return new Date(Date.UTC(year!, month! - 1, day!)).getUTCDay();
 }
 
 export function StreakDots({
@@ -25,16 +35,20 @@ export function StreakDots({
   className,
 }: {
   days: StreakDay[];
-  /** Draw the Serbian weekday initial under each dot (Analitika card). */
+  /** Draw the weekday initial under each dot (Analitika card). */
   showLabels?: boolean;
   className?: string;
 }) {
+  const { t } = useT();
   const loggedCount = days.filter((day) => day.logged).length;
 
   return (
     <div
       role="img"
-      aria-label={`${loggedCount} od poslednjih ${days.length} dana sa unosom`}
+      aria-label={t("media.streakDots.summaryAria", {
+        logged: loggedCount,
+        total: days.length,
+      })}
       className={cn("flex items-start justify-between gap-1.5", className)}
     >
       {days.map((day) => (
@@ -65,7 +79,7 @@ export function StreakDots({
                   : "text-muted-foreground"
               )}
             >
-              {weekdayShort(day.dayKey)}
+              {t(WEEKDAY_KEYS[weekdayIndex(day.dayKey)]!)}
             </span>
           ) : null}
         </div>

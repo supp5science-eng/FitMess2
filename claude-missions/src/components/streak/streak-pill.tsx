@@ -1,6 +1,9 @@
+"use client";
+
 import { Flame } from "lucide-react";
 import Link from "next/link";
 
+import { useT } from "@/components/i18n/locale-provider";
 import { dayCountSr, type StreakSummary } from "@/lib/streak/streak";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +27,7 @@ export function StreakPill({
   href?: string;
   className?: string;
 }) {
+  const { t } = useT();
   const active = streak.current > 0;
 
   const base = cn(
@@ -32,9 +36,9 @@ export function StreakPill({
     className
   );
 
-  const label = `Niz: ${dayCountSr(streak.current)}${
-    href ? ". Otvori dostignuća." : ""
-  }`;
+  const label = `${t("media.streakPill.label", {
+    count: dayCountSr(streak.current),
+  })}${href ? t("media.streakPill.openAchievements") : ""}`;
 
   const content = (
     <>

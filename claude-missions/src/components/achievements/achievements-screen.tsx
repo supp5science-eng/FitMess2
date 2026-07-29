@@ -1,3 +1,5 @@
+"use client";
+
 import { ArrowLeft, Award, Flame } from "lucide-react";
 import Link from "next/link";
 
@@ -6,6 +8,7 @@ import {
   CATEGORY_STYLE,
 } from "@/components/achievements/achievement-tile";
 import type { CategoryGroup } from "@/lib/achievements/achievements";
+import { useT } from "@/components/i18n/locale-provider";
 import { dayCountSr } from "@/lib/streak/streak";
 
 // Dostignuća — the full badges screen, opened by tapping the streak card on
@@ -27,6 +30,7 @@ export function AchievementsScreen({
   total: number;
   groups: CategoryGroup[];
 }) {
+  const { t } = useT();
   const badgePct = total > 0 ? Math.round((earned / total) * 100) : 0;
 
   return (
@@ -34,13 +38,13 @@ export function AchievementsScreen({
       <header className="flex items-center gap-3">
         <Link
           href="/danas"
-          aria-label="Nazad"
+          aria-label={t("media.achievements.back")}
           className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground transition-colors hover:bg-muted active:translate-y-px"
         >
           <ArrowLeft className="size-5" aria-hidden="true" />
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Dostignuća
+          {t("media.achievements.title")}
         </h1>
       </header>
 
@@ -59,14 +63,14 @@ export function AchievementsScreen({
               />
             </span>
             <span className="text-sm font-semibold text-muted-foreground">
-              Niz
+              {t("media.achievements.streak")}
             </span>
           </div>
           <span className="text-3xl font-bold leading-none tabular-nums text-foreground">
             {dayCountSr(currentStreak)}
           </span>
           <span className="text-xs text-muted-foreground">
-            najduži: {dayCountSr(bestStreak)}
+            {t("media.achievements.longest", { count: dayCountSr(bestStreak) })}
           </span>
         </div>
 
@@ -79,7 +83,7 @@ export function AchievementsScreen({
               <Award className="size-4" strokeWidth={2.25} />
             </span>
             <span className="text-sm font-semibold text-muted-foreground">
-              Bedževi
+              {t("media.achievements.badges")}
             </span>
           </div>
           <span className="text-3xl font-bold leading-none tabular-nums text-foreground">
@@ -91,7 +95,10 @@ export function AchievementsScreen({
           <div
             className="mt-0.5 h-1.5 overflow-hidden rounded-full bg-muted"
             role="img"
-            aria-label={`${earned} od ${total} bedževa osvojeno`}
+            aria-label={t("media.achievements.badgesEarnedAria", {
+              earned,
+              total,
+            })}
           >
             <div
               className="h-full rounded-full bg-primary transition-[width]"

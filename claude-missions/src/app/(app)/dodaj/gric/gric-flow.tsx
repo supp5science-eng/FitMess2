@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Camera, Check, Loader2, Mic, Square, Undo2, X } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
+import { useT } from "@/components/i18n/locale-provider";
 import {
   MEAL_SIZED_KCAL,
   PORTION_SIZES,
@@ -59,6 +60,7 @@ interface ReviewItem {
 const current = (item: ReviewItem): GricItem => scaleGricItem(item.base, item.size);
 
 export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
+  const { t } = useT();
   const router = useRouter();
   const recordingRef = useRef<WavRecording | null>(null);
   const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -118,9 +120,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
       setPhase("recording");
       autoStopRef.current = setTimeout(() => void stopRecording(), MAX_RECORDING_MS);
     } catch {
-      setError(
-        "Nismo dobili pristup mikrofonu. Dozvoli mikrofon u podešavanjima pa pokušaj ponovo."
-      );
+      setError(t("dodaj.mic.denied"));
       setPhase("idle");
     }
   }
@@ -139,7 +139,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
     try {
       wav = await recording.stop();
     } catch {
-      setError("Nismo uspeli da obradimo snimak. Pokušaj ponovo.");
+      setError(t("dodaj.audio.processFailed"));
       setPhase("idle");
       return;
     }
@@ -156,9 +156,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
 
     const stavke = result.data.stavke;
     if (stavke.length === 0) {
-      setError(
-        "Nismo čuli hranu u snimku. Probaj ponovo — reci npr. „pojeo sam krastavac i šaku semenki”."
-      );
+      setError(t("dodaj.gric.noFood"));
       setPhase("idle");
       return;
     }
@@ -265,13 +263,13 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Gric
+          {t("dodaj.gric.title")}
         </h1>
         <Link
           href="/danas"
           className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          Otkaži
+          {t("dodaj.cancel")}
         </Link>
       </header>
 
@@ -290,18 +288,17 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
             <button
               type="button"
               onClick={() => void startRecording()}
-              aria-label="Počni snimanje"
+              aria-label={t("dodaj.startRecording")}
               className="flex size-28 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
             >
               <Mic className="size-11" aria-hidden="true" />
             </button>
             <div className="flex flex-col gap-1">
               <span className="text-base font-medium text-foreground">
-                Reci šta si gricnuo
+                {t("dodaj.gric.prompt")}
               </span>
               <span className="text-sm text-muted-foreground">
-                Možeš nabrojati više stvari odjednom — „krastavac, šaka semenki i
-                dve kajsije&rdquo;.
+                {t("dodaj.gric.hint")}
               </span>
             </div>
           </div>
@@ -309,7 +306,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
           {frequent.length > 0 ? (
             <section className="flex flex-col gap-3">
               <h2 className="text-sm font-medium text-muted-foreground">
-                Opet isto
+                {t("dodaj.gric.again")}
               </h2>
               <div className="flex flex-wrap gap-2">
                 {frequent.map((snack) => (
@@ -327,7 +324,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
                 ))}
               </div>
               <p className="text-xs text-muted-foreground">
-                Jedan dodir doda stavku u dan — bez snimanja.
+                {t("dodaj.gric.oneTapHint")}
               </p>
             </section>
           ) : null}
@@ -339,7 +336,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
           <button
             type="button"
             onClick={() => void stopRecording()}
-            aria-label="Zaustavi snimanje"
+            aria-label={t("dodaj.stopRecording")}
             className="flex size-28 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px animate-pulse"
           >
             <Square className="size-10 fill-current" aria-hidden="true" />
@@ -352,7 +349,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
               {formatSeconds(seconds)}
             </span>
             <span className="text-sm text-muted-foreground">
-              Slušam… dodirni da zaustaviš
+              {t("dodaj.gric.listening")}
             </span>
           </div>
         </div>
@@ -360,11 +357,11 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
 
       {phase === "estimating" ? (
         <AiThinking
-          title="Slušam i računam…"
+          title={t("dodaj.listenCalc.title")}
           lines={[
-            "Razdvajam šta si sve pomenuo…",
-            "Procenjujem količine…",
-            "Računam kalorije…",
+            t("dodaj.gric.thinking.line1"),
+            t("dodaj.gric.thinking.line2"),
+            t("dodaj.gric.thinking.line3"),
           ]}
         />
       ) : null}
@@ -384,7 +381,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
           </div>
 
           <div className="flex items-baseline justify-between border-t border-border pt-4">
-            <span className="text-sm text-muted-foreground">Ukupno</span>
+            <span className="text-sm text-muted-foreground">{t("dodaj.total")}</span>
             <span className="text-xl font-semibold tabular-nums text-foreground">
               ≈ {totalKcal(kept.map(current))} kcal
             </span>
@@ -400,8 +397,8 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
               <Loader2 className="size-5 animate-spin" aria-hidden="true" />
             ) : null}
             {countdown !== null && phase === "review"
-              ? `Dodajem za ${countdown}…`
-              : "Dodaj u dan"}
+              ? t("dodaj.gric.addingIn", { count: countdown })
+              : t("dodaj.addToDay")}
           </button>
 
           {countdown !== null && phase === "review" ? (
@@ -410,7 +407,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
               onClick={stopCountdown}
               className="text-center text-sm font-medium text-muted-foreground hover:text-foreground"
             >
-              Sačekaj, hoću da doteram
+              {t("dodaj.gric.waitAdjust")}
             </button>
           ) : (
             <button
@@ -419,12 +416,12 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
               disabled={phase === "saving"}
               className="text-center text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
             >
-              Snimi ponovo
+              {t("dodaj.recordAgain")}
             </button>
           )}
 
           <p className="text-center text-xs text-muted-foreground">
-            Procena je približna — za sitnice je to sasvim dovoljno.
+            {t("dodaj.gric.approxNote")}
           </p>
         </div>
       ) : null}
@@ -436,11 +433,10 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
               <Check className="size-7" aria-hidden="true" />
             </span>
             <span className="text-base font-medium text-foreground">
-              Sačuvano — ≈ {savedKcal} kcal
+              {t("dodaj.gric.saved", { kcal: savedKcal })}
             </span>
             <p className="text-sm text-muted-foreground">
-              Ovo je bio pravi obrok, ne sitnica. Slikaj ga ako hoćeš tačniju
-              procenu — sve ostaje zabeleženo i bez toga.
+              {t("dodaj.gric.realMeal")}
             </p>
           </div>
           <Link
@@ -448,14 +444,14 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
             className="flex items-center justify-center gap-2 rounded-xl border border-border px-6 py-3.5 text-base font-medium text-foreground"
           >
             <Camera className="size-5" aria-hidden="true" />
-            Slikaj obrok
+            {t("dodaj.meal.title")}
           </Link>
           <button
             type="button"
             onClick={() => router.push("/danas")}
             className="rounded-xl bg-primary px-6 py-3.5 text-base font-semibold text-primary-foreground"
           >
-            Gotovo
+            {t("dodaj.done")}
           </button>
         </div>
       ) : null}
@@ -480,6 +476,7 @@ function GricItemCard({
   onSize: (size: PortionSizeId) => void;
   onToggle: () => void;
 }) {
+  const { t } = useT();
   const shown = current(item);
   const asks = item.base.varijansa === "visoka";
 
@@ -512,8 +509,8 @@ function GricItemCard({
           disabled={disabled}
           aria-label={
             item.removed
-              ? `Vrati ${shown.naziv}`
-              : `Ukloni ${shown.naziv}`
+              ? t("dodaj.gric.restore", { name: shown.naziv })
+              : t("dodaj.gric.remove", { name: shown.naziv })
           }
           className="shrink-0 rounded-full p-1.5 text-muted-foreground hover:text-foreground disabled:opacity-60"
         >
@@ -528,7 +525,7 @@ function GricItemCard({
       {asks && !item.removed ? (
         <div className="flex flex-col gap-2">
           <span className="text-xs text-muted-foreground">
-            Kolika je bila porcija?
+            {t("dodaj.gric.portionQuestion")}
           </span>
           <div className="flex gap-2">
             {PORTION_SIZES.map((size) => (

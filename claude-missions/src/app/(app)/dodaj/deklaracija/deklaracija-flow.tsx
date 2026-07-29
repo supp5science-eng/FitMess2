@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Camera, Upload } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
+import { useT } from "@/components/i18n/locale-provider";
 import { downscaleImage } from "@/lib/image/downscale";
 import { estimateLabelAction } from "./actions";
 
@@ -17,6 +18,7 @@ function num(value: number): string {
 }
 
 export function DeklaracijaFlow() {
+  const { t } = useT();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
@@ -57,13 +59,13 @@ export function DeklaracijaFlow() {
     <main className="flex flex-1 flex-col gap-6 px-6 py-8">
       <header className="flex items-center justify-between gap-3">
         <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Slikaj deklaraciju
+          {t("dodaj.label.title")}
         </h1>
         <Link
           href="/danas"
           className="text-sm font-medium text-muted-foreground hover:text-foreground"
         >
-          Otkaži
+          {t("dodaj.cancel")}
         </Link>
       </header>
 
@@ -110,10 +112,10 @@ export function DeklaracijaFlow() {
           >
             <Camera className="size-9 text-primary" aria-hidden="true" />
             <span className="text-base font-medium text-foreground">
-              Slikaj nutritivnu tabelu
+              {t("dodaj.label.captureTitle")}
             </span>
             <span className="text-sm text-muted-foreground">
-              AI će očitati vrednosti na 100 g, ti samo potvrdiš
+              {t("dodaj.label.captureHint")}
             </span>
           </button>
           <button
@@ -123,16 +125,16 @@ export function DeklaracijaFlow() {
             className="inline-flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           >
             <Upload className="size-4" aria-hidden="true" />
-            Otpremi sliku iz galerije
+            {t("dodaj.label.uploadFromGallery")}
           </button>
         </div>
       ) : (
         <AiThinking
-          title="Čitam deklaraciju…"
+          title={t("dodaj.label.reading.title")}
           lines={[
-            "Očitavam nutritivnu tabelu…",
-            "Preračunavam na 100 g…",
-            "Skoro gotovo…",
+            t("dodaj.label.reading.line1"),
+            t("dodaj.label.reading.line2"),
+            t("dodaj.almostDone"),
           ]}
         />
       )}

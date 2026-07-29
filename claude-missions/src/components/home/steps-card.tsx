@@ -9,6 +9,8 @@ import {
   type MiniWeekDay,
 } from "@/components/home/mini-week-bars";
 import { ProgressRing } from "@/components/home/progress-ring";
+import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
 import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
@@ -27,19 +29,18 @@ import { cn } from "@/lib/utils";
 // (clamped to [0, MAX]) and returns the new total — the source of truth this
 // component then reflects.
 
-const SAVE_FAILED_ERROR_SR = "Nismo uspeli da sačuvamo korake. Pokušaj ponovo.";
-
 /** Cap a single confirm can add (matches the DB/route bound). */
 const MAX_STEPS = 200000;
 
 /** Fine-tune step for the − / + steppers. */
 const STEP = 500;
 
-/** Quick-add presets: short walk / walk / long walk, rough step counts. */
-const PRESETS: { steps: number; label: string; sub: string; emoji: string }[] = [
-  { steps: 500, label: "Kratka", sub: "500", emoji: "🚶" },
-  { steps: 1000, label: "Šetnja", sub: "1.000", emoji: "🚶‍♂️" },
-  { steps: 3000, label: "Duga", sub: "3.000", emoji: "🏃" },
+/** Quick-add presets: short walk / walk / long walk, rough step counts. The
+ * `labelKey` is resolved through `t()` inside the component. */
+const PRESETS: { steps: number; labelKey: string; sub: string; emoji: string }[] = [
+  { steps: 500, labelKey: "home.steps.preset.short", sub: "500", emoji: "🚶" },
+  { steps: 1000, labelKey: "home.steps.preset.walk", sub: "1.000", emoji: "🚶‍♂️" },
+  { steps: 3000, labelKey: "home.steps.preset.long", sub: "3.000", emoji: "🏃" },
 ];
 
 /** The violet arc, light -> dark (matches the "Koraci" accent used elsewhere). */
@@ -175,6 +176,7 @@ export function StepsCard({
   /** Layout hook for the caller. */
   className?: string;
 }) {
+  const { t } = useT();
   const [totalSteps, setTotalSteps] = useState(initialSteps);
   const [isOpen, setIsOpen] = useState(false);
   // The pending delta. Can be negative (remove steps), floored so it can never
@@ -239,11 +241,11 @@ export function StepsCard({
       const body = (await response.json()) as KoraciResponseBody;
 
       if (!response.ok || !body.ok || !body.data) {
-        return { error: body.error_sr || SAVE_FAILED_ERROR_SR };
+        return { error: body.error_sr || t("home.steps.saveFailed") };
       }
       return { steps: body.data.steps };
     } catch {
-      return { error: SAVE_FAILED_ERROR_SR };
+      return { error: t("home.steps.saveFailed") };
     }
   }
 
@@ -293,7 +295,11 @@ export function StepsCard({
   const sheetFraction = resultSteps / goal;
   const goalReached = totalSteps >= goal;
   const confirmLabel =
-    status === "saving" ? "Čuvanje..." : addSteps < 0 ? "Ukloni" : "Dodaj";
+    status === "saving"
+      ? t("home.card.saving")
+      : addSteps < 0
+        ? t("home.card.remove")
+        : t("home.card.add");
 
   return (
     <div className={cn("flex flex-col", className)}>
@@ -308,7 +314,7 @@ export function StepsCard({
           type="button"
           onClick={openSheet}
           data-testid="steps-open-button"
-          aria-label={`Koraci: ${totalSteps} od ${goal}. Dodaj korake.`}
+          aria-label={t("home.steps.aria", { total: totalSteps, goal })}
           className="flex w-full items-center gap-3.5 text-left active:translate-y-px"
         >
           <ProgressRing
@@ -324,14 +330,14 @@ export function StepsCard({
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             <span className="flex items-center gap-2">
               <span className="text-sm font-semibold text-muted-foreground">
-                Koraci
+                {t("home.steps.label")}
               </span>
               {goalReached ? (
                 <span
                   data-testid="steps-goal-reached"
                   className="rounded-full bg-violet-500/15 px-2 py-0.5 text-[0.7rem] font-semibold text-violet-500"
                 >
-                  Cilj 🎉
+                  {t("home.card.goalReached")}
                 </span>
               ) : null}
             </span>
@@ -347,7 +353,7 @@ export function StepsCard({
               data-testid="steps-goal"
               className="text-xs text-muted-foreground"
             >
-              Dnevni cilj: {formatSteps(goal)}
+              {t("home.card.dailyGoal", { goal: formatSteps(goal) })}
             </span>
           </span>
 
@@ -423,12 +429,12 @@ export function StepsCard({
                 id="steps-sheet-title"
                 className="text-lg font-semibold text-foreground"
               >
-                Unesi korake
+                {t("home.steps.sheetTitle")}
               </h2>
               <button
                 type="button"
                 onClick={closeSheet}
-                aria-label="Zatvori"
+                aria-label={t("home.close")}
                 data-testid="steps-cancel-button"
                 className="flex size-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted"
               >
@@ -477,7 +483,7 @@ export function StepsCard({
               <StepperButton
                 onStep={() => bump(-STEP)}
                 disabled={addSteps <= -totalSteps}
-                ariaLabel="Skini 500 koraka (drži za brže)"
+                ariaLabel={t("home.steps.minusAria", { n: STEP })}
                 testId="steps-minus-button"
               >
                 <Minus className="size-5" aria-hidden="true" />
@@ -493,7 +499,7 @@ export function StepsCard({
                 <input
                   type="text"
                   inputMode="numeric"
-                  aria-label="Broj koraka za dodavanje"
+                  aria-label={t("home.steps.inputAria")}
                   data-testid="steps-amount-input"
                   value={String(addSteps)}
                   onChange={(event) => onAmountChange(event.target.value)}
@@ -501,14 +507,14 @@ export function StepsCard({
                   className="min-w-0 border-0 bg-transparent p-0 text-center text-3xl font-bold text-foreground tabular-nums outline-none focus:outline-none"
                 />
                 <span className="text-lg font-medium text-muted-foreground">
-                  kor.
+                  {t("home.steps.unit")}
                 </span>
               </div>
 
               <StepperButton
                 onStep={() => bump(STEP)}
                 disabled={addSteps >= MAX_STEPS}
-                ariaLabel="Dodaj 500 koraka (drži za brže)"
+                ariaLabel={t("home.steps.plusAria", { n: STEP })}
                 testId="steps-plus-button"
               >
                 <Plus className="size-5" aria-hidden="true" />
@@ -516,9 +522,9 @@ export function StepsCard({
             </div>
 
             <div className="grid grid-cols-3 gap-2.5">
-              {PRESETS.map(({ steps, label, sub, emoji }) => (
+              {PRESETS.map(({ steps, labelKey, sub, emoji }) => (
                 <button
-                  key={label}
+                  key={labelKey}
                   type="button"
                   onClick={() => bump(steps)}
                   data-testid={`steps-preset-${steps}`}
@@ -528,7 +534,7 @@ export function StepsCard({
                     {emoji}
                   </span>
                   <span className="mt-0.5 text-sm font-semibold leading-tight text-foreground">
-                    {label}
+                    {t(labelKey as MessageKey)}
                   </span>
                   <span className="text-[0.7rem] text-muted-foreground">
                     +{sub}
@@ -562,8 +568,8 @@ export function StepsCard({
                 className="text-center text-xs text-muted-foreground"
               >
                 {addSteps === 0
-                  ? `Uneseno danas: ${formatSteps(totalSteps)} koraka`
-                  : `Ukupno danas: ${formatSteps(resultSteps)} koraka`}
+                  ? t("home.steps.loggedToday", { steps: formatSteps(totalSteps) })
+                  : t("home.steps.totalToday", { steps: formatSteps(resultSteps) })}
               </p>
               {/* The goal is no longer a flat 10.000 nobody agreed to -- so it
                   has to be reachable from where it's shown. A Link, not a
@@ -574,7 +580,7 @@ export function StepsCard({
                 data-testid="steps-edit-goal-link"
                 className="text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
               >
-                Cilj: {formatSteps(goal)} · promeni
+                {t("home.steps.editGoal", { goal: formatSteps(goal) })}
               </Link>
             </div>
           </div>

@@ -8,8 +8,8 @@ import { render, screen } from "@testing-library/react";
 import NemasPristupPage from "../page";
 
 describe("AS-059: /nemas-pristup renders a real Serbian denial page with a way back", () => {
-  it("test_AS_059_nemas_pristup_renders_the_denial_heading_and_body", () => {
-    render(<NemasPristupPage />);
+  it("test_AS_059_nemas_pristup_renders_the_denial_heading_and_body", async () => {
+    render(await NemasPristupPage());
 
     expect(screen.getByTestId("nemas-pristup-page")).toBeInTheDocument();
     expect(
@@ -20,8 +20,8 @@ describe("AS-059: /nemas-pristup renders a real Serbian denial page with a way b
     );
   });
 
-  it("test_AS_059_nemas_pristup_offers_a_real_link_back_into_the_app", () => {
-    render(<NemasPristupPage />);
+  it("test_AS_059_nemas_pristup_offers_a_real_link_back_into_the_app", async () => {
+    render(await NemasPristupPage());
 
     expect(screen.getByRole("link", { name: "Nazad na Danas" })).toHaveAttribute(
       "href",

@@ -138,6 +138,9 @@ export default async function RootLayout({
   // (light).
   const cookieStore = await cookies();
   const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
+  // The onboarding ring hand-off drops `fm_intro` just before landing on
+  // `/danas`; while it's present the launch splash yields to that animation.
+  const introActive = cookieStore.get("fm_intro") != null;
 
   return (
     <html
@@ -146,7 +149,7 @@ export default async function RootLayout({
       style={{ colorScheme: theme }}
     >
       <body className="min-h-full">
-        <AppShell>{children}</AppShell>
+        <AppShell introActive={introActive}>{children}</AppShell>
         <ServiceWorkerRegister />
         <HapticProvider />
       </body>

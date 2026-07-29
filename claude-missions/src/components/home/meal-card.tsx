@@ -145,12 +145,14 @@ export function MealCard({
   return (
     <li
       data-testid={`meal-card-${log.id}`}
-      className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+      className="group/card relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
     >
       {hasPhoto ? (
-        // Full-bleed, tappable. The card clips the image to its own top corners
-        // (overflow-hidden above), so there is no mismatched inner radius or gap
-        // -- the picture meets the card edge cleanly.
+        // Full-bleed, tappable media header. The picture is the hero -- this is
+        // where progress + meal shots live -- so the name/kcal ride ON the photo
+        // over a bottom scrim (a modern media card, not a caption stack). The
+        // card clips the image to its own top corners (overflow-hidden above),
+        // so the picture meets the card edge cleanly.
         <button
           type="button"
           onClick={openPhoto}
@@ -158,7 +160,7 @@ export function MealCard({
             viewed ? `Prikaži sliku: ${log.name}` : `Otkrij sliku: ${log.name}`
           }
           data-testid={`meal-card-photo-button-${log.id}`}
-          className="group relative block w-full active:opacity-95"
+          className="group/photo relative block w-full text-left active:opacity-95"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
@@ -167,59 +169,122 @@ export function MealCard({
             data-testid={`meal-card-photo-${log.id}`}
             loading="lazy"
             className={cn(
-              "h-48 w-full object-cover transition-all duration-500 ease-out",
+              "h-60 w-full object-cover transition-all duration-500 ease-out",
+              // A slow, subtle zoom on hover/press gives the tile life.
+              "group-hover/card:scale-[1.03]",
               // Veiled until first opened: a gentle blur + dim. The slight
               // scale hides the soft transparent edge blur leaves behind.
               viewed ? "" : "scale-105 blur-[6px] opacity-70"
             )}
           />
-          {/* While veiled, a single plain invitation to reveal it — the calm
-              reveal is the whole point. Once revealed, the clear photo stands on
-              its own (no corner badge); a tap still opens the full-screen view. */}
-          {!viewed ? (
-            <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <span className="rounded-full bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
-                Dodirni da vidiš
+          {/* Bottom scrim so the overlaid name/portion stay legible on any
+              photo. Kept off while veiled (the blur already darkens it) so the
+              reveal hint reads cleanly against a calm, even tile. */}
+          {viewed ? (
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/25 to-transparent"
+            />
+          ) : null}
+
+          {/* Calorie chip: a frosted-glass pill floating top-right over the
+              photo. Reads as a badge on the shot, the way food apps mark it. */}
+          <span
+            data-testid={`meal-card-kcal-${log.id}`}
+            className="absolute right-3 top-3 rounded-full bg-black/40 px-3 py-1 text-sm font-bold tabular-nums text-white shadow-sm ring-1 ring-white/20 backdrop-blur-md"
+          >
+            {Math.round(log.kcal)} kcal
+          </span>
+
+          {/* Name + portion seated on the scrim, bottom-left. Hidden while
+              veiled so the tile stays a calm, anonymous surface until revealed. */}
+          {viewed ? (
+            <span className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 p-4">
+              <span
+                data-testid={`meal-card-name-${log.id}`}
+                className="truncate text-base font-semibold text-white drop-shadow-sm"
+              >
+                {log.name}
+              </span>
+              <span
+                data-testid={`meal-card-portion-${log.id}`}
+                className="truncate text-xs font-medium text-white/85"
+              >
+                {portionLabel}
               </span>
             </span>
-          ) : null}
+          ) : (
+            // While veiled: name/portion still exist (kept off-scrim, visually
+            // hidden) so the layout is stable and screen readers/tests can read
+            // them, and a single plain invitation to reveal the shot is centered.
+            <>
+              <span className="sr-only" data-testid={`meal-card-name-${log.id}`}>
+                {log.name}
+              </span>
+              <span
+                className="sr-only"
+                data-testid={`meal-card-portion-${log.id}`}
+              >
+                {portionLabel}
+              </span>
+              <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                <span className="rounded-full bg-black/45 px-3.5 py-1.5 text-xs font-medium text-white ring-1 ring-white/15 backdrop-blur-sm">
+                  Dodirni da vidiš
+                </span>
+              </span>
+            </>
+          )}
         </button>
       ) : null}
 
       <div className="flex flex-col gap-3 p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex min-w-0 flex-col gap-0.5">
+        {!hasPhoto ? (
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <span
+                data-testid={`meal-card-name-${log.id}`}
+                className="truncate font-semibold text-foreground"
+              >
+                {log.name}
+              </span>
+              <span
+                data-testid={`meal-card-portion-${log.id}`}
+                className="text-sm text-muted-foreground"
+              >
+                {portionLabel}
+              </span>
+            </div>
             <span
-              data-testid={`meal-card-name-${log.id}`}
-              className="truncate font-semibold text-foreground"
+              data-testid={`meal-card-kcal-${log.id}`}
+              className="shrink-0 rounded-full bg-muted px-3 py-1 text-sm font-bold tabular-nums text-foreground"
             >
-              {log.name}
-            </span>
-            <span
-              data-testid={`meal-card-portion-${log.id}`}
-              className="text-sm text-muted-foreground"
-            >
-              {portionLabel}
+              {Math.round(log.kcal)} kcal
             </span>
           </div>
-          <span
-            data-testid={`meal-card-kcal-${log.id}`}
-            className="shrink-0 text-lg font-bold tabular-nums text-foreground"
-          >
-            {Math.round(log.kcal)} kcal
-          </span>
-        </div>
+        ) : null}
         {hasPhoto ? (
           <div
             data-testid={`meal-card-macros-${log.id}`}
-            className="flex flex-wrap gap-x-4 gap-y-1 text-sm"
+            className="flex flex-wrap gap-2"
           >
-            <MacroStat label={t("macro.protein")} grams={log.protein} tone="text-macro-protein" />
-            <MacroStat label={t("macro.carbs")} grams={log.carbs} tone="text-macro-carbs" />
-            <MacroStat label={t("macro.fat")} grams={log.fat} tone="text-macro-fat" />
+            <MacroPill
+              label={t("macro.protein")}
+              grams={log.protein}
+              dot="bg-macro-protein"
+            />
+            <MacroPill
+              label={t("macro.carbs")}
+              grams={log.carbs}
+              dot="bg-macro-carbs"
+            />
+            <MacroPill
+              label={t("macro.fat")}
+              grams={log.fat}
+              dot="bg-macro-fat"
+            />
           </div>
         ) : null}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
           {/* "Dodaj još" leads: seconds are the common follow-up action on an
               entry, while editing/deleting are corrections. Unlike "Izmeni" it
               needs no `food` row -- it grows the entry from its own snapshot, so
@@ -285,19 +350,22 @@ export function MealCard({
   );
 }
 
-/** One macro figure (grams + label) in the photo-meal card's breakdown row. */
-function MacroStat({
+/** One macro figure (a colour-dotted pill: value + label) in the photo-meal
+ * card's breakdown row. */
+function MacroPill({
   label,
   grams,
-  tone,
+  dot,
 }: {
   label: string;
   grams: number;
-  tone: string;
+  /** Tailwind bg utility for the colour dot, e.g. `bg-macro-protein`. */
+  dot: string;
 }) {
   return (
-    <span className="inline-flex items-baseline gap-1">
-      <span className={`font-semibold tabular-nums ${tone}`}>
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/70 px-2.5 py-1 text-xs">
+      <span className={cn("size-1.5 rounded-full", dot)} aria-hidden="true" />
+      <span className="font-semibold tabular-nums text-foreground">
         {Math.round(grams)} g
       </span>
       <span className="text-muted-foreground">{label}</span>

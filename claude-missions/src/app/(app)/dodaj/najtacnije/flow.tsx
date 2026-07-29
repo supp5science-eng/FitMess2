@@ -22,6 +22,7 @@ import {
 import { AiThinking } from "@/components/ai/ai-thinking";
 import { PortionDial } from "@/components/ai/portion-dial";
 import { ShotGuide } from "@/components/ai/shot-guide";
+import { ShareCardButton } from "@/components/share/share-card-button";
 import type { CombinedMealEstimate } from "@/lib/ai/combined-estimate";
 import {
   defaultGeometry,
@@ -1367,6 +1368,22 @@ export function NajtacnijeFlow() {
           <p className="text-center text-xs text-muted-foreground">
             AI procena je približna — proveri i doteraj po potrebi.
           </p>
+
+          {/* Share the scan moment (PRD §3.1/§5). Only for real meal photos
+              ("obrok"), never a nutrition label — and always visible, never a
+              popup: a calm secondary action beside "Dodaj u dan". */}
+          {mode === "obrok" && files[0] ? (
+            <div className="mt-1 border-t border-border pt-5">
+              <ShareCardButton
+                photo={files[0]}
+                dishName={name}
+                kcal={nutrition.kcal}
+                protein={nutrition.protein}
+                carbs={nutrition.carbs}
+                fat={nutrition.fat}
+              />
+            </div>
+          ) : null}
         </div>
       ) : null}
     </main>

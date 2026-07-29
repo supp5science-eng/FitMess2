@@ -140,12 +140,13 @@ export function IntakePager({
       {pages.length > 1 ? (
         <div
           data-testid="intake-pager-dots"
-          // The row's tap targets are 44px (iOS) around a small visual dot, so
-          // pull it back over its own padding -- a thumb-sized hit area without
-          // paying for it in visible whitespace. Kept at -my-2 rather than
-          // tighter so the targets can't overlap what sits above/below and steal
-          // its taps.
-          className="-my-2 mx-auto flex items-center gap-0.5"
+          // Bigger, better-spaced dots (2026-07-29): the active page grows into
+          // a rounded PILL, the rest are clear 8px dots -- the modern pager
+          // look (Cal-AI-style), replacing the old tiny, low-contrast pair.
+          // Each dot keeps a generous tap target (h-9 w-7) pulled back over its
+          // own padding (-my-2) so the row costs almost no visible whitespace
+          // while staying comfortably tappable.
+          className="-my-2 mx-auto flex items-center gap-1.5"
         >
           {pages.map((page, index) => {
             const selected = index === active;
@@ -156,14 +157,14 @@ export function IntakePager({
                 onClick={() => goTo(index)}
                 aria-label={t("home.pager.show", { label: page.labelSr })}
                 aria-current={selected ? "true" : undefined}
-                className="flex size-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                className="flex h-9 w-7 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               >
                 <span
                   className={cn(
-                    "block rounded-full transition-all duration-200",
+                    "block h-2 rounded-full transition-all duration-300",
                     selected
-                      ? "size-2 bg-foreground"
-                      : "size-1.5 bg-muted-foreground/40"
+                      ? "w-5 bg-foreground"
+                      : "w-2 bg-foreground/20"
                   )}
                 />
               </button>

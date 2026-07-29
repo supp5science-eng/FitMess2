@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Archivo_Black } from "next/font/google";
+import { Inter, Archivo_Black, Poppins } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
 
@@ -26,6 +26,16 @@ const archivoBlack = Archivo_Black({
   variable: "--font-display",
   subsets: ["latin", "latin-ext"],
   weight: "400",
+  display: "swap",
+});
+
+// Brand tagline face (geometric, friendly). Poppins gives the launch tagline
+// more character than body Inter without shouting like the Archivo Black
+// wordmark. Exposed via --font-brand and applied only on the splash tagline.
+const poppins = Poppins({
+  variable: "--font-brand",
+  subsets: ["latin", "latin-ext"],
+  weight: ["500", "600"],
   display: "swap",
 });
 
@@ -148,7 +158,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${theme} ${inter.variable} ${archivoBlack.variable} h-full antialiased`}
+      className={`${theme} ${inter.variable} ${archivoBlack.variable} ${poppins.variable} h-full antialiased`}
       style={{ colorScheme: theme }}
     >
       <body className="min-h-full">

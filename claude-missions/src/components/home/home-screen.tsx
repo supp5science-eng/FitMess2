@@ -315,20 +315,32 @@ export function HomeScreen({
                 id: "kalorije",
                 labelSr: "Kalorije i makroi",
                 content: (
-                  // gap-5, not gap-7 (2026-07-25): this page is the tallest of
+                  // gap-4, not gap-7 (2026-07-25): this page is the tallest of
                   // the three and therefore sets the pager's height, so every
                   // pixel of air here is a pixel the OTHER two pages have to
                   // find something to do with.
-                  <div className="flex flex-1 flex-col gap-5">
-                    {/* The ring lives in its own slot so the intro can fade
-                        just the ring in (where the ghost lands) after the body
-                        has risen in. */}
-                    <div ref={ringRef} className="home-ring-slot">
-                      <Ring
-                        consumedKcal={totals.kcal}
-                        targetKcal={targetKcal}
-                        view={view}
-                      />
+                  <div className="flex flex-1 flex-col gap-4">
+                    {/* Hero card (2026-07-29): the calorie ring + view toggle
+                        float together on one raised `.fm-lift` card, so the
+                        centrepiece hovers over the aurora ground instead of
+                        sitting flat on it (the Cal-AI direction). The card
+                        itself is deliberately NOT wrapped in `home-body`: the
+                        ring is measured (`ringRef`) for the onboarding ghost
+                        hand-off, and a `home-body` transform would offset that
+                        measurement -- so the ring keeps fading in via its own
+                        `home-ring-slot` exactly as before, just on a card. */}
+                    <div className="fm-lift flex flex-col gap-5 rounded-3xl border border-border bg-card px-5 py-6">
+                      {/* The ring lives in its own slot so the intro can fade
+                          just the ring in (where the ghost lands) after the
+                          body has risen in. */}
+                      <div ref={ringRef} className="home-ring-slot">
+                        <Ring
+                          consumedKcal={totals.kcal}
+                          targetKcal={targetKcal}
+                          view={view}
+                        />
+                      </div>
+                      <ViewToggle view={view} onChange={setView} />
                     </div>
                     {adaptivePlan?.isAdjusted ? (
                       <AdaptivePlanCard
@@ -337,6 +349,9 @@ export function HomeScreen({
                         dayKey={dayKey}
                       />
                     ) : null}
+                    {/* Macros: three floating cards below the hero (see
+                        `MacroBars`), so the day's protein/fat/carbs read as
+                        their own tiles hovering over the ground. */}
                     <div className="home-body">
                       <MacroBars
                         consumed={{
@@ -352,7 +367,6 @@ export function HomeScreen({
                         view={view}
                       />
                     </div>
-                    <ViewToggle view={view} onChange={setView} />
                     {/* Gric logs at `now()`, so it only makes sense on today. */}
                     {isToday ? (
                       <div className="home-body">

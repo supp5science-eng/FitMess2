@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { Expand, X } from "lucide-react";
 
 import { LogAddMoreSheet } from "@/components/food/log-add-more-sheet";
@@ -9,6 +9,7 @@ import { LogEditSheet } from "@/components/food/log-edit-sheet";
 import { sheetPortal } from "@/components/ui/sheet-portal";
 import { findMatchingCommonUnit } from "@/lib/food/portions";
 import type { Food, Log } from "@/lib/types/db";
+import { cn } from "@/lib/utils";
 
 // F027 / AS-049: a single today's-meal card -- name + portion + kcal, wired
 // to F026's reusable edit/delete components exactly as that feature's
@@ -27,6 +28,57 @@ import type { Food, Log } from "@/lib/types/db";
 // it reads as polished as the rest of the app, and it is TAPPABLE: tapping it
 // opens the shot full-screen in a lightbox, since the card thumbnail is too
 // small to actually look at the meal you logged.
+//
+// The thumbnail starts gently VEILED (dimmed + blurred) and un-veils the first
+// time you open it -- so the list is a calm wall of soft tiles you reveal on
+// purpose, not a grid of loud photos. "Seen once" is remembered in
+// `localStorage` (see the store below), so a revealed meal stays clear.
+
+/** localStorage key holding the JSON array of log ids whose photo the user has
+ * opened at least once. */
+const VIEWED_KEY = "fm_viewed_meal_photos";
+/** Fired when a photo is marked seen, so every mounted card re-reads the store
+ * (the tapped one un-veils, and any duplicate card of the same log follows). */
+const VIEWED_EVENT = "fm:meal-photo-viewed";
+
+function readViewedSet(): Set<string> {
+  try {
+    const raw = window.localStorage.getItem(VIEWED_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr)
+      ? new Set(arr.filter((x): x is string => typeof x === "string"))
+      : new Set();
+  } catch {
+    // Private mode / disabled storage: nothing is remembered, so photos simply
+    // stay veiled until opened in this session -- never an error.
+    return new Set();
+  }
+}
+
+/** Mark one log's photo as seen and notify every mounted card. Idempotent. */
+function markPhotoViewed(logId: string): void {
+  try {
+    const set = readViewedSet();
+    if (!set.has(logId)) {
+      set.add(logId);
+      window.localStorage.setItem(VIEWED_KEY, JSON.stringify([...set]));
+    }
+  } catch {
+    // Couldn't persist; still notify so this session un-veils it.
+  }
+  window.dispatchEvent(new Event(VIEWED_EVENT));
+}
+
+/** useSyncExternalStore subscription: re-read on our own event and on cross-tab
+ * `storage` changes. Client-only (never called during SSR). */
+function subscribeViewed(onChange: () => void): () => void {
+  window.addEventListener(VIEWED_EVENT, onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    window.removeEventListener(VIEWED_EVENT, onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
 
 export function MealCard({
   log,
@@ -46,6 +98,15 @@ export function MealCard({
 }) {
   // Full-screen view of the stored shot. Opened by tapping the card photo.
   const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  // Whether this meal's photo has been opened before. Read from localStorage
+  // through useSyncExternalStore so it stays correct across hydration (server
+  // snapshot is always "not yet seen" -> veiled) without an effect-setState.
+  const viewed = useSyncExternalStore(
+    subscribeViewed,
+    () => hasPhoto && readViewedSet().has(log.id),
+    () => false
+  );
 
   // Escape closes the lightbox (subscribe pattern: setState fires from the key
   // callback, never synchronously in the effect body).
@@ -71,6 +132,12 @@ export function MealCard({
 
   const photoSrc = `/api/obrok-slika/${log.id}`;
 
+  /** Open the lightbox and, on the first open, un-veil the thumbnail for good. */
+  function openPhoto() {
+    if (!viewed) markPhotoViewed(log.id);
+    setLightboxOpen(true);
+  }
+
   return (
     <li
       data-testid={`meal-card-${log.id}`}
@@ -82,8 +149,10 @@ export function MealCard({
         // -- the picture meets the card edge cleanly.
         <button
           type="button"
-          onClick={() => setLightboxOpen(true)}
-          aria-label={`Prikaži sliku: ${log.name}`}
+          onClick={openPhoto}
+          aria-label={
+            viewed ? `Prikaži sliku: ${log.name}` : `Otkrij sliku: ${log.name}`
+          }
           data-testid={`meal-card-photo-button-${log.id}`}
           className="group relative block w-full active:opacity-95"
         >
@@ -93,21 +162,35 @@ export function MealCard({
             alt={log.name}
             data-testid={`meal-card-photo-${log.id}`}
             loading="lazy"
-            className="h-48 w-full object-cover"
+            className={cn(
+              "h-48 w-full object-cover transition-all duration-500 ease-out",
+              // Veiled until first opened: a gentle blur + dim. The slight
+              // scale hides the soft transparent edge blur leaves behind.
+              viewed ? "" : "scale-105 blur-[6px] opacity-70"
+            )}
           />
-          {/* A soft top scrim so the expand badge stays legible over a bright
+          {/* A soft top scrim so the corner badge stays legible over a bright
               photo (scrim over image content, not a themed surface). */}
           <span
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-0 h-14 bg-gradient-to-b from-black/25 to-transparent"
           />
-          {/* The affordance: a little "tap to enlarge" chip in the corner. */}
+          {/* The affordance: a little "tap to enlarge" chip, top-LEFT to mirror
+              the lightbox's close button. */}
           <span
             aria-hidden="true"
-            className="absolute right-2.5 top-2.5 flex size-8 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-transform group-active:scale-95"
+            className="absolute left-2.5 top-2.5 flex size-8 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur-sm transition-transform group-active:scale-95"
           >
             <Expand className="size-4" />
           </span>
+          {/* While veiled, say so plainly -- the calm reveal is the point. */}
+          {!viewed ? (
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <span className="rounded-full bg-black/45 px-3 py-1.5 text-xs font-medium text-white backdrop-blur-sm">
+                Dodirni da vidiš
+              </span>
+            </span>
+          ) : null}
         </button>
       ) : null}
 
@@ -180,7 +263,7 @@ export function MealCard({
                 onClick={() => setLightboxOpen(false)}
                 aria-label="Zatvori"
                 data-testid={`meal-card-photo-close-${log.id}`}
-                className="absolute right-4 flex size-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
+                className="absolute left-4 flex size-10 items-center justify-center rounded-full bg-white/10 text-white backdrop-blur transition-colors hover:bg-white/20"
                 style={{ top: "max(env(safe-area-inset-top), 1rem)" }}
               >
                 <X className="size-5" aria-hidden="true" />

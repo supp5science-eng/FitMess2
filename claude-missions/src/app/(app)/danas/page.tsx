@@ -18,11 +18,11 @@ import { getDanasProfile } from "@/lib/home/profile";
 import { getTodayData } from "@/lib/home/today";
 import { getT } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/locale";
-import { getStepsForDay, getStepsWeek } from "@/lib/steps/steps";
+import { getStepsWeek } from "@/lib/steps/steps";
 import { resolveStepGoal } from "@/lib/steps/step-goal";
 import { getCustomStepGoal } from "@/lib/steps/step-goal-read";
 import { computeStepsWeek } from "@/lib/steps/steps-week";
-import { getWaterMl, getWaterWeek } from "@/lib/water/water";
+import { getWaterWeek } from "@/lib/water/water";
 import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
 import { createClient } from "@/lib/supabase/server";
 
@@ -134,8 +134,6 @@ export default async function DanasPage({
     profile,
     customStepGoal,
     cookieStore,
-    water,
-    steps,
     stepsWeekRows,
     waterWeekRows,
   ] = await Promise.all([
@@ -151,17 +149,27 @@ export default async function DanasPage({
     // dropped by `plan-reveal.tsx` just before navigating here) -- local, no
     // round trip, but it belongs in the same stage rather than gating one.
     cookies(),
-    // Voda: the selected day's water total. A failed read degrades to 0 (the
-    // button still works), never failing the day render.
-    getWaterMl(supabase, userId, selectedKey),
-    // Koraci: the selected day's step total. Same degrade-to-0 posture.
-    getStepsForDay(supabase, userId, selectedKey),
     // The 7 days ending on the selected one, for the mini strips at the foot of
     // the Koraci/Voda cards. A failed read degrades to "no strip", never to a
     // failed day render.
+    //
+    // These two ALSO supply the selected day's own step/water totals (see
+    // `dayValue` below). This screen used to additionally fire
+    // `getStepsForDay` + `getWaterMl` for exactly the day that is already the
+    // LAST row of each of these windows -- two extra Supabase round trips per
+    // day switch, fetching numbers we had in hand. Same degrade-to-0 posture as
+    // the dedicated day reads had: a failed window read yields no rows, so the
+    // day reads 0 and the button/card still work.
     getStepsWeek(supabase, userId, selectedNoon),
     getWaterWeek(supabase, userId, selectedNoon),
   ]);
+
+  // The viewed day is the LAST day of each window above, so its own total comes
+  // straight out of the rows. Absent (nothing logged that day) reads as 0.
+  const waterMl =
+    waterWeekRows.rows.find((row) => row.day === selectedKey)?.ml ?? 0;
+  const stepsCount =
+    stepsWeekRows.rows.find((row) => row.day === selectedKey)?.steps ?? 0;
 
   if (result.error) {
     console.error("[F027 /danas] getTodayData failed:", result.error.message);
@@ -265,8 +273,8 @@ export default async function DanasPage({
       adaptivePlan={adaptivePlan}
       planIntro={planIntro}
       dayKey={selectedKey}
-      initialWaterMl={water.ml}
-      initialSteps={steps.steps}
+      initialWaterMl={waterMl}
+      initialSteps={stepsCount}
       stepsGoal={stepGoal}
       waterGoal={waterGoal}
       stepsWeek={stepsWeek}

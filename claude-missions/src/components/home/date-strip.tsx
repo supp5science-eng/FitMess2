@@ -1,29 +1,76 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef } from "react";
-import Link from "next/link";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { useT } from "@/components/i18n/locale-provider";
 import type { DayCell } from "@/lib/home/date-strip";
 import type { TFunction } from "@/lib/i18n/translate";
 import { cn } from "@/lib/utils";
 
-// Apple-Fitness-style date strip under the wordmark (2026-07-22 redesign): a
-// horizontally scrollable row of days, each a MINI PROGRESS RING (filled by
-// that day's logged kcal over the daily target, stroked with the brand-logo
-// teal→mint→blue gradient) with the date number inside, under its Serbian
-// weekday. An empty past day shows just the faint track; future days (up to
-// +30) are faint and not tappable -- they exist only so you can scroll
-// forward "through time." Today's weekday label sits in a brand-teal chip
-// (like the reference design's highlighted weekday). The day currently being
-// viewed sits on a raised card and is auto-centered on load. Tapping a
-// past/today cell navigates to `/danas?dan=YYYY-MM-DD` (today links to bare
-// `/danas`).
+// The /danas date picker — a horizontal WHEEL of days under the wordmark
+// (2026-07-30 redesign). Days scroll under a small FIXED marker pinned to the
+// centre; wherever the scroll settles, that day is selected and the dashboard
+// navigates to it. No tap-then-wait: you spin to a day and it lands.
+//
+// ## Why a wheel, and why it feels instant
+//
+// The old strip was a row of `<Link>`s: every tap did a full route navigation
+// that blanked the WHOLE screen (this strip included) into `loading.tsx`, ran
+// ~10 Supabase reads, then re-mounted and re-centred. That is the "presporo"
+// the product owner reported. Two things fix it:
+//
+//   1. This picker now lives in `danas/layout.tsx`, which Next PRESERVES across
+//      a `?dan=` change -- so the wheel never unmounts, never flashes, and stays
+//      interactive while only the CONTENT below swaps under `loading.tsx`.
+//   2. As a day passes under the marker we `router.prefetch` its route, so by
+//      the time the scroll settles the day's data is usually already warm and
+//      the swap is near-instant.
+//
+// ## The interaction
+//
+//   * The row is one native scroll-snap container (`snap-x mandatory`), so the
+//     swipe has real iOS momentum for free and each day snaps to the centre.
+//   * `scroll-padding` is baked in as symmetric `px-[calc(50%-2rem)]`: with 4rem
+//     (`w-16`) cells that puts cell `i`'s centre at `scrollLeft = i * cellWidth`,
+//     so the index maths is a plain round -- no measuring the marker.
+//   * A settle-snap (debounced, fires only once scrolling has come to REST, like
+//     the intake pager's) commits the centred day: it corrects any between-days
+//     resting position, lights the day, and `router.push`es to it. Landing on a
+//     faint FUTURE / pre-sign-up filler day snaps back to the nearest real day
+//     instead of navigating nowhere.
+//   * Tapping a day scrolls it to the centre, which runs the same settle path.
+//   * `touch-action: pan-x` keeps the wheel a crisp horizontal control (a
+//     stranded diagonal flick can't leave it between days); the page scrolls
+//     from the content area below, not from this thin strip.
 
 // useLayoutEffect on the client (position the scroll before paint -> no
 // left-to-center jump), a no-op useEffect on the server.
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+function prefersReducedMotion() {
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function isEnabled(cell: DayCell): boolean {
+  return !cell.isFuture && !cell.isBeforeStart;
+}
+
+/** The route a (real) day cell navigates to: today -> bare `/danas`. */
+function hrefFor(cell: DayCell): string {
+  return cell.isToday ? "/danas" : `/danas?dan=${cell.key}`;
+}
 
 function accessibleLabel(cell: DayCell, t: TFunction): string {
   const monthsShort = t("home.dateStrip.monthsShort").split(" ");
@@ -106,14 +153,20 @@ function DayCircle({ cell }: { cell: DayCell }) {
   );
 }
 
-function DayCellInner({ cell }: { cell: DayCell }) {
+function DayCellInner({
+  cell,
+  selected,
+}: {
+  cell: DayCell;
+  selected: boolean;
+}) {
   const { t } = useT();
   const weekday = t("dow.short").split(" ")[cell.weekdayIndex] ?? cell.dayLabel;
   return (
     <span
       className={cn(
         "flex flex-col items-center gap-2 rounded-2xl px-1 py-2 transition-colors",
-        cell.isSelected && "bg-foreground/[0.06] ring-1 ring-foreground/10"
+        selected && "bg-foreground/[0.06] ring-1 ring-foreground/10"
       )}
     >
       <span
@@ -125,7 +178,7 @@ function DayCellInner({ cell }: { cell: DayCell }) {
               "rounded-full bg-[color:var(--brand)] px-2 py-0.5 font-semibold text-[#04231c]"
             : cell.isFuture || cell.isBeforeStart
               ? "text-foreground/30"
-              : cell.isSelected
+              : selected
                 ? "text-foreground"
                 : "text-muted-foreground"
         )}
@@ -137,57 +190,232 @@ function DayCellInner({ cell }: { cell: DayCell }) {
   );
 }
 
-export function DateStrip({ days }: { days: DayCell[] }) {
+export function DateStrip({
+  days,
+  todayKey,
+}: {
+  days: DayCell[];
+  /** Belgrade "today" (from the server) -- the default landing day and the
+   * upper bound: a `?dan=` after today falls back to it. */
+  todayKey: string;
+}) {
   const { t } = useT();
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const selectedRef = useRef<HTMLElement | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  // Center the selected (today by default) day in the viewport on load.
-  useIsomorphicLayoutEffect(() => {
-    const scroller = scrollerRef.current;
-    const sel = selectedRef.current;
-    if (!scroller || !sel) return;
-    const cRect = scroller.getBoundingClientRect();
-    const sRect = sel.getBoundingClientRect();
-    scroller.scrollLeft +=
-      sRect.left - cRect.left - (scroller.clientWidth - sel.offsetWidth) / 2;
+  // Which day the URL says we're on (the picker reads this so back/forward and
+  // the initial deep-link both centre correctly). Invalid / future -> today.
+  const danParam = searchParams.get("dan");
+  const selectedKey =
+    danParam && /^\d{4}-\d{2}-\d{2}$/.test(danParam) && danParam <= todayKey
+      ? danParam
+      : todayKey;
+
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const frameRef = useRef<number | null>(null);
+  const settleRef = useRef<number | null>(null);
+  // The day currently lit under the marker. Starts on the URL's day and is
+  // driven by the scroll position from then on.
+  const [activeKey, setActiveKey] = useState(selectedKey);
+
+  const indexOfKey = useCallback(
+    (key: string) => days.findIndex((cell) => cell.key === key),
+    [days]
+  );
+
+  // One cell's width, measured live (robust to rem/font scaling) rather than
+  // hard-coded, so the index maths tracks the real layout.
+  const cellWidth = useCallback(() => {
+    const first = scrollerRef.current?.firstElementChild as HTMLElement | null;
+    return first?.getBoundingClientRect().width ?? 0;
   }, []);
 
-  return (
-    <div
-      ref={scrollerRef}
-      aria-label={t("home.dateStrip.aria")}
-      role="navigation"
-      className="-mx-1 flex snap-x gap-0.5 overflow-x-auto overscroll-x-contain px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-    >
-      {days.map((cell) => {
-        const setRef = cell.isSelected
-          ? (el: HTMLElement | null) => {
-              selectedRef.current = el;
-            }
-          : undefined;
+  const centerIndex = useCallback(
+    (index: number, smooth: boolean) => {
+      const element = scrollerRef.current;
+      const width = cellWidth();
+      if (!element || width === 0) return;
+      element.scrollTo({
+        left: index * width,
+        behavior: smooth && !prefersReducedMotion() ? "smooth" : "auto",
+      });
+    },
+    [cellWidth]
+  );
 
-        return cell.isFuture || cell.isBeforeStart ? (
-          <div
-            key={cell.key}
-            className="w-14 shrink-0 snap-center"
-            aria-hidden="true"
-          >
-            <DayCellInner cell={cell} />
-          </div>
-        ) : (
-          <Link
-            key={cell.key}
-            ref={setRef}
-            href={cell.isToday ? "/danas" : `/danas?dan=${cell.key}`}
-            aria-label={accessibleLabel(cell, t)}
-            aria-current={cell.isSelected ? "page" : undefined}
-            className="w-14 shrink-0 snap-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          >
-            <DayCellInner cell={cell} />
-          </Link>
-        );
-      })}
+  // Nearest REAL (tappable) day to a given index -- so a settle that lands on a
+  // faint future / pre-sign-up filler day snaps back to a day that exists.
+  const nearestEnabledIndex = useCallback(
+    (index: number): number | null => {
+      if (days[index] && isEnabled(days[index]!)) return index;
+      for (let step = 1; step < days.length; step++) {
+        const before = index - step;
+        const after = index + step;
+        if (before >= 0 && days[before] && isEnabled(days[before]!)) {
+          return before;
+        }
+        if (
+          after < days.length &&
+          days[after] &&
+          isEnabled(days[after]!)
+        ) {
+          return after;
+        }
+      }
+      return null;
+    },
+    [days]
+  );
+
+  // Centre the URL's day before first paint (no left-to-centre jump on load).
+  // Runs once on mount; the live scroll drives everything after this.
+  const mountedRef = useRef(false);
+  useIsomorphicLayoutEffect(() => {
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+    const index = indexOfKey(selectedKey);
+    if (index >= 0) centerIndex(index, false);
+  }, [indexOfKey, centerIndex, selectedKey]);
+
+  // Re-centre when the day changes from OUTSIDE the wheel (back/forward, a deep
+  // link). Keyed on `selectedKey` ALONE on purpose: it must react to a URL
+  // change, never to our own `activeKey` update mid-scroll (that would fight the
+  // gesture and snap back). Only the DOM scroll is written here; the scroll's
+  // settle then lights `activeKey`, so no state is set from the effect body.
+  const syncedKeyRef = useRef(selectedKey);
+  useEffect(() => {
+    if (selectedKey === syncedKeyRef.current) return;
+    syncedKeyRef.current = selectedKey;
+    const index = indexOfKey(selectedKey);
+    if (index >= 0) centerIndex(index, true);
+  }, [selectedKey, indexOfKey, centerIndex]);
+
+  // Settle-snap: fires only once scrolling has come to REST (the timer is reset
+  // by every scroll event, so it never runs mid-gesture or mid-momentum). It
+  // corrects a between-days resting position, lights the centred real day, and
+  // navigates to it. Same defensive shape as the intake pager's settle.
+  const settle = useCallback(() => {
+    const element = scrollerRef.current;
+    const width = cellWidth();
+    if (!element || width === 0) return;
+    const raw = Math.max(
+      0,
+      Math.min(days.length - 1, Math.round(element.scrollLeft / width))
+    );
+    const index = nearestEnabledIndex(raw);
+    if (index == null) return;
+    const cell = days[index]!;
+    if (Math.abs(element.scrollLeft - index * width) > 1) {
+      centerIndex(index, true);
+    }
+    setActiveKey(cell.key);
+    if (cell.key !== selectedKey) {
+      // Non-blocking: the wheel stays live while the day's content loads.
+      startTransition(() => router.push(hrefFor(cell)));
+    }
+  }, [cellWidth, days, nearestEnabledIndex, centerIndex, selectedKey, router]);
+
+  // Per-frame during a swipe: light the centred day and warm its route so the
+  // eventual settle -> push lands from cache. Pure reads; no layout writes.
+  const syncActive = useCallback(() => {
+    const element = scrollerRef.current;
+    const width = cellWidth();
+    if (!element || width === 0) return;
+    const index = Math.max(
+      0,
+      Math.min(days.length - 1, Math.round(element.scrollLeft / width))
+    );
+    const cell = days[index];
+    if (cell && isEnabled(cell)) {
+      setActiveKey(cell.key);
+      router.prefetch(hrefFor(cell));
+    }
+  }, [cellWidth, days, router]);
+
+  function handleScroll() {
+    if (settleRef.current !== null) window.clearTimeout(settleRef.current);
+    settleRef.current = window.setTimeout(() => {
+      settleRef.current = null;
+      settle();
+    }, 130);
+
+    if (frameRef.current !== null) return;
+    frameRef.current = requestAnimationFrame(() => {
+      frameRef.current = null;
+      syncActive();
+    });
+  }
+
+  useEffect(
+    () => () => {
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+      if (settleRef.current !== null) window.clearTimeout(settleRef.current);
+    },
+    []
+  );
+
+  // Tapping a day scrolls it under the marker; the scroll's settle then lights
+  // and navigates to it (one path for tap and swipe).
+  function goTo(cell: DayCell) {
+    const index = indexOfKey(cell.key);
+    if (index < 0) return;
+    setActiveKey(cell.key);
+    centerIndex(index, true);
+  }
+
+  return (
+    <div className="relative -mx-6">
+      {/* The small FIXED marker: a caret pinned to the centre that the days
+          scroll under, so it always shows "where we are". Purely decorative
+          (the lit cell + its aria-current carry the state). */}
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2"
+      >
+        <span className="block size-0 border-x-[5px] border-t-[6px] border-x-transparent border-t-foreground/40" />
+      </span>
+
+      <div
+        ref={scrollerRef}
+        onScroll={handleScroll}
+        data-testid="date-strip"
+        aria-label={t("home.dateStrip.aria")}
+        role="navigation"
+        className={cn(
+          "flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain pt-2.5",
+          "px-[calc(50%-2rem)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        )}
+        // A crisp horizontal control: only pan-x, so a diagonal flick can't
+        // strand the wheel between days. The page scrolls from the content
+        // below, not this thin strip.
+        style={{ touchAction: "pan-x" }}
+      >
+        {days.map((cell) => {
+          const enabled = isEnabled(cell);
+          const selected = enabled && cell.key === activeKey;
+
+          return enabled ? (
+            <button
+              key={cell.key}
+              type="button"
+              onClick={() => goTo(cell)}
+              aria-label={accessibleLabel(cell, t)}
+              aria-current={selected ? "page" : undefined}
+              className="w-16 shrink-0 snap-center rounded-2xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <DayCellInner cell={cell} selected={selected} />
+            </button>
+          ) : (
+            <div
+              key={cell.key}
+              className="w-16 shrink-0 snap-center"
+              aria-hidden="true"
+            >
+              <DayCellInner cell={cell} selected={false} />
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

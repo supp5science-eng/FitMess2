@@ -24,6 +24,11 @@ import { tierStyle } from "@/lib/share/tier";
  * Everything is inline-styled because satori supports no external CSS and no CSS
  * variables -- concrete hex only.
  */
+/** The macro dot and the gap after it. Shared with the label's indent so the
+ * label always starts exactly under the number, whatever the dot's size. */
+const DOT_SIZE = 18;
+const DOT_GAP = 14;
+
 export function scanCardElement(model: ScanCardModel): ReactElement {
   const { width, height } = CARD_FORMATS[model.format];
   const tier = tierStyle(model.tier);
@@ -193,11 +198,11 @@ export function scanCardElement(model: ScanCardModel): ReactElement {
               <div style={{ display: "flex", alignItems: "center" }}>
                 <div
                   style={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 9,
+                    width: DOT_SIZE,
+                    height: DOT_SIZE,
+                    borderRadius: DOT_SIZE / 2,
                     backgroundColor: macro.color,
-                    marginRight: 14,
+                    marginRight: DOT_GAP,
                   }}
                 />
                 <div
@@ -226,10 +231,16 @@ export function scanCardElement(model: ScanCardModel): ReactElement {
                   </div>
                 </div>
               </div>
+              {/* Indented by exactly the dot's own width + gap, so the label
+                  starts under the NUMBER rather than under the dot. Left as-is
+                  the label hung off the cell's left edge while the value began
+                  32px in, which read as a misalignment on the short labels
+                  ("MAST" sitting visibly left of its "31"). */}
               <div
                 style={{
                   display: "flex",
                   marginTop: 8,
+                  marginLeft: DOT_SIZE + DOT_GAP,
                   fontSize: 23,
                   fontWeight: 600,
                   letterSpacing: 2,

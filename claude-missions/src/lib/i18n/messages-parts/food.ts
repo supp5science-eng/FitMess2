@@ -105,6 +105,9 @@ export const foodMessages = {
     "food.share.buildError":
       "Nismo uspeli da napravimo karticu. Zatvori pa pokušaj ponovo.",
     "food.share.previewAlt": "Pregled kartice za deljenje",
+    "food.share.zoomOpen": "Prikaži karticu u punoj veličini",
+    "food.share.zoomAria": "Kartica u punoj veličini",
+    "food.share.zoomClose": "Zatvori prikaz",
     "food.share.building": "Pravim karticu…",
     "food.share.savedStatus": "Sačuvano. 🔥",
     "food.share.sharedStatus": "Podeljeno. 🔥",
@@ -216,6 +219,9 @@ export const foodMessages = {
     "food.share.buildError":
       "We couldn't make the card. Close and try again.",
     "food.share.previewAlt": "Share card preview",
+    "food.share.zoomOpen": "View the card full size",
+    "food.share.zoomAria": "Card at full size",
+    "food.share.zoomClose": "Close the view",
     "food.share.building": "Making the card…",
     "food.share.savedStatus": "Saved. 🔥",
     "food.share.sharedStatus": "Shared. 🔥",

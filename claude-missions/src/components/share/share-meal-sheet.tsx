@@ -76,6 +76,7 @@ export function ShareMealSheet({
 }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
   const [phase, setPhase] = useState<Phase>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -86,6 +87,16 @@ export function ShareMealSheet({
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
     };
   }, []);
+
+  // Escape leaves the zoomed card before it would close the whole sheet.
+  useEffect(() => {
+    if (!zoomed) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setZoomed(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [zoomed]);
 
   function showPreview(file: File) {
     if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
@@ -255,12 +266,23 @@ export function ShareMealSheet({
                       {t("food.share.buildError")}
                     </p>
                   ) : previewUrl && !building ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={previewUrl}
-                      alt={t("food.share.previewAlt")}
-                      className="max-h-full rounded-xl object-contain shadow-lg"
-                    />
+                    // Tappable: the preview is small enough that details (the
+                    // dish name, the macro row) are hard to check before
+                    // sharing, so a tap opens the very same PNG full-screen.
+                    <button
+                      type="button"
+                      onClick={() => setZoomed(true)}
+                      aria-label={t("food.share.zoomOpen")}
+                      data-testid="share-meal-preview-zoom"
+                      className="flex h-full items-center justify-center transition-transform duration-200 active:scale-[0.98]"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={previewUrl}
+                        alt={t("food.share.previewAlt")}
+                        className="max-h-full rounded-xl object-contain shadow-lg"
+                      />
+                    </button>
                   ) : (
                     <div className="flex flex-col items-center gap-2 text-muted-foreground">
                       <Loader2 className="size-6 animate-spin" aria-hidden="true" />
@@ -304,6 +326,40 @@ export function ShareMealSheet({
                     : t("food.share.idleStatus")}
                 </p>
               </div>
+            </div>
+          )
+        : null}
+
+      {/* Full-screen look at the card. Portalled separately and stacked ABOVE
+          the sheet (z-60 vs z-50) so the sheet stays mounted underneath —
+          closing the zoom returns to it with the built card and the share
+          button exactly as they were. The image is the same object URL, so
+          opening this costs no rebuild and no extra request. */}
+      {open && zoomed && previewUrl
+        ? sheetPortal(
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-label={t("food.share.zoomAria")}
+              onClick={() => setZoomed(false)}
+              data-testid="share-meal-zoom-overlay"
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={previewUrl}
+                alt={t("food.share.previewAlt")}
+                className="max-h-full max-w-full rounded-2xl object-contain shadow-2xl"
+              />
+              <button
+                type="button"
+                onClick={() => setZoomed(false)}
+                aria-label={t("food.share.zoomClose")}
+                data-testid="share-meal-zoom-close"
+                className="absolute right-4 top-4 grid size-10 place-items-center rounded-full bg-white/12 text-white ring-1 ring-white/20 backdrop-blur-md transition-colors hover:bg-white/20"
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
             </div>
           )
         : null}

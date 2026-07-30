@@ -183,6 +183,51 @@ describe("ShareMealSheet", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("test_tapping_the_preview_shows_the_same_card_full_screen", async () => {
+    fetchMock.mockResolvedValue(pngResponse());
+    stubShare(async () => {});
+
+    render(<ShareMealSheet {...PROPS} />);
+    fireEvent.click(screen.getByTestId(`share-meal-open-${LOG_ID}`));
+    await screen.findByAltText(/Pregled kartice/i);
+    expect(screen.queryByTestId("share-meal-zoom-overlay")).toBeNull();
+
+    fireEvent.click(screen.getByTestId("share-meal-preview-zoom"));
+
+    const zoom = await screen.findByTestId("share-meal-zoom-overlay");
+    // Same object URL — zooming must not rebuild or refetch the card.
+    const shown = zoom.querySelector("img");
+    expect(shown?.getAttribute("src")).toBe("blob:fake");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    // The sheet stays mounted underneath, so closing returns to it intact.
+    expect(screen.getByTestId("share-meal-action")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId("share-meal-zoom-close"));
+    await waitFor(() =>
+      expect(screen.queryByTestId("share-meal-zoom-overlay")).toBeNull()
+    );
+    expect(screen.getByTestId("share-meal-action")).toBeInTheDocument();
+  });
+
+  it("test_escape_leaves_the_zoom_without_closing_the_sheet", async () => {
+    fetchMock.mockResolvedValue(pngResponse());
+    stubShare(async () => {});
+
+    render(<ShareMealSheet {...PROPS} />);
+    fireEvent.click(screen.getByTestId(`share-meal-open-${LOG_ID}`));
+    await screen.findByAltText(/Pregled kartice/i);
+    fireEvent.click(screen.getByTestId("share-meal-preview-zoom"));
+    await screen.findByTestId("share-meal-zoom-overlay");
+
+    fireEvent.keyDown(window, { key: "Escape" });
+
+    await waitFor(() =>
+      expect(screen.queryByTestId("share-meal-zoom-overlay")).toBeNull()
+    );
+    expect(screen.getByTestId("share-meal-action")).toBeInTheDocument();
+  });
+
   it("test_a_failed_build_surfaces_a_calm_serbian_error", async () => {
     fetchMock.mockResolvedValue({
       ok: false,

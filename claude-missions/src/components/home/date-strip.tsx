@@ -267,15 +267,33 @@ export function DateStrip({
     [days]
   );
 
-  // Centre the URL's day before first paint (no left-to-centre jump on load).
-  // Runs once on mount; the live scroll drives everything after this.
+  // Land ON the URL's day (today by default), centred under the marker, BEFORE
+  // the wheel is ever shown -- so entering the app never flashes the oldest day
+  // sitting at the far left. The strip is held invisible (`ready`) until it's
+  // placed, then revealed. Placement waits a frame if the cells haven't been
+  // measured yet (width 0), so it's robust to a slow first layout.
   const mountedRef = useRef(false);
+  const [ready, setReady] = useState(false);
   useIsomorphicLayoutEffect(() => {
     if (mountedRef.current) return;
     mountedRef.current = true;
-    const index = indexOfKey(selectedKey);
-    if (index >= 0) centerIndex(index, false);
-  }, [indexOfKey, centerIndex, selectedKey]);
+    let raf = 0;
+    const place = (attempt: number) => {
+      const element = scrollerRef.current;
+      const width = cellWidth();
+      const index = indexOfKey(selectedKey);
+      if (element && index >= 0 && width > 0) {
+        element.scrollLeft = index * width;
+        setReady(true);
+      } else if (attempt < 3) {
+        raf = requestAnimationFrame(() => place(attempt + 1));
+      } else {
+        setReady(true);
+      }
+    };
+    raf = requestAnimationFrame(() => place(0));
+    return () => cancelAnimationFrame(raf);
+  }, [cellWidth, indexOfKey, selectedKey]);
 
   // Re-centre when the day changes from OUTSIDE the wheel (back/forward, a deep
   // link). Keyed on `selectedKey` ALONE on purpose: it must react to a URL
@@ -383,7 +401,11 @@ export function DateStrip({
         role="navigation"
         className={cn(
           "flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain pt-2.5",
-          "px-[calc(50%-2rem)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          "px-[calc(50%-2rem)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          // Held invisible until centred on the selected day, so entering the
+          // app never flashes the far-left (oldest) day before the jump.
+          "transition-opacity duration-150",
+          ready ? "opacity-100" : "opacity-0"
         )}
         // A crisp horizontal control: only pan-x, so a diagonal flick can't
         // strand the wheel between days. The page scrolls from the content

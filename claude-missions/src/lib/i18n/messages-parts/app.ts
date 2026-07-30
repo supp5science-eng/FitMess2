@@ -125,7 +125,6 @@ export const appMessages = {
 
     // Launch splash
     "app.splash.aria": "FitMess se učitava",
-    "app.splash.tagline": "Jedi, radi, treniraj i uživaj",
 
     // Desktop / phone-only gate (/samo-za-telefon)
     "app.desktop.title": "FitMess radi samo na telefonu.",
@@ -288,7 +287,6 @@ export const appMessages = {
 
     // Launch splash
     "app.splash.aria": "FitMess is loading",
-    "app.splash.tagline": "Eat, work, train, and enjoy",
 
     // Desktop / phone-only gate (/samo-za-telefon)
     "app.desktop.title": "FitMess works on your phone only.",

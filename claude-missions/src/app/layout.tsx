@@ -29,13 +29,21 @@ const archivoBlack = Archivo_Black({
   display: "swap",
 });
 
-// Brand tagline face (geometric, friendly). Poppins gives the launch tagline
+// Brand heading face (geometric, friendly). Poppins gives a section heading
 // more character than body Inter without shouting like the Archivo Black
-// wordmark. Exposed via --font-brand and applied only on the splash tagline.
+// wordmark. Exposed via --font-brand.
+//
+// ONE weight on purpose (2026-07-30): 500 and 600 were only ever used by the
+// launch splash's tagline, which is gone. Every remaining `--font-brand` use
+// (the "Dnevni unos" heading) renders at `font-bold` = 700, so the other two
+// weights were four extra font files -- ~70 KB across four render-blocking
+// requests -- downloaded on every cold launch for nothing. Fonts were the
+// single heaviest thing between the HTML landing and the first paint, so keep
+// this list minimal: adding a weight here costs two files (latin + latin-ext).
 const poppins = Poppins({
   variable: "--font-brand",
   subsets: ["latin", "latin-ext"],
-  weight: ["500", "600", "700"],
+  weight: "700",
   display: "swap",
 });
 

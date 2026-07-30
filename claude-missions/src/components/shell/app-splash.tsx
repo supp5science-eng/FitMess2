@@ -71,19 +71,16 @@ export function AppSplash() {
           className="fm-splash__mark"
           src="/brand/fitmess-icon.png"
           alt=""
-          width={112}
-          height={112}
+          width={160}
+          height={160}
         />
-        <div className="fm-splash__lockup">
-          <div
-            className="fm-splash__wordmark"
-            style={{
-              fontFamily: "var(--font-display), var(--font-sans), sans-serif",
-            }}
-          >
-            Fit<span className="fm-wordmark-accent fm-splash__mess">Mess</span>
-          </div>
-          <p className="fm-splash__tagline">{t("app.splash.tagline")}</p>
+        <div
+          className="fm-splash__wordmark"
+          style={{
+            fontFamily: "var(--font-display), var(--font-sans), sans-serif",
+          }}
+        >
+          Fit<span className="fm-wordmark-accent fm-splash__mess">Mess</span>
         </div>
       </div>
     </div>

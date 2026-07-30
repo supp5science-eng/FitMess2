@@ -54,6 +54,13 @@ export interface IntakePagerPage {
   content: React.ReactNode;
 }
 
+function prefersReducedMotion() {
+  return (
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
 export function IntakePager({
   pages,
   className,
@@ -65,6 +72,7 @@ export function IntakePager({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
   const frameRef = useRef<number | null>(null);
+  const settleRef = useRef<number | null>(null);
 
   // Read the scroll position ONCE per frame (a swipe fires scroll events far
   // faster than the screen refreshes) and light the nearest page's dot. This is
@@ -78,7 +86,45 @@ export function IntakePager({
     setActive(Math.max(0, Math.min(pages.length - 1, index)));
   }, [pages.length]);
 
+  // Settle-snap: the one defensive correction the native snap can't do on its
+  // own (2026-07-30). `scroll-snap-type: x mandatory` only re-snaps when a
+  // scroll gesture ends cleanly -- but the pager also allows vertical page
+  // panning (`touch-action: pan-x pan-y`), and a DIAGONAL or interrupted flick
+  // on iOS can let horizontal momentum die BETWEEN two pages. The scroller then
+  // rests off-grid, showing half of one page and half of the next -- the "krivi"
+  // (crooked) half-and-half state the product owner reported.
+  //
+  // This runs ONLY after scrolling has come to rest (the idle timer is reset by
+  // every scroll event, so it never fires mid-gesture or mid-momentum and cannot
+  // perturb a swipe in progress -- the same reason the header's height rule
+  // exists). If the resting position is off the nearest page edge by more than a
+  // pixel, it glides to that edge; when already aligned it does nothing, so a
+  // programmatic `goTo` (which lands exactly on a page) never re-triggers it.
+  const settle = useCallback(() => {
+    const element = scrollerRef.current;
+    const width = element?.clientWidth ?? 0;
+    if (!element || width === 0) return;
+    const index = Math.max(
+      0,
+      Math.min(pages.length - 1, Math.round(element.scrollLeft / width))
+    );
+    const target = width * index;
+    if (Math.abs(element.scrollLeft - target) <= 1) return;
+    element.scrollTo({
+      left: target,
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
+    });
+  }, [pages.length]);
+
   function handleScroll() {
+    if (settleRef.current !== null) {
+      window.clearTimeout(settleRef.current);
+    }
+    settleRef.current = window.setTimeout(() => {
+      settleRef.current = null;
+      settle();
+    }, 140);
+
     if (frameRef.current !== null) return;
     frameRef.current = requestAnimationFrame(() => {
       frameRef.current = null;
@@ -89,6 +135,7 @@ export function IntakePager({
   useEffect(
     () => () => {
       if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
+      if (settleRef.current !== null) window.clearTimeout(settleRef.current);
     },
     []
   );
@@ -96,12 +143,9 @@ export function IntakePager({
   function goTo(index: number) {
     const element = scrollerRef.current;
     if (!element) return;
-    const reduced =
-      typeof window.matchMedia === "function" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     element.scrollTo({
       left: element.clientWidth * index,
-      behavior: reduced ? "auto" : "smooth",
+      behavior: prefersReducedMotion() ? "auto" : "smooth",
     });
     // Move the dot immediately; the scroll handler will confirm it.
     setActive(index);

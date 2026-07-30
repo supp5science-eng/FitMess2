@@ -68,4 +68,58 @@ describe("IntakePager: the swipe-right second page on the home tab", () => {
     render(<IntakePager pages={[PAGES[0]]} />);
     expect(screen.queryByTestId("intake-pager-dots")).toBeNull();
   });
+
+  it("settle-snaps to the nearest page when a swipe rests BETWEEN pages", () => {
+    vi.useFakeTimers();
+    try {
+      render(<IntakePager pages={PAGES} />);
+
+      const scroller = screen.getByTestId("intake-pager");
+      Object.defineProperty(scroller, "clientWidth", {
+        configurable: true,
+        value: 390,
+      });
+      const scrollTo = vi.fn();
+      scroller.scrollTo = scrollTo as unknown as typeof scroller.scrollTo;
+
+      // Come to rest two-thirds of the way to page two — the "krivi"
+      // half-and-half state — then let scrolling go idle.
+      scroller.scrollLeft = 260;
+      fireEvent.scroll(scroller);
+      vi.advanceTimersByTime(200);
+
+      // It corrects to the nearest page edge (page two = 390), never leaving
+      // the pager stranded between two pages.
+      expect(scrollTo).toHaveBeenCalledWith(
+        expect.objectContaining({ left: 390 })
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does NOT re-snap when a swipe already rests exactly on a page", () => {
+    vi.useFakeTimers();
+    try {
+      render(<IntakePager pages={PAGES} />);
+
+      const scroller = screen.getByTestId("intake-pager");
+      Object.defineProperty(scroller, "clientWidth", {
+        configurable: true,
+        value: 390,
+      });
+      const scrollTo = vi.fn();
+      scroller.scrollTo = scrollTo as unknown as typeof scroller.scrollTo;
+
+      // Cleanly settled on page two: the correction must stay out of the way,
+      // so a programmatic jump can never bounce.
+      scroller.scrollLeft = 390;
+      fireEvent.scroll(scroller);
+      vi.advanceTimersByTime(200);
+
+      expect(scrollTo).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

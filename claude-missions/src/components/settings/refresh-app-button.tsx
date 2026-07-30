@@ -21,7 +21,16 @@ export function RefreshAppButton() {
     try {
       if (typeof caches !== "undefined") {
         const keys = await caches.keys();
-        await Promise.all(keys.map((key) => caches.delete(key)));
+        await Promise.all(
+          keys
+            // Only the APP SHELL buckets (`sw.js`'s `OWNED_CACHE_PREFIX`).
+            // This button's job is "stop serving me an old build" -- the
+            // rendered share cards in `fitmess-share-cards-*` are not a build,
+            // they are minutes of server render the user already paid for, and
+            // wiping them made "Podeli" slow again for no gain here.
+            .filter((key) => key.startsWith("fitmess-shell-"))
+            .map((key) => caches.delete(key))
+        );
       }
       if ("serviceWorker" in navigator) {
         const regs = await navigator.serviceWorker.getRegistrations();

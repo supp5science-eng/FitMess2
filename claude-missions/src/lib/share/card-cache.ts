@@ -79,6 +79,31 @@ async function openCache(): Promise<Cache | null> {
   }
 }
 
+/**
+ * Whether a card is already persisted, WITHOUT pulling its bytes.
+ *
+ * Existence and content are separate questions here, and conflating them was
+ * expensive: `/danas` prewarms one card per photo meal, and answering "is this
+ * cached?" by reading the body meant several megabytes of `ArrayBuffer` decoded
+ * on mount per meal, for cards the user may never open. That is both jank and
+ * storage pressure — and an origin over its quota gets its Cache Storage
+ * evicted wholesale, which silently threw away the very cards this layer
+ * exists to keep. `match()` alone answers it; the body stays on disk until
+ * something actually needs it.
+ */
+async function hasPersisted(
+  logId: string,
+  format: CardFormat
+): Promise<boolean> {
+  try {
+    const cache = await openCache();
+    if (!cache) return false;
+    return (await cache.match(cacheUrl(logId, format))) != null;
+  } catch {
+    return false;
+  }
+}
+
 /** Read a previously persisted card, or `null`. Never throws. */
 async function readPersisted(
   logId: string,
@@ -176,14 +201,16 @@ export function getCard(
   return tracked;
 }
 
-/** Whether a card exists in any layer, without building it. */
+/**
+ * Whether a card exists in any layer, without building it — and without
+ * reading it. A persisted card is deliberately NOT promoted into memory here:
+ * the tap that follows goes through `getCard`, which reads it from Cache
+ * Storage in milliseconds, and paying N x megabytes up front for every meal on
+ * screen (see `hasPersisted`) cost far more than that read ever saves.
+ */
 async function isCached(logId: string, format: CardFormat): Promise<boolean> {
   if (memory.has(entryKey(logId, format))) return true;
-  const persisted = await readPersisted(logId, format);
-  if (!persisted) return false;
-  // Promote it, so the tap that follows is a synchronous memory hit.
-  memory.set(entryKey(logId, format), persisted);
-  return true;
+  return hasPersisted(logId, format);
 }
 
 // --- Serial prewarm queue -------------------------------------------------

@@ -17,6 +17,19 @@
 const CACHE = "fitmess-shell-v2";
 const PRECACHE = ["/", "/icons/icon-192.png", "/icons/icon-512.png", "/manifest.json"];
 
+/**
+ * Cache Storage buckets this service worker OWNS and may garbage-collect on
+ * activate. Everything else in Cache Storage belongs to the app, not to us.
+ *
+ * This prefix exists because the old activate handler deleted every bucket
+ * except the current `CACHE` — which silently wiped `fitmess-share-cards-v1`
+ * (the share cards' persistence layer, see `src/lib/share/card-cache.ts`) on
+ * every service-worker update. That is why a card prewarmed at save time was
+ * gone an hour later and "Podeli" had to render it again from scratch: the
+ * card cache was never expired, it was deleted by us.
+ */
+const OWNED_CACHE_PREFIX = "fitmess-shell-";
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -31,7 +44,15 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key)))
+        Promise.all(
+          keys
+            // Only OUR OWN superseded shell buckets. Never a bucket the app
+            // manages itself (share cards), which we have no business
+            // evicting — the app is the only thing that knows when one of
+            // those is stale.
+            .filter((key) => key.startsWith(OWNED_CACHE_PREFIX) && key !== CACHE)
+            .map((key) => caches.delete(key))
+        )
       )
       .then(() => self.clients.claim())
   );

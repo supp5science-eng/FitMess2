@@ -145,14 +145,20 @@ export function ShareMealSheet({
     const run = () => {
       if (!cancelled) void prewarmCard(logId, "story", buildCard);
     };
-    const handle =
-      typeof window.requestIdleCallback === "function"
-        ? window.requestIdleCallback(run, { timeout: 2000 })
-        : window.setTimeout(run, 200);
+    // Which scheduler produced `handle` has to be remembered, not guessed:
+    // idle-callback ids and timeout ids are SEPARATE id spaces, so the old
+    // cleanup's "cancel it as both" would hand an idle id to `clearTimeout`
+    // and kill whatever unrelated timer happened to hold that number — on
+    // `/danas` that is a live minefield (the date wheel's settle timer, the
+    // intro stage timers).
+    const idle = typeof window.requestIdleCallback === "function";
+    const handle = idle
+      ? window.requestIdleCallback(run, { timeout: 2000 })
+      : window.setTimeout(run, 200);
     return () => {
       cancelled = true;
-      window.cancelIdleCallback?.(handle as number);
-      window.clearTimeout(handle as number);
+      if (idle) window.cancelIdleCallback?.(handle);
+      else window.clearTimeout(handle);
     };
   }, [logId, buildCard]);
 

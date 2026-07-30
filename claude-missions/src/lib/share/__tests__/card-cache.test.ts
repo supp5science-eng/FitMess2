@@ -21,15 +21,34 @@ function png(): File {
   });
 }
 
-/** A minimal in-memory Cache Storage, enough for match/put/keys/delete. */
+/**
+ * A minimal in-memory Cache Storage, enough for match/put/keys/delete.
+ *
+ * `stats.bodyReads` counts how many times something actually pulled a stored
+ * card's BYTES (as opposed to merely asking whether it exists) -- the
+ * distinction the prewarm path depends on. It is counted here, on the way out
+ * of `match`, rather than by stubbing the global `Response`: entries are put
+ * into the bucket long before a test starts watching, so they are ordinary
+ * `Response`s that a later global stub would never see.
+ */
 function installCacheStorage() {
   const buckets = new Map<string, Map<string, Response>>();
+  const stats = { bodyReads: 0 };
   const storage = {
     open: async (name: string) => {
       const bucket = buckets.get(name) ?? new Map<string, Response>();
       buckets.set(name, bucket);
       return {
-        match: async (url: string) => bucket.get(url)?.clone(),
+        match: async (url: string) => {
+          const hit = bucket.get(url)?.clone();
+          if (!hit) return undefined;
+          return {
+            arrayBuffer: () => {
+              stats.bodyReads += 1;
+              return hit.arrayBuffer();
+            },
+          };
+        },
         put: async (url: string, response: Response) => {
           bucket.set(url, response);
         },
@@ -40,11 +59,13 @@ function installCacheStorage() {
     delete: async (name: string) => buckets.delete(name),
   };
   vi.stubGlobal("caches", storage);
-  return buckets;
+  return stats;
 }
 
+let cacheStats: { bodyReads: number };
+
 beforeEach(() => {
-  installCacheStorage();
+  cacheStats = installCacheStorage();
 });
 
 afterEach(async () => {
@@ -149,6 +170,50 @@ describe("card cache", () => {
     await prewarmCard(LOG, "story", build);
 
     expect(build).toHaveBeenCalledTimes(1);
+  });
+
+  it("test_a_prewarm_on_a_later_visit_reuses_the_card_built_on_an_earlier_one", async () => {
+    // The reported bug, end to end: log a photo meal at 12h (the add-flow
+    // prewarms), come back at 13h (fresh document -- module memory is gone,
+    // Cache Storage is not) and tap "Podeli". The mount prewarm must recognise
+    // the card as already built and NOT render a second one, which is what made
+    // the user wait on a spinner for a card they had already paid for.
+    const build = vi.fn(async () => png());
+    await prewarmCard(LOG, "story", build);
+    await flushPersist();
+    expect(build).toHaveBeenCalledTimes(1);
+
+    await resetMemoryOnly();
+
+    await prewarmCard(LOG, "story", build);
+    expect(build).toHaveBeenCalledTimes(1);
+
+    // And the card itself still comes back, without a rebuild.
+    const shared = await getCard(LOG, "story", build);
+    expect(build).toHaveBeenCalledTimes(1);
+    expect(shared.type).toBe("image/png");
+  });
+
+  it("test_checking_for_a_cached_card_does_not_read_its_bytes", async () => {
+    // Every photo meal on /danas prewarms, so an existence check that pulled
+    // the body meant N x ~2.5 MB decoded on mount -- jank, and enough storage
+    // pressure to get the whole bucket evicted (taking the cards with it).
+    const build = vi.fn(async () => png());
+    await getCard(LOG, "story", build);
+    await flushPersist();
+    await resetMemoryOnly();
+
+    cacheStats.bodyReads = 0;
+
+    await prewarmCard(LOG, "story", build);
+
+    expect(build).toHaveBeenCalledTimes(1);
+    expect(cacheStats.bodyReads).toBe(0);
+
+    // ...but the bytes are still there for the tap that actually opens it.
+    const shared = await getCard(LOG, "story", build);
+    expect(cacheStats.bodyReads).toBe(1);
+    expect(shared.type).toBe("image/png");
   });
 
   it("test_a_prewarm_failure_is_swallowed_so_mounting_never_throws", async () => {

@@ -37,10 +37,10 @@ describe("IntakeConfluence: the big number is the selected metric, values stay w
     expect(screen.getByTestId("home-ring-consumed")).toHaveTextContent("1200");
   });
 
-  it("test_tapping_the_label_toggle_flips_the_number_to_potroseno", async () => {
+  it("test_tapping_the_potroseno_segment_flips_the_number", async () => {
     renderConfluence(1200, 2000);
 
-    fireEvent.click(screen.getByTestId("home-view-toggle"));
+    fireEvent.click(screen.getByRole("button", { name: "Potrošeno" }));
 
     await waitFor(() =>
       expect(screen.getByTestId("home-ring-value")).toHaveTextContent("1200")

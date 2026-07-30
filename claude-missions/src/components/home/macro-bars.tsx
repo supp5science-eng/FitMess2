@@ -1,4 +1,4 @@
-import { Droplet, Drumstick, Wheat, type LucideIcon } from "lucide-react";
+import { Beef, Droplet, Wheat, type LucideIcon } from "lucide-react";
 
 import { AnimatedNumber } from "@/components/home/animated-number";
 import { useT } from "@/components/i18n/locale-provider";
@@ -12,7 +12,7 @@ import type { RingView } from "@/components/home/ring";
 // Redesign (2026-07-30, "Cal AI"): each macro is its own floating card
 // (`bg-card` + `.fm-lift`) with the grams the toggle selected big at the top,
 // its label under it, and a progress ring with the macro's icon centred --
-// protein a drumstick, carbs wheat, fat a droplet. The ring fill is the same
+// protein a cut of beef, carbs wheat, fat an oil droplet. The ring fill is same
 // consumed/target ratio the old bar showed (capped at 100%); the number always
 // shows the real value. Icons are lucide `<svg>` (never `<img>`, per AS-128).
 
@@ -31,7 +31,7 @@ const MACROS: MacroConfig[] = [
     key: "protein",
     labelKey: "macro.protein",
     color: "var(--macro-protein)",
-    Icon: Drumstick,
+    Icon: Beef,
     testId: "macro-bar-protein",
   },
   {

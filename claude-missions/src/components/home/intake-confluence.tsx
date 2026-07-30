@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, type Ref } from "react";
-import { ChevronsUpDown, Flame } from "lucide-react";
 
 import { AnimatedNumber } from "@/components/home/animated-number";
 import { MacroBars } from "@/components/home/macro-bars";
@@ -82,8 +81,8 @@ export function IntakeConfluence({
         className="home-ring-slot fm-cloud relative rounded-[1.75rem] px-6 py-6"
       >
         <div className="flex items-center justify-between gap-3">
-          {/* Left: the big number + the tappable metric label. */}
-          <div className="flex min-w-0 flex-col gap-1.5">
+          {/* Left: the big number + the Potrošeno/Preostalo switch. */}
+          <div className="flex min-w-0 flex-col gap-2.5">
             <AnimatedNumber
               value={centre.value}
               animateKey={view}
@@ -95,21 +94,9 @@ export function IntakeConfluence({
               style={{ fontSize: "clamp(2.5rem, 13vw, 3.25rem)" }}
             />
 
-            {/* The metric label doubles as the Potrošeno/Preostalo toggle: one
-                tap flips what the number (and the ring) shows. Kept a real,
-                reachable button with a clear accessible name. */}
-            <button
-              type="button"
-              data-testid="home-view-toggle"
-              onClick={() =>
-                setView(view === "remaining" ? "consumed" : "remaining")
-              }
-              aria-label={t("home.view.aria")}
-              className="inline-flex w-fit items-center gap-1 rounded-full text-base font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-            >
-              <span data-testid="home-ring-label">{viewLabel}</span>
-              <ChevronsUpDown className="size-4 shrink-0" aria-hidden="true" />
-            </button>
+            {/* The segmented switch flips what the number shows (Potrošeno vs
+                Preostalo). A real, reachable pair of buttons. */}
+            <ViewToggle view={view} onChange={setView} />
 
             {state.isOver ? (
               <span
@@ -120,8 +107,12 @@ export function IntakeConfluence({
               </span>
             ) : null}
 
-            {/* Cilj + Potrošeno stay in the DOM (accessible + tested) without
-                crowding the Cal-AI card; the ring encodes them visually. */}
+            {/* The current metric + Cilj + Potrošeno stay in the DOM
+                (accessible + tested) without crowding the card; the ring and
+                the switch encode them visually. */}
+            <span className="sr-only" data-testid="home-ring-label">
+              {viewLabel}
+            </span>
             <span className="sr-only" data-testid="home-ring-target">
               {state.targetKcal}
             </span>
@@ -222,13 +213,14 @@ export function IntakeConfluence({
             </svg>
 
             <div className="absolute inset-0 grid place-items-center">
-              <Flame
-                className={cn(
-                  "size-9",
-                  centre.danger ? "text-destructive" : "text-foreground"
-                )}
-                strokeWidth={2}
+              {/* The FitMess pear mark, centred in the ring. Decorative -- the
+                  ring's own aria-label already names the value. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/fitmess-icon.png"
+                alt=""
                 aria-hidden="true"
+                className="size-16 select-none object-contain"
               />
             </div>
           </div>
@@ -241,6 +233,54 @@ export function IntakeConfluence({
       <div className="home-body">
         <MacroBars consumed={consumedMacros} target={targetMacros} view={view} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * The "Potrošeno | Preostalo" segmented switch that drives the big number (and,
+ * indirectly, which grams the macro cards show). Two real buttons in a pill; the
+ * selected one is a raised light thumb on a muted track (iOS-style).
+ */
+function ViewToggle({
+  view,
+  onChange,
+}: {
+  view: RingView;
+  onChange: (next: RingView) => void;
+}) {
+  const { t } = useT();
+  const options: { value: RingView; label: string }[] = [
+    { value: "consumed", label: t("home.view.consumed") },
+    { value: "remaining", label: t("home.view.remaining") },
+  ];
+
+  return (
+    <div
+      role="group"
+      aria-label={t("home.view.aria")}
+      data-testid="home-view-toggle"
+      className="inline-flex w-fit items-center gap-1 rounded-full bg-muted/80 p-1 backdrop-blur-sm"
+    >
+      {options.map(({ value, label }) => {
+        const selected = view === value;
+        return (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={selected}
+            onClick={() => onChange(value)}
+            className={cn(
+              "min-h-8 rounded-full px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+              selected
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {label}
+          </button>
+        );
+      })}
     </div>
   );
 }

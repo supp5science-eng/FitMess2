@@ -86,8 +86,10 @@ export function IntakeConfluence({
         className="home-ring-slot fm-cloud relative rounded-[2rem] px-6 py-8"
       >
         <div className="flex items-center justify-between gap-3">
-          {/* Left: the big number + the Potrošeno/Preostalo switch. */}
-          <div className="flex min-w-0 flex-col gap-2.5">
+          {/* Left: the big number + the Potrošeno/Preostalo switch. The column
+              grows to fill the space between the card edge and the ring so the
+              switch can sit centred in that gap. */}
+          <div className="flex min-w-0 flex-1 flex-col gap-2.5">
             <AnimatedNumber
               value={centre.value}
               animateKey={view}
@@ -100,8 +102,11 @@ export function IntakeConfluence({
             />
 
             {/* The segmented switch flips what the number shows (Potrošeno vs
-                Preostalo). A real, reachable pair of buttons. */}
-            <ViewToggle view={view} onChange={setView} />
+                Preostalo). Centred in the left gap -- exactly between the card
+                edge and the ring. */}
+            <div className="flex justify-center">
+              <ViewToggle view={view} onChange={setView} />
+            </div>
 
             {state.isOver ? (
               <span

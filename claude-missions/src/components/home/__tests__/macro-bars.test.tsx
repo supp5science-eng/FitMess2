@@ -51,7 +51,7 @@ describe("AS-048: MacroBars shows protein/carbs/fat consumed vs target", () => {
     expect(fill.getAttribute("stroke-dashoffset")).toBe("50");
   });
 
-  it("test_macro_remaining_view_shows_grams_left_but_the_ring_still_fills_by_consumed", () => {
+  it("test_macro_remaining_view_shows_grams_left_and_a_full_ring", () => {
     render(
       <MacroBars
         consumed={{ protein: 50, carbs: 100, fat: 30 }}
@@ -64,12 +64,10 @@ describe("AS-048: MacroBars shows protein/carbs/fat consumed vs target", () => {
     expect(screen.getByTestId("macro-bar-protein-values")).toHaveTextContent(
       "100 / 150 g"
     );
-    // The ring, though, fills by what's CONSUMED: 50/150 = 33.33% -> dash
-    // offset 100 - 33.33 = 66.67.
+    // In "remaining" view the ring is a full circle (like the calorie ring) ->
+    // dash offset 0.
     const fill = screen.getByTestId("macro-bar-protein-fill");
-    expect(
-      Number.parseFloat(fill.getAttribute("stroke-dashoffset") ?? "")
-    ).toBeCloseTo(66.67, 1);
+    expect(fill.getAttribute("stroke-dashoffset")).toBe("0");
   });
 
   it("test_AS_048_a_macro_consumed_beyond_its_target_still_shows_the_real_number_bar_capped_at_100_percent", () => {

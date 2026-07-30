@@ -99,11 +99,8 @@ export const foodMessages = {
     "food.share.shareAgain": "Podeli ponovo",
     "food.share.save": "Sačuvaj",
     "food.share.saveAgain": "Sačuvaj ponovo",
-    "food.share.formatStory": "Story",
-    "food.share.formatPost": "Objava",
     "food.share.dialogAria": "Podeli karticu obroka",
     "food.share.heading": "Podeli obrok",
-    "food.share.formatAria": "Format kartice",
     "food.share.close": "Zatvori",
     "food.share.buildError":
       "Nismo uspeli da napravimo karticu. Zatvori pa pokušaj ponovo.",
@@ -213,11 +210,8 @@ export const foodMessages = {
     "food.share.shareAgain": "Share again",
     "food.share.save": "Save",
     "food.share.saveAgain": "Save again",
-    "food.share.formatStory": "Story",
-    "food.share.formatPost": "Post",
     "food.share.dialogAria": "Share meal card",
     "food.share.heading": "Share meal",
-    "food.share.formatAria": "Card format",
     "food.share.close": "Close",
     "food.share.buildError":
       "We couldn't make the card. Close and try again.",

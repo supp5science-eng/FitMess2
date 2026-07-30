@@ -111,6 +111,17 @@ export interface RingState {
   /** Consumed / target, clamped to [0, 1] -- fills the first lap of the gauge. */
   fillFraction: number;
   /**
+   * Remaining / target, clamped to [0, 1] -- how much of the day's budget is
+   * still UNSPENT. The exact complement of `fillFraction` while under budget,
+   * and 0 once over it (nothing is left; the overshoot lap takes over there).
+   *
+   * Exists so the "Preostalo" view can DRAW what it claims to show. That arc
+   * used to be hard-coded to a full circle, which made the ring look identical
+   * after 100 kcal and after 2900 kcal of a 3000 kcal day -- the toggle changed
+   * the number but not the picture.
+   */
+  remainingFraction: number;
+  /**
    * Overshoot / target, clamped to [0, 1] -- draws the SECOND lap on top of a
    * full first lap once over the limit (0 while under budget).
    */
@@ -156,6 +167,7 @@ export function computeRingState(
     overshootKcal: Math.round(overshoot),
     level,
     fillFraction: Math.min(1, Math.max(0, safeConsumed / denom)),
+    remainingFraction: Math.min(1, Math.max(0, remainingFraction)),
     overshootFraction: Math.min(1, Math.max(0, overshoot / denom)),
   };
 }

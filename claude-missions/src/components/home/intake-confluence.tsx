@@ -20,10 +20,10 @@ import { cn } from "@/lib/utils";
 // the `home-ring-slot` hook (the onboarding ghost hand-off docks on it) are all
 // preserved.
 //
-// The arc RESPONDS to the toggle: under budget it shows the SELECTED metric --
-// consumed fills the ring, remaining drains it. Over budget the ring is a full
-// lap + a red overshoot lap (remaining is 0), with the toggle swapping only the
-// big number.
+// The arc RESPONDS to the toggle: it shows the SELECTED metric -- consumed
+// fills the ring, remaining drains it. Over budget nothing is left to drain, so
+// the "Preostalo" arc sits empty and the red overshoot lap carries the story
+// (in "Potrošeno" the blue lap is full underneath it, as before).
 
 // Ring geometry (a compact dial that holds the flame, not the number).
 const CX = 50;
@@ -54,14 +54,19 @@ export function IntakeConfluence({
   const [view, setView] = useState<RingView>("remaining");
   const state = computeRingState(consumedKcal, targetKcal);
 
-  // The ring always fills with what's been CONSUMED (Cal-AI style): empty on a
-  // fresh day, filling as you eat, regardless of which number the toggle shows.
-  // Over budget it's a full lap + the red overshoot lap on top.
-  // "Preostalo" shows a FULL blue circle (your whole allowance); "Potrošeno"
-  // animates the blue arc down to the fraction you've actually eaten. Over
-  // budget the blue lap is full either way and a red second lap (below) shows
-  // the overshoot going round again.
-  const arcFraction = view === "remaining" ? 1 : state.fillFraction;
+  // The arc draws the metric the toggle has selected, so the picture and the
+  // big number always agree:
+  //   * "Potrošeno" FILLS as the day is eaten (0 -> full).
+  //   * "Preostalo" DRAINS as the day is eaten (full -> 0) -- at 1000 of 3000
+  //     kcal it stands at 2/3, the same two thirds the number reports.
+  // It used to be pinned to a full circle in "Preostalo", so the ring looked
+  // exactly the same whether 100 or 2900 of a 3000 kcal day was gone; the
+  // toggle moved the number while the picture stayed put and said "full".
+  //
+  // Over budget there is nothing left to draw: `remainingFraction` is 0, so the
+  // blue lap empties and the red overshoot lap below carries the story.
+  const arcFraction =
+    view === "remaining" ? state.remainingFraction : state.fillFraction;
   const fillDashOffset = 100 - arcFraction * 100;
   const overshootDashOffset = 100 - state.overshootFraction * 100;
 

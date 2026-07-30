@@ -106,6 +106,27 @@ describe("computeRingState: traffic-light level + signed remaining + fills", () 
     expect(s.overshootFraction).toBe(1);
   });
 
+  it("reports the unspent share of the budget as remainingFraction", () => {
+    // What the "Preostalo" arc draws. It is the complement of `fillFraction`
+    // under budget, so the two views of one day can never disagree.
+    const s = computeRingState(1000, 3000);
+    expect(s.remainingFraction).toBeCloseTo(2 / 3, 5);
+    expect(s.fillFraction + s.remainingFraction).toBeCloseTo(1, 5);
+  });
+
+  it("has a full remainingFraction on an untouched day", () => {
+    const s = computeRingState(0, 3000);
+    expect(s.remainingFraction).toBe(1);
+    expect(s.fillFraction).toBe(0);
+  });
+
+  it("floors remainingFraction at zero once over the limit", () => {
+    // Never negative: a negative fraction would wrap the stroke back around the
+    // ring instead of leaving it empty.
+    expect(computeRingState(3500, 3000).remainingFraction).toBe(0);
+    expect(computeRingState(9000, 3000).remainingFraction).toBe(0);
+  });
+
   it("rounds every kcal number to a whole value", () => {
     const s = computeRingState(1200.6, 2000);
     expect(Number.isInteger(s.consumedKcal)).toBe(true);

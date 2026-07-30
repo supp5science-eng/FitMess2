@@ -12,9 +12,10 @@ import type { RingView } from "@/components/home/ring";
 // Redesign (2026-07-30, "Cal AI"): each macro is its own floating card
 // (`bg-card` + `.fm-lift`) with the grams the toggle selected big at the top,
 // its label under it, and a progress ring with the macro's icon centred --
-// protein a cut of beef, carbs wheat, fat an oil droplet. The ring fill is same
-// consumed/target ratio the old bar showed (capped at 100%); the number always
-// shows the real value. Icons are lucide `<svg>` (never `<img>`, per AS-128).
+// protein a cut of beef, carbs wheat, fat an oil droplet. The ring draws the
+// metric the toggle selected (consumed fills it, remaining drains it), clamped
+// to [0, 100%]; the number always shows the real value. Icons are lucide
+// `<svg>` (never `<img>`, per AS-128).
 
 interface MacroConfig {
   key: "protein" | "fat" | "carbs";
@@ -80,12 +81,21 @@ function MacroCard({
       ? Math.max(0, targetG - consumedG)
       : Math.max(0, consumedG);
   const safeTarget = targetG > 0 ? targetG : 1;
-  // The ring mirrors the big calorie ring: a FULL coloured circle in "Preostalo"
-  // (your whole allowance), and in "Potrošeno" it animates down to the fraction
-  // you've actually eaten. Caps at 100% so an over-target macro never overflows
-  // its track; the number still shows the real value.
+  // The ring mirrors the big calorie ring: it draws whichever metric the toggle
+  // selected, so the ring and the grams above it always tell the same story.
+  // "Potrošeno" fills as the macro is eaten; "Preostalo" drains toward empty.
+  // Both cap at 100% so an over-target macro never overflows its track, and
+  // both floor at 0 so an exceeded macro drains to nothing rather than going
+  // negative -- the number above still reports the real value either way.
+  //
+  // "Preostalo" used to be pinned to 100%, which made all three macro rings sit
+  // permanently full no matter how much of each was actually left.
   const consumedPercent = Math.min(100, Math.max(0, (consumedG / safeTarget) * 100));
-  const percent = view === "remaining" ? 100 : consumedPercent;
+  const remainingPercent = Math.min(
+    100,
+    Math.max(0, ((targetG - consumedG) / safeTarget) * 100)
+  );
+  const percent = view === "remaining" ? remainingPercent : consumedPercent;
   const dashOffset = 100 - percent;
 
   return (

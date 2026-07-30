@@ -111,6 +111,39 @@ describe("ShareMealSheet", () => {
     expect(body.format).toBe("post");
   });
 
+  it("test_prewarms_the_story_card_on_mount_so_the_first_open_is_instant", async () => {
+    fetchMock.mockResolvedValue(pngResponse());
+    stubShare(async () => {});
+    // Run the idle prewarm synchronously so the mount-time build is observable.
+    const ric = vi.fn((cb: IdleRequestCallback) => {
+      cb({ didTimeout: false, timeRemaining: () => 0 } as IdleDeadline);
+      return 1;
+    });
+    Object.defineProperty(window, "requestIdleCallback", {
+      configurable: true,
+      value: ric,
+    });
+    Object.defineProperty(window, "cancelIdleCallback", {
+      configurable: true,
+      value: vi.fn(),
+    });
+
+    render(<ShareMealSheet {...PROPS} />);
+
+    // The story card is fetched on mount, before any "Podeli" tap.
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    const warmBody = JSON.parse(fetchMock.mock.calls[0][1].body as string);
+    expect(warmBody).toEqual({ logId: LOG_ID, format: "story" });
+
+    // Opening reuses the prewarmed card: the preview shows with no second build.
+    fireEvent.click(screen.getByTestId(`share-meal-open-${LOG_ID}`));
+    await screen.findByAltText(/Pregled kartice/i);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    Reflect.deleteProperty(window, "requestIdleCallback");
+    Reflect.deleteProperty(window, "cancelIdleCallback");
+  });
+
   it("test_a_failed_build_surfaces_a_calm_serbian_error", async () => {
     fetchMock.mockResolvedValue({
       ok: false,

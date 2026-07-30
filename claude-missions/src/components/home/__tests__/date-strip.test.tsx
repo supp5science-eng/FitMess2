@@ -105,7 +105,10 @@ describe("DateStrip: settling on a day navigates there", () => {
     // Let the mount placement (which centres today) run first, then scroll away.
     vi.advanceTimersByTime(50);
 
-    // Rest centred on 07-18 (index 3) and let scrolling go idle.
+    // Rest centred on 07-18 (index 3) and let scrolling go idle. The pointer
+    // down models the real gesture that precedes any settle -- the wheel only
+    // navigates in response to a genuine user touch, never on its own.
+    fireEvent.pointerDown(scroller);
     scroller.scrollLeft = 3 * CELL_W;
     fireEvent.scroll(scroller);
     vi.advanceTimersByTime(200);
@@ -119,6 +122,7 @@ describe("DateStrip: settling on a day navigates there", () => {
     const { scroller } = mount();
     vi.advanceTimersByTime(50);
 
+    fireEvent.pointerDown(scroller);
     scroller.scrollLeft = 4 * CELL_W; // index 4 = today (07-19)
     fireEvent.scroll(scroller);
     vi.advanceTimersByTime(200);
@@ -130,11 +134,27 @@ describe("DateStrip: settling on a day navigates there", () => {
     const { scroller } = mount();
     vi.advanceTimersByTime(50);
 
+    fireEvent.pointerDown(scroller);
     scroller.scrollLeft = 5 * CELL_W; // index 5 = 07-20 (future filler)
     fireEvent.scroll(scroller);
     vi.advanceTimersByTime(200);
 
     // Never navigates to a day that doesn't exist yet.
     expect(push).not.toHaveBeenCalledWith("/danas?dan=2026-07-20");
+  });
+
+  it("test_does_not_navigate_without_a_user_gesture_on_load", () => {
+    // The strip programmatically scrolls itself onto a day on mount. Even if
+    // that placement rests off-centre, it must NEVER push a navigation without
+    // a real user gesture -- this is the guard against booting onto the wrong
+    // day. Simulate a settle with no preceding pointer/touch interaction.
+    const { scroller } = mount();
+    vi.advanceTimersByTime(50);
+
+    scroller.scrollLeft = 3 * CELL_W; // would be 07-18 if it navigated
+    fireEvent.scroll(scroller);
+    vi.advanceTimersByTime(200);
+
+    expect(push).not.toHaveBeenCalled();
   });
 });

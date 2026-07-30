@@ -14,6 +14,7 @@ import {
 } from "@/lib/home/adaptive";
 import { PLAN_INTRO_COOKIE } from "@/components/home/adaptive-plan-card";
 import type { GoalType } from "@/lib/types/db";
+import { getDanasProfile } from "@/lib/home/profile";
 import { getTodayData } from "@/lib/home/today";
 import { getT } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/locale";
@@ -117,17 +118,14 @@ export default async function DanasPage({
   // Belgrade day range for the selected day (noon-UTC is a robust in-day
   // instant). Fetch the day's data + the sign-up day in parallel.
   const range = getBelgradeDayRange(new Date(`${selectedKey}T12:00:00.000Z`));
-  const [result, profileResult, customStepGoal] = await Promise.all([
+  const [result, profile, customStepGoal] = await Promise.all([
     getTodayData(supabase, userId, range),
-    supabase
-      .from("profiles")
-      // `activity_level` rides along (the column has always existed) because
-      // it is what the automatic step goal is derived from; the newer
-      // `daily_step_goal` override is read separately -- see
-      // `src/lib/steps/step-goal-read.ts` for why.
-      .select("created_at, sex, weight_kg, activity_level")
-      .eq("user_id", userId)
-      .maybeSingle(),
+    // Shared with `layout.tsx` via React `cache()` -- the layout already reads
+    // this same row for the date strip, so the two now share one round trip
+    // instead of each firing its own `profiles` read. `activity_level` drives
+    // the automatic step goal; the newer `daily_step_goal` override is read
+    // separately -- see `src/lib/steps/step-goal-read.ts` for why.
+    getDanasProfile(userId),
     getCustomStepGoal(supabase, userId),
   ]);
 
@@ -165,7 +163,7 @@ export default async function DanasPage({
   // Cilj koraka (2026-07-25): the user's own goal if they set one, otherwise
   // one derived from their activity level -- NOT a flat 10.000 for everybody.
   const stepGoal = resolveStepGoal(
-    profileResult.data?.activity_level ?? null,
+    profile?.activity_level ?? null,
     customStepGoal
   ).goal;
 
@@ -182,7 +180,7 @@ export default async function DanasPage({
           supabase,
           userId,
           result.data.target.daily_kcal,
-          profileResult.data?.sex ?? "male",
+          profile?.sex ?? "male",
           result.data.target.goal,
           stepGoal,
           now
@@ -201,7 +199,7 @@ export default async function DanasPage({
     getWaterWeek(supabase, userId, selectedNoon),
   ]);
 
-  const waterGoal = waterGoalMl(profileResult.data?.weight_kg ?? null);
+  const waterGoal = waterGoalMl(profile?.weight_kg ?? null);
   // Map the two week models onto the strip's tiny shape (label + share of goal
   // + which column is the viewed day) -- the same derivation Analitika uses, so
   // the two screens can never disagree about a day.

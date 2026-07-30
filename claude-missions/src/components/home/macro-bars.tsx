@@ -74,10 +74,12 @@ function MacroCard({
       ? Math.max(0, targetG - consumedG)
       : Math.max(0, consumedG);
   const safeTarget = targetG > 0 ? targetG : 1;
-  // The ring, though, always fills with what's been CONSUMED (Cal-AI style):
-  // empty on a fresh day, filling as you eat. Caps at 100% so an over-target
-  // macro never overflows its track; the number still shows the real value.
-  const percent = Math.min(100, Math.max(0, (consumedG / safeTarget) * 100));
+  // The ring mirrors the big calorie ring: a FULL coloured circle in "Preostalo"
+  // (your whole allowance), and in "Potrošeno" it animates down to the fraction
+  // you've actually eaten. Caps at 100% so an over-target macro never overflows
+  // its track; the number still shows the real value.
+  const consumedPercent = Math.min(100, Math.max(0, (consumedG / safeTarget) * 100));
+  const percent = view === "remaining" ? 100 : consumedPercent;
   const dashOffset = 100 - percent;
 
   return (

@@ -30,9 +30,22 @@ import { cn } from "@/lib/utils";
 //   1. This picker now lives in `danas/layout.tsx`, which Next PRESERVES across
 //      a `?dan=` change -- so the wheel never unmounts, never flashes, and stays
 //      interactive while only the CONTENT below swaps under `loading.tsx`.
-//   2. As a day passes under the marker we `router.prefetch` its route, so by
-//      the time the scroll settles the day's data is usually already warm and
-//      the swap is near-instant.
+//   2. A TAP navigates on the spot (see `goTo`), instead of waiting out the
+//      smooth scroll and the settle debounce first.
+//
+// ## Two things this deliberately does NOT do (2026-07-30 perf fix)
+//
+//   * **It never prefetches days as they pass under the marker.** It used to,
+//     once per animation frame during a swipe. `/danas` is a fully dynamic
+//     route, so a prefetch does not warm any DATA -- it just fires a server
+//     request that re-runs the whole RSC render (auth + ~8 Supabase reads).
+//     Flicking across the wheel therefore kicked off dozens of full renders,
+//     saturating the server and the Supabase pool, and the REAL navigation
+//     then queued up behind all of them. That is where the multi-second waits
+//     came from. The per-frame handler now only lights the centred day.
+//   * **It never waits for the scroll to settle before navigating on a tap.**
+//     Tap used to: smooth-scroll (~400ms) -> settle debounce (130ms) -> push.
+//     That was half a second of dead time before the request even started.
 //
 // ## The interaction
 //
@@ -231,6 +244,29 @@ export function DateStrip({
   // driven by the scroll position from then on.
   const [activeKey, setActiveKey] = useState(selectedKey);
 
+  // The last day we asked the router for. A tap navigates IMMEDIATELY and then
+  // smooth-scrolls; when that scroll comes to rest the settle path runs too,
+  // and at that moment `selectedKey` may still be the OLD day (the transition
+  // hasn't committed yet) -- without this it would fire a second, identical
+  // `router.push`.
+  const pushedKeyRef = useRef<string | null>(null);
+  // Released once the URL actually catches up, so a day whose navigation never
+  // landed (dropped request, user backed out) can be tapped again.
+  useEffect(() => {
+    pushedKeyRef.current = null;
+  }, [selectedKey]);
+
+  /** Navigate to a day, at most once per day per transition. */
+  const navigateTo = useCallback(
+    (cell: DayCell) => {
+      if (cell.key === selectedKey || pushedKeyRef.current === cell.key) return;
+      pushedKeyRef.current = cell.key;
+      // Non-blocking: the wheel stays live while the day's content loads.
+      startTransition(() => router.push(hrefFor(cell)));
+    },
+    [router, selectedKey]
+  );
+
   const indexOfKey = useCallback(
     (key: string) => days.findIndex((cell) => cell.key === key),
     [days]
@@ -358,17 +394,16 @@ export function DateStrip({
       centerIndex(index, true);
     }
     setActiveKey(cell.key);
-    if (cell.key !== selectedKey && interactedRef.current) {
-      // Non-blocking: the wheel stays live while the day's content loads.
-      // Gated on `interactedRef`: a settle triggered by the initial placement
-      // or an external re-centre (not a user gesture) only lights the day, it
-      // never navigates -- so the app can never boot onto the wrong day.
-      startTransition(() => router.push(hrefFor(cell)));
-    }
-  }, [cellWidth, days, nearestEnabledIndex, centerIndex, selectedKey, router]);
+    // Gated on `interactedRef`: a settle triggered by the initial placement
+    // or an external re-centre (not a user gesture) only lights the day, it
+    // never navigates -- so the app can never boot onto the wrong day.
+    if (interactedRef.current) navigateTo(cell);
+  }, [cellWidth, days, nearestEnabledIndex, centerIndex, navigateTo]);
 
-  // Per-frame during a swipe: light the centred day and warm its route so the
-  // eventual settle -> push lands from cache. Pure reads; no layout writes.
+  // Per-frame during a swipe: light the centred day. Pure reads, no layout
+  // writes, and -- deliberately -- NO `router.prefetch` (see the header note):
+  // prefetching a dynamic route per frame bought nothing and cost a full server
+  // render per day scrolled past.
   const syncActive = useCallback(() => {
     const element = scrollerRef.current;
     const width = cellWidth();
@@ -378,18 +413,15 @@ export function DateStrip({
       Math.min(days.length - 1, Math.round(element.scrollLeft / width))
     );
     const cell = days[index];
-    if (cell && isEnabled(cell)) {
-      setActiveKey(cell.key);
-      router.prefetch(hrefFor(cell));
-    }
-  }, [cellWidth, days, router]);
+    if (cell && isEnabled(cell)) setActiveKey(cell.key);
+  }, [cellWidth, days]);
 
   function handleScroll() {
     if (settleRef.current !== null) window.clearTimeout(settleRef.current);
     settleRef.current = window.setTimeout(() => {
       settleRef.current = null;
       settle();
-    }, 130);
+    }, 90);
 
     if (frameRef.current !== null) return;
     frameRef.current = requestAnimationFrame(() => {
@@ -406,15 +438,19 @@ export function DateStrip({
     []
   );
 
-  // Tapping a day scrolls it under the marker; the scroll's settle then lights
-  // and navigates to it (one path for tap and swipe).
+  // Tapping a day navigates STRAIGHT AWAY and centres the wheel in parallel.
+  // (It used to only scroll, and let the settle -- 130ms after the ~400ms
+  // smooth scroll finished -- do the pushing, so every tap paid ~half a second
+  // before the request even left the device.) The settle still runs when the
+  // scroll rests, but `navigateTo` dedupes it, so this is one navigation.
   function goTo(cell: DayCell) {
     const index = indexOfKey(cell.key);
     if (index < 0) return;
-    // A tap is an explicit user action -- arm navigation so the resulting
-    // settle pushes to the tapped day.
+    // A tap is an explicit user action -- arm navigation so a later settle
+    // (e.g. the user then flicks the wheel) pushes too.
     interactedRef.current = true;
     setActiveKey(cell.key);
+    navigateTo(cell);
     centerIndex(index, true);
   }
 

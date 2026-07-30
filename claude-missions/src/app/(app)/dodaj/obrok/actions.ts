@@ -109,7 +109,9 @@ const logMealSchema = z.object({
 export type LogMealInput = z.input<typeof logMealSchema>;
 
 export type LogMealResult =
-  | { ok: true }
+  // `logId` is the id of the freshly-inserted `logs` row -- the add-flows use it
+  // to kick off the share-card build the moment a photo meal is saved.
+  | { ok: true; logId: string }
   | { ok: false; error_sr: string };
 
 /**
@@ -124,10 +126,12 @@ export interface MealPhotoInput {
   mimeType?: string;
 }
 
-// ~900 KB decoded ceiling for the stored thumbnail (base64 is ~4/3 the bytes).
-// The client downscales to ~720px/q0.72 (tens of KB); anything wildly larger is
-// dropped rather than stored, and the meal still saves without a photo.
-const MAX_PHOTO_BASE64_LEN = 1_200_000;
+// ~3 MB decoded ceiling for the stored photo (base64 is ~4/3 the bytes). The
+// client downscales to ~1920px/q0.9 -- big enough that the share card (rendered
+// full-bleed at 1080x1920) stays crisp instead of upscaling a tiny thumbnail,
+// and the lightbox looks sharp too. Anything wildly larger than that is dropped
+// rather than stored, and the meal still saves without a photo.
+const MAX_PHOTO_BASE64_LEN = 4_000_000;
 
 export async function logMealAction(
   input: LogMealInput,
@@ -217,5 +221,5 @@ export async function logMealAction(
     }
   }
 
-  return { ok: true };
+  return { ok: true, logId: inserted.id };
 }

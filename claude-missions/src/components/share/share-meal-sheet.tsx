@@ -12,6 +12,7 @@ import { Check, Download, Loader2, Share2, X } from "lucide-react";
 import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
+import { buildScanCard } from "@/lib/share/build-scan-card";
 import type { CardFormat } from "@/lib/share/card";
 import { getCard, peekCard, prewarmCard } from "@/lib/share/card-cache";
 import {
@@ -105,23 +106,11 @@ export function ShareMealSheet({
     setPreviewUrl(url);
   }
 
-  /** Render one card on the server. The cache layer decides IF this ever runs. */
+  /** Render one card on the server. The cache layer decides IF this ever runs.
+   * Shared with the add-flows (`buildScanCard`), so a save-time prewarm and this
+   * build hit the same cache with an identical request. */
   const buildCard = useCallback(
-    async (id: string, target: CardFormat): Promise<File> => {
-      const response = await fetch("/api/card/scan", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logId: id, format: target }),
-        credentials: "same-origin",
-        cache: "no-store",
-      });
-      const type = response.headers.get("content-type") ?? "";
-      if (!response.ok || !type.includes("image/png")) {
-        throw new Error("card build failed");
-      }
-      const blob = await response.blob();
-      return new File([blob], `fitmess-${target}.png`, { type: "image/png" });
-    },
+    (id: string, target: CardFormat): Promise<File> => buildScanCard(id, target),
     []
   );
 

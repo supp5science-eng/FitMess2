@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 import { DateStrip } from "@/components/home/date-strip";
 import { buildDateStrip } from "@/lib/home/date-strip";
@@ -156,5 +156,54 @@ describe("DateStrip: settling on a day navigates there", () => {
     vi.advanceTimersByTime(200);
 
     expect(push).not.toHaveBeenCalled();
+  });
+});
+
+describe("DateStrip: the wheel always ends up visible", () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => vi.useRealTimers());
+
+  /** jsdom has no layout: give the current first cell a measurable width. */
+  function measure(scroller: HTMLElement) {
+    const first = scroller.firstElementChild as HTMLElement;
+    first.getBoundingClientRect = () =>
+      ({
+        width: CELL_W,
+        height: 0,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        x: 0,
+        y: 0,
+        toJSON() {},
+      }) as DOMRect;
+    scroller.scrollTo = vi.fn() as unknown as typeof scroller.scrollTo;
+  }
+
+  it("test_the_wheel_is_revealed_even_when_the_days_prop_identity_changes_before_placement", () => {
+    // The strip is held at `opacity-0` until it has centred itself on the
+    // selected day. On /danas the header ALSO streams in a Suspense slot (the
+    // streak pill); when that resolves, the layout re-renders and hands the
+    // strip a FRESH `days` array -- same content, new identity -- which can
+    // land before the placement frame has run. If that cancels the placement
+    // without ever revealing the wheel, the user gets a date strip that is
+    // permanently invisible: the centre marker shows, but not a single day.
+    const view = render(<DateStrip days={buildDays()} todayKey={TODAY} />);
+    const scroller = screen.getByTestId("date-strip");
+    measure(scroller);
+
+    view.rerender(<DateStrip days={buildDays()} todayKey={TODAY} />);
+    measure(screen.getByTestId("date-strip"));
+
+    // `act` so React flushes the reveal that placement schedules from its
+    // animation frame (timer callbacks are not auto-wrapped like events are).
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(screen.getByTestId("date-strip").className).not.toContain(
+      "opacity-0"
+    );
   });
 });

@@ -321,24 +321,45 @@ export function DateStrip({
   // sitting at the far left. The strip is held invisible (`ready`) until it's
   // placed, then revealed. Placement waits a frame if the cells haven't been
   // measured yet (width 0), so it's robust to a slow first layout.
-  const mountedRef = useRef(false);
+  //
+  // `placedRef` is set only once placement has actually FINISHED -- never
+  // eagerly on the first run. This effect's deps include `indexOfKey`, whose
+  // identity changes whenever the server hands down a fresh `days` array, and on
+  // /danas that happens MID-MOUNT: the header streams in the streak pill from a
+  // Suspense slot, the layout re-renders, and `days` arrives as a new array.
+  // React then runs this effect's CLEANUP -- cancelling the pending placement
+  // frame -- before re-running the body. An eager "already mounted" guard made
+  // that re-run bail straight out, so `setReady(true)` never fired and the WHOLE
+  // wheel stayed at `opacity-0`: the centre marker hanging over a blank strip,
+  // not one day visible. Keyed on real completion, a cancelled placement is
+  // simply retried by the re-run.
+  const placedRef = useRef(false);
   const [ready, setReady] = useState(false);
   useIsomorphicLayoutEffect(() => {
-    if (mountedRef.current) return;
-    mountedRef.current = true;
+    if (placedRef.current) return;
     let raf = 0;
+    const finish = () => {
+      placedRef.current = true;
+      setReady(true);
+    };
+    // Failsafe: whatever happens below, the wheel WILL be revealed. Landing
+    // centred is a nicety; staying invisible is a broken screen, so the hidden
+    // state is time-bound rather than trusting every path to reach `finish()`.
+    // The retry chain keeps running after it fires, so a late placement still
+    // corrects the scroll position.
+    const failsafe = window.setTimeout(finish, 600);
     const place = (attempt: number) => {
       const element = scrollerRef.current;
       if (!element) {
         if (attempt < 8) raf = requestAnimationFrame(() => place(attempt + 1));
-        else setReady(true);
+        else finish();
         return;
       }
       const index = indexOfKey(selectedKey);
       const width = cellWidth();
       if (index >= 0 && width > 0) {
         element.scrollLeft = index * width;
-        setReady(true);
+        finish();
         return;
       }
       // Fallback if a per-cell width read still measures 0 while the browser
@@ -352,14 +373,17 @@ export function DateStrip({
       if (target && target.offsetWidth > 0) {
         element.scrollLeft =
           target.offsetLeft - (element.clientWidth - target.offsetWidth) / 2;
-        setReady(true);
+        finish();
         return;
       }
       if (attempt < 8) raf = requestAnimationFrame(() => place(attempt + 1));
-      else setReady(true);
+      else finish();
     };
     raf = requestAnimationFrame(() => place(0));
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.clearTimeout(failsafe);
+    };
   }, [cellWidth, indexOfKey, selectedKey]);
 
   // Re-centre when the day changes from OUTSIDE the wheel (back/forward, a deep

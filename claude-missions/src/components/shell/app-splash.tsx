@@ -65,7 +65,12 @@ export function AppSplash() {
     >
       <div className="fm-splash__stage" aria-hidden="true">
         {/* The pear mark used in the header lockup, at launch size. Decorative:
-            the wordmark below already names the app. */}
+            the wordmark below already names the app.
+
+            `fetchPriority="high"` matches the `preload()` in the root layout:
+            this image IS the launch, so it must not queue behind fonts and JS.
+            Without both, the ~1s splash regularly finished before the mark
+            arrived and the app opened on a lone "FitMess" wordmark. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className="fm-splash__mark"
@@ -73,6 +78,7 @@ export function AppSplash() {
           alt=""
           width={160}
           height={160}
+          fetchPriority="high"
         />
         <div
           className="fm-splash__wordmark"

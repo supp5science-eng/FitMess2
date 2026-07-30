@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Archivo_Black, Poppins } from "next/font/google";
 import { cookies } from "next/headers";
+import { preload } from "react-dom";
 import "./globals.css";
 
 import { AppShell } from "@/components/shell/app-shell";
@@ -162,6 +163,19 @@ export default async function RootLayout({
   // The onboarding ring hand-off drops `fm_intro` just before landing on
   // `/danas`; while it's present the launch splash yields to that animation.
   const introActive = cookieStore.get("fm_intro") != null;
+
+  // The pear mark, fetched at HIGH priority from the document head instead of
+  // being discovered late in the body.
+  //
+  // It is the first thing the app shows (the launch splash) and it sits in the
+  // /danas header, but it is a plain <img> deep inside the body, so the browser
+  // reached it only after the HTML around it — behind fonts and JS in the queue.
+  // That was survivable while the splash ran ~2.4s; now that the splash clears
+  // in ~1s, the mark routinely lost the race and the launch showed a bare
+  // "FitMess" wordmark with an empty box where the logo belongs (and the same
+  // gap in the header underneath). Preloading here starts the request as soon as
+  // the head is parsed, so the bytes are in hand before either paints.
+  preload("/brand/fitmess-icon.png", { as: "image", fetchPriority: "high" });
 
   return (
     <html

@@ -102,6 +102,8 @@ describe("DateStrip: settling on a day navigates there", () => {
 
   it("test_settling_on_a_past_day_pushes_that_days_view", () => {
     const { scroller } = mount();
+    // Let the mount placement (which centres today) run first, then scroll away.
+    vi.advanceTimersByTime(50);
 
     // Rest centred on 07-18 (index 3) and let scrolling go idle.
     scroller.scrollLeft = 3 * CELL_W;
@@ -115,6 +117,7 @@ describe("DateStrip: settling on a day navigates there", () => {
     // Start on a past day so a settle onto today is a real change.
     searchParams = new URLSearchParams("dan=2026-07-18");
     const { scroller } = mount();
+    vi.advanceTimersByTime(50);
 
     scroller.scrollLeft = 4 * CELL_W; // index 4 = today (07-19)
     fireEvent.scroll(scroller);
@@ -125,6 +128,7 @@ describe("DateStrip: settling on a day navigates there", () => {
 
   it("test_settling_on_a_future_day_snaps_back_and_does_not_navigate_to_it", () => {
     const { scroller } = mount();
+    vi.advanceTimersByTime(50);
 
     scroller.scrollLeft = 5 * CELL_W; // index 5 = 07-20 (future filler)
     fireEvent.scroll(scroller);

@@ -58,6 +58,7 @@ function MacroCard({
   Icon,
   view,
   testId,
+  revealDelayMs,
 }: {
   label: string;
   consumedG: number;
@@ -66,6 +67,11 @@ function MacroCard({
   Icon: MacroConfig["Icon"];
   view: RingView;
   testId: string;
+  // Landing reveal: the ring sweeps in from empty on mount (a day switch
+  // remounts the dashboard), staggered by `revealDelayMs` so the three rings
+  // pour in one after another. Pure CSS (`fm-arc-in`), so the rendered offset
+  // attribute stays the real value.
+  revealDelayMs: number;
 }) {
   // The big number follows the toggle: what's LEFT (target - consumed, never
   // negative) in "remaining" view, what's been eaten in "consumed" view.
@@ -122,7 +128,12 @@ function MacroCard({
             strokeDasharray={100}
             strokeDashoffset={dashOffset}
             transform="rotate(-90 50 50)"
-            style={{ stroke: color, transition: "stroke-dashoffset 0.5s cubic-bezier(0.2,0,0,1)" }}
+            className="fm-arc-in"
+            style={{
+              stroke: color,
+              transition: "stroke-dashoffset 0.5s cubic-bezier(0.2,0,0,1)",
+              animationDelay: `${revealDelayMs}ms`,
+            }}
           />
         </svg>
         <div className="absolute inset-0 grid place-items-center">
@@ -161,7 +172,7 @@ export function MacroBars({
 
   return (
     <div data-testid="home-macro-bars" className="flex items-stretch gap-2.5">
-      {MACROS.map(({ key, labelKey, color, Icon, testId }) => (
+      {MACROS.map(({ key, labelKey, color, Icon, testId }, index) => (
         <MacroCard
           key={key}
           label={t(labelKey)}
@@ -171,6 +182,8 @@ export function MacroBars({
           Icon={Icon}
           view={view}
           testId={testId}
+          // Stagger the three rings: protein -> carbs -> fat pour in in turn.
+          revealDelayMs={index * 90}
         />
       ))}
     </div>

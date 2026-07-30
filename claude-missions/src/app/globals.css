@@ -685,12 +685,31 @@ a[aria-disabled="true"]:active,
 .fm-arc {
   transition: stroke-dashoffset 0.6s cubic-bezier(0.2, 0, 0, 1);
 }
+
+/* Landing sweep: a ring arc fills from EMPTY to its real value whenever it
+ * mounts -- which is exactly when you land on a day (the /danas dashboard is
+ * keyed by the viewed day, so a day switch remounts it). The keyframe omits the
+ * end value on purpose: at 100% the arc reverts to its OWN `stroke-dashoffset`
+ * (the real fraction from the data), so the sweep always lands on the right
+ * value and the rendered attribute stays truthful. Used by the calorie ring and
+ * the macro rings. */
+@keyframes fm-arc-in {
+  from {
+    stroke-dashoffset: 100;
+  }
+}
+.fm-arc-in {
+  animation: fm-arc-in 0.6s cubic-bezier(0.2, 0, 0, 1) both;
+}
 .fm-ring-glow {
   animation: fm-ring-glow 4.5s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
   .fm-arc {
     transition: none;
+  }
+  .fm-arc-in {
+    animation: none;
   }
   .fm-ring-glow {
     animation: none;

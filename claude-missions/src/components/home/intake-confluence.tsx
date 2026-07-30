@@ -201,7 +201,7 @@ export function IntakeConfluence({
                 strokeDasharray={100}
                 strokeDashoffset={fillDashOffset}
                 transform={`rotate(-90 ${CX} ${CY})`}
-                className="fm-arc"
+                className="fm-arc fm-arc-in"
               />
               {state.isOver ? (
                 <circle
@@ -217,7 +217,7 @@ export function IntakeConfluence({
                   strokeDasharray={100}
                   strokeDashoffset={overshootDashOffset}
                   transform={`rotate(-90 ${CX} ${CY})`}
-                  className="fm-arc"
+                  className="fm-arc fm-arc-in"
                 />
               ) : null}
             </svg>

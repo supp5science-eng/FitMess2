@@ -63,6 +63,21 @@ type Phase = "idle" | "building" | "ready" | "shared" | "error";
  */
 const FORMAT: CardFormat = "story";
 
+/** How often to re-check whether the page's own images have finished. */
+const PREWARM_POLL_MS = 400;
+/**
+ * Longest the prewarm will wait on the page's images before going anyway. A
+ * photo can stay un-`complete` indefinitely (a stalled request, a dead src);
+ * the wait is a courtesy, not a precondition.
+ */
+const PREWARM_MAX_WAIT_MS = 15_000;
+/**
+ * Idle deadline once the pictures are done. Generous on purpose: by this point
+ * nothing visible is competing, so there is no reason to force the callback
+ * through while the main thread is still busy.
+ */
+const PREWARM_IDLE_TIMEOUT_MS = 10_000;
+
 export function ShareMealSheet({
   logId,
   mealName,
@@ -134,31 +149,67 @@ export function ShareMealSheet({
     }
   }
 
-  // Prewarm the default card the moment a shareable meal is on screen, so the
-  // first "Podeli" tap opens onto a finished card instead of a spinner. Runs at
-  // idle so it never competes with hydration, and goes through the shared serial
-  // queue so several photo meals on `/danas` can't fire concurrent 2.5 MB
-  // renders. Already-cached cards (incl. from a previous visit) cost nothing.
+  // Prewarm the default card so the first "Podeli" tap opens onto a finished
+  // card instead of a spinner. It goes through the shared serial queue, so
+  // several photo meals on `/danas` can't fire concurrent 2.5 MB renders, and
+  // an already-cached card (incl. from a previous visit) costs nothing.
+  //
+  // The prewarm WAITS FOR THE SCREEN'S OWN PICTURES FIRST. `/danas` leads every
+  // meal with a full-bleed photo, and a card render is the heavier request by
+  // far — a 1080x1920 rasterise plus a ~2.5 MB download, against a ~1 MB photo.
+  // Fired while those photos are still in flight it competes with them for the
+  // same connection and the same serverless instance, and the VISIBLE thing is
+  // what loses: the meal cards sat blank on entry while cards nobody had asked
+  // for downloaded ahead of them.
+  //
+  // `requestIdleCallback`'s old 2 s timeout made this worse rather than better —
+  // a timeout GUARANTEES the barge-in precisely on the busy pages where idle
+  // never comes. So: hold until no <img> on the page is still loading, then take
+  // a genuine idle slot. `PREWARM_MAX_WAIT_MS` caps the wait so a photo that
+  // never settles (a broken src, a stalled connection) can't cancel the prewarm
+  // outright, only postpone it.
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;
-    const run = () => {
-      if (!cancelled) void prewarmCard(logId, "story", buildCard);
+    // Two separate handles: idle-callback ids and timeout ids are SEPARATE id
+    // spaces, and cancelling one as if it were the other kills whatever
+    // unrelated timer happens to hold that number — on `/danas` that is a live
+    // minefield (the date wheel's settle timer, the intro stage timers).
+    let idleHandle: number | null = null;
+    let timerHandle: number | null = null;
+
+    const startPrewarm = () => {
+      if (cancelled) return;
+      const run = () => {
+        if (!cancelled) void prewarmCard(logId, "story", buildCard);
+      };
+      if (typeof window.requestIdleCallback === "function") {
+        idleHandle = window.requestIdleCallback(run, {
+          timeout: PREWARM_IDLE_TIMEOUT_MS,
+        });
+      } else {
+        timerHandle = window.setTimeout(run, 500);
+      }
     };
-    // Which scheduler produced `handle` has to be remembered, not guessed:
-    // idle-callback ids and timeout ids are SEPARATE id spaces, so the old
-    // cleanup's "cancel it as both" would hand an idle id to `clearTimeout`
-    // and kill whatever unrelated timer happened to hold that number — on
-    // `/danas` that is a live minefield (the date wheel's settle timer, the
-    // intro stage timers).
-    const idle = typeof window.requestIdleCallback === "function";
-    const handle = idle
-      ? window.requestIdleCallback(run, { timeout: 2000 })
-      : window.setTimeout(run, 200);
+
+    const deadline = Date.now() + PREWARM_MAX_WAIT_MS;
+    const waitForPictures = () => {
+      if (cancelled) return;
+      // `complete` covers loaded, cached, errored and empty-src alike, so a
+      // photo that fails still releases the prewarm instead of blocking it.
+      const settled = Array.from(document.images).every((img) => img.complete);
+      if (settled || Date.now() >= deadline) {
+        startPrewarm();
+        return;
+      }
+      timerHandle = window.setTimeout(waitForPictures, PREWARM_POLL_MS);
+    };
+    waitForPictures();
+
     return () => {
       cancelled = true;
-      if (idle) window.cancelIdleCallback?.(handle);
-      else window.clearTimeout(handle);
+      if (idleHandle != null) window.cancelIdleCallback?.(idleHandle);
+      if (timerHandle != null) window.clearTimeout(timerHandle);
     };
   }, [logId, buildCard]);
 

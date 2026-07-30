@@ -34,6 +34,10 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  // Unconditionally, and FIRST: a case that throws before its own cleanup would
+  // otherwise leave fake timers installed, and every later test then hangs on a
+  // `waitFor` whose clock never moves ("Test timed out", six cases at a time).
+  vi.useRealTimers();
   await resetCardCache();
   vi.unstubAllGlobals();
   Reflect.deleteProperty(navigator, "share");
@@ -160,6 +164,86 @@ describe("ShareMealSheet", () => {
 
     Reflect.deleteProperty(window, "requestIdleCallback");
     Reflect.deleteProperty(window, "cancelIdleCallback");
+  });
+
+  /**
+   * Puts a still-loading `<img>` in the document, the way `/danas` looks the
+   * instant it is opened: one full-bleed meal photo per card, in flight.
+   */
+  function pendingPagePhoto() {
+    const photo = document.createElement("img");
+    Object.defineProperty(photo, "complete", {
+      configurable: true,
+      value: false,
+    });
+    document.body.appendChild(photo);
+    return {
+      finish: () =>
+        Object.defineProperty(photo, "complete", {
+          configurable: true,
+          value: true,
+        }),
+      remove: () => photo.remove(),
+    };
+  }
+
+  /**
+   * Fakes only the clock the prewarm's wait actually uses. `requestIdleCallback`
+   * is deliberately left ALONE (jsdom has none, so the component takes its
+   * `setTimeout` fallback and every step is on the faked clock) -- faking it
+   * here collided with the sinon fake-timer install and took the suite down.
+   */
+  function useWaitClock() {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+  }
+
+  it("test_the_prewarm_yields_to_the_screens_own_photos_before_spending_the_connection", async () => {
+    // The reported symptom: opening the app showed BLANK meal cards for a
+    // stretch. The photos were fine -- they were queued behind the card
+    // prewarms, which are the far heavier request (a 1080x1920 rasterise and a
+    // ~2.5 MB download each) and were firing while the photos were still in
+    // flight. The visible thing has to win.
+    fetchMock.mockResolvedValue(pngResponse());
+    const photo = pendingPagePhoto();
+    useWaitClock();
+
+    try {
+      render(<ShareMealSheet {...PROPS} />);
+
+      // While a page photo is still loading, no card render is started at all.
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      // The moment the photo lands, the prewarm takes its turn.
+      photo.finish();
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+      photo.remove();
+    }
+  });
+
+  it("test_a_photo_that_never_loads_only_postpones_the_prewarm_it_never_cancels_it", async () => {
+    // Waiting on the page's pictures is a courtesy, not a precondition: a
+    // stalled or broken photo must not cost the user their prewarmed card.
+    fetchMock.mockResolvedValue(pngResponse());
+    const photo = pendingPagePhoto();
+    useWaitClock();
+
+    try {
+      render(<ShareMealSheet {...PROPS} />);
+
+      await vi.advanceTimersByTimeAsync(4000);
+      expect(fetchMock).not.toHaveBeenCalled();
+
+      // Past the 15 s cap the prewarm goes ahead regardless.
+      await vi.advanceTimersByTimeAsync(13_000);
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+      photo.remove();
+    }
   });
 
   it("test_returning_to_the_screen_reuses_the_card_instead_of_rebuilding", async () => {

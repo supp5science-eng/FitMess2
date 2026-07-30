@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
+import { resetCardCache } from "@/lib/share/card-cache";
 import { ShareMealSheet } from "../share-meal-sheet";
 
 // "Podeli" beside a logged meal on /danas: opens a bottom sheet that renders
@@ -22,14 +23,18 @@ function pngResponse() {
 
 const fetchMock = vi.fn();
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.clearAllMocks();
   vi.stubGlobal("fetch", fetchMock);
+  // Cards are cached in module-level state + Cache Storage, so each case starts
+  // from a cold cache -- otherwise one test's card answers the next one's build.
+  await resetCardCache();
   URL.createObjectURL = vi.fn(() => "blob:fake");
   URL.revokeObjectURL = vi.fn();
 });
 
-afterEach(() => {
+afterEach(async () => {
+  await resetCardCache();
   vi.unstubAllGlobals();
   Reflect.deleteProperty(navigator, "share");
   Reflect.deleteProperty(navigator, "canShare");
@@ -142,6 +147,27 @@ describe("ShareMealSheet", () => {
 
     Reflect.deleteProperty(window, "requestIdleCallback");
     Reflect.deleteProperty(window, "cancelIdleCallback");
+  });
+
+  it("test_returning_to_the_screen_reuses_the_card_instead_of_rebuilding", async () => {
+    // The reported bug: a card the user had already created rendered again from
+    // scratch every time they came back to /danas, because the only cache was
+    // per-component state.
+    fetchMock.mockResolvedValue(pngResponse());
+    stubShare(async () => {});
+
+    const first = render(<ShareMealSheet {...PROPS} />);
+    fireEvent.click(screen.getByTestId(`share-meal-open-${LOG_ID}`));
+    await screen.findByAltText(/Pregled kartice/i);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    first.unmount();
+
+    // Navigate back: a fresh mount of the same meal.
+    render(<ShareMealSheet {...PROPS} />);
+    fireEvent.click(screen.getByTestId(`share-meal-open-${LOG_ID}`));
+    await screen.findByAltText(/Pregled kartice/i);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("test_a_failed_build_surfaces_a_calm_serbian_error", async () => {

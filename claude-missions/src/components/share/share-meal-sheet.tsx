@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
 import type { MessageKey } from "@/lib/i18n/messages";
 import type { CardFormat } from "@/lib/share/card";
+import { getCard, peekCard, prewarmCard } from "@/lib/share/card-cache";
 import {
   canShareFiles,
   saveFileViaLink,
@@ -32,14 +33,17 @@ import { cn } from "@/lib/utils";
  * alone — name, macros, tier and the photo are all read server-side
  * (`/api/card/scan`), so nothing shareable is ever client-authored.
  *
- * Building is PREWARMED: as soon as a shareable meal is on screen the default
- * ("story") card is built in the background at idle and cached, so the very
- * first "Podeli" tap — the one that used to sit on a spinner while the server
- * fetched the font and rendered the photo — opens straight onto a finished
- * card. The tap itself only builds when the prewarm hasn't landed yet (or the
- * user switched format), and every build funnels through `getBuilt`, which
- * reuses a finished card and joins an in-flight one, so a card is fetched at
- * most once per format no matter how prewarm and taps interleave.
+ * Building a card is slow and entirely server-side (~6 s cold, ~1.2 s warm, for
+ * a ~2.5 MB PNG), so this component never builds one it could reuse: caching,
+ * request de-duplication and background prewarming all live in
+ * `lib/share/card-cache.ts`. Two consequences worth knowing here:
+ *
+ *  - The default ("story") card is PREWARMED at idle as soon as a shareable meal
+ *    is on screen — which, since logging a photo meal lands on `/danas`, means
+ *    the card is usually finished before the user ever taps "Podeli".
+ *  - The cache is persistent (Cache Storage), so a card survives a reload and
+ *    navigation away and back. A card the user already created never renders
+ *    twice.
  *
  * Because the file is ready, share() still fires inside a fresh, live gesture —
  * the iOS `NotAllowedError` case the export button had to recover from mostly
@@ -71,8 +75,6 @@ export function ShareMealSheet({
   const [phase, setPhase] = useState<Phase>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
-  const builtRef = useRef<Map<CardFormat, File>>(new Map());
-  const inFlightRef = useRef<Map<CardFormat, Promise<File>>>(new Map());
   const previewUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -88,12 +90,13 @@ export function ShareMealSheet({
     setPreviewUrl(url);
   }
 
+  /** Render one card on the server. The cache layer decides IF this ever runs. */
   const buildCard = useCallback(
-    async (target: CardFormat): Promise<File> => {
+    async (id: string, target: CardFormat): Promise<File> => {
       const response = await fetch("/api/card/scan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ logId, format: target }),
+        body: JSON.stringify({ logId: id, format: target }),
         credentials: "same-origin",
         cache: "no-store",
       });
@@ -104,48 +107,22 @@ export function ShareMealSheet({
       const blob = await response.blob();
       return new File([blob], `fitmess-${target}.png`, { type: "image/png" });
     },
-    [logId]
+    []
   );
 
-  /**
-   * Build `target` at most once. Reuse a finished card, join a build already
-   * in flight, or start a fresh one — so the prewarm and any tap that races it
-   * share a single `/api/card/scan` request instead of duplicating it. A failed
-   * build is not cached, so the next attempt can retry.
-   */
-  const getBuilt = useCallback(
-    (target: CardFormat): Promise<File> => {
-      const done = builtRef.current.get(target);
-      if (done) return Promise.resolve(done);
-      const flying = inFlightRef.current.get(target);
-      if (flying) return flying;
-      const build = buildCard(target)
-        .then((file) => {
-          builtRef.current.set(target, file);
-          inFlightRef.current.delete(target);
-          return file;
-        })
-        .catch((error) => {
-          inFlightRef.current.delete(target);
-          throw error;
-        });
-      inFlightRef.current.set(target, build);
-      return build;
-    },
-    [buildCard]
-  );
-
-  /** Ensure the card for `target` exists and is previewed. */
+  /** Ensure the card for `target` is previewed, building it only if no cache
+   * layer has it. A memory hit skips the "building" phase entirely, so a
+   * prewarmed card opens with no spinner frame at all. */
   async function ensureBuilt(target: CardFormat) {
-    const cached = builtRef.current.get(target);
-    if (cached) {
-      showPreview(cached);
+    const warm = peekCard(logId, target);
+    if (warm) {
+      showPreview(warm);
       setPhase("ready");
       return;
     }
     setPhase("building");
     try {
-      const file = await getBuilt(target);
+      const file = await getCard(logId, target, buildCard);
       showPreview(file);
       setPhase("ready");
     } catch {
@@ -155,13 +132,14 @@ export function ShareMealSheet({
 
   // Prewarm the default card the moment a shareable meal is on screen, so the
   // first "Podeli" tap opens onto a finished card instead of a spinner. Runs at
-  // idle so it never competes with hydration or the meal list's work, and is
-  // fire-and-forget: if it fails, the sheet just builds on open as before.
+  // idle so it never competes with hydration, and goes through the shared serial
+  // queue so several photo meals on `/danas` can't fire concurrent 2.5 MB
+  // renders. Already-cached cards (incl. from a previous visit) cost nothing.
   useEffect(() => {
     if (typeof window === "undefined") return;
     let cancelled = false;
     const run = () => {
-      if (!cancelled) void getBuilt("story").catch(() => {});
+      if (!cancelled) void prewarmCard(logId, "story", buildCard);
     };
     const handle =
       typeof window.requestIdleCallback === "function"
@@ -172,7 +150,7 @@ export function ShareMealSheet({
       window.cancelIdleCallback?.(handle as number);
       window.clearTimeout(handle as number);
     };
-  }, [getBuilt]);
+  }, [logId, buildCard]);
 
   function openSheet() {
     setOpen(true);
@@ -193,7 +171,7 @@ export function ShareMealSheet({
   }
 
   async function handleShare() {
-    const file = builtRef.current.get(format);
+    const file = peekCard(logId, format);
     if (!file) return;
     if (canShareFiles([file])) {
       const outcome = await shareFiles([file], { title: mealName });

@@ -21,6 +21,8 @@ import {
   type MealEstimate,
 } from "@/lib/ai/meal-estimate";
 import { downscaleImage } from "@/lib/image/downscale";
+import { buildScanCard } from "@/lib/share/build-scan-card";
+import { prewarmCard } from "@/lib/share/card-cache";
 import { estimateMealAction, logMealAction } from "./actions";
 
 // "Slikaj obrok" — the FASTEST way to log a meal, and the deliberate opposite
@@ -166,13 +168,15 @@ export function ObrokFlow() {
     setError(null);
     setPhase("saving");
 
-    // A small display thumbnail (separate, smaller than the estimate image) to
-    // store with the log. Best-effort: if it fails we still save the meal.
+    // The display photo stored with the log. It doubles as the FULL-BLEED
+    // background of the share card (rendered at 1080x1920), so it is kept large
+    // and high-quality -- a tiny thumbnail here is exactly what made a shared
+    // card look blurry. Best-effort: if it fails we still save the meal.
     let photo: { base64: string; mimeType?: string } | undefined;
     const file = capturedFileRef.current;
     if (file) {
       try {
-        const thumb = await downscaleImage(file, 720, 0.72);
+        const thumb = await downscaleImage(file, 1920, 0.9);
         photo = { base64: await blobToBase64(thumb), mimeType: "image/jpeg" };
       } catch {
         photo = undefined;
@@ -208,6 +212,14 @@ export function ObrokFlow() {
       setError(result.error_sr);
       setPhase("confirm");
       return;
+    }
+    // Kick the share card off NOW, while we navigate: building it is slow and
+    // entirely server-side, so starting at save time means it is usually
+    // finished before the user ever taps "Podeli" on /danas. Fire-and-forget
+    // through the shared cache -- a later open reuses this build instead of
+    // starting a second one. Only meals WITH a stored photo can be a scan card.
+    if (photo) {
+      void prewarmCard(result.logId, "story", buildScanCard);
     }
     router.push("/danas");
   }

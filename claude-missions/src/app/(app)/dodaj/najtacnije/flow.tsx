@@ -44,6 +44,8 @@ import { scaleMealMicros, type MealComponent } from "@/lib/ai/meal-estimate";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import { downscaleImage } from "@/lib/image/downscale";
 import { inspectPhoto, type PhotoIssue } from "@/lib/image/quality";
+import { buildScanCard } from "@/lib/share/build-scan-card";
+import { prewarmCard } from "@/lib/share/card-cache";
 import { logMealAction } from "../obrok/actions";
 import { analyzeMealAction, finalizeMealAction } from "./actions";
 
@@ -617,12 +619,15 @@ export function NajtacnijeFlow() {
     setError(null);
     setPhase("saving");
 
-    // Small display thumbnail: the first photo (best-effort).
+    // Display photo (the first shot), stored with the log. It doubles as the
+    // FULL-BLEED background of the share card (rendered at 1080x1920), so it is
+    // kept large and high-quality -- a tiny thumbnail is what made shared cards
+    // look blurry. Best-effort: if it fails we still save the meal.
     let photo: { base64: string; mimeType?: string } | undefined;
     const file = files[0];
     if (file) {
       try {
-        const thumb = await downscaleImage(file, 720, 0.72);
+        const thumb = await downscaleImage(file, 1920, 0.9);
         photo = { base64: await blobToBase64(thumb), mimeType: "image/jpeg" };
       } catch {
         photo = undefined;
@@ -660,6 +665,13 @@ export function NajtacnijeFlow() {
       setError(result.error_sr);
       setPhase("confirm");
       return;
+    }
+    // Start building the share card now, while we navigate to /danas -- the
+    // render is slow and server-side, so kicking it off at save time means the
+    // card is usually ready before the first "Podeli" tap. Fire-and-forget
+    // through the shared cache, and only for a meal that actually has a photo.
+    if (photo) {
+      void prewarmCard(result.logId, "story", buildScanCard);
     }
     router.push("/danas");
   }

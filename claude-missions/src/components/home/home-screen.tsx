@@ -2,7 +2,6 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { DateStrip } from "@/components/home/date-strip";
 import { HealthScoreCard } from "@/components/home/health-score-card";
 import { IntakePager } from "@/components/home/intake-pager";
 import { IntroCover } from "@/components/home/intro-cover";
@@ -13,19 +12,16 @@ import type { MiniWeekDay } from "@/components/home/mini-week-bars";
 import { MealList } from "@/components/home/meal-list";
 import { AdaptivePlanCard } from "@/components/home/adaptive-plan-card";
 import { StepsCard } from "@/components/home/steps-card";
-import { StreakPill } from "@/components/streak/streak-pill";
 import { useT } from "@/components/i18n/locale-provider";
 import { GricButton } from "@/components/home/gric-button";
 import { WaterButton } from "@/components/home/water-button";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
 import type { LogWithFood } from "@/lib/home/attach-food";
-import type { DayCell } from "@/lib/home/date-strip";
 import { computeDayTotals } from "@/lib/home/totals";
 import { computeHealthScore } from "@/lib/nutrition/health-score";
 import { computeMicroTotals, microTargetsForKcal } from "@/lib/nutrition/micro";
 import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { waterGoalMl } from "@/lib/water/water-week";
-import type { StreakSummary } from "@/lib/streak/streak";
 import type { Log, Target } from "@/lib/types/db";
 
 // useLayoutEffect on the client (measure + cover before first paint), a no-op
@@ -62,7 +58,6 @@ export function HomeScreen({
   target,
   intro = false,
   installPrompt = false,
-  days = [],
   mealsHeading = "Obroci danas",
   adaptivePlan = null,
   planIntro = false,
@@ -73,7 +68,6 @@ export function HomeScreen({
   waterGoal = waterGoalMl(null),
   stepsWeek = [],
   waterWeek = [],
-  streak = null,
   isToday = true,
 }: {
   initialLogs: LogWithFood[];
@@ -86,9 +80,8 @@ export function HomeScreen({
   // once the ring hand-off has settled. The overlay consumes the cookie and
   // self-guards, so this can never replay on later visits.
   installPrompt?: boolean;
-  // The date strip's day cells (built server-side) + the meals-section heading
-  // for the day currently being viewed ("Obroci danas" for today).
-  days?: DayCell[];
+  // The meals-section heading for the day currently being viewed ("Obroci
+  // danas" for today).
   mealsHeading?: string;
   // "Deo 2": the adaptive daily-target plan for TODAY (computed server-side
   // from this week's logs). Only passed for the today view; when it signals an
@@ -116,9 +109,6 @@ export function HomeScreen({
   // `computeStepsWeek`/`computeWaterWeek` the Analitika cards use.
   stepsWeek?: MiniWeekDay[];
   waterWeek?: MiniWeekDay[];
-  // Niz: the meal-logging streak, derived server-side by `computeStreak`. Only
-  // passed for the today view (a streak is a "now" fact); null => no card.
-  streak?: StreakSummary | null;
   // Whether `dayKey` is the current Belgrade day. Gates "Gric", which always
   // writes at `now()` and so has no meaning on a past day.
   isToday?: boolean;
@@ -251,42 +241,9 @@ export function HomeScreen({
       data-intro={dataIntro}
       className="home-main flex flex-1 flex-col gap-8 px-6 py-8"
     >
-      <header className="home-body flex flex-col gap-5">
-        {/* Brand lockup: the sedef (paua-shell) pear mark + the FitMess
-            wordmark in the display face (Archivo Black). "Mess" is painted with
-            the logo's own iridescent gradient (`.fm-wordmark-accent`, defined in
-            globals.css, theme-aware) so the word literally wears the pear's
-            colours; the mark is decorative (`aria-hidden`) since the <h1> text
-            already names the app. */}
-        <div className="flex items-center gap-2.5">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/brand/fitmess-icon.png"
-            alt=""
-            width={36}
-            height={36}
-            aria-hidden="true"
-            className="size-9 shrink-0 select-none"
-          />
-          <h1
-            className="text-4xl tracking-tight text-foreground"
-            style={{
-              fontFamily: "var(--font-display), var(--font-sans), sans-serif",
-            }}
-          >
-            Fit<span className="fm-wordmark-accent">Mess</span>
-          </h1>
-          {/* Niz, compact: a small flame + day count in the top-right of the
-              header, tappable to open /dostignuca. Deliberately tiny -- it
-              costs no vertical space, unlike the old full card. Only on the
-              today view (the page passes `streak` only then). */}
-          {streak ? (
-            <StreakPill streak={streak} href="/dostignuca" className="ml-auto" />
-          ) : null}
-        </div>
-        {days.length > 0 ? <DateStrip days={days} /> : null}
-      </header>
-
+      {/* The brand lockup, streak pill and date wheel now live in the route's
+          persistent `layout.tsx` (2026-07-30) so switching days never blanks
+          them -- see that file. `HomeScreen` renders only the per-day content. */}
       {target ? (
         <div className="flex flex-col gap-7">
           <h2

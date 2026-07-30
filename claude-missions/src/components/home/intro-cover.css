@@ -142,6 +142,31 @@
     transform 560ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* The /danas header (wordmark + date wheel) lives in the route LAYOUT now, so
+ * it sits OUTSIDE `.home-main` and can't ride the `[data-intro]` reveal above.
+ * During the one-time onboarding hand-off the layout tags it `.danas-header-intro`
+ * so it fades and rises in ONCE with the dashboard, instead of popping in while
+ * the ring is still landing. Self-contained (a keyframe, not a state
+ * transition), since the layout is server-rendered and has no `data-intro`. */
+@keyframes fm-danas-header-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.danas-header-intro {
+  animation: fm-danas-header-in 560ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .danas-header-intro {
+    animation: none;
+  }
+}
+
 /* ---------- Hide the floating nav during the hand-off ---------- */
 /* While the onboarding ring hand-off runs (cover -> glide -> land), the
  * floating bottom nav must stay hidden: during glide/land the cover turns

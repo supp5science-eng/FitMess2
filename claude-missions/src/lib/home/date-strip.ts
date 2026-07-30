@@ -98,10 +98,13 @@ export function buildDateStrip({
         fillFraction = 1;
       }
     }
+    // Resolve the weekday ONCE per cell -- it was computed twice (label +
+    // index), and each call re-derives the calendar day through `Intl`.
+    const weekdayIndex = belgradeWeekdayIndex(instant);
     cells.push({
       key,
-      dayLabel: SR_WEEKDAYS_SHORT[belgradeWeekdayIndex(instant)]!,
-      weekdayIndex: belgradeWeekdayIndex(instant),
+      dayLabel: SR_WEEKDAYS_SHORT[weekdayIndex]!,
+      weekdayIndex,
       dayNum: Number(key.split("-")[2]),
       isToday: key === todayKey,
       isFuture,

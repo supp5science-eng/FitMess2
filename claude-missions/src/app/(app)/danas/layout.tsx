@@ -39,6 +39,27 @@ const STRIP_FUTURE_DAYS = 3;
 // streak) is a "browse the calendar" fact, independent of WHICH day is open, so
 // it belongs here and is fetched once per full load rather than on every hop.
 
+/**
+ * The streak pill, resolved from an already-in-flight read. Awaiting the
+ * promise HERE (inside a `Suspense` boundary) rather than in the layout body is
+ * the whole point: the header's HTML flushes without it, and the pill is
+ * streamed in when the 400-day log read lands.
+ */
+async function StreakPillSlot({
+  streakPromise,
+  todayKey,
+}: {
+  streakPromise: Promise<Set<string> | null>;
+  todayKey: string;
+}) {
+  const streakDays = await streakPromise;
+  const streak: StreakSummary | null = streakDays
+    ? computeStreak([...streakDays], todayKey)
+    : null;
+  if (!streak) return null;
+  return <StreakPill streak={streak} href="/dostignuca" className="ml-auto" />;
+}
+
 /** Shifts a Belgrade calendar-day key by `n` days (noon-UTC is a robust
  * in-day instant; `Date.UTC` normalizes month/year overflow). */
 function addDaysKey(key: string, n: number): string {
@@ -69,7 +90,18 @@ export default async function DanasLayout({
   // in ONE parallel batch instead of the old profile -> kcal waterfall.
   const lookbackStartKey = addDaysKey(todayKey, -STRIP_LOOKBACK_DAYS);
 
-  const [profile, targetResult, streakDays, dayKcals] = await Promise.all([
+  // Niz: the streak reads a 400-DAY window of logs (`STREAK_WINDOW_DAYS`) -- by
+  // far the heaviest read on this screen. It is deliberately NOT awaited here:
+  // the header sits OUTSIDE `loading.tsx`'s Suspense boundary, so anything this
+  // layout awaits delays the whole document's first paint. Started now (so it
+  // runs concurrently with the reads below) and handed to a Suspense-wrapped
+  // slot, the pill streams in on its own while the wordmark and date wheel paint
+  // immediately. A failed read degrades to no pill.
+  const streakPromise = getLoggedDayKeys(supabase, userId, now).catch(
+    () => null
+  );
+
+  const [profile, targetResult, dayKcals] = await Promise.all([
     // Shared with `page.tsx` via React `cache()` -- one `profiles` read per
     // request instead of the layout and the page each firing their own.
     getDanasProfile(userId),
@@ -80,9 +112,6 @@ export default async function DanasLayout({
       .order("effective_from", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    // Niz: the streak is a "now" fact (not per-viewed-day), so the pill can live
-    // in the persistent header. A failed read degrades to no pill.
-    getLoggedDayKeys(supabase, userId, now).catch(() => null),
     // Per-day summed kcal for the mini day-rings over the fixed lookback window.
     // A failed read degrades to empty rings.
     getLoggedDayKcals(
@@ -120,10 +149,6 @@ export default async function DanasLayout({
     targetKcal,
   });
 
-  const streak: StreakSummary | null = streakDays
-    ? computeStreak([...streakDays], todayKey)
-    : null;
-
   // The onboarding ring hand-off (`fm_intro`) plays once, right after
   // onboarding. While it runs, fade/rise the header in with the dashboard
   // instead of letting it pop, matching `.home-body`'s reveal.
@@ -156,9 +181,13 @@ export default async function DanasLayout({
           >
             Fit<span className="fm-wordmark-accent">Mess</span>
           </h1>
-          {streak ? (
-            <StreakPill streak={streak} href="/dostignuca" className="ml-auto" />
-          ) : null}
+          {/* Streams in once the 400-day streak read lands, so it never holds
+              up the wordmark or the date wheel. No fallback markup: an absent
+              pill is already a valid state (a user with no streak), so a
+              placeholder would only cause a layout shift when it resolves. */}
+          <Suspense fallback={null}>
+            <StreakPillSlot streakPromise={streakPromise} todayKey={todayKey} />
+          </Suspense>
         </div>
         {days.length > 0 ? (
           // `DateStrip` reads `?dan=` via `useSearchParams`, so it needs a

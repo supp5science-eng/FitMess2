@@ -9,50 +9,31 @@ import type { RingView } from "@/components/home/ring";
 import { computeRingState } from "@/lib/home/totals";
 import { cn } from "@/lib/utils";
 
-// The `/danas` centrepiece (redesign 2026-07-30, "Pravac B"). The calorie ring
-// lives in its OWN floating glass card (`fm-cloud`) together with the toggle and
-// the Cilj / Potrošeno / Preostalo row; the three macro tiles float as their own
-// raised cards directly beneath it (`MacroBars`). Two floating tiers, cleanly
-// separated -- no threads, no droplets dangling into empty space (the old
-// "Slivanje" confluence read as broken wires hanging off the card).
-//
-// The ring is a single centred SVG. Its number + toggle are HTML overlays on the
-// same box, so they scale with the card at every phone width. Motion is kept
-// deliberately subtle: the arc eases when the toggle resizes it (`.fm-arc`) and a
-// soft halo breathes behind it (`.fm-ring-glow`); both collapse under
-// reduced-motion.
+// The `/danas` centrepiece (redesign 2026-07-30, "Cal AI" layout). The calorie
+// card reads left-to-right: the big number (the metric the toggle selected) with
+// its tappable "Preostalo / Potrošeno" label, and a progress ring with a flame
+// icon on the right. Below it float the three macro cards (`MacroBars`), each its
+// own ring + icon. Two floating tiers, no threads.
 //
 // Money-math rule: every number still comes from `computeRingState` -- nothing is
 // eyeballed here. The ring/number test ids, the `role="img"` accessible name, and
 // the `home-ring-slot` hook (the onboarding ghost hand-off docks on it) are all
-// preserved so the existing tests and the intro animation keep working.
+// preserved.
 //
 // The arc RESPONDS to the toggle: under budget it shows the SELECTED metric --
-// consumed fills the ring, remaining drains it. Over budget both views show the
-// full lap + the red overshoot lap (remaining is 0), with the toggle swapping
-// only the centre number.
+// consumed fills the ring, remaining drains it. Over budget the ring is a full
+// lap + a red overshoot lap (remaining is 0), with the toggle swapping only the
+// big number.
 
-// Square viewBox: a pure, centred ring (no thread space below it any more).
-const VIEW_BOX = 200;
-const CX = 100;
-const CY = 100;
-const RADIUS = 84;
-const STROKE = 16;
+// Ring geometry (a compact dial that holds the flame, not the number).
+const CX = 50;
+const CY = 50;
+const RADIUS = 42;
+const STROKE = 8;
 
 // The over-budget second lap (drawn on top of a full first lap), a deep red so
 // the overshoot reads clearly against the brand gradient.
 const OVERSHOOT_STROKE = "#991b1b";
-
-/** One number in the row under the dial. `key` doubles as the match against
- * the current view, which is what marks a column as the promoted one. */
-interface Stat {
-  key: RingView | "target";
-  value: number;
-  label: string;
-  testId: string;
-  labelTestId?: string;
-  danger?: boolean;
-}
 
 export function IntakeConfluence({
   consumedKcal,
@@ -65,7 +46,7 @@ export function IntakeConfluence({
   targetKcal: number;
   consumedMacros: { protein: number; carbs: number; fat: number };
   targetMacros: { proteinG: number; carbsG: number; fatG: number };
-  // Forwarded onto the ring card so the onboarding ghost hand-off can measure
+  // Forwarded onto the calorie card so the onboarding ghost hand-off can measure
   // where to dock (the same `home-ring-slot` the old ring used).
   ringRef?: Ref<HTMLDivElement>;
 }) {
@@ -73,49 +54,19 @@ export function IntakeConfluence({
   const [view, setView] = useState<RingView>("remaining");
   const state = computeRingState(consumedKcal, targetKcal);
 
-  // Arc responds to the toggle (under budget): consumed FILLS, remaining DRAINS.
-  // Over budget it's a full lap either way (remaining is 0) + the overshoot lap.
-  const remainingArcFraction =
-    Math.max(0, state.remainingKcal) / (state.targetKcal || 1);
-  const arcFraction =
-    view === "consumed" || state.isOver
-      ? state.fillFraction
-      : remainingArcFraction;
-  const fillDashOffset = 100 - arcFraction * 100;
+  // The ring always fills with what's been CONSUMED (Cal-AI style): empty on a
+  // fresh day, filling as you eat, regardless of which number the toggle shows.
+  // Over budget it's a full lap + the red overshoot lap on top.
+  const fillDashOffset = 100 - state.fillFraction * 100;
   const overshootDashOffset = 100 - state.overshootFraction * 100;
 
-  // The stat row under the dial, in a reading order that never changes: the
-  // fixed budget first, then the day's two moving numbers. Each test id is tied
-  // to its metric for good (remaining is always `home-ring-value`, consumed
-  // always `home-ring-consumed`, target always `home-ring-target`), so a view
-  // switch moves no id anywhere -- it only promotes one of them into the dial.
-  const stats: Stat[] = [
-    {
-      key: "target",
-      value: state.targetKcal,
-      label: t("ring.target"),
-      testId: "home-ring-target",
-    },
-    {
-      key: "consumed",
-      value: state.consumedKcal,
-      label: t("ring.consumed"),
-      testId: "home-ring-consumed",
-    },
-    {
-      key: "remaining",
-      value: state.remainingKcal,
-      label: t("ring.remaining"),
-      testId: "home-ring-value",
-      labelTestId: "home-ring-label",
-      danger: state.isOver,
-    },
-  ];
-  // Centre = whichever of the two moving numbers the toggle has selected.
+  // Big number = whichever of the two moving metrics the toggle has selected.
   const centre =
     view === "remaining"
       ? { value: state.remainingKcal, danger: state.isOver }
       : { value: state.consumedKcal, danger: false };
+  const viewLabel =
+    view === "remaining" ? t("ring.remaining") : t("ring.consumed");
 
   const ariaLabel = state.isOver
     ? `Prekoračeno ${state.overshootKcal} kcal`
@@ -123,154 +74,162 @@ export function IntakeConfluence({
 
   return (
     <div className="flex flex-col gap-2.5">
-      {/* The ring's own floating glass card: the toggle, the ring+number, and
-          the three-stat row all live on one raised `fm-cloud` surface -- a
-          single object that hovers over the aurora ground. */}
+      {/* The calorie card: number + toggle on the left, the flame ring on the
+          right, on one raised `fm-cloud` glass surface. */}
       <div
         ref={ringRef}
-        className="home-ring-slot fm-cloud relative flex flex-col gap-3.5 rounded-[1.75rem] px-5 pb-5 pt-4"
+        className="home-ring-slot fm-cloud relative rounded-[1.75rem] px-6 py-6"
       >
-        {/* View toggle, parked in the card's top-right corner. It stays OUTSIDE
-            the role="img" ring so it remains a real, reachable control. */}
-        <div className="flex justify-end">
-          <ViewToggle view={view} onChange={setView} />
-        </div>
-
-        {/* The dial: a single centred SVG with the number overlaid on top. */}
-        <div
-          data-testid="home-ring"
-          role="img"
-          aria-label={ariaLabel}
-          className="relative mx-auto w-full max-w-[220px]"
-        >
-          <svg
-            viewBox={`0 0 ${VIEW_BOX} ${VIEW_BOX}`}
-            className="block w-full"
-            aria-hidden="true"
-          >
-            <defs>
-              <linearGradient id="fm-conf-grad" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" style={{ stopColor: "var(--gauge-grad-1)" }} />
-                <stop offset="55%" style={{ stopColor: "var(--gauge-grad-2)" }} />
-                <stop offset="100%" style={{ stopColor: "var(--gauge-grad-3)" }} />
-              </linearGradient>
-              <filter
-                id="fm-conf-glow"
-                x="-60%"
-                y="-60%"
-                width="220%"
-                height="220%"
-              >
-                <feGaussianBlur stdDeviation="3.4" />
-              </filter>
-            </defs>
-
-            {/* Faint full-circle track. */}
-            <circle
-              cx={CX}
-              cy={CY}
-              r={RADIUS}
-              fill="none"
-              strokeWidth={STROKE}
-              style={{ stroke: "var(--gauge-track)" }}
-            />
-            {/* Soft halo under the arc -- breathes gently (subtle motion that
-                replaced the old thread flow). */}
-            <circle
-              cx={CX}
-              cy={CY}
-              r={RADIUS}
-              fill="none"
-              stroke="url(#fm-conf-grad)"
-              strokeWidth={STROKE}
-              strokeLinecap="round"
-              pathLength={100}
-              strokeDasharray={100}
-              strokeDashoffset={fillDashOffset}
-              transform={`rotate(-90 ${CX} ${CY})`}
-              filter="url(#fm-conf-glow)"
-              className="fm-arc fm-ring-glow"
-            />
-            {/* The arc itself -- responds to the toggle. */}
-            <circle
-              data-testid="home-ring-arc"
-              data-level={state.level}
-              cx={CX}
-              cy={CY}
-              r={RADIUS}
-              fill="none"
-              stroke="url(#fm-conf-grad)"
-              strokeWidth={STROKE}
-              strokeLinecap="round"
-              pathLength={100}
-              strokeDasharray={100}
-              strokeDashoffset={fillDashOffset}
-              transform={`rotate(-90 ${CX} ${CY})`}
-              className="fm-arc"
-            />
-            {state.isOver ? (
-              <circle
-                data-testid="home-ring-overshoot-arc"
-                cx={CX}
-                cy={CY}
-                r={RADIUS}
-                fill="none"
-                stroke={OVERSHOOT_STROKE}
-                strokeWidth={STROKE}
-                strokeLinecap="round"
-                pathLength={100}
-                strokeDasharray={100}
-                strokeDashoffset={overshootDashOffset}
-                transform={`rotate(-90 ${CX} ${CY})`}
-                className="fm-arc"
-              />
-            ) : null}
-          </svg>
-
-          {/* Centre = the selected metric, and nothing else. No label under it:
-              the toggle above and the highlighted column below both name it, and
-              a bare number is what makes the dial read as one object. */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center px-4 text-center">
+        <div className="flex items-center justify-between gap-3">
+          {/* Left: the big number + the Potrošeno/Preostalo switch. */}
+          <div className="flex min-w-0 flex-col gap-2.5">
             <AnimatedNumber
               value={centre.value}
               animateKey={view}
+              data-testid="home-ring-value"
               className={cn(
-                "font-bold leading-none tabular-nums",
+                "font-extrabold leading-none tabular-nums",
                 centre.danger ? "text-destructive" : "text-foreground"
               )}
-              style={{ fontSize: "clamp(2.1rem, 11.5vw, 3rem)" }}
+              style={{ fontSize: "clamp(2.5rem, 13vw, 3.25rem)" }}
             />
+
+            {/* The segmented switch flips what the number shows (Potrošeno vs
+                Preostalo). A real, reachable pair of buttons. */}
+            <ViewToggle view={view} onChange={setView} />
+
             {state.isOver ? (
               <span
                 data-testid="home-ring-overshoot-note"
-                className="mt-1.5 text-[11px] font-semibold text-destructive"
+                className="text-xs font-semibold text-destructive"
               >
                 preko cilja
               </span>
             ) : null}
-          </div>
-        </div>
 
-        {/* The three numbers, equal thirds with hairline rules between them, on
-            the SAME three-column grid as the macro tiles below. A top hairline
-            separates them from the ring. All three are always present and the
-            same size -- the one the toggle promoted into the dial is only DARKER
-            -- so nothing jumps when you switch views. */}
-        <div className="grid grid-cols-3 border-t border-border/60 pt-3.5">
-          {stats.map((stat, i) => (
-            <StatColumn
-              key={stat.key}
-              stat={stat}
-              active={stat.key === view}
-              divided={i > 0}
-            />
-          ))}
+            {/* The current metric + Cilj + Potrošeno stay in the DOM
+                (accessible + tested) without crowding the card; the ring and
+                the switch encode them visually. */}
+            <span className="sr-only" data-testid="home-ring-label">
+              {viewLabel}
+            </span>
+            <span className="sr-only" data-testid="home-ring-target">
+              {state.targetKcal}
+            </span>
+            <span className="sr-only" data-testid="home-ring-consumed">
+              {state.consumedKcal}
+            </span>
+          </div>
+
+          {/* Right: the flame ring. The arc responds to the toggle; the flame
+              sits in its centre. */}
+          <div
+            data-testid="home-ring"
+            role="img"
+            aria-label={ariaLabel}
+            className="relative size-28 shrink-0"
+          >
+            <svg
+              viewBox="0 0 100 100"
+              className="block size-full"
+              aria-hidden="true"
+            >
+              <defs>
+                <linearGradient id="fm-conf-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" style={{ stopColor: "var(--gauge-grad-1)" }} />
+                  <stop offset="55%" style={{ stopColor: "var(--gauge-grad-2)" }} />
+                  <stop offset="100%" style={{ stopColor: "var(--gauge-grad-3)" }} />
+                </linearGradient>
+                <filter
+                  id="fm-conf-glow"
+                  x="-60%"
+                  y="-60%"
+                  width="220%"
+                  height="220%"
+                >
+                  <feGaussianBlur stdDeviation="3" />
+                </filter>
+              </defs>
+
+              {/* Faint full-circle track. */}
+              <circle
+                cx={CX}
+                cy={CY}
+                r={RADIUS}
+                fill="none"
+                strokeWidth={STROKE}
+                style={{ stroke: "var(--gauge-track)" }}
+              />
+              {/* Soft halo under the arc -- breathes gently. */}
+              <circle
+                cx={CX}
+                cy={CY}
+                r={RADIUS}
+                fill="none"
+                stroke="url(#fm-conf-grad)"
+                strokeWidth={STROKE}
+                strokeLinecap="round"
+                pathLength={100}
+                strokeDasharray={100}
+                strokeDashoffset={fillDashOffset}
+                transform={`rotate(-90 ${CX} ${CY})`}
+                filter="url(#fm-conf-glow)"
+                className="fm-arc fm-ring-glow"
+              />
+              {/* The arc itself -- responds to the toggle. */}
+              <circle
+                data-testid="home-ring-arc"
+                data-level={state.level}
+                cx={CX}
+                cy={CY}
+                r={RADIUS}
+                fill="none"
+                stroke="url(#fm-conf-grad)"
+                strokeWidth={STROKE}
+                strokeLinecap="round"
+                pathLength={100}
+                strokeDasharray={100}
+                strokeDashoffset={fillDashOffset}
+                transform={`rotate(-90 ${CX} ${CY})`}
+                className="fm-arc"
+              />
+              {state.isOver ? (
+                <circle
+                  data-testid="home-ring-overshoot-arc"
+                  cx={CX}
+                  cy={CY}
+                  r={RADIUS}
+                  fill="none"
+                  stroke={OVERSHOOT_STROKE}
+                  strokeWidth={STROKE}
+                  strokeLinecap="round"
+                  pathLength={100}
+                  strokeDasharray={100}
+                  strokeDashoffset={overshootDashOffset}
+                  transform={`rotate(-90 ${CX} ${CY})`}
+                  className="fm-arc"
+                />
+              ) : null}
+            </svg>
+
+            <div className="absolute inset-0 grid place-items-center">
+              {/* The FitMess pear mark, centred in the ring. Decorative -- the
+                  ring's own aria-label already names the value. */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/brand/fitmess-icon.png"
+                alt=""
+                aria-hidden="true"
+                className="size-16 select-none object-contain"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Macro tiles -- three floating cards of their own. `home-body` staggers
-          them in during the onboarding intro (the ring card fades in on its own
-          via `home-ring-slot`). */}
+      {/* Macro cards -- three floating rings of their own. `home-body` staggers
+          them in during the onboarding intro (the calorie card fades in via
+          `home-ring-slot`). */}
       <div className="home-body">
         <MacroBars consumed={consumedMacros} target={targetMacros} view={view} />
       </div>
@@ -279,59 +238,9 @@ export function IntakeConfluence({
 }
 
 /**
- * One third of the stat row. `active` = the number currently shown inside the
- * dial; it is only DARKER, never bigger, so the row stays a calm ruler and the
- * dial keeps the emphasis.
- */
-function StatColumn({
-  stat,
-  active,
-  divided,
-}: {
-  stat: Stat;
-  active: boolean;
-  divided: boolean;
-}) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col items-center gap-0.5 px-1",
-        divided && "border-l border-border/60"
-      )}
-    >
-      <span
-        data-testid={stat.testId}
-        className={cn(
-          "text-lg font-semibold leading-none tabular-nums tracking-tight",
-          stat.danger
-            ? "text-destructive"
-            : active
-              ? "text-foreground"
-              : "text-foreground/70"
-        )}
-      >
-        {stat.value}
-      </span>
-      <span
-        data-testid={stat.labelTestId}
-        className={cn(
-          "text-xs",
-          active
-            ? "font-semibold text-foreground"
-            : "font-medium text-muted-foreground"
-        )}
-      >
-        {stat.label}
-      </span>
-    </div>
-  );
-}
-
-/**
- * The "Potrošeno | Preostalo" segmented toggle that drives the ring arc, the
- * centre number, and the macro tiles. Two real buttons in a pill; "Preostalo"
- * is the default. A raised light thumb on a muted track (iOS-style), small
- * enough to sit quietly in the card's corner.
+ * The "Potrošeno | Preostalo" segmented switch that drives the big number (and,
+ * indirectly, which grams the macro cards show). Two real buttons in a pill; the
+ * selected one is a raised light thumb on a muted track (iOS-style).
  */
 function ViewToggle({
   view,
@@ -350,7 +259,8 @@ function ViewToggle({
     <div
       role="group"
       aria-label={t("home.view.aria")}
-      className="inline-flex items-center gap-1 rounded-full bg-muted/80 p-1 backdrop-blur-sm"
+      data-testid="home-view-toggle"
+      className="inline-flex w-fit items-center gap-1 rounded-full bg-muted/80 p-1 backdrop-blur-sm"
     >
       {options.map(({ value, label }) => {
         const selected = view === value;
@@ -361,7 +271,7 @@ function ViewToggle({
             aria-pressed={selected}
             onClick={() => onChange(value)}
             className={cn(
-              "min-h-9 rounded-full px-3.5 text-xs font-semibold transition-colors",
+              "min-h-8 rounded-full px-3 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
               selected
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"

@@ -38,7 +38,7 @@ describe("AS-048: MacroBars shows protein/carbs/fat consumed vs target", () => {
     );
   });
 
-  it("test_AS_048_bar_fill_width_reflects_the_consumed_over_target_ratio", () => {
+  it("test_AS_048_ring_fill_reflects_the_consumed_over_target_ratio", () => {
     render(
       <MacroBars
         consumed={{ protein: 75, carbs: 0, fat: 0 }}
@@ -46,11 +46,12 @@ describe("AS-048: MacroBars shows protein/carbs/fat consumed vs target", () => {
       />
     );
 
+    // 75 / 150 = 50% filled -> the ring arc's dash offset is 100 - 50 = 50.
     const fill = screen.getByTestId("macro-bar-protein-fill");
-    expect(fill).toHaveStyle({ width: "50%" });
+    expect(fill.getAttribute("stroke-dashoffset")).toBe("50");
   });
 
-  it("test_macro_remaining_view_shows_grams_left_and_fills_by_the_remaining_ratio", () => {
+  it("test_macro_remaining_view_shows_grams_left_but_the_ring_still_fills_by_consumed", () => {
     render(
       <MacroBars
         consumed={{ protein: 50, carbs: 100, fat: 30 }}
@@ -59,12 +60,16 @@ describe("AS-048: MacroBars shows protein/carbs/fat consumed vs target", () => {
       />
     );
 
-    // Protein: 150 - 50 = 100 g left -> "100 / 150 g", bar 100/150 = 66.67%.
+    // The number shows what's LEFT: 150 - 50 = 100 g -> "100 / 150 g".
     expect(screen.getByTestId("macro-bar-protein-values")).toHaveTextContent(
       "100 / 150 g"
     );
+    // The ring, though, fills by what's CONSUMED: 50/150 = 33.33% -> dash
+    // offset 100 - 33.33 = 66.67.
     const fill = screen.getByTestId("macro-bar-protein-fill");
-    expect(Number.parseFloat(fill.style.width)).toBeCloseTo(66.67, 1);
+    expect(
+      Number.parseFloat(fill.getAttribute("stroke-dashoffset") ?? "")
+    ).toBeCloseTo(66.67, 1);
   });
 
   it("test_AS_048_a_macro_consumed_beyond_its_target_still_shows_the_real_number_bar_capped_at_100_percent", () => {
@@ -78,8 +83,9 @@ describe("AS-048: MacroBars shows protein/carbs/fat consumed vs target", () => {
     expect(screen.getByTestId("macro-bar-protein-values")).toHaveTextContent(
       "200 / 150 g"
     );
-    expect(screen.getByTestId("macro-bar-protein-fill")).toHaveStyle({
-      width: "100%",
-    });
+    // 200/150 caps at 100% filled -> dash offset 0.
+    expect(
+      screen.getByTestId("macro-bar-protein-fill").getAttribute("stroke-dashoffset")
+    ).toBe("0");
   });
 });

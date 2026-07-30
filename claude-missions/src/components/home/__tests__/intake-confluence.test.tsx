@@ -1,18 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 import { IntakeConfluence } from "@/components/home/intake-confluence";
 
-// Layout redesign 2026-07-29 (the product owner's call: "brojke oko prstena
-// nisu lepo raspoređene i kartica loše izgleda"). Cilj and the alternate metric
-// used to be absolutely positioned to the LEFT and RIGHT of the dial inside the
-// confluence SVG box, which pushed the ring off the card's optical centre and
-// left nothing aligned with the macro tiles underneath.
-//
-// Now: the dial holds ONE number (whichever the toggle selected) and all three
-// numbers live in a ruled three-column row beneath it, on the same grid as the
-// macro tiles. These tests lock the two properties that redesign has to keep --
-// the dial shows the selected metric, and NOTHING moves between views.
+// Layout redesign 2026-07-30 ("Cal AI"): the calorie card now reads
+// left-to-right -- the big number is the metric the toggle selected, with its
+// tappable "Preostalo / Potrošeno" label beneath it, and a flame ring on the
+// right. Cilj + Potrošeno stay in the DOM (accessible + tested) but are no longer
+// a visible three-number row. These tests lock: the number shows the selected
+// metric, the toggle flips it, and the fixed values stay wired to their metric.
 
 const consumedMacros = { protein: 60, carbs: 120, fat: 30 };
 const targetMacros = { proteinG: 150, carbsG: 200, fatG: 60 };
@@ -28,46 +24,32 @@ function renderConfluence(consumedKcal: number, targetKcal: number) {
   );
 }
 
-describe("IntakeConfluence: one number in the dial, all three in the row below", () => {
-  it("test_the_row_carries_cilj_potroseno_and_preostalo_at_once", () => {
+describe("IntakeConfluence: the big number is the selected metric, values stay wired", () => {
+  it("test_the_card_shows_remaining_by_default_with_cilj_and_potroseno_wired", () => {
     renderConfluence(1200, 2000);
 
-    expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
-    expect(screen.getByTestId("home-ring-consumed")).toHaveTextContent("1200");
+    // Default view is "remaining": the big number and its label say so.
     expect(screen.getByTestId("home-ring-value")).toHaveTextContent("800");
     expect(screen.getByTestId("home-ring-label")).toHaveTextContent("Preostalo");
+
+    // Cilj + Potrošeno stay in the DOM tied to their own metric.
+    expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
+    expect(screen.getByTestId("home-ring-consumed")).toHaveTextContent("1200");
   });
 
-  it("test_the_dial_itself_shows_only_the_selected_metric", () => {
-    renderConfluence(1200, 2000);
-
-    // The row sits OUTSIDE the `role="img"` dial, so what is inside the dial is
-    // exactly the promoted number -- and the other two are not.
-    const dial = within(screen.getByTestId("home-ring"));
-    expect(dial.getByText("800")).toBeInTheDocument();
-    expect(dial.queryByText("1200")).not.toBeInTheDocument();
-    expect(dial.queryByText("2000")).not.toBeInTheDocument();
-    // No label under the centre number any more: the toggle above and the
-    // highlighted column below name it.
-    expect(dial.queryByText("Preostalo")).not.toBeInTheDocument();
-  });
-
-  it("test_switching_the_view_moves_the_dial_number_but_not_the_row", async () => {
+  it("test_tapping_the_potroseno_segment_flips_the_number", async () => {
     renderConfluence(1200, 2000);
 
     fireEvent.click(screen.getByRole("button", { name: "Potrošeno" }));
 
     await waitFor(() =>
-      expect(
-        within(screen.getByTestId("home-ring")).getByText("1200")
-      ).toBeInTheDocument()
+      expect(screen.getByTestId("home-ring-value")).toHaveTextContent("1200")
     );
+    expect(screen.getByTestId("home-ring-label")).toHaveTextContent("Potrošeno");
 
-    // Every number is still present, in its own fixed slot -- nothing jumps
-    // between columns and no test id follows the toggle around.
+    // The wired values never move off their metric when the view flips.
     expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
     expect(screen.getByTestId("home-ring-consumed")).toHaveTextContent("1200");
-    expect(screen.getByTestId("home-ring-value")).toHaveTextContent("800");
   });
 
   it("test_over_budget_keeps_the_negative_remaining_and_the_calm_note", () => {

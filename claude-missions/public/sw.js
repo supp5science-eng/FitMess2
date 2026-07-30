@@ -8,13 +8,19 @@
  *     public marketing landing ("/").
  *  3. Receive Web Push reminders and open the right screen when one is tapped
  *     (2026-07-25, "Podsetnici").
+ *  4. Serve the build's own static assets from Cache Storage (2026-07-31), so a
+ *     warm launch does not re-download the JS/CSS payload — see the fetch
+ *     handler for why the HTTP cache is not enough on iOS.
  *
  * It deliberately does NOT cache authenticated navigations or API responses:
  * user-scoped pages must never be served from a shared cache (they could
  * leak between accounts on a shared device, or go stale after a mutation).
  * Data freshness and auth stay owned by the network + Supabase, not here.
  */
-const CACHE = "fitmess-shell-v2";
+// Bumped to v3 (2026-07-31) alongside the static-asset caching below: a new
+// bucket starts clean and the activate handler drops v2, so no entry cached
+// under the old, narrower rules lingers.
+const CACHE = "fitmess-shell-v3";
 const PRECACHE = ["/", "/icons/icon-192.png", "/icons/icon-512.png", "/manifest.json"];
 
 /**
@@ -86,8 +92,84 @@ self.addEventListener("fetch", (event) => {
           })
       )
     );
+    return;
+  }
+
+  // Next's build output: cache-first, and safe to be, because every one of
+  // these filenames contains a content hash — a changed file is a NEW URL, so a
+  // cached entry can never be stale, only superseded (and the activate handler
+  // above drops the whole bucket when `CACHE` is bumped).
+  //
+  // Why bother when HTTP already marks these `immutable`: on iOS, a PWA's HTTP
+  // cache is evicted aggressively between launches, so "open the app after a
+  // few hours" was re-downloading the entire JS/CSS payload over the network
+  // before anything could paint. Cache Storage is not subject to that eviction,
+  // so this is what makes a warm launch actually warm.
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(cacheFirst(request));
+    return;
+  }
+
+  // Brand art (the pear mark). NOT content-hashed, so cache-first would pin an
+  // old logo forever — this serves the cached copy immediately and refreshes it
+  // in the background, so a launch never waits on it but a changed logo still
+  // lands on the next run.
+  if (url.pathname.startsWith("/brand/")) {
+    event.respondWith(staleWhileRevalidate(request));
   }
 });
+
+/**
+ * Store a response copy, best-effort. Storage can be full or evicted mid-write;
+ * that must never surface as a failed request, so the write is fire-and-forget
+ * and its rejection is swallowed. Only real, complete same-origin successes are
+ * stored — caching a 404 or an opaque error would pin the failure for the life
+ * of the bucket.
+ */
+function putIfOk(request, response) {
+  if (!response || !response.ok || response.type !== "basic") return;
+  const copy = response.clone();
+  caches
+    .open(CACHE)
+    .then((cache) => cache.put(request, copy))
+    .catch(() => {});
+}
+
+/**
+ * Cached copy if present, else network. On ANY unexpected failure inside the
+ * cache path we fall back to a plain `fetch`, so intercepting a request can
+ * never leave the app worse off than not intercepting it at all.
+ */
+function cacheFirst(request) {
+  return caches
+    .match(request)
+    .then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        putIfOk(request, response);
+        return response;
+      });
+    })
+    .catch(() => fetch(request));
+}
+
+/** Cached copy immediately (if any); refresh it in the background either way. */
+function staleWhileRevalidate(request) {
+  return caches
+    .match(request)
+    .then((cached) => {
+      const network = fetch(request)
+        .then((response) => {
+          putIfOk(request, response);
+          return response;
+        })
+        // Offline with a cached copy is fine (we return it); offline with
+        // nothing cached surfaces as a failed request, exactly as before.
+        .catch(() => cached);
+      return cached || network;
+    })
+    .catch(() => fetch(request));
+}
 
 // ---------------------------------------------------------------------------
 // Podsetnici (Web Push), 2026-07-25.

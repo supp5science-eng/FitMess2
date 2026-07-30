@@ -303,36 +303,44 @@ async function getAdaptivePlan(
     new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
   );
 
-  const [thisWeekResult, lastWeekResult] = await Promise.all([
-    supabase
-      .from("logs")
-      .select("logged_at, kcal")
-      .eq("user_id", userId)
-      .gte("logged_at", thisWeek.startIso)
-      .lt("logged_at", thisWeek.endIsoExclusive),
-    supabase
-      .from("logs")
-      .select("logged_at, kcal")
-      .eq("user_id", userId)
-      .gte("logged_at", lastWeek.startIso)
-      .lt("logged_at", lastWeek.endIsoExclusive),
-  ]);
+  // ONE read covering both weeks, split in memory below. These used to be two
+  // concurrent queries, but this whole function is the LAST stage of the /danas
+  // render -- it can only start once the target row has landed -- so its round
+  // trips sit directly on the critical path with nothing to overlap them. Two
+  // adjacent week windows are one contiguous range, so a single query returns
+  // exactly the same rows.
+  const { data, error } = await supabase
+    .from("logs")
+    .select("logged_at, kcal")
+    .eq("user_id", userId)
+    .gte("logged_at", lastWeek.startIso)
+    .lt("logged_at", thisWeek.endIsoExclusive);
 
-  if (thisWeekResult.error || lastWeekResult.error) {
-    console.error(
-      "[/danas adaptive] week logs read failed:",
-      thisWeekResult.error?.message ?? lastWeekResult.error?.message
-    );
+  if (error) {
+    console.error("[/danas adaptive] week logs read failed:", error.message);
     return null;
   }
 
-  const carryInKcal = computeCarryInFromLastWeek(
-    lastWeekResult.data ?? [],
-    baseDailyTarget
-  );
+  // Partition by PARSED time, never by comparing the raw strings: Postgres
+  // returns `timestamptz` as "…+00:00" while these bounds are `toISOString()`'s
+  // "….000Z", so a lexicographic compare would mis-sort rows across the week
+  // boundary. Each row is tested against its own week's full range rather than a
+  // single split point, so the result is identical to the two queries even if
+  // the two windows were ever not perfectly adjacent.
+  const at = (row: { logged_at: string }) => Date.parse(row.logged_at);
+  const thisStart = Date.parse(thisWeek.startIso);
+  const thisEnd = Date.parse(thisWeek.endIsoExclusive);
+  const lastStart = Date.parse(lastWeek.startIso);
+  const lastEnd = Date.parse(lastWeek.endIsoExclusive);
+
+  const rows = data ?? [];
+  const thisWeekLogs = rows.filter((r) => at(r) >= thisStart && at(r) < thisEnd);
+  const lastWeekLogs = rows.filter((r) => at(r) >= lastStart && at(r) < lastEnd);
+
+  const carryInKcal = computeCarryInFromLastWeek(lastWeekLogs, baseDailyTarget);
 
   return computeAdaptivePlan({
-    weekLogs: thisWeekResult.data ?? [],
+    weekLogs: thisWeekLogs,
     baseDailyTarget,
     sex,
     goal,

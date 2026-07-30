@@ -23,9 +23,18 @@ const inter = Inter({
 // Display face for the FitMess wordmark only (heavy, geometric). Archivo Black
 // ships a single weight (400 = black); exposed via --font-display and applied
 // locally where the brand lockup renders -- body copy stays on Inter.
+//
+// `latin` ONLY (2026-07-31): every place this face renders draws the literal
+// string "FitMess" -- the /danas header lockup, the launch splash, and the
+// landing demo's `.lpd-wordmark`. Not one of them is translatable, and
+// "FitMess" is pure ASCII, so the `latin-ext` cut (č/ć/ž/š/đ and friends) could
+// never paint a single glyph. It was still a render-blocking font request on
+// every cold launch. Dropping it removes one of the six font files the browser
+// fetched before first paint. Do NOT copy this to Inter or Poppins: those DO
+// render Serbian copy and need latin-ext.
 const archivoBlack = Archivo_Black({
   variable: "--font-display",
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
   weight: "400",
   display: "swap",
 });

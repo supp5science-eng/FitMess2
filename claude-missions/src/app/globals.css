@@ -668,49 +668,33 @@ a[aria-disabled="true"]:active,
 }
 
 /* ---------------------------------------------------------------------
-   "Slivanje" — the macro threads flowing UP into the calorie ring, and the
-   droplet where each meets it. The flow is a marching dash along the thread
-   (bubble → ring); the droplet pulses at the confluence. The ring arc eases
-   when the Potrošeno/Preostalo toggle resizes it. All motion collapses under
-   reduced-motion. ------------------------------------------------------ */
-@keyframes fm-flow {
-  to {
-    stroke-dashoffset: -22;
-  }
-}
-@keyframes fm-droplet {
+   Calorie-ring motion, kept deliberately subtle. The arc eases when the
+   Potrošeno/Preostalo toggle resizes it (`.fm-arc`); a soft brand-gradient halo
+   behind it breathes slowly (`.fm-ring-glow`) — the one ambient touch left after
+   the old "Slivanje" threads were removed. Both collapse under reduced-motion.
+   ------------------------------------------------------------------------ */
+@keyframes fm-ring-glow {
   0%,
   100% {
-    opacity: 0.5;
-    transform: scale(0.8);
+    opacity: 0.22;
   }
   50% {
-    opacity: 1;
-    transform: scale(1.3);
+    opacity: 0.42;
   }
-}
-.fm-thread-flow {
-  stroke-dasharray: 7 15;
-  animation: fm-flow 1.15s linear infinite;
-}
-.fm-droplet {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: fm-droplet 1.6s ease-in-out infinite;
 }
 .fm-arc {
   transition: stroke-dashoffset 0.6s cubic-bezier(0.2, 0, 0, 1);
 }
+.fm-ring-glow {
+  animation: fm-ring-glow 4.5s ease-in-out infinite;
+}
 @media (prefers-reduced-motion: reduce) {
-  .fm-thread-flow {
-    animation: none;
-    stroke-dasharray: none;
-  }
-  .fm-droplet {
-    animation: none;
-  }
   .fm-arc {
     transition: none;
+  }
+  .fm-ring-glow {
+    animation: none;
+    opacity: 0.3;
   }
 }
 

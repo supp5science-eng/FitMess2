@@ -57,7 +57,12 @@ export function IntakeConfluence({
   // The ring always fills with what's been CONSUMED (Cal-AI style): empty on a
   // fresh day, filling as you eat, regardless of which number the toggle shows.
   // Over budget it's a full lap + the red overshoot lap on top.
-  const fillDashOffset = 100 - state.fillFraction * 100;
+  // "Preostalo" shows a FULL blue circle (your whole allowance); "Potrošeno"
+  // animates the blue arc down to the fraction you've actually eaten. Over
+  // budget the blue lap is full either way and a red second lap (below) shows
+  // the overshoot going round again.
+  const arcFraction = view === "remaining" ? 1 : state.fillFraction;
+  const fillDashOffset = 100 - arcFraction * 100;
   const overshootDashOffset = 100 - state.overshootFraction * 100;
 
   // Big number = whichever of the two moving metrics the toggle has selected.
@@ -78,7 +83,7 @@ export function IntakeConfluence({
           right, on one raised `fm-cloud` glass surface. */}
       <div
         ref={ringRef}
-        className="home-ring-slot fm-cloud relative rounded-[1.75rem] px-6 py-6"
+        className="home-ring-slot fm-cloud relative rounded-[2rem] px-6 py-8"
       >
         <div className="flex items-center justify-between gap-3">
           {/* Left: the big number + the Potrošeno/Preostalo switch. */}
@@ -91,7 +96,7 @@ export function IntakeConfluence({
                 "font-extrabold leading-none tabular-nums",
                 centre.danger ? "text-destructive" : "text-foreground"
               )}
-              style={{ fontSize: "clamp(2.5rem, 13vw, 3.25rem)" }}
+              style={{ fontSize: "clamp(2.75rem, 14vw, 3.75rem)" }}
             />
 
             {/* The segmented switch flips what the number shows (Potrošeno vs
@@ -127,7 +132,7 @@ export function IntakeConfluence({
             data-testid="home-ring"
             role="img"
             aria-label={ariaLabel}
-            className="relative size-28 shrink-0"
+            className="relative size-32 shrink-0"
           >
             <svg
               viewBox="0 0 100 100"
@@ -220,7 +225,7 @@ export function IntakeConfluence({
                 src="/brand/fitmess-icon.png"
                 alt=""
                 aria-hidden="true"
-                className="size-16 select-none object-contain"
+                className="size-20 select-none object-contain"
               />
             </div>
           </div>

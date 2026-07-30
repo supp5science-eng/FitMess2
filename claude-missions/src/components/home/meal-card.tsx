@@ -237,6 +237,20 @@ export function MealCard({
         </button>
       ) : null}
 
+      {/* "Podeli" floats on the photo, top-left — the mirror of the kcal pill
+          top-right, so the one shareable action reads as part of the shot rather
+          than as a fourth neutral button under it. Rendered as a SIBLING of the
+          photo button (which is itself a <button> opening the lightbox) because
+          nesting buttons is invalid HTML; the card is `relative`, so absolute
+          positioning here lands over the media header. */}
+      {hasPhoto ? (
+        <ShareMealSheet
+          logId={log.id}
+          mealName={log.name}
+          className="absolute left-3 top-3 z-10"
+        />
+      ) : null}
+
       <div className="flex flex-col gap-3 p-4">
         {!hasPhoto ? (
           <div className="flex items-start justify-between gap-3">
@@ -290,11 +304,6 @@ export function MealCard({
               needs no `food` row -- it grows the entry from its own snapshot, so
               it is available on AI meal entries too (which is the point). */}
           <LogAddMoreSheet log={log} onSaved={onSaved} />
-          {/* Share the "Scan moment" card — only meals with a stored photo can
-              become one (PRD §3.1). Sits right beside the meal, as asked. */}
-          {hasPhoto ? (
-            <ShareMealSheet logId={log.id} mealName={log.name} />
-          ) : null}
           {food ? (
             <LogEditSheet log={log} food={food} onSaved={onSaved} />
           ) : null}

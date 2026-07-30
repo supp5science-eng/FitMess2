@@ -12,7 +12,6 @@ import { Check, Download, Loader2, Share2, X } from "lucide-react";
 import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
 import { sheetPortal } from "@/components/ui/sheet-portal";
-import type { MessageKey } from "@/lib/i18n/messages";
 import type { CardFormat } from "@/lib/share/card";
 import { getCard, peekCard, prewarmCard } from "@/lib/share/card-cache";
 import {
@@ -33,6 +32,9 @@ import { cn } from "@/lib/utils";
  * alone — name, macros, tier and the photo are all read server-side
  * (`/api/card/scan`), so nothing shareable is ever client-authored.
  *
+ * The trigger is a frosted-glass chip the meal card floats over its photo (see
+ * the note at the trigger itself), and the sheet shares ONE format: 9:16.
+ *
  * Building a card is slow and entirely server-side (~6 s cold, ~1.2 s warm, for
  * a ~2.5 MB PNG), so this component never builds one it could reuse: caching,
  * request de-duplication and background prewarming all live in
@@ -52,26 +54,28 @@ import { cn } from "@/lib/utils";
 
 type Phase = "idle" | "building" | "ready" | "shared" | "error";
 
-const FORMAT_OPTIONS: {
-  value: CardFormat;
-  labelKey: MessageKey;
-  hint: string;
-}[] = [
-  { value: "story", labelKey: "food.share.formatStory", hint: "9:16" },
-  { value: "post", labelKey: "food.share.formatPost", hint: "1:1" },
-];
+/**
+ * The only format the app shares: 9:16, the story aspect this card was designed
+ * for. The server still renders 1:1 (`CARD_FORMATS.post`) — there is just no UI
+ * that asks for it, since a format switch made the sheet busier without adding
+ * anything users wanted.
+ */
+const FORMAT: CardFormat = "story";
 
 export function ShareMealSheet({
   logId,
   mealName,
+  className,
 }: {
   logId: string;
   /** Only for the native share-sheet title; the card text is read server-side. */
   mealName: string;
+  /** Positioning for the trigger chip — it floats over the meal photo, so the
+   * meal card owns where exactly. */
+  className?: string;
 }) {
   const { t } = useT();
   const [open, setOpen] = useState(false);
-  const [format, setFormat] = useState<CardFormat>("story");
   const [phase, setPhase] = useState<Phase>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
@@ -154,7 +158,7 @@ export function ShareMealSheet({
 
   function openSheet() {
     setOpen(true);
-    void ensureBuilt(format);
+    void ensureBuilt(FORMAT);
   }
 
   function closeSheet() {
@@ -164,14 +168,8 @@ export function ShareMealSheet({
     if (phase === "shared") setPhase("ready");
   }
 
-  function chooseFormat(next: CardFormat) {
-    if (next === format || phase === "building") return;
-    setFormat(next);
-    void ensureBuilt(next);
-  }
-
   async function handleShare() {
-    const file = peekCard(logId, format);
+    const file = peekCard(logId, FORMAT);
     if (!file) return;
     if (canShareFiles([file])) {
       const outcome = await shareFiles([file], { title: mealName });
@@ -196,15 +194,29 @@ export function ShareMealSheet({
 
   return (
     <>
-      <Button
+      {/* The trigger is a frosted-glass chip that floats ON the meal photo,
+          mirroring the kcal pill on the opposite corner — the same vocabulary
+          the media header already speaks. It deliberately does NOT sit in the
+          footer row with "Dodaj još"/"Izmeni"/"Obriši": those are corrections to
+          an entry, while this is the one outward-facing, celebratory action, and
+          as an identical outline button it read as neither.
+
+          It is a SIBLING of the photo button, not a child — the photo itself is
+          a <button> (it opens the lightbox) and nesting buttons is invalid. */}
+      <button
         type="button"
-        variant="outline"
         onClick={openSheet}
         data-testid={`share-meal-open-${logId}`}
+        className={cn(
+          "flex items-center gap-1.5 rounded-full bg-black/40 px-3 py-1 text-sm",
+          "font-semibold text-white shadow-sm ring-1 ring-white/20 backdrop-blur-md",
+          "transition-all duration-200 hover:bg-black/55 active:scale-95",
+          className
+        )}
       >
-        <Share2 aria-hidden="true" />
+        <Share2 className="size-3.5" aria-hidden="true" />
         {t("food.share.share")}
-      </Button>
+      </button>
 
       {open
         ? sheetPortal(
@@ -226,59 +238,18 @@ export function ShareMealSheet({
                   <h2 className="text-base font-semibold text-foreground">
                     {t("food.share.heading")}
                   </h2>
-                  <div className="flex items-center gap-2">
-                    <div
-                      role="group"
-                      aria-label={t("food.share.formatAria")}
-                      className="flex items-center gap-1 rounded-full border border-border bg-background p-1"
-                    >
-                      {FORMAT_OPTIONS.map((option) => {
-                        const on = format === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => chooseFormat(option.value)}
-                            aria-pressed={on}
-                            className={cn(
-                              "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                              on
-                                ? "bg-primary text-primary-foreground"
-                                : "text-muted-foreground hover:text-foreground"
-                            )}
-                          >
-                            {t(option.labelKey)}
-                            <span
-                              className={cn(
-                                "text-[10px]",
-                                on
-                                  ? "text-primary-foreground/70"
-                                  : "text-muted-foreground/70"
-                              )}
-                            >
-                              {option.hint}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={closeSheet}
-                      aria-label={t("food.share.close")}
-                      className="grid size-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      <X className="size-4" aria-hidden="true" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={closeSheet}
+                    aria-label={t("food.share.close")}
+                    className="grid size-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    <X className="size-4" aria-hidden="true" />
+                  </button>
                 </div>
 
-                <div
-                  className={cn(
-                    "flex items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted/40",
-                    format === "story" ? "h-[380px]" : "h-[300px]"
-                  )}
-                >
+                {/* Sized for the 9:16 card — the only aspect the app shares. */}
+                <div className="flex h-[380px] items-center justify-center overflow-hidden rounded-2xl border border-border bg-muted/40">
                   {phase === "error" ? (
                     <p className="px-6 text-center text-sm text-destructive">
                       {t("food.share.buildError")}

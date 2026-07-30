@@ -101,19 +101,32 @@ describe("ShareMealSheet", () => {
     click.mockRestore();
   });
 
-  it("test_switching_format_rebuilds_the_card_for_the_new_aspect", async () => {
+  it("test_only_the_story_format_is_offered", async () => {
+    // The 1:1 "Objava" toggle is gone: the sheet shares 9:16 and nothing else.
+    // (The server still renders `post`; there is just no UI asking for it.)
     fetchMock.mockResolvedValue(pngResponse());
     stubShare(async () => {});
 
     render(<ShareMealSheet {...PROPS} />);
     fireEvent.click(screen.getByTestId(`share-meal-open-${LOG_ID}`));
     await screen.findByAltText(/Pregled kartice/i);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
 
-    fireEvent.click(screen.getByRole("button", { name: /Objava/ }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-    const body = JSON.parse(fetchMock.mock.calls[1][1].body as string);
-    expect(body.format).toBe("post");
+    expect(screen.queryByRole("button", { name: /Objava/ })).toBeNull();
+    expect(screen.queryByRole("group", { name: /Format kartice/ })).toBeNull();
+    for (const call of fetchMock.mock.calls) {
+      expect(JSON.parse(call[1].body as string).format).toBe("story");
+    }
+  });
+
+  it("test_the_trigger_is_a_glass_chip_meant_to_sit_on_the_photo", async () => {
+    // It floats over the meal photo, so the meal card passes its position in --
+    // and it must not be the same neutral outline button as the corrections.
+    render(<ShareMealSheet {...PROPS} className="absolute left-3 top-3 z-10" />);
+
+    const trigger = screen.getByTestId(`share-meal-open-${LOG_ID}`);
+    expect(trigger.className).toContain("absolute");
+    expect(trigger.className).toContain("backdrop-blur-md");
+    expect(trigger).toHaveTextContent("Podeli");
   });
 
   it("test_prewarms_the_story_card_on_mount_so_the_first_open_is_instant", async () => {

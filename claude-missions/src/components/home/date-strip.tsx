@@ -214,6 +214,19 @@ export function DateStrip({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef<number | null>(null);
   const settleRef = useRef<number | null>(null);
+  // The wheel must NEVER navigate on its own -- only in response to a real user
+  // gesture. On load the strip programmatically scrolls itself onto the URL's
+  // day; that placement (and any browser back/forward re-centre) fires the same
+  // settle path, and without this guard a placement that rested a hair off
+  // centre -- or on a slow first layout rested at the far-left oldest day --
+  // would `router.push` the app onto the WRONG day (the reported "stavi me na
+  // pogrešne datume na početku", sometimes an empty pre-sign-up filler day).
+  // Flipped true the moment the user touches the wheel, so genuine swipes and
+  // taps still navigate exactly as before.
+  const interactedRef = useRef(false);
+  const markInteracted = useCallback(() => {
+    interactedRef.current = true;
+  }, []);
   // The day currently lit under the marker. Starts on the URL's day and is
   // driven by the scroll position from then on.
   const [activeKey, setActiveKey] = useState(selectedKey);
@@ -280,16 +293,34 @@ export function DateStrip({
     let raf = 0;
     const place = (attempt: number) => {
       const element = scrollerRef.current;
-      const width = cellWidth();
+      if (!element) {
+        if (attempt < 8) raf = requestAnimationFrame(() => place(attempt + 1));
+        else setReady(true);
+        return;
+      }
       const index = indexOfKey(selectedKey);
-      if (element && index >= 0 && width > 0) {
+      const width = cellWidth();
+      if (index >= 0 && width > 0) {
         element.scrollLeft = index * width;
         setReady(true);
-      } else if (attempt < 3) {
-        raf = requestAnimationFrame(() => place(attempt + 1));
-      } else {
-        setReady(true);
+        return;
       }
+      // Fallback if a per-cell width read still measures 0 while the browser
+      // finishes first layout: centre the selected cell by its own measured
+      // offset (no width-math), so a slow layout can never reveal the wheel
+      // parked at the far-left oldest day. More frames than before (8 vs 3)
+      // also gives layout more time on a heavy first paint.
+      const target = element.querySelector<HTMLElement>(
+        `[data-day="${selectedKey}"]`
+      );
+      if (target && target.offsetWidth > 0) {
+        element.scrollLeft =
+          target.offsetLeft - (element.clientWidth - target.offsetWidth) / 2;
+        setReady(true);
+        return;
+      }
+      if (attempt < 8) raf = requestAnimationFrame(() => place(attempt + 1));
+      else setReady(true);
     };
     raf = requestAnimationFrame(() => place(0));
     return () => cancelAnimationFrame(raf);
@@ -327,8 +358,11 @@ export function DateStrip({
       centerIndex(index, true);
     }
     setActiveKey(cell.key);
-    if (cell.key !== selectedKey) {
+    if (cell.key !== selectedKey && interactedRef.current) {
       // Non-blocking: the wheel stays live while the day's content loads.
+      // Gated on `interactedRef`: a settle triggered by the initial placement
+      // or an external re-centre (not a user gesture) only lights the day, it
+      // never navigates -- so the app can never boot onto the wrong day.
       startTransition(() => router.push(hrefFor(cell)));
     }
   }, [cellWidth, days, nearestEnabledIndex, centerIndex, selectedKey, router]);
@@ -377,6 +411,9 @@ export function DateStrip({
   function goTo(cell: DayCell) {
     const index = indexOfKey(cell.key);
     if (index < 0) return;
+    // A tap is an explicit user action -- arm navigation so the resulting
+    // settle pushes to the tapped day.
+    interactedRef.current = true;
     setActiveKey(cell.key);
     centerIndex(index, true);
   }
@@ -396,6 +433,14 @@ export function DateStrip({
       <div
         ref={scrollerRef}
         onScroll={handleScroll}
+        // Any of these is a real user grabbing the wheel -- it arms navigation
+        // so a settle actually pushes. Programmatic placement/re-centre fires
+        // none of them, so the app never navigates itself onto the wrong day.
+        onPointerDown={markInteracted}
+        onTouchStart={markInteracted}
+        onMouseDown={markInteracted}
+        onWheel={markInteracted}
+        onKeyDown={markInteracted}
         data-testid="date-strip"
         aria-label={t("home.dateStrip.aria")}
         role="navigation"
@@ -420,6 +465,7 @@ export function DateStrip({
             <button
               key={cell.key}
               type="button"
+              data-day={cell.key}
               onClick={() => goTo(cell)}
               aria-label={accessibleLabel(cell, t)}
               aria-current={selected ? "page" : undefined}
@@ -430,6 +476,7 @@ export function DateStrip({
           ) : (
             <div
               key={cell.key}
+              data-day={cell.key}
               className="w-16 shrink-0 snap-center"
               aria-hidden="true"
             >

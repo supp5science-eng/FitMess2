@@ -7,9 +7,24 @@ import { getCurrentUserId } from "@/lib/auth/current-user";
 import { toBelgradeCalendarDay } from "@/lib/dates";
 import { buildDateStrip } from "@/lib/home/date-strip";
 import { getLoggedDayKcals } from "@/lib/home/logged-days";
+import { getDanasProfile } from "@/lib/home/profile";
 import { getLoggedDayKeys } from "@/lib/streak/read-streak";
 import { computeStreak, type StreakSummary } from "@/lib/streak/streak";
 import { createClient } from "@/lib/supabase/server";
+
+/**
+ * How many days BACK the strip reaches (a hard cap, independent of how long
+ * ago the user signed up). The strip is a "recent days" picker -- older history
+ * lives on `/analitika` -- so capping it keeps the wheel to a few dozen cells
+ * instead of rendering one SVG-ring day-cell for every day since sign-up (which
+ * for a long-time user was hundreds of nodes shipped in the HTML and hydrated
+ * on the client, the main reason the header felt heavy on load). Six weeks
+ * comfortably covers "scroll back through last month".
+ */
+const STRIP_LOOKBACK_DAYS = 42;
+/** How many (empty, faint, non-tappable) future days the wheel can scroll into
+ * past today -- just enough to see "tomorrow" ahead, not 30 dead cells. */
+const STRIP_FUTURE_DAYS = 3;
 
 // The persistent `/danas` header (2026-07-30): the FitMess wordmark, the streak
 // pill, and the date WHEEL live in the route's LAYOUT — not in the page — so
@@ -48,16 +63,16 @@ export default async function DanasLayout({
   const now = new Date();
   const todayKey = toBelgradeCalendarDay(now);
 
-  // Strip range: from the user's sign-up day (earliest viewable) through
-  // today + 30 future days (scrollable forward "through time", though empty).
-  // Always render at least 5 days before today so today can sit centred even
-  // for a user who signed up today.
-  const [profileResult, targetResult, streakDays] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("created_at")
-      .eq("user_id", userId)
-      .maybeSingle(),
+  // The strip's back-edge is a FIXED window (`today - STRIP_LOOKBACK_DAYS`),
+  // not "all the way back to sign-up" -- so the mini-ring kcal read below has a
+  // fixed range that does NOT depend on the profile, letting all four reads run
+  // in ONE parallel batch instead of the old profile -> kcal waterfall.
+  const lookbackStartKey = addDaysKey(todayKey, -STRIP_LOOKBACK_DAYS);
+
+  const [profile, targetResult, streakDays, dayKcals] = await Promise.all([
+    // Shared with `page.tsx` via React `cache()` -- one `profiles` read per
+    // request instead of the layout and the page each firing their own.
+    getDanasProfile(userId),
     supabase
       .from("targets")
       .select("daily_kcal")
@@ -68,25 +83,29 @@ export default async function DanasLayout({
     // Niz: the streak is a "now" fact (not per-viewed-day), so the pill can live
     // in the persistent header. A failed read degrades to no pill.
     getLoggedDayKeys(supabase, userId, now).catch(() => null),
+    // Per-day summed kcal for the mini day-rings over the fixed lookback window.
+    // A failed read degrades to empty rings.
+    getLoggedDayKcals(
+      supabase,
+      userId,
+      new Date(`${lookbackStartKey}T12:00:00.000Z`),
+      now
+    ),
   ]);
 
-  const signupKey = profileResult.data?.created_at
-    ? toBelgradeCalendarDay(new Date(profileResult.data.created_at))
+  const signupKey = profile?.created_at
+    ? toBelgradeCalendarDay(new Date(profile.created_at))
     : undefined;
+  // Always keep at least 5 days before today so today can sit centred even for
+  // a brand-new user (those extra days render as faint pre-sign-up filler)...
   const fiveBefore = addDaysKey(todayKey, -5);
-  const startKey =
+  const naturalStart =
     signupKey && signupKey < fiveBefore ? signupKey : fiveBefore;
-  const endKey = addDaysKey(todayKey, 30);
+  // ...but never reach further back than the fixed lookback cap.
+  const startKey =
+    naturalStart < lookbackStartKey ? lookbackStartKey : naturalStart;
+  const endKey = addDaysKey(todayKey, STRIP_FUTURE_DAYS);
   const targetKcal = targetResult.data?.daily_kcal ?? 0;
-
-  // Per-day summed kcal for the mini day-rings (past window start..today; the
-  // future is empty). A failed read degrades to empty rings.
-  const dayKcals = await getLoggedDayKcals(
-    supabase,
-    userId,
-    new Date(`${startKey}T12:00:00.000Z`),
-    now
-  );
 
   const days = buildDateStrip({
     now,

@@ -141,41 +141,50 @@ async function readTodayDataOnce(
       )
     );
 
-    let foods: Database["public"]["Tables"]["foods"]["Row"][] = [];
-    if (foodIds.length > 0) {
-      const foodsResult = await supabase
-        .from("foods")
-        .select("*")
-        .in("id", foodIds)
-        .abortSignal(signal);
-      if (foodsResult.error) {
-        return { data: null, error: { message: foodsResult.error.message } };
-      }
-      foods = foodsResult.data ?? [];
-    }
-
-    // Which of today's logs have a stored meal photo ("Slikaj obrok"). Read
-    // only the ids (never the base64 bytes -- those are served on demand from
-    // `/api/obrok-slika/[logId]`, keeping this page light). BEST-EFFORT: the
-    // photo is a non-critical enhancement, so any failure here (including the
-    // `meal_photos` table not existing yet) degrades to "no photos" and never
-    // fails the core day read.
-    let photoLogIds = new Set<string>();
+    // `foods` and `meal_photos` are both derived from `logs` alone -- neither
+    // needs the other -- so they run CONCURRENTLY. They used to be awaited one
+    // after the other, which made the day read three serial round trips
+    // (logs -> foods -> photos) instead of two (logs -> foods+photos).
     const logIds = logs.map((log) => log.id);
-    if (logIds.length > 0) {
-      try {
-        const photosResult = await supabase
-          .from("meal_photos")
-          .select("log_id")
-          .in("log_id", logIds)
-          .abortSignal(signal);
-        if (!photosResult.error && photosResult.data) {
-          photoLogIds = new Set(photosResult.data.map((row) => row.log_id));
-        }
-      } catch {
-        // ignore -- photos are optional, keep the day read healthy
-      }
+    const [foodsResult, photosResult] = await Promise.all([
+      foodIds.length > 0
+        ? supabase.from("foods").select("*").in("id", foodIds).abortSignal(signal)
+        : null,
+      // Which of today's logs have a stored meal photo ("Slikaj obrok"). Read
+      // only the ids (never the base64 bytes -- those are served on demand from
+      // `/api/obrok-slika/[logId]`, keeping this page light). BEST-EFFORT: the
+      // photo is a non-critical enhancement, so any failure here (including the
+      // `meal_photos` table not existing yet) degrades to "no photos" and never
+      // fails the core day read -- hence the rejection handler, which also keeps
+      // a rejected photo read from taking down the `Promise.all` above. (The
+      // query builder is a `PromiseLike`, so the two-argument `then` is the way
+      // to catch here -- it has no `.catch`.)
+      logIds.length > 0
+        ? supabase
+            .from("meal_photos")
+            .select("log_id")
+            .in("log_id", logIds)
+            .abortSignal(signal)
+            .then(
+              (r) => r,
+              () => null
+            )
+        : null,
+    ]);
+
+    // The foods read IS critical (a log without its food cannot render), so its
+    // error still fails the whole read, exactly as before.
+    if (foodsResult?.error) {
+      return { data: null, error: { message: foodsResult.error.message } };
     }
+    const foods: Database["public"]["Tables"]["foods"]["Row"][] =
+      foodsResult?.data ?? [];
+
+    const photoLogIds = new Set<string>(
+      photosResult && !photosResult.error && photosResult.data
+        ? photosResult.data.map((row) => row.log_id)
+        : []
+    );
 
     return {
       data: {

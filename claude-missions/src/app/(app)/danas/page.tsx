@@ -116,9 +116,29 @@ export default async function DanasPage({
   const isToday = selectedKey === todayKey;
 
   // Belgrade day range for the selected day (noon-UTC is a robust in-day
-  // instant). Fetch the day's data + the sign-up day in parallel.
+  // instant).
   const range = getBelgradeDayRange(new Date(`${selectedKey}T12:00:00.000Z`));
-  const [result, profile, customStepGoal] = await Promise.all([
+  // The 7-day window the Koraci/Voda strips draw ends on the day being VIEWED
+  // (not always today), so a past day's card shows that day in context.
+  const selectedNoon = new Date(`${selectedKey}T12:00:00.000Z`);
+
+  // ONE round-trip stage for everything that depends only on WHICH DAY is being
+  // viewed. Voda/Koraci (and their 7-day strips) were previously in a second
+  // stage that waited for this one to finish -- but they only ever needed
+  // `selectedKey`/`selectedNoon`, never `getTodayData`'s result, so that barrier
+  // was pure dead wall-clock: the calorie ring sat waiting on the water read and
+  // vice versa. Only the adaptive plan genuinely depends on a result here (it
+  // needs the target row), so it is the ONLY thing left in a second stage.
+  const [
+    result,
+    profile,
+    customStepGoal,
+    cookieStore,
+    water,
+    steps,
+    stepsWeekRows,
+    waterWeekRows,
+  ] = await Promise.all([
     getTodayData(supabase, userId, range),
     // Shared with `layout.tsx` via React `cache()` -- the layout already reads
     // this same row for the date strip, so the two now share one round trip
@@ -127,6 +147,20 @@ export default async function DanasPage({
     // separately -- see `src/lib/steps/step-goal-read.ts` for why.
     getDanasProfile(userId),
     getCustomStepGoal(supabase, userId),
+    // The one-time onboarding "ring hand-off" cookies (`fm_intro`/`fm_install`,
+    // dropped by `plan-reveal.tsx` just before navigating here) -- local, no
+    // round trip, but it belongs in the same stage rather than gating one.
+    cookies(),
+    // Voda: the selected day's water total. A failed read degrades to 0 (the
+    // button still works), never failing the day render.
+    getWaterMl(supabase, userId, selectedKey),
+    // Koraci: the selected day's step total. Same degrade-to-0 posture.
+    getStepsForDay(supabase, userId, selectedKey),
+    // The 7 days ending on the selected one, for the mini strips at the foot of
+    // the Koraci/Voda cards. A failed read degrades to "no strip", never to a
+    // failed day render.
+    getStepsWeek(supabase, userId, selectedNoon),
+    getWaterWeek(supabase, userId, selectedNoon),
   ]);
 
   if (result.error) {
@@ -143,23 +177,6 @@ export default async function DanasPage({
     );
   }
 
-  // Stage 2 of the read. These are independent of one another -- they only
-  // depend on stage 1's getTodayData + profiles -- so fetch them concurrently
-  // rather than in a serial waterfall (which is what made the authenticated
-  // render feel slow): one round-trip stage instead of several.
-  //  - adaptivePlan ("Deo 2"): today's adaptive daily target -- only for the
-  //    today view and only when a target exists. Redistributes any
-  //    earlier-in-week overshoot across the rest of the week (carrying last
-  //    week's debt in). A failed read falls back to no adjustment.
-  //  - fm_intro cookie: the one-time onboarding "ring hand-off" (plan-reveal
-  //    drops it just before navigating here, see `plan-reveal.tsx`); only ever
-  //    plays for today.
-  // The date strip itself (mini-ring fills, sign-up bound, streak) is built in
-  // the persistent `layout.tsx`, so this page no longer reads any of that.
-  // The 7-day window the Koraci/Voda strips draw ends on the day being VIEWED
-  // (not always today), so a past day's card shows that day in context.
-  const selectedNoon = new Date(`${selectedKey}T12:00:00.000Z`);
-
   // Cilj koraka (2026-07-25): the user's own goal if they set one, otherwise
   // one derived from their activity level -- NOT a flat 10.000 for everybody.
   const stepGoal = resolveStepGoal(
@@ -167,16 +184,16 @@ export default async function DanasPage({
     customStepGoal
   ).goal;
 
-  const [
-    adaptivePlan,
-    cookieStore,
-    water,
-    steps,
-    stepsWeekRows,
-    waterWeekRows,
-  ] = await Promise.all([
+  // The ONLY genuinely dependent read: the adaptive plan needs the target row
+  // that the stage above fetched. Today's adaptive daily target -- only for the
+  // today view and only when a target exists. Redistributes any earlier-in-week
+  // overshoot across the rest of the week (carrying last week's debt in). A
+  // failed read falls back to no adjustment.
+  // The date strip itself (mini-ring fills, sign-up bound, streak) is built in
+  // the persistent `layout.tsx`, so this page no longer reads any of that.
+  const adaptivePlan =
     isToday && result.data.target
-      ? getAdaptivePlan(
+      ? await getAdaptivePlan(
           supabase,
           userId,
           result.data.target.daily_kcal,
@@ -185,19 +202,7 @@ export default async function DanasPage({
           stepGoal,
           now
         )
-      : Promise.resolve(null),
-    cookies(),
-    // Voda: the selected day's water total. A failed read degrades to 0 (the
-    // button still works), never failing the day render.
-    getWaterMl(supabase, userId, selectedKey),
-    // Koraci: the selected day's step total. Same degrade-to-0 posture.
-    getStepsForDay(supabase, userId, selectedKey),
-    // The 7 days ending on the selected one, for the mini strips at the foot of
-    // the Koraci/Voda cards. A failed read degrades to "no strip", never to a
-    // failed day render.
-    getStepsWeek(supabase, userId, selectedNoon),
-    getWaterWeek(supabase, userId, selectedNoon),
-  ]);
+      : null;
 
   const waterGoal = waterGoalMl(profile?.weight_kg ?? null);
   // Map the two week models onto the strip's tiny shape (label + share of goal

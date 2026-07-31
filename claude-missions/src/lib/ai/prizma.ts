@@ -46,7 +46,7 @@ import {
 
 /** What the user laid beside the plate, so the model knows the exact size of
  * its scale anchor instead of guessing what the object is. */
-export const REFERENCE_OBJECTS = ["viljuska", "kasika", "kartica", "nista"] as const;
+export const REFERENCE_OBJECTS = ["viljuska", "kasika", "noz", "nista"] as const;
 export type ReferenceObject = (typeof REFERENCE_OBJECTS)[number];
 
 const REFERENCE_HINTS: Record<ReferenceObject, string> = {
@@ -54,8 +54,8 @@ const REFERENCE_HINTS: Record<ReferenceObject, string> = {
     "Pored tanjira je VILJUŠKA (standardna kašikara, dužina ~19–20 cm). Koristi je kao mernu referencu za veličinu tanjira i porcije.",
   kasika:
     "Pored tanjira je KAŠIKA (supena, dužina ~19 cm). Koristi je kao mernu referencu za veličinu tanjira i porcije.",
-  kartica:
-    "Pored tanjira je BANKOVNA KARTICA (85,6 × 54 mm). Koristi je kao mernu referencu za veličinu tanjira i porcije.",
+  noz:
+    "Pored tanjira je NOŽ (stoni nož za jelo, dužina ~21 cm). Koristi ga kao mernu referencu za veličinu tanjira i porcije.",
   nista:
     "Nema referentnog objekta na slici. Proceni razmeru po tanjiru/priboru (standardni plitki tanjir ≈ 26 cm, duboki ≈ 22 cm) i zbog toga budi oprezniji sa masom.",
 };
@@ -554,7 +554,7 @@ U "naziv" upiši kratak naziv celog jela na srpskom (npr. "Piletina sa pirinčem
 
 KORAK 2 — IZMERI POSUDU.
 PRE nego što odrediš bilo kakvu masu, izmeri prečnik tanjira/posude i upiši ga u "tanjir_cm". Ovo je najveći izvor greške u celoj proceni: površina raste sa KVADRATOM prečnika, pa tanjir od 22 cm i tanjir od 30 cm nose skoro dvostruko različitu količinu hrane iako na slici izgledaju isto.
-- Ako pored tanjira postoji referentni objekat (viljuška ~19–20 cm, kašika ~19 cm, kartica 8,56 cm), IZMERI po njemu i upiši "razmera_po_referenci": true.
+- Ako pored tanjira postoji referentni objekat (viljuška ~19–20 cm, kašika ~19 cm, nož ~21 cm), IZMERI po njemu i upiši "razmera_po_referenci": true.
 - Ako referentnog objekta nema, uzmi standard (plitki tanjir ≈ 26 cm, duboki ≈ 22 cm, činija ≈ 16 cm) i upiši "razmera_po_referenci": false.
 Vrednost mora biti u opsegu 10–45 cm.
 

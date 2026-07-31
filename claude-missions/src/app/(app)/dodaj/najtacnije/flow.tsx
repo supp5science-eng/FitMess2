@@ -98,7 +98,7 @@ const SKIP_GUIDE_KEY = "fm_ipeach_skip_guide";
 const REFERENCE_CHOICES: { value: ReferenceObject; labelKey: MessageKey }[] = [
   { value: "viljuska", labelKey: "dodaj.prizma.ref.fork" },
   { value: "kasika", labelKey: "dodaj.prizma.ref.spoon" },
-  { value: "kartica", labelKey: "dodaj.prizma.ref.card" },
+  { value: "noz", labelKey: "dodaj.prizma.ref.knife" },
   { value: "nista", labelKey: "dodaj.prizma.ref.none" },
 ];
 

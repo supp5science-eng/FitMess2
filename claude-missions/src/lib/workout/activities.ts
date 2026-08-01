@@ -138,7 +138,10 @@ export const WORKOUT_ACTIVITIES: readonly WorkoutActivity[] = [
   {
     key: "sipke",
     labelKey: "workout.activity.sipke",
-    emoji: "🧗",
+    // 💪, not a climber: 🧗 read as hiking/climbing at card size. Unicode has
+    // no pull-up, and the flexed arm is what people already associate with
+    // bars.
+    emoji: "💪",
     // Street workout (bars). Compendium 02054 puts vigorous calisthenics
     // (pull-ups, push-ups, dips) at 8.0, but that is the MET of the WORK --
     // and a bar session, like a gym session, is mostly sets separated by rest,

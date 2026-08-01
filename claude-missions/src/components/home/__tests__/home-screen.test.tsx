@@ -281,7 +281,7 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     expect(screen.getByTestId("home-ring-value")).toHaveTextContent("1400");
     // The explanation note is shown with the adapted number.
     expect(screen.getByTestId("adaptive-note-target")).toHaveTextContent(
-      "1600 kcal"
+      "1.600 kcal"
     );
   });
 

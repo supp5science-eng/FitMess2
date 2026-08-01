@@ -57,9 +57,17 @@ const SETTLE_MS = 2100;
  * the 21-day window the plan itself looks back over. */
 const DAY_ANSWER_MAX_AGE = 60 * 60 * 24 * 60;
 
-/** `10000` -> `"10.000"` (Serbian thousands separator). */
-function formatSteps(steps: number): string {
-  return String(steps).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+/**
+ * `10000` -> `"10.000"` (Serbian thousands separator).
+ *
+ * Applies to kcal as well as steps: this card puts a weekly budget and a step
+ * goal within two lines of each other, and "21994 kcal" next to "13.000
+ * koraka" reads as two different number systems. Deliberately a regex rather
+ * than `toLocaleString`, so the separator cannot shift with the runtime's ICU
+ * data -- the tests assert the exact string.
+ */
+function formatNumber(value: number): string {
+  return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
 
 /** Module scope on purpose: writing `document.cookie` from a component body
@@ -207,11 +215,13 @@ export function AdaptivePlanCard({
           data-testid="adaptive-note-target"
           className="text-2xl font-semibold tabular-nums text-foreground"
         >
-          {Math.round(shownTarget)} kcal
+          {formatNumber(shownTarget)} kcal
         </span>
         {adjusted ? (
           <span className="text-xs text-muted-foreground">
-            {t("home.adaptive.regular", { kcal: plan.baseDailyTarget })}
+            {t("home.adaptive.regular", {
+              kcal: formatNumber(plan.baseDailyTarget),
+            })}
           </span>
         ) : null}
       </p>
@@ -233,8 +243,8 @@ export function AdaptivePlanCard({
         </div>
         <p className="mt-1.5 text-xs text-muted-foreground">
           {t("home.adaptive.weekSpent", {
-            spent: Math.round(plan.spentBeforeToday),
-            budget: plan.weeklyBudget,
+            spent: formatNumber(plan.spentBeforeToday),
+            budget: formatNumber(plan.weeklyBudget),
             days: plan.daysLeftIncludingToday,
             unit:
               plan.daysLeftIncludingToday === 1
@@ -260,8 +270,10 @@ export function AdaptivePlanCard({
               plan.daysAfterToday === 1
                 ? t("home.adaptive.day")
                 : t("home.adaptive.days"),
-            kcal: plan.adaptiveDailyTarget,
-            delta: `${lifted ? "+" : "−"}${lifted ? plan.liftedKcal : plan.trimmedKcal}`,
+            kcal: formatNumber(plan.adaptiveDailyTarget),
+            delta: `${lifted ? "+" : "−"}${formatNumber(
+              lifted ? plan.liftedKcal : plan.trimmedKcal
+            )}`,
           })}
         </p>
       ) : null}
@@ -272,7 +284,9 @@ export function AdaptivePlanCard({
           {plan.carryInKcal > 0 ? (
             <>
               {" "}
-              {t("home.adaptive.carry", { kcal: plan.carryInKcal })}
+              {t("home.adaptive.carry", {
+                kcal: formatNumber(plan.carryInKcal),
+              })}
             </>
           ) : null}
         </p>
@@ -291,7 +305,7 @@ export function AdaptivePlanCard({
           <span>
             {t("home.adaptive.trainingLead")}{" "}
             <span className="font-medium text-foreground">
-              ~{plan.trainingSuggestionKcal} kcal
+              ~{formatNumber(plan.trainingSuggestionKcal)} kcal
             </span>{" "}
             {t("home.adaptive.trainingWalk", {
               min: plan.trainingWalkMinutes,
@@ -300,9 +314,9 @@ export function AdaptivePlanCard({
               data-testid="adaptive-note-steps"
               className="font-medium text-foreground"
             >
-              {formatSteps(plan.adaptiveStepGoal)}
+              {formatNumber(plan.adaptiveStepGoal)}
             </span>
-            {plan.extraSteps > 0 ? ` (+${formatSteps(plan.extraSteps)})` : null}.
+            {plan.extraSteps > 0 ? ` (+${formatNumber(plan.extraSteps)})` : null}.
           </span>
         </p>
       ) : null}
@@ -335,7 +349,7 @@ export function AdaptivePlanCard({
               <p className="text-xs text-foreground">
                 {t("home.adaptive.askDay", {
                   day: dayName(day.dayKey),
-                  kcal: day.kcal,
+                  kcal: formatNumber(day.kcal),
                 })}
               </p>
               <div className="mt-1.5 flex flex-wrap gap-2">

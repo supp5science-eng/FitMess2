@@ -80,7 +80,7 @@ describe("the calm state (every visit after the first one that day)", () => {
     render(<AdaptivePlanCard plan={makePlan()} />);
 
     expect(screen.getByTestId("adaptive-note-target")).toHaveTextContent(
-      "1600 kcal"
+      "1.600 kcal"
     );
     // No intro class -> none of the entrance animations are armed.
     expect(screen.getByTestId("adaptive-note").className).not.toContain(
@@ -131,7 +131,7 @@ describe("the once-a-day reveal", () => {
     // Before the tween starts the card shows the number the user already
     // knows -- the change is what gets animated, so it must begin at 2000.
     expect(screen.getByTestId("adaptive-note-target")).toHaveTextContent(
-      "2000 kcal"
+      "2.000 kcal"
     );
     expect(screen.getByTestId("adaptive-note").className).toContain("apc-intro");
 
@@ -162,7 +162,7 @@ describe("the once-a-day reveal", () => {
       "apc-intro"
     );
     expect(screen.getByTestId("adaptive-note-target")).toHaveTextContent(
-      "1600 kcal"
+      "1.600 kcal"
     );
     // The cookie is still spent -- the moment counts as delivered.
     expect(document.cookie).toContain(`${PLAN_INTRO_COOKIE}=2026-07-25`);
@@ -204,7 +204,7 @@ describe("the plan is announced FORWARD, not just for today", () => {
     render(<AdaptivePlanCard plan={makePlan()} />);
     const line = screen.getByTestId("adaptive-note-forward");
     expect(line).toHaveTextContent("još 4 dana");
-    expect(line).toHaveTextContent("1600 kcal");
+    expect(line).toHaveTextContent("1.600 kcal");
     expect(line).toHaveTextContent("−400/dan");
   });
 

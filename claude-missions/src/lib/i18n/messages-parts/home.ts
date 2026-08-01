@@ -27,8 +27,12 @@ export const homeExtraMessages = {
       "Važi i za još {days} {unit}: {kcal} kcal ({delta}/dan)",
     "home.adaptive.weekdays":
       "ponedeljak utorak sreda četvrtak petak subota nedelja",
+    // Dve varijante zbog slaganja: nabroji dva dana pa reci „taj dan" i
+    // rečenica se raspada („sreda, četvrtak … taj dan").
     "home.adaptive.untrustedLead":
       "Nisam uračunao: {days} — unos izgleda nepotpuno, pa je taj dan tretiran kao da je odrađen po planu.",
+    "home.adaptive.untrustedLeadPlural":
+      "Nisam uračunao: {days} — unos izgleda nepotpuno, pa su ti dani tretirani kao da su odrađeni po planu.",
     "home.adaptive.askDay": "Je li {day} stvarno bio dan od {kcal} kcal?",
     "home.adaptive.answerComplete": "Da, bio je lagan dan",
     "home.adaptive.answerPartial": "Nisam sve upisao",
@@ -50,8 +54,10 @@ export const homeExtraMessages = {
     "home.adaptive.spill":
       "Višak od {kcal} kcal ne staje u ovu nedelju — prelazi u sledeću.",
     "home.adaptive.onTrack": "Nedelja ti je u planu",
+    // Nosi i „još N dana", jer u ovom stanju kartica NEMA traku ni red o
+    // potrošenom — ovo joj je ceo sadržaj.
     "home.adaptive.onTrackRoom":
-      "Do kraja nedelje imaš {kcal} kcal više nego što plan traži.",
+      "Još {days} {unit} u nedelji — imaš {kcal} kcal više nego što plan traži.",
 
     // Add sheet
     "home.addSheet.title": "Dodaj unos",
@@ -156,6 +162,8 @@ export const homeExtraMessages = {
       "Monday Tuesday Wednesday Thursday Friday Saturday Sunday",
     "home.adaptive.untrustedLead":
       "Left out: {days} — the log looks incomplete, so that day was counted as if it went to plan.",
+    "home.adaptive.untrustedLeadPlural":
+      "Left out: {days} — the logs look incomplete, so those days were counted as if they went to plan.",
     "home.adaptive.askDay": "Was {day} really a {kcal} kcal day?",
     "home.adaptive.answerComplete": "Yes, it was a light day",
     "home.adaptive.answerPartial": "I didn't log it all",
@@ -170,7 +178,7 @@ export const homeExtraMessages = {
       "The remaining {kcal} kcal doesn't fit in this week — it rolls into next.",
     "home.adaptive.onTrack": "Your week is on plan",
     "home.adaptive.onTrackRoom":
-      "You have {kcal} kcal more than the plan asks for over the rest of the week.",
+      "{days} {unit} left — you have {kcal} kcal more than the plan asks for.",
 
     // Add sheet
     "home.addSheet.title": "Add entry",

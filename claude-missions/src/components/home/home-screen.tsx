@@ -311,17 +311,14 @@ export function HomeScreen({
                       }}
                       ringRef={ringRef}
                     />
-                    {/* `hasNotice`, not `isAdjusted`: the card also appears
-                        when the plan was NOT moved because a day's log looked
-                        incomplete -- staying silent about that is what made
-                        the whole feature feel absent. */}
-                    {adaptivePlan?.hasNotice ? (
-                      <AdaptivePlanCard
-                        plan={adaptivePlan}
-                        intro={planIntro}
-                        dayKey={dayKey}
-                      />
-                    ) : null}
+                    {/* The plan card used to sit HERE, and that was the bug
+                        (2026-08-01). Every pager page shares the tallest page's
+                        height, so each line the card grew was a line of dead
+                        space added to the Koraci/Voda and micronutrient pages --
+                        the product owner reported them floating in a void. It
+                        now renders BELOW the pager, where its height is its own
+                        business. It also stops hiding behind a swipe: a notice
+                        about today's plan should not require finding page one. */}
                     {/* Gric logs at `now()`, so it only makes sense on today. */}
                     {isToday ? (
                       <div className="home-body">
@@ -382,6 +379,20 @@ export function HomeScreen({
                 : []),
             ]}
           />
+
+          {/* Below the pager, deliberately (2026-08-01): out here its height
+              costs nothing but its own, so the three pages stay balanced no
+              matter how much this card has to say. `hasNotice`, not
+              `isAdjusted` -- it also speaks when the plan was NOT moved because
+              a day's log looked incomplete, and staying silent about that is
+              what made the whole feature feel absent. */}
+          {adaptivePlan?.hasNotice ? (
+            <AdaptivePlanCard
+              plan={adaptivePlan}
+              intro={planIntro}
+              dayKey={dayKey}
+            />
+          ) : null}
         </div>
       ) : (
         <div

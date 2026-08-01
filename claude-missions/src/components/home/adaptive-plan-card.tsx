@@ -274,50 +274,69 @@ export function AdaptivePlanCard({
             : t("home.adaptive.unchanged")}
       </p>
 
-      <p className="apc-line mt-1.5 flex items-baseline gap-2" style={nextDelay()}>
-        <Icon className="size-4 shrink-0 self-center text-primary" aria-hidden="true" />
-        <span
-          data-testid="adaptive-note-target"
-          className="text-2xl font-semibold tabular-nums text-foreground"
-        >
-          {formatNumber(shownTarget)} kcal
-        </span>
-        {adjusted ? (
-          <span className="text-xs text-muted-foreground">
-            {t("home.adaptive.regular", {
-              kcal: formatNumber(plan.baseDailyTarget),
-            })}
-          </span>
-        ) : null}
-      </p>
+      {/* The big number and the week bar are the ANSWER to "your plan moved" --
+          they exist to show the new target against the old one. On the good-news
+          state nothing moved, so the number would just be the regular target
+          repeated (the ring directly above already shows it) and the bar would
+          illustrate a change that did not happen. Printing them anyway made a
+          "you're fine" notice the tallest thing on the screen, which also set
+          the height of the whole swipe pager and left the Koraci/Voda and
+          micronutrient pages floating in dead space. A reassurance has to be
+          cheap or it is not a reassurance. */}
+      {!plan.isOnTrackNotice ? (
+        <>
+          <p
+            className="apc-line mt-1.5 flex items-baseline gap-2"
+            style={nextDelay()}
+          >
+            <Icon
+              className="size-4 shrink-0 self-center text-primary"
+              aria-hidden="true"
+            />
+            <span
+              data-testid="adaptive-note-target"
+              className="text-2xl font-semibold tabular-nums text-foreground"
+            >
+              {formatNumber(shownTarget)} kcal
+            </span>
+            {adjusted ? (
+              <span className="text-xs text-muted-foreground">
+                {t("home.adaptive.regular", {
+                  kcal: formatNumber(plan.baseDailyTarget),
+                })}
+              </span>
+            ) : null}
+          </p>
 
-      <div className="apc-line mt-2.5" style={nextDelay()}>
-        <div
-          className="apc-bar"
-          style={
-            {
-              "--apc-fill": `${spentPct}%`,
-              "--apc-today-left": `${spentPct}%`,
-              "--apc-today-width": `${todayPct}%`,
-            } as React.CSSProperties
-          }
-          role="presentation"
-        >
-          <div className="apc-bar-fill" />
-          <div className="apc-bar-today" />
-        </div>
-        <p className="mt-1.5 text-xs text-muted-foreground">
-          {t("home.adaptive.weekSpent", {
-            spent: formatNumber(plan.spentBeforeToday),
-            budget: formatNumber(plan.weeklyBudget),
-            days: plan.daysLeftIncludingToday,
-            unit:
-              plan.daysLeftIncludingToday === 1
-                ? t("home.adaptive.day")
-                : t("home.adaptive.days"),
-          })}
-        </p>
-      </div>
+          <div className="apc-line mt-2.5" style={nextDelay()}>
+            <div
+              className="apc-bar"
+              style={
+                {
+                  "--apc-fill": `${spentPct}%`,
+                  "--apc-today-left": `${spentPct}%`,
+                  "--apc-today-width": `${todayPct}%`,
+                } as React.CSSProperties
+              }
+              role="presentation"
+            >
+              <div className="apc-bar-fill" />
+              <div className="apc-bar-today" />
+            </div>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              {t("home.adaptive.weekSpent", {
+                spent: formatNumber(plan.spentBeforeToday),
+                budget: formatNumber(plan.weeklyBudget),
+                days: plan.daysLeftIncludingToday,
+                unit:
+                  plan.daysLeftIncludingToday === 1
+                    ? t("home.adaptive.day")
+                    : t("home.adaptive.days"),
+              })}
+            </p>
+          </div>
+        </>
+      ) : null}
 
       {/* What the change means going FORWARD. The redistribution already
           spreads evenly over every remaining day, so the same number holds for
@@ -345,15 +364,23 @@ export function AdaptivePlanCard({
 
       {/* The good-news branch: nothing moved AND the week is comfortably
           ahead. Without it this card only ever shows up bearing bad news, and
-          a notice that is always bad news gets dismissed unread. */}
+          a notice that is always bad news gets dismissed unread.
+          One line, at the small size the rest of the card's secondary text
+          uses -- it is the WHOLE body of this state (see the big number and
+          bar skipped above), so it has to read as a footnote, not a headline. */}
       {plan.isOnTrackNotice ? (
         <p
           data-testid="adaptive-note-room"
-          className="apc-line mt-2 text-muted-foreground"
+          className="apc-line mt-1 text-xs text-muted-foreground"
           style={nextDelay()}
         >
           {t("home.adaptive.onTrackRoom", {
             kcal: formatNumber(plan.weekRoomKcal),
+            days: plan.daysLeftIncludingToday,
+            unit:
+              plan.daysLeftIncludingToday === 1
+                ? t("home.adaptive.day")
+                : t("home.adaptive.days"),
           })}
         </p>
       ) : null}
@@ -446,11 +473,16 @@ export function AdaptivePlanCard({
               aria-hidden="true"
             />
             <span>
-              {t("home.adaptive.untrustedLead", {
-                days: plan.untrustedDays
-                  .map((day) => dayName(day.dayKey))
-                  .join(", "),
-              })}
+              {t(
+                plan.untrustedDays.length === 1
+                  ? "home.adaptive.untrustedLead"
+                  : "home.adaptive.untrustedLeadPlural",
+                {
+                  days: plan.untrustedDays
+                    .map((day) => dayName(day.dayKey))
+                    .join(", "),
+                }
+              )}
             </span>
           </p>
 

@@ -330,6 +330,34 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     // Falls back to the plain daily target.
     expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
   });
+
+  // 2026-08-01, a reported bug: the card used to live on the pager's first
+  // page. Every page shares the TALLEST page's height, so each line the card
+  // grew added dead space to the Koraci/Voda and micronutrient pages -- the
+  // product owner sent screenshots of them floating in a void. Keeping it out
+  // of the pager is the fix, and this is what stops it drifting back in.
+  it("test_the_plan_card_lives_OUTSIDE_the_pager_so_it_cannot_set_page_height", () => {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        adaptivePlan={adjustedPlan}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+
+    const card = screen.getByTestId("adaptive-note");
+    expect(screen.getByTestId("intake-pager")).not.toContainElement(card);
+    // Still on the screen, and still after the pager -- it explains the number
+    // the pager's first page shows.
+    expect(card).toBeInTheDocument();
+    expect(
+      screen
+        .getByTestId("intake-pager")
+        .compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
 });
 
 describe("Gric: the quick-log button on the home screen", () => {

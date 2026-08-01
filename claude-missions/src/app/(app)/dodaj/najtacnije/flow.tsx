@@ -193,6 +193,10 @@ export function NajtacnijeFlow() {
   const [geometry, setGeometry] = useState<PortionGeometry | null>(null);
   const [unit, setUnit] = useState<PortionUnit | null>(null);
   const [prep, setPrep] = useState<PrepMethod | null>(null);
+  // Whether the cooking chips apply to this food at all. The model decides it
+  // on the photo: an ice cream was never fried, and asking anyway is the flow
+  // admitting out loud that it didn't look at the plate.
+  const [prepNeeded, setPrepNeeded] = useState(true);
   const [angleAsk, setAngleAsk] = useState<string | null>(null);
 
   // AI questions + the user's tapped answers (index-aligned to `questions`).
@@ -460,6 +464,10 @@ export function NajtacnijeFlow() {
       setDish(data.naziv);
       setUnit(data.jedinica);
       setGeometry(defaultGeometry(data.posuda));
+      // Re-analysing (a second angle) can flip this, so clear any earlier tap
+      // rather than carrying a prep answer onto a food that has no preparation.
+      setPrepNeeded(data.pripremaBitna);
+      setPrep(null);
       setAngleAsk(data.ugao.treba ? data.ugao.zasto || "" : null);
       setQuestions(data.pitanja);
       setAnswers(data.pitanja.map(() => []));
@@ -502,8 +510,10 @@ export function NajtacnijeFlow() {
   // so an empty list must not block the button.
   const questionsAnswered =
     questions.length === 0 || allTapped || hasVoiceOrText;
-  const canFinalize =
-    questionsAnswered && (mode === "deklaracija" || prep !== null);
+  // The prep tap is required only when it was asked for -- for an ice cream the
+  // chips aren't on screen, so demanding one would be a dead end.
+  const prepAnswered = mode === "deklaracija" || !prepNeeded || prep !== null;
+  const canFinalize = questionsAnswered && prepAnswered;
   // "Nešto drugo" only means something once they've actually said what.
   const needsDetail = questions.some(
     (_, i) => (answers[i] ?? []).includes(OTHER_LABEL)
@@ -520,7 +530,7 @@ export function NajtacnijeFlow() {
   }
 
   async function handleFinalize() {
-    if (mode === "obrok" && prep === null) {
+    if (!prepAnswered) {
       setError(t("dodaj.prizma.choosePrep"));
       return;
     }
@@ -1025,34 +1035,41 @@ export function NajtacnijeFlow() {
                 onChange={setGeometry}
               />
 
-              <div className="flex flex-col gap-2.5">
-                <span className="text-base font-medium text-foreground">
-                  {t("dodaj.prizma.prepQuestion")}
-                </span>
-                <p className="-mt-1 text-xs text-muted-foreground">
-                  {t("dodaj.prizma.prepHint")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {PREP_METHODS.map((method) => {
-                    const on = prep === method;
-                    return (
-                      <button
-                        key={method}
-                        type="button"
-                        onClick={() => setPrep(method)}
-                        className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors ${
-                          on
-                            ? "border-primary bg-primary text-primary-foreground"
-                            : "border-border bg-background text-foreground hover:bg-muted"
-                        }`}
-                      >
-                        {on ? <Check className="size-3.5" aria-hidden="true" /> : null}
-                        {PREP_LABELS[method]}
-                      </button>
-                    );
-                  })}
+              {/* Only for food someone actually cooked. Asking an ice cream
+                  whether it was breaded is how the whole flow starts reading
+                  like a template. */}
+              {prepNeeded ? (
+                <div className="flex flex-col gap-2.5" data-testid="prizma-prep">
+                  <span className="text-base font-medium text-foreground">
+                    {t("dodaj.prizma.prepQuestion")}
+                  </span>
+                  <p className="-mt-1 text-xs text-muted-foreground">
+                    {t("dodaj.prizma.prepHint")}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {PREP_METHODS.map((method) => {
+                      const on = prep === method;
+                      return (
+                        <button
+                          key={method}
+                          type="button"
+                          onClick={() => setPrep(method)}
+                          className={`flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-colors ${
+                            on
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border bg-background text-foreground hover:bg-muted"
+                          }`}
+                        >
+                          {on ? (
+                            <Check className="size-3.5" aria-hidden="true" />
+                          ) : null}
+                          {PREP_LABELS[method]}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              ) : null}
             </div>
           ) : null}
 

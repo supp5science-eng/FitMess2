@@ -194,6 +194,20 @@ const PREP_HINTS: Record<PrepMethod, string> = {
     "Priprema: PRŽENO ili POHOVANO u dubljoj masti — računaj 15–25 g ulja kao zasebnu komponentu (pohovano nosi +30–40% kcal).",
 };
 
+/**
+ * What FINALIZE is told when the cooking chips were never shown -- because the
+ * ANALYZE step judged that nobody cooked this food (an ice cream, a yoghurt, a
+ * piece of fruit, a packaged snack).
+ *
+ * Saying nothing at all would be worse than saying this: the finalize prompt
+ * instructs the model to itemise cooking fat as its own component, so an
+ * unanswered prep slot invites it to invent a spoonful of oil under a scoop of
+ * ice cream. The line kills the invention without touching the fat that is
+ * genuinely inside the product.
+ */
+const NO_PREP_HINT =
+  "Priprema nije ni pitana: ovo je hrana koju niko nije spremao na šporetu (gotov/industrijski proizvod, sirovo, piće ili poslastica). NE dodaj ulje ni mast iz pripreme kao komponentu — uzmi vrednosti kakve taj proizvod ima sam po sebi (mast koja je u receptu, npr. u sladoledu ili čokoladi, naravno ostaje).";
+
 export function isPrepMethod(value: unknown): value is PrepMethod {
   return typeof value === "string" && PREP_METHODS.includes(value as PrepMethod);
 }
@@ -243,7 +257,7 @@ export function describePortion(
     );
   }
 
-  if (prep != null) lines.push(`- ${PREP_HINTS[prep]}`);
+  lines.push(prep != null ? `- ${PREP_HINTS[prep]}` : `- ${NO_PREP_HINT}`);
 
   lines.push(
     "NE PITAJ ponovo ni koliko je pojedeno ni kako je pripremljeno — to je već odgovoreno.",

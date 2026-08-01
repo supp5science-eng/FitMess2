@@ -97,7 +97,7 @@ describe("parsePrizmaAnalysis — questions", () => {
     const result = parsePrizmaAnalysis(
       {
         vidim: [seen("Pileće belo meso", "srednja")],
-        pitanja: [question("Kako je spremljeno?", 200, "pilece belo")],
+        pitanja: [question("Ima li sos preko mesa?", 200, "pilece belo")],
       },
       "obrok"
     );
@@ -111,7 +111,7 @@ describe("parsePrizmaAnalysis — questions", () => {
         vidim: [seen("pasulj", "visoka")],
         pitanja: [
           question("Šta si jeo?", 100),
-          question("Kako je pripremljeno?", 300),
+          question("Ima li dimljenog mesa unutra?", 300),
           question("Koliko si pojeo?", 200),
         ],
       },
@@ -119,8 +119,54 @@ describe("parsePrizmaAnalysis — questions", () => {
     );
     expect(result.source).toBe("unbound");
     expect(result.pitanja.map((q) => q.pitanje)).toEqual([
-      "Kako je pripremljeno?",
+      "Ima li dimljenog mesa unutra?",
     ]);
+  });
+
+  it("drops questions about how the food was cooked", () => {
+    // The app owns that question -- one tap under the dial, or, for food nobody
+    // cooks, not at all. A model that asks it anyway spends a slot on an answer
+    // we already have, and on an ice cream asks something that never happened.
+    const result = parsePrizmaAnalysis(
+      {
+        vidim: [seen("piletina", "srednja")],
+        pitanja: [
+          question("Da li je piletina pohovana?", 400, "piletina"),
+          question("Kako je pripremljeno?", 350, "piletina"),
+          question("Je l' prženo na ulju?", 300, "piletina"),
+          question("Ima li sira u fileu?", 90, "piletina"),
+        ],
+      },
+      "obrok"
+    );
+    expect(result.pitanja.map((q) => q.pitanje)).toEqual([
+      "Ima li sira u fileu?",
+    ]);
+  });
+
+  it("keeps a question about an item whose NAME mentions breading", () => {
+    // "pohovana piletina" is a perfectly good item to ask something else about;
+    // only the question text decides.
+    const result = parsePrizmaAnalysis(
+      {
+        vidim: [seen("pohovana piletina", "srednja")],
+        pitanja: [question("Čime je punjena?", 200, "pohovana piletina")],
+      },
+      "obrok"
+    );
+    expect(result.pitanja).toHaveLength(1);
+  });
+
+  it("leaves nothing to ask when every question was about the cooking", () => {
+    const result = parsePrizmaAnalysis(
+      {
+        vidim: [seen("krompir", "srednja")],
+        pitanja: [question("Prženo ili kuvano?", 300, "krompir")],
+      },
+      "obrok"
+    );
+    expect(result.pitanja).toEqual([]);
+    expect(result.source).toBe("none");
   });
 
   it("lets questions through untouched when no inventory came back", () => {
@@ -175,6 +221,37 @@ describe("parsePrizmaAnalysis — vessel and unit", () => {
   it("forces the label flow onto the plain dial", () => {
     const result = parsePrizmaAnalysis({ posuda: "dubok" }, "deklaracija");
     expect(result.posuda).toBe("ravan");
+  });
+});
+
+describe("parsePrizmaAnalysis — is preparation even a thing here", () => {
+  it("drops the cooking question for food nobody cooked", () => {
+    // The complaint that started this: a scoop of ice cream, recognised as ice
+    // cream, and then asked whether it was fried or breaded.
+    const result = parsePrizmaAnalysis(
+      { naziv: "Sladoled", posuda: "dubok", priprema_bitna: false },
+      "obrok"
+    );
+    expect(result.pripremaBitna).toBe(false);
+  });
+
+  it("keeps it for a plate someone actually cooked", () => {
+    expect(
+      parsePrizmaAnalysis({ priprema_bitna: true }, "obrok").pripremaBitna
+    ).toBe(true);
+  });
+
+  it("keeps it when the model says nothing — a missed spoon of oil costs more than a tap", () => {
+    expect(parsePrizmaAnalysis({}, "obrok").pripremaBitna).toBe(true);
+    expect(
+      parsePrizmaAnalysis({ priprema_bitna: "ne" }, "obrok").pripremaBitna
+    ).toBe(true);
+  });
+
+  it("never asks it on a nutrition label — the box already says", () => {
+    expect(
+      parsePrizmaAnalysis({ priprema_bitna: true }, "deklaracija").pripremaBitna
+    ).toBe(false);
   });
 });
 

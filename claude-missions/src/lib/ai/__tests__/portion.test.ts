@@ -121,6 +121,15 @@ describe("describePortion", () => {
     expect(describePortion(null, null, "przeno")).toContain("15–25 g ulja");
     expect(describePortion(null, null, "malo_ulja")).toContain("8–12 g");
   });
+
+  it("says outright that nobody cooked it when the chips were never shown", () => {
+    // Silence here would be worse than a sentence: the finalize prompt asks for
+    // cooking fat as its own component, so an unanswered prep slot invites a
+    // spoonful of oil under a scoop of ice cream.
+    const text = describePortion({ vessel: "dubok", level: 0.6 }, BOWL, null);
+    expect(text).toContain("Priprema nije ni pitana");
+    expect(text).toContain("NE dodaj ulje");
+  });
 });
 
 describe("guards", () => {

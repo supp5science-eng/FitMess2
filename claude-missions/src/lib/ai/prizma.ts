@@ -173,6 +173,17 @@ export interface PrizmaAnalysis {
   posuda: Vessel;
   jedinica: PortionUnit;
   /**
+   * Whether the "how was it cooked?" tap is worth showing at all.
+   *
+   * The chips buy a lot on a plate of home-cooked food -- a tablespoon of oil is
+   * 126 kcal and invisible in a photo -- but they were shown for EVERY meal,
+   * including ones nobody cooks. Being asked whether an ice cream was fried or
+   * breaded is the single loudest way the flow announces that it is running a
+   * template instead of looking at the food. The model decides here, because it
+   * is the only step that has actually seen the plate.
+   */
+  pripremaBitna: boolean;
+  /**
    * The plate/bowl size the model measured, and whether it got there from the
    * reference object or just assumed a standard plate.
    *
@@ -239,6 +250,26 @@ function isDerivedFromDoubt(
 }
 
 /**
+ * Is this question asking how the food was cooked?
+ *
+ * The app owns that question: either the chips under the dial ask it in one tap,
+ * or the model has just told us it does not apply to this food. Both ways it is
+ * already settled by the time the user reads the questions, so a model that asks
+ * it anyway is spending one of its three slots on the answer we have -- and when
+ * the food is an ice cream, on an answer that never existed. The prompt has
+ * always forbidden it; this is what makes the ban real, the same way
+ * `isDerivedFromDoubt` does for template questions.
+ *
+ * Only the question text is matched, never `stavka`: "pohovana piletina" is a
+ * perfectly good ITEM to ask something else about ("čime je punjena?").
+ */
+const PREPARATION_QUESTION = /przen|pohovan|priprem|spremljen|friteza/;
+
+function isPreparationQuestion(question: PrizmaQuestion): boolean {
+  return PREPARATION_QUESTION.test(normalise(question.pitanje));
+}
+
+/**
  * Defensively turn Gemini's raw analysis JSON into a typed `PrizmaAnalysis`.
  * Never throws: malformed questions are dropped one by one, a missing or absurd
  * unit mass falls back to an ordinary plate, and an empty question list is a
@@ -298,13 +329,30 @@ export function parsePrizmaAnalysis(
     .map((q) => prizmaQuestionSchema.safeParse(q))
     .flatMap((result) => (result.success ? [result.data] : []))
     .filter((q) => q.opcije.length >= 2)
+    .filter((q) => !isPreparationQuestion(q))
     .sort((a, b) => b.uticaj_kcal - a.uticaj_kcal);
+
+  // Does the cooking question apply to this food at all? Defaults to yes when
+  // the model says nothing -- a plate of food is the common case, and showing
+  // the chips one time too many costs a tap, while hiding them one time too
+  // often silently loses a tablespoon of oil. A nutrition label never gets them:
+  // whatever was done to that product is already printed on the box.
+  const pripremaBitna = variant === "obrok" && obj.priprema_bitna !== false;
 
   // Only the meal ("obrok") variant judges "is there food" -- a nutrition label
   // legitimately has no food on a plate, so the flag is forced off there.
   const nemaHrane = variant === "obrok" && obj.nema_hrane === true;
 
-  const base = { nemaHrane, naziv, posuda, jedinica, razmera, vidim: seen, ugao };
+  const base = {
+    nemaHrane,
+    naziv,
+    posuda,
+    jedinica,
+    pripremaBitna,
+    razmera,
+    vidim: seen,
+    ugao,
+  };
 
   // No question is a good outcome, not a failure: the dial already carries the
   // portion, so a plate the model reads cleanly has nothing left worth asking.
@@ -373,6 +421,10 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
     razmera_po_referenci: { type: "BOOLEAN" },
     jedinica_naziv: { type: "STRING" },
     jedinica_grami: { type: "NUMBER" },
+    // Decided AFTER the food is named and classified, never before: whether
+    // frying is even a thing that could have happened to it follows from
+    // knowing what it is.
+    priprema_bitna: { type: "BOOLEAN" },
     pitanja: {
       type: "ARRAY",
       items: {
@@ -411,6 +463,7 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
     "tanjir_cm",
     "jedinica_naziv",
     "jedinica_grami",
+    "priprema_bitna",
   ],
   propertyOrdering: [
     "nema_hrane",
@@ -421,6 +474,7 @@ export const PRIZMA_ANALYZE_RESPONSE_SCHEMA = {
     "razmera_po_referenci",
     "jedinica_naziv",
     "jedinica_grami",
+    "priprema_bitna",
     "pitanja",
     "treba_ugao",
     "ugao_zasto",
@@ -568,10 +622,20 @@ Ovo je najvažniji deo: od njega zavisi kako će korisnik moći da opiše količ
   → "jedinica_naziv": naziv JEDNOG komada u jednini ("palačinka", "parče pice", "ćevap"); "jedinica_grami": masa JEDNOG takvog komada (palačinka ≈ 60 g, parče pice ≈ 110 g, ćevap ≈ 25 g, jaje ≈ 60 g).
 Kad se dvoumiš između "ravan" i "komadi": ako bi čovek prirodno rekao „pojeo sam tri", to je "komadi".
 
-KORAK 4 — PITAJ SAMO ONO ŠTO SI SAM OZNAČIO KAO NEJASNO.
+KORAK 4 — DA LI PRIPREMA UOPŠTE MENJA OVU HRANU?
+Aplikacija posle ovoga nudi korisniku da jednim dodirom kaže kako je jelo pripremljeno (kuvano / pečeno bez ulja / na malo ulja / prženo-pohovano). To pitanje ima smisla samo za hranu koja se ZAISTA termički priprema i kod koje se dodata mast ne vidi na slici.
+Postavi "priprema_bitna": false kada bi to pitanje bilo besmisleno — a to je češće nego što izgleda:
+- gotovi i industrijski proizvodi: sladoled, jogurt, čokolada, keks, čips, grisine, energetska pločica, sok, gazirano piće, kafa, protein šejk
+- sirova hrana: voće, povrće, orašasti plodovi, salata bez termičke obrade
+- hleb, pecivo, krofna, kolač i slično — mast je već u receptu, korisnik je nije birao
+- suhomesnato i sir: pršuta, salama, kačkavalj
+Postavi "priprema_bitna": true samo za jela koja je neko spremio: meso, riba, jaja, krompir, testenina, pirinač, povrće sa tiganja/rerne, palačinke, sarma, gulaš, pohovano bilo šta.
+Kad se dvoumiš, uzmi true — bolje jedan dodir viška nego izgubljena kašika ulja. Ali NIKAD true za nešto što se ne kuva: pitati za sladoled na koji je način pržen je najgori mogući utisak koji možeš da ostaviš.
+
+KORAK 5 — PITAJ SAMO ONO ŠTO SI SAM OZNAČIO KAO NEJASNO.
 Pitanja izvedi ISKLJUČIVO iz stavki sa "srednja"/"niska" sigurnošću. Najviše ${MAX_QUESTIONS}. Nijedno pitanje nije sasvim u redu — prazna lista je ispravan odgovor kad je tanjir jasan.
 - OBAVEZNO: u "stavka" upiši TAČAN naziv stavke iz "vidim" na koju se pitanje odnosi. Pitanje bez stavke iz "vidim" se odbacuje.
-- STROGO ZABRANJENO: pitati KOLIKO je hrane, koliko je pojedeno, ili KAKO JE PRIPREMLJENO (na ulju/pohovano/kuvano). Korisnik na oba ta pitanja odgovara sam, u sledećem koraku. Ako ih ipak postaviš, samo si mu potrošio vreme.
+- STROGO ZABRANJENO: pitati KOLIKO je hrane, koliko je pojedeno, ili KAKO JE PRIPREMLJENO (na ulju/pohovano/kuvano/prženo). Količinu korisnik zada klizačem, a pripremu jednim dodirom — ili je, po KORAKU 4, kod ove hrane uopšte i nema. Takvo pitanje aplikacija odbacuje pre nego što ga korisnik vidi.
 - STROGO ZABRANJENO: opšta pitanja po šablonu ("Šta si jeo?", "Da li je zdravo?").
 - IMENUJ hranu u pitanju: "Sos ispod mesa — pavlaka ili majonez?" je dobro, "Kakav je sos?" nije.
 - Pitaj ono što ni slika ni gramaža ne rešavaju: koji je tačno sastojak (koje meso, koji sir), ima li nečega ISPOD ili UNUTRA, ima li dresinga/sosa/šećera koji se ne vidi.
@@ -581,7 +645,7 @@ Pitanja izvedi ISKLJUČIVO iz stavki sa "srednja"/"niska" sigurnošću. Najviše
 - "vise_odgovora": true samo kad više odgovora može da važi istovremeno.
 - Pitanja i opcije na srpskom (latinica).
 
-KORAK 5 — TREBA LI TI JOŠ JEDAN UGAO?
+KORAK 6 — TREBA LI TI JOŠ JEDAN UGAO?
 Postavi "treba_ugao": true SAMO ako postoji nešto što se odozgo fizički ne može videti, a jako menja procenu — npr. hrana je nagomilana pa ne vidiš šta je ispod, ili je posuda neprozirna pa ne znaš koliko je duboka. U "ugao_zasto" napiši to jednom rečenicom, korisniku ("Ne vidim šta je ispod mesa."). U svim ostalim slučajevima "treba_ugao": false — dodatna slika košta korisnika vremena i mnogi zbog nje odustanu.
 
 ${NUTRITION_ANCHORS}
@@ -595,7 +659,7 @@ U "vidim" navedi šta si očitao (npr. "kcal na 100 g", "ukupna masa pakovanja")
 U "naziv" upiši naziv proizvoda ako se vidi, inače kratak opis.
 
 KORAK 2 — POPUNI OBAVEZNA POLJA OBLIKA.
-Deklaracija nema oblik porcije, pa uvek vrati: "nema_hrane": false, "posuda": "ravan", "jedinica_naziv": "ceo proizvod", "jedinica_grami": ukupna masa pakovanja u gramima ako se vidi, inače 100. "tanjir_cm": 26, "razmera_po_referenci": false, "treba_ugao": false.
+Deklaracija nema oblik porcije, pa uvek vrati: "nema_hrane": false, "posuda": "ravan", "jedinica_naziv": "ceo proizvod", "jedinica_grami": ukupna masa pakovanja u gramima ako se vidi, inače 100. "tanjir_cm": 26, "razmera_po_referenci": false, "priprema_bitna": false (sve o pripremi već piše na deklaraciji), "treba_ugao": false.
 
 KORAK 3 — PITAJ ONO ŠTO FALI.
 Sa deklaracije čitaš vrednosti na 100 g, ali ti gotovo uvek fali KOLIKO je proizvod ukupno težak i KOLIKO je pojedeno. Ovde je to dozvoljeno i poželjno pitati. Najviše ${MAX_QUESTIONS} kratka pitanja sa 2–4 ponuđena odgovora.

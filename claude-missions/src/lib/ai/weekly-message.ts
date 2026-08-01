@@ -151,7 +151,32 @@ export function numbersAreFaithful(
 /** Hard ceiling on the reply, so a runaway answer can never fill the card. */
 export const MAX_MESSAGE_CHARS = 400;
 
-/** Final gate: length, faithfulness, and no empty answer. */
+/**
+ * The model talking about the job instead of doing it.
+ *
+ * Added 2026-08-01, after a user's card read `* Status TOO_SLOW explained: Yes`
+ * where a Serbian sentence belonged. The root cause was upstream (thought parts
+ * were being concatenated into the reply, see `postGenerateContent`), but the
+ * lesson is that BOTH existing gates let it through: the fragment was well under
+ * the length limit and contained no calorie-scale number to be unfaithful with.
+ * A reply can be short and number-free and still be machinery.
+ *
+ * Two tells, both things a three-sentence Serbian message to a person never
+ * contains:
+ *
+ *   * our own status enum, spelled the way only our code spells it -- proof the
+ *     model is echoing the payload rather than writing from it;
+ *   * bullet/checklist shape, which is a report about the answer, not the
+ *     answer.
+ */
+const INTERNAL_TOKENS = /\b(ON_TRACK|TOO_SLOW|TOO_FAST|STALLED|INSUFFICIENT_DATA)\b/;
+const CHECKLIST_SHAPE = /(^|\n)\s*[*\-•]\s|\bChecked\b/i;
+
+export function looksLikeMachinery(text: string): boolean {
+  return INTERNAL_TOKENS.test(text) || CHECKLIST_SHAPE.test(text);
+}
+
+/** Final gate: length, faithfulness, prose-shape, and no empty answer. */
 export function acceptWeeklyMessage(
   raw: string,
   facts: WeeklyMessageFacts
@@ -159,6 +184,7 @@ export function acceptWeeklyMessage(
   const text = raw.trim().replace(/^["“”']|["“”']$/g, "").trim();
   if (!text) return null;
   if (text.length > MAX_MESSAGE_CHARS) return null;
+  if (looksLikeMachinery(text)) return null;
   if (!numbersAreFaithful(text, facts)) return null;
   return text;
 }

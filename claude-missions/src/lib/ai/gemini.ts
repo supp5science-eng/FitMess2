@@ -144,7 +144,20 @@ function thinkingConfig(level?: ThinkingLevel) {
 }
 
 interface GeminiResponse {
-  candidates?: { content?: { parts?: { text?: string }[] } }[];
+  candidates?: {
+    content?: {
+      parts?: {
+        text?: string;
+        /**
+         * True on a THOUGHT part -- the model's reasoning summary, not its
+         * answer. Gemini 3.x returns these inline, in the same `parts` array,
+         * and they must never be concatenated into the reply (see
+         * `postGenerateContent`).
+         */
+        thought?: boolean;
+      }[];
+    };
+  }[];
   /** Token accounting Google returns on every call. Logged, never shown. */
   usageMetadata?: {
     promptTokenCount?: number;
@@ -221,7 +234,16 @@ async function postGenerateContent(
     );
   }
 
+  // THOUGHT PARTS ARE NOT THE ANSWER. Gemini 3.x returns its reasoning summary
+  // inline, as extra entries in this same array flagged `thought: true`. Joining
+  // the array blind concatenates the model's private notes onto the reply -- and
+  // when the token budget runs out mid-thought, the notes are ALL that comes
+  // back. That is exactly what shipped to the weekly weigh-in card on
+  // 2026-08-01: a user read "* Status TOO_SLOW explained: Yes" where a Serbian
+  // sentence belonged. JSON callers were luckier only by accident (the prose
+  // broke `JSON.parse`, so it surfaced as an error instead of as garbage).
   const text = (json.candidates?.[0]?.content?.parts ?? [])
+    .filter((part) => part.thought !== true)
     .map((part) => part.text ?? "")
     .join("")
     .trim();
@@ -327,6 +349,11 @@ export async function generateChatText(
       temperature: 0.65,
       maxOutputTokens: 900,
       topP: 0.95,
+      // `low`, because this is not a reasoning task: every number is settled
+      // before the call and the job is to say them in three sentences. Left at
+      // the default, the model spent the whole 900-token budget deliberating
+      // and got cut off before writing a word of the actual answer.
+      ...thinkingConfig("low"),
     },
   });
 }

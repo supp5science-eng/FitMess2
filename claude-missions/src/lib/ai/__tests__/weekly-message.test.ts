@@ -4,6 +4,7 @@ import {
   acceptWeeklyMessage,
   allowedNumbers,
   extractLargeNumbers,
+  looksLikeMachinery,
   MAX_MESSAGE_CHARS,
   numbersAreFaithful,
   weeklyMessageFacts,
@@ -37,6 +38,51 @@ function facts(overrides: Partial<WeeklyMessageFacts> = {}): WeeklyMessageFacts 
     ...overrides,
   };
 }
+
+describe("looksLikeMachinery", () => {
+  it("test_the_leaked_thought_fragment_from_2026_08_01_is_rejected", () => {
+    // Verbatim from the card a user photographed: the model's own checklist,
+    // truncated mid-thought, where a Serbian sentence belonged. Short enough to
+    // pass the length gate and number-free enough to pass the faithfulness one.
+    const leaked =
+      'ila", "stvarnija potrošnja je niža od pretpostavljene"): Checked. * Status TOO_SLOW explained: Yes ("izmerena potro';
+
+    expect(leaked.length).toBeLessThan(MAX_MESSAGE_CHARS);
+    expect(numbersAreFaithful(leaked, facts())).toBe(true);
+    expect(looksLikeMachinery(leaked)).toBe(true);
+    expect(acceptWeeklyMessage(leaked, facts())).toBeNull();
+  });
+
+  it("test_our_own_status_enum_never_reaches_a_user", () => {
+    expect(looksLikeMachinery("Status je ON_TRACK, ništa se ne menja.")).toBe(
+      true
+    );
+    expect(looksLikeMachinery("Nedelja je INSUFFICIENT_DATA.")).toBe(true);
+  });
+
+  it("test_bullet_shape_is_a_report_about_the_answer_not_the_answer", () => {
+    expect(looksLikeMachinery("* Objasnio sam status\n* Predložio broj")).toBe(
+      true
+    );
+    expect(looksLikeMachinery("- Trend\n- Predlog")).toBe(true);
+  });
+
+  it("test_ordinary_serbian_prose_passes", () => {
+    const good =
+      "Tri nedelje stojiš u mestu uz prosečan unos od 2.600 kcal, pa ispada da trošiš manje nego što je plan računao. Predlažemo 2.400 kcal dnevno.";
+
+    expect(looksLikeMachinery(good)).toBe(false);
+    expect(acceptWeeklyMessage(good, facts())).toBe(good);
+  });
+
+  it("test_a_dash_inside_a_sentence_is_not_a_bullet", () => {
+    // The copy across this app uses em dashes constantly; only a dash that
+    // STARTS a line is list shape.
+    expect(
+      looksLikeMachinery("Vaga stoji — potrošnja je niža nego što smo mislili.")
+    ).toBe(false);
+  });
+});
 
 describe("extractLargeNumbers", () => {
   it("test_a_serbian_thousand_separator_reads_as_one_number_not_two", () => {

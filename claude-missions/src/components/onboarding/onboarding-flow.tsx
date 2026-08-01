@@ -67,9 +67,9 @@ export function OnboardingFlow() {
     // A name in the stash means it was already asked (e.g. the persist failed
     // and the user reloaded) — skip straight to the plan instead of asking
     // again.
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: browser-only read resolved once, post-hydration (see above).
     // Stashed answers came from `/upitnik`, where the plan reveal already
     // played — so these hand-off users are `alreadyRevealed: true`.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: browser-only read resolved once, post-hydration (see above).
     setStage(
       pending
         ? pending.name !== null

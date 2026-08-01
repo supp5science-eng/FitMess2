@@ -56,18 +56,20 @@ function prefersReducedMotion(): boolean {
  * for reduced motion, or when there is nothing to count to.
  */
 function useCountUp(target: number, duration = 900): number {
-  const [value, setValue] = useState(target);
+  // Starts at 0 and is DERIVED back to `target` for the no-animation cases
+  // below, rather than being set to it from inside the effect: a setState in an
+  // effect body costs a second render pass on every mount, and it would land on
+  // the users who asked for reduced motion -- exactly the ones who should get
+  // the cheapest path, not the most expensive one.
+  const [value, setValue] = useState(0);
   const frame = useRef<number | null>(null);
+  const skip = target <= 0 || prefersReducedMotion();
 
   useEffect(() => {
-    if (target <= 0 || prefersReducedMotion()) {
-      setValue(target);
-      return;
-    }
+    if (skip) return;
 
     // The count-up waits for the badge to land, so the eye has somewhere to be
     // first; before that it shows 0 rather than the answer.
-    setValue(0);
     const start = performance.now() + 450;
 
     const tick = (nowMs: number) => {
@@ -92,9 +94,9 @@ function useCountUp(target: number, duration = 900): number {
     return () => {
       if (frame.current !== null) cancelAnimationFrame(frame.current);
     };
-  }, [target, duration]);
+  }, [target, duration, skip]);
 
-  return value;
+  return skip ? target : value;
 }
 
 export function RewardCelebration({

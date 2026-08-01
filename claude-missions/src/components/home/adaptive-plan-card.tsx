@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import {
   CircleHelp,
@@ -99,11 +99,40 @@ function previousDay(dayKey: string): string {
   return date.toISOString().slice(0, 10);
 }
 
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
+
+function reducedMotionQuery(): MediaQueryList | null {
+  if (typeof window === "undefined") return null;
+  if (typeof window.matchMedia !== "function") return null;
+  return window.matchMedia(REDUCED_MOTION_QUERY);
+}
+
+function subscribeToReducedMotion(onChange: () => void): () => void {
+  const query = reducedMotionQuery();
+  if (!query) return () => {};
+  query.addEventListener("change", onChange);
+  return () => query.removeEventListener("change", onChange);
+}
+
+/**
+ * `prefers-reduced-motion`, as a value rather than as an effect.
+ *
+ * This used to be a plain function called inside the reveal effect, which then
+ * called `setPlaying(false)` / `setRevealed(true)` to land on the end state --
+ * a setState synchronously inside an effect body, i.e. a guaranteed second
+ * render pass on every mount for the users least able to afford one.
+ *
+ * `useSyncExternalStore` reads it during render instead. The server snapshot is
+ * `false` (the server cannot know), and React uses that same snapshot for
+ * hydration, so the first client render still matches the server exactly --
+ * which is why this cannot be a lazy `useState` initializer: that WOULD read
+ * `matchMedia` during hydration and mismatch.
+ */
+function useReducedMotion(): boolean {
+  return useSyncExternalStore(
+    subscribeToReducedMotion,
+    () => reducedMotionQuery()?.matches ?? false,
+    () => false
   );
 }
 
@@ -120,9 +149,17 @@ export function AdaptivePlanCard({
 }) {
   const { t } = useT();
   const router = useRouter();
+  const reducedMotion = useReducedMotion();
   // `playing` drives the CSS; `revealed` flips the count-up's target.
-  const [playing, setPlaying] = useState(intro);
-  const [revealed, setRevealed] = useState(!intro);
+  const [playingState, setPlaying] = useState(intro);
+  const [revealedState, setRevealed] = useState(!intro);
+  // Reduced motion lands on the END state by DERIVING it, not by setting it:
+  // the reveal is skipped and the adapted number is shown straight away, with
+  // no extra render to get there. `revealed` also picks WHICH number is shown
+  // (adapted vs base), so it has to be right on the very first paint -- not
+  // merely un-animated.
+  const playing = playingState && !reducedMotion;
+  const revealed = revealedState || reducedMotion;
 
   const shownTarget = useCountUp(
     revealed ? plan.adaptiveDailyTarget : plan.baseDailyTarget,
@@ -144,18 +181,17 @@ export function AdaptivePlanCard({
       }
     }
 
-    if (prefersReducedMotion()) {
-      setPlaying(false);
-      setRevealed(true);
-      return;
-    }
+    // Nothing to schedule: the derived values above are already at the end
+    // state. The cookie above still had to be burned -- the moment was spent
+    // either way.
+    if (reducedMotion) return;
 
     const timers = [
       window.setTimeout(() => setRevealed(true), NUMBER_START_MS),
       window.setTimeout(() => setPlaying(false), SETTLE_MS),
     ];
     return () => timers.forEach((t) => window.clearTimeout(t));
-  }, [intro, dayKey]);
+  }, [intro, dayKey, reducedMotion]);
 
   const lifted = plan.liftedKcal > 0;
   const adjusted = plan.isAdjusted;

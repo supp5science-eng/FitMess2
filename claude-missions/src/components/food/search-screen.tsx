@@ -59,6 +59,12 @@ export function SearchScreen({ initialRecents }: { initialRecents: Food[] }) {
     return () => clearTimeout(handle);
   }, [query]);
 
+  // Resolved OUT here rather than by calling `t` inside the effect: a string is
+  // stable by value, so it can sit in the dependency list honestly, whereas the
+  // `t` function itself would re-fire the search -- a network call -- on any
+  // render that happened to hand back a new identity.
+  const searchFailedMessage = t("food.search.failedError");
+
   useEffect(() => {
     // Nothing to fetch for an empty query -- the JSX below already renders
     // the recents view purely from `trimmedQuery` (the live input value,
@@ -81,7 +87,7 @@ export function SearchScreen({ initialRecents }: { initialRecents: Food[] }) {
 
         if (!response.ok || !body.ok) {
           setStatus("error");
-          setErrorMessage(body.error_sr || t("food.search.failedError"));
+          setErrorMessage(body.error_sr || searchFailedMessage);
           return;
         }
 
@@ -90,7 +96,7 @@ export function SearchScreen({ initialRecents }: { initialRecents: Food[] }) {
       } catch {
         if (!cancelled) {
           setStatus("error");
-          setErrorMessage(t("food.search.failedError"));
+          setErrorMessage(searchFailedMessage);
         }
       }
     }
@@ -101,7 +107,7 @@ export function SearchScreen({ initialRecents }: { initialRecents: Food[] }) {
     };
     // `attempt` is a deliberate manual-retry trigger (incremented by
     // `retry()` below) with no value of its own read inside this effect.
-  }, [debouncedQuery, attempt]);
+  }, [debouncedQuery, attempt, searchFailedMessage]);
 
   const rankedResults = useMemo(
     () => rankResultsWithRecentsFirst(results, recentFoodIds),

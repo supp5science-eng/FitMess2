@@ -165,8 +165,10 @@ export function ThemeChoiceScreen({
                 key={card.value}
                 type="button"
                 role="radio"
+                // `aria-checked` only -- `aria-pressed` is the toggle-BUTTON
+                // state and is not valid on a radio; a screen reader given both
+                // is being told the same thing in two vocabularies.
                 aria-checked={active}
-                aria-pressed={active}
                 aria-label={card.label}
                 onClick={() => choose(card.value)}
                 className="tc-card"

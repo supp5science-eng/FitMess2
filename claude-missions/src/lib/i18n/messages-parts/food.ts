@@ -80,8 +80,8 @@ export const foodMessages = {
     "food.addMore.extrasWriteFailed": "Nismo uspeli da procenimo. Pokušaj ponovo.",
     "food.addMore.extrasPerUnit": "{unit} · {kcal} kcal",
 
-    // "Nisam sve pojeo" — koliko je od unetog obroka stvarno pojedeno
-    "food.eaten.open": "Nisam sve pojeo/la",
+    // "Koliko si pojeo" — koliko je od unetog obroka stvarno pojedeno
+    "food.eaten.open": "Koliko si pojeo",
     "food.eaten.openWithShare": "Pojedeno {share}%",
     "food.eaten.save": "Sačuvaj",
     "food.eaten.saveError": "Nismo uspeli da sačuvamo. Pokušaj ponovo.",
@@ -213,8 +213,8 @@ export const foodMessages = {
     "food.addMore.extrasWriteFailed": "We couldn't estimate that. Try again.",
     "food.addMore.extrasPerUnit": "{unit} · {kcal} kcal",
 
-    // "I didn't eat it all" — how much of a logged meal was actually eaten
-    "food.eaten.open": "Didn't eat it all",
+    // "How much you ate" — how much of a logged meal was actually eaten
+    "food.eaten.open": "How much you ate",
     "food.eaten.openWithShare": "Ate {share}%",
     "food.eaten.save": "Save",
     "food.eaten.saveError": "We couldn't save that. Try again.",

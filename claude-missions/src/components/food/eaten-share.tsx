@@ -32,6 +32,7 @@ export function EatenShare({
   eatenGrams,
   eatenKcal,
   servedKcal,
+  fromPhoto = false,
   disabled = false,
 }: {
   /** Percentage of the served plate that was eaten (5–100). */
@@ -42,9 +43,19 @@ export function EatenShare({
   eatenKcal: number;
   /** The whole plate, so we can say what was left behind. */
   servedKcal: number;
+  /**
+   * True when the entry has a photo, which lets the question name what the
+   * "whole" actually is: "od celog slikanog obroka". A catalog or Gric entry
+   * was never photographed, so it gets the plain wording rather than a
+   * sentence that describes a picture nobody took.
+   */
+  fromPhoto?: boolean;
   disabled?: boolean;
 }) {
   const { t } = useT();
+  const question = fromPhoto
+    ? t("dodaj.eaten.questionPhoto")
+    : t("dodaj.eaten.question");
   const value = clampEatenShare(share);
   const isWholePlate = value >= FULL_EATEN_SHARE;
   const leftKcal = Math.max(Math.round(servedKcal - eatenKcal), 0);
@@ -60,9 +71,7 @@ export function EatenShare({
       className="flex flex-col gap-1.5 rounded-2xl border border-border bg-muted/40 px-4 py-3.5"
     >
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm font-medium text-foreground">
-          {t("dodaj.eaten.question")}
-        </span>
+        <span className="text-sm font-medium text-foreground">{question}</span>
         <span
           data-testid="eaten-share-value"
           className="text-lg font-semibold tabular-nums text-primary"
@@ -79,7 +88,7 @@ export function EatenShare({
         step={EATEN_SHARE_STEP}
         value={value}
         disabled={disabled}
-        aria-label={t("dodaj.eaten.question")}
+        aria-label={question}
         // Screen readers get the words, not just the number -- the same thing
         // the sighted user reads under the track.
         aria-valuetext={`${value}% · ${t(eatenShareLabelKey(value))}`}

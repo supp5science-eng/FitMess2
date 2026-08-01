@@ -41,9 +41,13 @@ interface LogResponseBody {
 
 export function LogEatenShareSheet({
   log,
+  hasPhoto = false,
   onSaved,
 }: {
   log: Log;
+  /** True when the entry has a stored photo, so the question can name what the
+   * "whole" was: "od celog slikanog obroka". */
+  hasPhoto?: boolean;
   /** Called with the rescaled row, so the day's ring/macros recompute. */
   onSaved?: (updatedLog: Log) => void;
 }) {
@@ -200,6 +204,7 @@ export function LogEatenShareSheet({
               eatenGrams={preview.grams}
               eatenKcal={preview.kcal}
               servedKcal={servedKcal}
+              fromPhoto={hasPhoto}
               disabled={isSaving}
             />
 

@@ -26,6 +26,7 @@ export function LogDeleteConfirm({
   logId,
   logName,
   onDeleted,
+  fullWidth = false,
 }: {
   logId: string;
   /** Shown in the confirm message, e.g. "Obrisati unos "Jabuka"?" */
@@ -33,6 +34,16 @@ export function LogDeleteConfirm({
   /** Called after a successful delete, so the caller can re-fetch/recompute
    * the day's remaining budget. */
   onDeleted?: (logId: string) => void;
+  /**
+   * Stretch the trigger across its container (2026-08-01, meal card).
+   *
+   * On a meal card the three corrections -- more of it, less of it, fix the
+   * portion -- share a wrapping row, and "Obriši" sat among them as a fourth
+   * equal chip. It isn't equal: it's the one that ends the entry. A full-width
+   * bar on its own line separates "adjust" from "remove" by layout, so the
+   * destructive action can't be tapped by aiming at a neighbour.
+   */
+  fullWidth?: boolean;
 }) {
   const { t } = useT();
   const [isOpen, setIsOpen] = useState(false);
@@ -75,12 +86,16 @@ export function LogDeleteConfirm({
   }
 
   return (
-    <div>
+    <div className={fullWidth ? "w-full" : undefined}>
+      {/* `destructive` rather than the neutral outline the other corrections
+          wear: this is the only one of them that cannot be undone, and it
+          should look different BEFORE it is tapped, not only in the confirm. */}
       <Button
         type="button"
-        variant="outline"
+        variant="destructive"
         onClick={openConfirm}
         data-testid="log-delete-open-button"
+        className={fullWidth ? "w-full" : undefined}
       >
         {t("food.logDelete.open")}
       </Button>

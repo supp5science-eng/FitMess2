@@ -299,24 +299,35 @@ export function MealCard({
             />
           </div>
         ) : null}
-        <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
-          {/* "Dodaj još" leads: seconds are the common follow-up action on an
-              entry, while editing/deleting are corrections. Unlike "Izmeni" it
-              needs no `food` row -- it grows the entry from its own snapshot, so
-              it is available on AI meal entries too (which is the point). */}
-          <LogAddMoreSheet log={log} onSaved={onSaved} />
-          {/* The mirror of "Dodaj još", and its neighbour on purpose: this row
-              is one family of thoughts -- there was MORE of it, there was LESS
-              of it, it never happened. Like "Dodaj još" it needs no `food` row,
-              so it works on AI meal entries too. */}
-          <LogEatenShareSheet log={log} onSaved={onSaved} />
-          {food ? (
-            <LogEditSheet log={log} food={food} onSaved={onSaved} />
-          ) : null}
+        {/* Two tiers, on purpose. The top row is everything that CORRECTS the
+            entry -- more of it, less of it, a different portion -- and they sit
+            as equal chips because they are equally reversible. Deleting is not
+            one of those, so it gets its own full-width red bar underneath: no
+            neighbour to mis-tap, and the difference is visible before the
+            finger lands rather than only in the confirm that follows. */}
+        <div className="flex flex-col gap-2 border-t border-border/60 pt-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* "Dodaj još" leads: seconds are the common follow-up action on an
+                entry, while editing is a correction. Unlike "Izmeni" it needs no
+                `food` row -- it grows the entry from its own snapshot, so it is
+                available on AI meal entries too (which is the point). */}
+            <LogAddMoreSheet log={log} onSaved={onSaved} />
+            {/* Its mirror, and its neighbour on purpose: there was MORE of it /
+                there was LESS of it. Also needs no `food` row. */}
+            <LogEatenShareSheet
+              log={log}
+              hasPhoto={hasPhoto}
+              onSaved={onSaved}
+            />
+            {food ? (
+              <LogEditSheet log={log} food={food} onSaved={onSaved} />
+            ) : null}
+          </div>
           <LogDeleteConfirm
             logId={log.id}
             logName={log.name}
             onDeleted={onDeleted}
+            fullWidth
           />
         </div>
       </div>

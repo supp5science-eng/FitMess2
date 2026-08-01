@@ -45,10 +45,11 @@ export const dodajMessages = {
     "dodaj.macroAbbr.carbs": "UH",
     "dodaj.macroAbbr.fat": "M",
 
-    // "Nisam pojeo sve" — koliko je od slikanog tanjira stvarno pojedeno
-    "dodaj.eaten.question": "Koliko si od ovoga pojeo/la?",
+    // "Koliko si pojeo" — koliko je od unetog obroka stvarno pojedeno
+    "dodaj.eaten.question": "Koliko si pojeo/la od celog obroka?",
+    "dodaj.eaten.questionPhoto": "Koliko si pojeo/la od celog slikanog obroka?",
     "dodaj.eaten.left": "{kcal} kcal je ostalo na tanjiru — to ne računamo.",
-    "dodaj.eaten.all": "Sve sa slike",
+    "dodaj.eaten.all": "Ceo obrok",
     "dodaj.eaten.almostAll": "Skoro sve",
     "dodaj.eaten.mostOfIt": "Veći deo",
     "dodaj.eaten.half": "Otprilike pola",
@@ -267,10 +268,12 @@ export const dodajMessages = {
     "dodaj.macroAbbr.carbs": "C",
     "dodaj.macroAbbr.fat": "F",
 
-    // "I didn't eat it all" — how much of the photographed plate was eaten
-    "dodaj.eaten.question": "How much of this did you eat?",
+    // "How much you ate" — how much of a logged meal was actually eaten
+    "dodaj.eaten.question": "How much of the whole meal did you eat?",
+    "dodaj.eaten.questionPhoto":
+      "How much of the whole photographed meal did you eat?",
     "dodaj.eaten.left": "{kcal} kcal left on the plate — we don't count those.",
-    "dodaj.eaten.all": "All of it",
+    "dodaj.eaten.all": "The whole meal",
     "dodaj.eaten.almostAll": "Almost all",
     "dodaj.eaten.mostOfIt": "Most of it",
     "dodaj.eaten.half": "About half",

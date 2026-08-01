@@ -38,11 +38,16 @@ describe("LogEatenShareSheet", () => {
   it("opens at the whole plate for an entry nobody has trimmed", () => {
     render(<LogEatenShareSheet log={baseLog} />);
     const trigger = screen.getByTestId("log-eaten-open-log-1");
-    // Before opening, the button invites rather than reports.
-    expect(trigger).toHaveTextContent("Nisam sve pojeo/la");
+    // Before opening, the button asks rather than reports.
+    expect(trigger).toHaveTextContent("Koliko si pojeo");
 
     fireEvent.click(trigger);
     expect(screen.getByTestId("eaten-share-value")).toHaveTextContent("100%");
+    // A catalog entry was never photographed, so the question doesn't pretend
+    // there is a picture of it.
+    expect(screen.getByTestId("eaten-share")).toHaveTextContent(
+      "Koliko si pojeo/la od celog obroka?"
+    );
     // Nothing left behind, so no leftovers line.
     expect(screen.queryByTestId("eaten-share-left")).toBeNull();
   });
@@ -89,6 +94,14 @@ describe("LogEatenShareSheet", () => {
     expect(screen.queryByTestId("log-eaten-sheet")).toBeNull();
     expect(screen.getByTestId("log-eaten-open-log-1")).toHaveTextContent(
       "Pojedeno 40%"
+    );
+  });
+
+  it("names the photo when there is one", () => {
+    render(<LogEatenShareSheet log={baseLog} hasPhoto />);
+    fireEvent.click(screen.getByTestId("log-eaten-open-log-1"));
+    expect(screen.getByTestId("eaten-share")).toHaveTextContent(
+      "Koliko si pojeo/la od celog slikanog obroka?"
     );
   });
 

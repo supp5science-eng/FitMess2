@@ -222,8 +222,12 @@ export function eveningPayload(recap: EveningRecap): PushPayload {
   if (recap.loggedMeals === 0) {
     return {
       ...base,
-      title: "Dan ti je još prazan",
-      body: "Upiši šta si danas jeo — bolje i na brzinu nego nikako.",
+      // "Dan ti je još prazan" made the empty day a fact about the PERSON;
+      // this states what the app does or doesn't have (task "101"). A push
+      // arrives uninvited, so it is the last place that may sound like a
+      // verdict.
+      title: "Danas još nema upisa",
+      body: "Ako si nešto jeo, upiši dok se sećaš.",
     };
   }
 
@@ -234,8 +238,10 @@ export function eveningPayload(recap: EveningRecap): PushPayload {
   if (recap.missingWorkout) {
     return {
       ...base,
-      title: "Jesi li se danas kretao?",
-      body: "Upiši trening ili šetnju pa ti je dan kompletan.",
+      // "pa ti je dan kompletan" quietly graded every rest day as incomplete.
+      // A day without training is a normal day, and the copy now says so.
+      title: "Nema upisanog treninga",
+      body: "Ako si se kretao, upiši — ako nisi, dan je bio miran i to je to.",
       url: "/dodaj/trening",
       actions: [{ action: "trening", title: "Upiši trening", url: "/dodaj/trening" }],
     };

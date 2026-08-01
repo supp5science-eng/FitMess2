@@ -81,11 +81,14 @@ export interface HealthScore {
   score: number | null;
   /** score / 10, clamped -- fills the card's bar. 0 when score is null. */
   fillFraction: number;
-  /** Serbian band label ("Odlično", "Dobro", ...) or null alongside a null score. */
+  /** Serbian band label ("Sve na broju", "Ponešto fali", ...) or null alongside
+   * a null score. Describes the day, never grades the person -- see
+   * `bandLabelSr`. */
   labelSr: string | null;
   /** i18n key for the band label, resolved via `t()`; null alongside null score. */
   bandKey: string | null;
-  /** One calm Serbian sentence: what to do next, or why there's no score yet. */
+  /** One calm Serbian sentence: what the day looks like, or why there's no
+   * score yet. States, never instructs (task "101"). */
   noteSr: string;
   /** i18n key for the note, resolved via `t()` in the component. */
   noteKey: string;
@@ -129,12 +132,21 @@ function limitPoints(ratio: number): number {
   return POINTS_PER_COMPONENT * clamp01((LIMIT_ZERO_RATIO - ratio) / span);
 }
 
+/**
+ * The word beside the number.
+ *
+ * These used to be school marks -- "Odlično / Vrlo dobro / Dobro / Može bolje"
+ * -- which is the app grading the person rather than describing the day (task
+ * "101", 2026-08-01). They now say what the day CONTAINS, so the sentence reads
+ * as a reading off an instrument instead of a verdict from a teacher. The
+ * number is untouched: a figure is a measurement, "vrlo dobro" was an opinion.
+ */
 function bandLabelSr(score: number): string {
-  if (score >= 8.5) return "Odlično";
-  if (score >= 7) return "Vrlo dobro";
-  if (score >= 5.5) return "Dobro";
-  if (score >= 4) return "Može bolje";
-  return "Ima prostora";
+  if (score >= 8.5) return "Sve na broju";
+  if (score >= 7) return "Uglavnom na broju";
+  if (score >= 5.5) return "Ponešto fali";
+  if (score >= 4) return "Dosta toga fali";
+  return "Malo hranljivog";
 }
 
 /** i18n key mirror of `bandLabelSr`, resolved via `t()` in the component. */
@@ -172,21 +184,21 @@ function noteKeyForWeakest(component: ScoreComponent | null): string {
  */
 function noteForWeakest(component: ScoreComponent | null): string {
   if (!component) {
-    return "Nastavi tako — dan izgleda uravnoteženo.";
+    return "Dan je uravnotežen.";
   }
   switch (component.key) {
     case "protein":
-      return "Najviše bi pomoglo malo više proteina u ostatku dana.";
+      return "Proteina je danas najmanje u odnosu na tvoj cilj.";
     case "fiber":
-      return "Dodaj vlakna — povrće, voće sa korom, integralno.";
+      return "Vlakana je danas najmanje — ima ih u povrću, voću sa korom i integralnom.";
     case "sugar":
-      return "Šećera je danas više nego obično; nije problem, samo znaj.";
+      return "Šećera je danas više nego obično.";
     case "sodium":
-      return "Slano je danas naglašeno — pij vodu i olakšaj sledeći obrok.";
+      return "Soli je danas više nego obično.";
     case "satFat":
-      return "Zasićenih masti je danas više; sutra biraj mršavije izvore.";
+      return "Zasićenih masti je danas više nego obično.";
     default:
-      return "Nastavi tako — dan izgleda uravnoteženo.";
+      return "Dan je uravnotežen.";
   }
 }
 

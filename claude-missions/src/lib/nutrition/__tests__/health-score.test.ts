@@ -84,7 +84,7 @@ describe("computeHealthScore: density, not daily totals", () => {
       { consumedProteinG: 155 }
     );
     expect(score.score).toBeGreaterThanOrEqual(9);
-    expect(score.labelSr).toBe("Odlično");
+    expect(score.labelSr).toBe("Sve na broju");
   });
 
   it("a salty, sugary, fiberless day scores low and names the weakest link", () => {
@@ -102,7 +102,9 @@ describe("computeHealthScore: density, not daily totals", () => {
       { consumedProteinG: 40 }
     );
     expect(score.score).toBeLessThan(4);
-    expect(score.labelSr).toBe("Ima prostora");
+    // Describes the day, never grades the person (task "101"): the bands say
+    // what the food contained, not how well you did.
+    expect(score.labelSr).toBe("Malo hranljivog");
     expect(score.noteSr.length).toBeGreaterThan(0);
   });
 

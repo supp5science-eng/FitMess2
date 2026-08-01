@@ -110,7 +110,7 @@ describe("HealthScoreCard", () => {
     );
     expect(screen.getByTestId("health-score-value")).not.toHaveTextContent(".");
     expect(screen.getByTestId("health-score-label")).toHaveTextContent(
-      "Odlično"
+      "Sve na broju"
     );
   });
 

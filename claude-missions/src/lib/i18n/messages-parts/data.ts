@@ -14,23 +14,24 @@ export const dataMessages = {
     "micro.satFat": "Zasićene masti",
 
     // Health-score band label (lib/nutrition/health-score.ts)
-    "score.band.excellent": "Odlično",
-    "score.band.veryGood": "Vrlo dobro",
-    "score.band.good": "Dobro",
-    "score.band.couldBeBetter": "Može bolje",
-    "score.band.room": "Ima prostora",
+    "score.band.excellent": "Sve na broju",
+    "score.band.veryGood": "Uglavnom na broju",
+    "score.band.good": "Ponešto fali",
+    "score.band.couldBeBetter": "Dosta toga fali",
+    "score.band.room": "Malo hranljivog",
 
     // Health-score one-line note
-    "score.note.balanced": "Nastavi tako — dan izgleda uravnoteženo.",
+    "score.note.balanced": "Dan je uravnotežen.",
     "score.note.protein":
-      "Najviše bi pomoglo malo više proteina u ostatku dana.",
-    "score.note.fiber": "Dodaj vlakna — povrće, voće sa korom, integralno.",
+      "Proteina je danas najmanje u odnosu na tvoj cilj.",
+    "score.note.fiber":
+      "Vlakana je danas najmanje — ima ih u povrću, voću sa korom i integralnom.",
     "score.note.sugar":
-      "Šećera je danas više nego obično; nije problem, samo znaj.",
+      "Šećera je danas više nego obično.",
     "score.note.sodium":
-      "Slano je danas naglašeno — pij vodu i olakšaj sledeći obrok.",
+      "Soli je danas više nego obično.",
     "score.note.satFat":
-      "Zasićenih masti je danas više; sutra biraj mršavije izvore.",
+      "Zasićenih masti je danas više nego obično.",
     "score.note.naFewMeals":
       "Unesi par obroka pa ćemo izračunati ocenu za danas — gleda koliko je hrana bila kvalitetna, ne koliko je bilo kalorija.",
     "score.note.naLowCoverage":
@@ -63,23 +64,23 @@ export const dataMessages = {
     "micro.sodium": "Salt",
     "micro.satFat": "Saturated fat",
 
-    "score.band.excellent": "Excellent",
-    "score.band.veryGood": "Very good",
-    "score.band.good": "Good",
-    "score.band.couldBeBetter": "Could be better",
-    "score.band.room": "Room to improve",
+    "score.band.excellent": "All covered",
+    "score.band.veryGood": "Mostly covered",
+    "score.band.good": "Some gaps",
+    "score.band.couldBeBetter": "Several gaps",
+    "score.band.room": "Little of substance",
 
-    "score.note.balanced": "Keep it up — your day looks balanced.",
+    "score.note.balanced": "Your day is balanced.",
     "score.note.protein":
-      "A little more protein through the rest of the day would help most.",
+      "Protein is the furthest from your target today.",
     "score.note.fiber":
-      "Add some fiber — vegetables, fruit with the skin, whole grains.",
+      "Fiber is lowest today — it's in vegetables, fruit with the skin, whole grains.",
     "score.note.sugar":
-      "Sugar's a bit higher than usual today; no problem, just so you know.",
+      "Sugar is higher than usual today.",
     "score.note.sodium":
-      "Salt is on the high side today — drink water and go lighter next meal.",
+      "Salt is higher than usual today.",
     "score.note.satFat":
-      "Saturated fat is a bit high today; pick leaner sources tomorrow.",
+      "Saturated fat is higher than usual today.",
     "score.note.naFewMeals":
       "Log a couple of meals and we'll work out today's score — it looks at how good the food was, not how many calories.",
     "score.note.naLowCoverage":

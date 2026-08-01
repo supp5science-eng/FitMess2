@@ -56,14 +56,62 @@ import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { computeWeekSummary, type LogForWeek } from "@/lib/week/summary";
 import type { GoalType, Sex } from "@/lib/types/db";
 
-/** Rough kcal burned per minute of brisk walking, for the activity hint. */
-const BRISK_WALK_KCAL_PER_MIN = 5;
+/**
+ * What brisk walking actually costs -- scaled by BODY MASS, because it is not
+ * a per-person constant.
+ *
+ * These used to be two flat numbers (5 kcal/min, 20 steps/kcal) applied to
+ * everybody, and they overstated the burn by roughly 1.5-1.9x. That matters
+ * more here than it would anywhere else: walking is the ONLY lever the plan
+ * offers (it deliberately never prescribes training), so an error here is an
+ * error in the single piece of advice the app gives. Told "walk 200 kcal off",
+ * a 55 kg woman was really being sent on a walk worth about 110.
+ *
+ * The model is the standard compendium one, kept NET of resting metabolism --
+ * a walk only counts for what it burns ABOVE the sitting the user would have
+ * done anyway, and counting gross would double-pay calories the TDEE already
+ * includes:
+ *
+ *   brisk walk (5.6 km/h) = 4.3 MET, minus 1 MET at rest = 3.3 MET net
+ *   kcal/min = MET x 3.5 x kg / 200        (the compendium's own formula)
+ *
+ * For 70 kg that lands at ~4.0 kcal/min and ~31 steps per kcal, against the
+ * old 5 and 20.
+ *
+ * NOT applied here: people compensate for exercise, eating back roughly 28%
+ * of what they burn (Careau et al., Current Biology 2021). The card's wording
+ * already promises only to "cover part of it" rather than to cancel the day,
+ * so the honest fix stays in the sentence rather than in a second haircut on
+ * top of this one.
+ */
+const BRISK_WALK_NET_METS = 3.3;
 
-/** Rough steps per kcal of brisk walking (~100 steps/min at ~5 kcal/min).
+/** Cadence of a brisk walk, ~5.6 km/h at a ~0.75 m stride. */
+const BRISK_WALK_STEPS_PER_MIN = 124;
+
+/**
+ * Stand-in mass when the profile has none. Onboarding always asks for weight,
+ * so this is defensive only. Deliberately mid-range rather than high: guessing
+ * heavy would inflate the burn, which is the exact failure being fixed.
+ */
+const FALLBACK_WEIGHT_KG = 70;
+
+/** Net kcal burned per minute of brisk walking, for a body of `weightKg`. */
+export function briskWalkKcalPerMin(weightKg: number | null | undefined): number {
+  const kg = weightKg && weightKg > 0 ? weightKg : FALLBACK_WEIGHT_KG;
+  return (BRISK_WALK_NET_METS * 3.5 * kg) / 200;
+}
+
+/**
+ * Steps of brisk walking per kcal burned, for a body of `weightKg`.
+ *
  * Exported because the weekly weigh-in (`lib/weight/weekly-trend.ts`) offers
  * the same "walk it instead" alternative, and the two must never quote a user
- * two different step counts for the same number of calories. */
-export const STEPS_PER_KCAL = 20;
+ * two different step counts for the same number of calories.
+ */
+export function stepsPerKcal(weightKg: number | null | undefined): number {
+  return BRISK_WALK_STEPS_PER_MIN / briskWalkKcalPerMin(weightKg);
+}
 
 /**
  * The most a single day's target may be cut below base, as a fraction of base.
@@ -81,10 +129,14 @@ export const MAX_DAILY_TRIM_PCT = 0.25;
 export const MAX_DAILY_LIFT_PCT = 0.2;
 
 /**
- * Ceiling on the activity suggestion. ~250 kcal is a brisk 50-minute walk --
- * a real ask, still doable on a normal day. Anything beyond it is not "make it
- * up today", it is next week's problem, and pretending otherwise is how a
- * suggestion becomes noise.
+ * Ceiling on the activity suggestion. 250 kcal is roughly an hour of brisk
+ * walking for a 70 kg body -- a real ask, still doable on a normal day.
+ * Anything beyond it is not "make it up today", it is next week's problem,
+ * and pretending otherwise is how a suggestion becomes noise.
+ *
+ * (It read "a brisk 50-minute walk" while the burn was priced with the old
+ * flat constants. The ask did not get bigger when they were corrected -- it
+ * was always this long; the app was just quoting it short.)
  */
 export const MAX_TRAINING_SUGGESTION_KCAL = 250;
 
@@ -243,6 +295,13 @@ export interface AdaptivePlanInput {
   /** The user's own verdicts on flagged days, keyed by Belgrade day; always
    * beats the heuristic. Comes from the `fm_dani` cookie. */
   dayAnswers?: Map<string, DayAnswer>;
+  /**
+   * `profiles.weight_kg` -- what the walking suggestion costs depends on the
+   * body doing the walking (see `briskWalkKcalPerMin`). Omitted falls back to
+   * `FALLBACK_WEIGHT_KG`; it only ever affects the activity hint, never the
+   * calorie arithmetic.
+   */
+  weightKg?: number | null;
   /** "Now" (injectable for tests); defaults to the real clock at the call. */
   now?: Date;
 }
@@ -314,15 +373,19 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
     trainingSuggestionKcal > 0
       ? Math.max(
           5,
-          Math.round(trainingSuggestionKcal / BRISK_WALK_KCAL_PER_MIN / 5) * 5
+          Math.round(
+            trainingSuggestionKcal / briskWalkKcalPerMin(input.weightKg) / 5
+          ) * 5
         )
       : 0;
 
   // The same suggestion, expressed as the thing the home screen actually
-  // shows a goal for. One number, two places -- not two numbers.
+  // shows a goal for. One number, two places -- not two numbers. Both come off
+  // the SAME weight-scaled model as the minutes above, so the walk and the
+  // step goal can never disagree about what the calories cost.
   const extraSteps =
     trainingSuggestionKcal > 0
-      ? roundTo500(trainingSuggestionKcal * STEPS_PER_KCAL)
+      ? roundTo500(trainingSuggestionKcal * stepsPerKcal(input.weightKg))
       : 0;
 
   const trimmedKcal = Math.max(0, base - adaptive);

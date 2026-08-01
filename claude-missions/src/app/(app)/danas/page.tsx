@@ -245,6 +245,7 @@ export default async function DanasPage({
           stepGoal,
           userBmr,
           dayAnswers,
+          profile?.weight_kg ?? null,
           now
         )
       : null;
@@ -349,6 +350,7 @@ async function getAdaptivePlan(
   baseStepGoal: number,
   bmrKcal: number | null,
   dayAnswers: Map<string, DayAnswer>,
+  weightKg: number | null,
   now: Date
 ): Promise<AdaptivePlan | null> {
   const thisWeek = getBelgradeWeekRange(now);
@@ -405,6 +407,7 @@ async function getAdaptivePlan(
     carryInKcal,
     bmrKcal,
     dayAnswers,
+    weightKg,
     now,
   });
 }

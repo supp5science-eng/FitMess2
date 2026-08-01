@@ -59,7 +59,7 @@ import {
   MAX_DEFICIT_PCT,
   MAX_SURPLUS_PCT,
 } from "@/lib/budget/engine";
-import { STEPS_PER_KCAL } from "@/lib/home/adaptive";
+import { stepsPerKcal } from "@/lib/home/adaptive";
 import type { GoalType, Sex } from "@/lib/types/db";
 
 // ---------------------------------------------------------------------
@@ -537,9 +537,16 @@ function buildSuggestion({
     direction === "cut"
       ? Math.max(Math.abs(magnitude), Math.abs(cappedDelta))
       : 0;
+  // Scaled by the weight the SCALE just reported, not the one the profile was
+  // set up with -- this is the one place in the app that has a measured number
+  // rather than a remembered one, and the walk costs what it costs for the
+  // body doing it.
   const extraSteps =
     direction === "cut" && stepsKcal > 0
-      ? Math.min(MAX_EXTRA_STEPS, roundTo500(stepsKcal * STEPS_PER_KCAL))
+      ? Math.min(
+          MAX_EXTRA_STEPS,
+          roundTo500(stepsKcal * stepsPerKcal(currentWeightKg))
+        )
       : null;
 
   if (cappedDelta === 0 && extraSteps === null) return null;

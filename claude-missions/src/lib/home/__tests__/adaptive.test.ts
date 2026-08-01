@@ -241,10 +241,10 @@ describe("the activity suggestion and the step goal are one number, not two", ()
       sex: "male",
       now: WED,
     });
-    // 250 kcal of brisk walking ~= 5000 steps on top of the user's own goal.
+    // 250 kcal of brisk walking ~= 7500 steps at the 70 kg fallback mass.
     expect(plan.trainingSuggestionKcal).toBe(250);
-    expect(plan.extraSteps).toBe(5000);
-    expect(plan.adaptiveStepGoal).toBe(FALLBACK_STEP_GOAL + 5000);
+    expect(plan.extraSteps).toBe(7500);
+    expect(plan.adaptiveStepGoal).toBe(FALLBACK_STEP_GOAL + 7500);
   });
 
   it("adds the extra steps to the USER's goal, not to a flat 10.000", () => {
@@ -258,8 +258,8 @@ describe("the activity suggestion and the step goal are one number, not two", ()
       baseStepGoal: 5000,
       now: WED,
     });
-    expect(plan.extraSteps).toBe(5000);
-    expect(plan.adaptiveStepGoal).toBe(10000);
+    expect(plan.extraSteps).toBe(7500);
+    expect(plan.adaptiveStepGoal).toBe(12500);
   });
 
   it("leaves the step goal alone when no activity is needed", () => {
@@ -271,6 +271,62 @@ describe("the activity suggestion and the step goal are one number, not two", ()
     });
     expect(plan.extraSteps).toBe(0);
     expect(plan.adaptiveStepGoal).toBe(FALLBACK_STEP_GOAL);
+  });
+});
+
+describe("the walking advice is priced for the body doing the walking", () => {
+  // Walking is the ONLY lever the plan offers, so a flat "20 steps per kcal"
+  // for everybody was an error in the single piece of advice the app gives.
+  const overshoot = () => ({
+    weekLogs: [log(MON, 8000), log(TUE, 3000)],
+    baseDailyTarget: 2000,
+    sex: "male" as const,
+    now: WED,
+  });
+
+  it("asks a lighter person for MORE steps to cover the same kcal", () => {
+    const light = computeAdaptivePlan({ ...overshoot(), weightKg: 55 });
+    const heavy = computeAdaptivePlan({ ...overshoot(), weightKg: 100 });
+
+    expect(light.trainingSuggestionKcal).toBe(heavy.trainingSuggestionKcal);
+    expect(light.extraSteps).toBeGreaterThan(heavy.extraSteps);
+  });
+
+  it("asks a lighter person for MORE walking minutes for the same kcal", () => {
+    const light = computeAdaptivePlan({ ...overshoot(), weightKg: 55 });
+    const heavy = computeAdaptivePlan({ ...overshoot(), weightKg: 100 });
+
+    expect(light.trainingWalkMinutes).toBeGreaterThan(heavy.trainingWalkMinutes);
+  });
+
+  it("no longer overstates the burn the way the flat constants did", () => {
+    // The old model priced 250 kcal at 20 steps/kcal = 5.000 steps for
+    // everybody. Real net cost is ~1.5-1.9x that, and nobody should be told
+    // a 250 kcal walk is shorter than it is.
+    const plan = computeAdaptivePlan({ ...overshoot(), weightKg: 70 });
+    expect(plan.trainingSuggestionKcal).toBe(250);
+    expect(plan.extraSteps).toBeGreaterThan(5000);
+  });
+
+  it("falls back to a mid-range mass rather than a heavy one when weight is missing", () => {
+    // Guessing heavy would inflate the burn -- the exact failure being fixed.
+    const missing = computeAdaptivePlan({ ...overshoot(), weightKg: null });
+    const heavy = computeAdaptivePlan({ ...overshoot(), weightKg: 100 });
+
+    expect(missing.extraSteps).toBeGreaterThan(heavy.extraSteps);
+  });
+
+  it("keeps steps and minutes derived from ONE model, never two", () => {
+    // Both come off `briskWalkKcalPerMin`, so a user can never be quoted a
+    // step count and a duration that disagree about what the walk costs.
+    for (const weightKg of [55, 70, 100]) {
+      const plan = computeAdaptivePlan({ ...overshoot(), weightKg });
+      const impliedCadence =
+        plan.extraSteps / plan.trainingWalkMinutes;
+      // ~124 steps/min, allowing for the 500-step and 5-minute rounding.
+      expect(impliedCadence).toBeGreaterThan(100);
+      expect(impliedCadence).toBeLessThan(150);
+    }
   });
 });
 

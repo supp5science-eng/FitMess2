@@ -6,7 +6,6 @@ import { getBelgradeDayRange, toBelgradeCalendarDay } from "@/lib/dates";
 import { getAdaptivePlan } from "@/lib/home/adaptive-read";
 import { DAY_ANSWER_COOKIE, parseDayAnswers } from "@/lib/home/day-trust";
 import { bmr } from "@/lib/budget/engine";
-import { PLAN_INTRO_COOKIE } from "@/components/home/adaptive-plan-card";
 import { getDanasProfile } from "@/lib/home/profile";
 import { getTodayData } from "@/lib/home/today";
 import { getT } from "@/lib/i18n/server";
@@ -272,18 +271,6 @@ export default async function DanasPage({
   // onboarding completes, offer to install the PWA (the overlay itself
   // consumes the cookie + guards via localStorage, so it can never nag).
   const installPrompt = isToday && cookieStore.get("fm_install") != null;
-  // "Plan za danas je prilagođen" plays ONCE per day. The cookie holds the day
-  // key it last played for, so a new day re-arms it without any expiry games;
-  // the card itself writes the cookie the moment it starts.
-  // `isMaterial`, not `isAdjusted` (2026-08-01): the same 500 kcal overshoot is
-  // 83 kcal/day if it happened on Monday and 167 if it happened on Thursday.
-  // Animating the first one teaches people to tap past the second. Below the
-  // bar the card still appears -- it just appears quietly.
-  const planIntro =
-    isToday &&
-    (adaptivePlan?.isMaterial ?? false) &&
-    cookieStore.get(PLAN_INTRO_COOKIE)?.value !== todayKey;
-
   return (
     // Keyed by the viewed day so switching days on the date strip REMOUNTS the
     // dashboard. `/danas` -> `/danas?dan=X` is the same route with only a
@@ -307,7 +294,6 @@ export default async function DanasPage({
           : t("home.mealsOn", { date: shortDate(selectedKey, locale) })
       }
       adaptivePlan={adaptivePlan}
-      planIntro={planIntro}
       dayKey={selectedKey}
       initialWaterMl={waterMl}
       initialSteps={stepsCount}

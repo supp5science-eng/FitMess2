@@ -10,7 +10,6 @@ import { IntakeConfluence } from "@/components/home/intake-confluence";
 import { MicroCards } from "@/components/home/micro-cards";
 import type { MiniWeekDay } from "@/components/home/mini-week-bars";
 import { MealList } from "@/components/home/meal-list";
-import { AdaptivePlanCard } from "@/components/home/adaptive-plan-card";
 import { StepsCard } from "@/components/home/steps-card";
 import { useT } from "@/components/i18n/locale-provider";
 import { GricButton } from "@/components/home/gric-button";
@@ -61,7 +60,6 @@ export function HomeScreen({
   installPrompt = false,
   mealsHeading = "Obroci danas",
   adaptivePlan = null,
-  planIntro = false,
   dayKey,
   initialWaterMl = 0,
   initialSteps = 0,
@@ -87,13 +85,15 @@ export function HomeScreen({
   mealsHeading?: string;
   // "Deo 2": the adaptive daily-target plan for TODAY (computed server-side
   // from this week's logs). Only passed for the today view; when it signals an
-  // adjustment, the ring targets the adapted number and a short note explains
-  // why. Null/absent (past days, or a week that's on track) => the ring uses
-  // the plain daily target, exactly as before.
+  // adjustment, the ring targets the adapted number and the step goal follows
+  // it. Null/absent (past days, or a week that's on track) => the ring uses the
+  // plain daily target, exactly as before.
+  //
+  // It no longer RENDERS anything here (2026-08-01, product owner's call): the
+  // explanatory card that used to sit under the pager is gone, and the week's
+  // standing lives at the top of /analitika. The plan still moves the numbers;
+  // it just stopped narrating itself on the home screen.
   adaptivePlan?: AdaptivePlan | null;
-  // First visit of the day (server-decided via the `fm_plan` cookie): play the
-  // one-time "plan je prilagođen" reveal instead of rendering the calm card.
-  planIntro?: boolean;
   // Voda + Koraci: the Belgrade day this screen shows + that day's already-
   // logged water (ml) and steps. When `dayKey` is provided the "Koraci" card
   // and "Voda" button render below the daily-intake block. Omitted in unit
@@ -380,22 +380,6 @@ export function HomeScreen({
             ]}
           />
 
-          {/* Below the pager, deliberately (2026-08-01): out here its height
-              costs nothing but its own, so the three pages stay balanced no
-              matter how much this card has to say.
-              Shown for a moved plan OR a day whose log looked incomplete --
-              both are things to act on today. NOT for `isOnTrackNotice`: "the
-              week is fine" is a standing, not a task, and it now lives at the
-              top of /analitika (`week-on-track-note.tsx`). Hence the explicit
-              pair rather than `hasNotice`, which still includes it. */}
-          {adaptivePlan &&
-          (adaptivePlan.isAdjusted || adaptivePlan.untrustedDays.length > 0) ? (
-            <AdaptivePlanCard
-              plan={adaptivePlan}
-              intro={planIntro}
-              dayKey={dayKey}
-            />
-          ) : null}
         </div>
       ) : (
         <div

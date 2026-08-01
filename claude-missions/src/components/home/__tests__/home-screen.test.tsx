@@ -271,7 +271,12 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     isOnTrackNotice: false,
   };
 
-  it("test_the_ring_targets_the_adapted_number_and_a_note_explains_why", () => {
+  // The plan MOVES the numbers but no longer NARRATES itself here (2026-08-01,
+  // product owner's call): the explanatory card under the pager is gone, and
+  // the week's standing lives at the top of /analitika. These lock the half
+  // that stayed -- silently changing someone's target with no visible effect
+  // would be the worst of both.
+  it("test_the_ring_targets_the_adapted_number", () => {
     render(
       <HomeScreen
         initialLogs={[makeLog({ kcal: 200 })]}
@@ -284,13 +289,9 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     expect(screen.getByTestId("home-ring-target")).toHaveTextContent("1600");
     // Remaining = 1600 - 200 = 1400.
     expect(screen.getByTestId("home-ring-value")).toHaveTextContent("1400");
-    // The explanation note is shown with the adapted number.
-    expect(screen.getByTestId("adaptive-note-target")).toHaveTextContent(
-      "1.600 kcal"
-    );
   });
 
-  it("test_a_training_suggestion_is_shown_when_food_alone_cannot_absorb_the_overshoot", () => {
+  it("test_the_step_goal_follows_the_plan_even_though_nothing_explains_it", () => {
     render(
       <HomeScreen
         initialLogs={[makeLog({ kcal: 200 })]}
@@ -303,21 +304,15 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
           adaptiveStepGoal: 15000,
           extraSteps: 5000,
         }}
+        dayKey="2026-07-25"
+        isToday
       />
     );
 
-    expect(screen.getByTestId("adaptive-note-training")).toHaveTextContent(
-      "~250 kcal"
-    );
-    expect(screen.getByTestId("adaptive-note-training")).toHaveTextContent(
-      "50 min"
-    );
-    // The suggestion and the step goal are the SAME number, not two unrelated
-    // asks: the walk shows up as a raised "Koraci" goal.
-    expect(screen.getByTestId("adaptive-note-steps")).toHaveTextContent("15.000");
+    expect(screen.getByTestId("steps-open-button")).toHaveTextContent("15.000");
   });
 
-  it("test_no_note_and_base_target_when_the_week_is_on_track", () => {
+  it("test_base_target_when_there_is_no_plan", () => {
     render(
       <HomeScreen
         initialLogs={[makeLog({ kcal: 200 })]}
@@ -326,37 +321,30 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
       />
     );
 
-    expect(screen.queryByTestId("adaptive-note")).not.toBeInTheDocument();
-    // Falls back to the plain daily target.
     expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
   });
 
-  // 2026-08-01, a reported bug: the card used to live on the pager's first
-  // page. Every page shares the TALLEST page's height, so each line the card
-  // grew added dead space to the Koraci/Voda and micronutrient pages -- the
-  // product owner sent screenshots of them floating in a void. Keeping it out
-  // of the pager is the fix, and this is what stops it drifting back in.
-  it("test_the_plan_card_lives_OUTSIDE_the_pager_so_it_cannot_set_page_height", () => {
+  // Removed on 2026-08-01. It had already been moved out of the swipe pager
+  // (its height was emptying the other two pages); the owner then judged the
+  // whole card redundant next to the note now at the top of /analitika. This
+  // test is what stops it being reintroduced by habit.
+  it("test_no_plan_card_is_rendered_on_the_home_screen_at_all", () => {
     render(
       <HomeScreen
         initialLogs={[makeLog({ kcal: 200 })]}
         target={makeTarget({ daily_kcal: 2000 })}
-        adaptivePlan={adjustedPlan}
+        adaptivePlan={{
+          ...adjustedPlan,
+          untrustedDays: [],
+        }}
         dayKey="2026-07-25"
         isToday
       />
     );
 
-    const card = screen.getByTestId("adaptive-note");
-    expect(screen.getByTestId("intake-pager")).not.toContainElement(card);
-    // Still on the screen, and still after the pager -- it explains the number
-    // the pager's first page shows.
-    expect(card).toBeInTheDocument();
-    expect(
-      screen
-        .getByTestId("intake-pager")
-        .compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
+    expect(screen.queryByTestId("adaptive-note")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Plan za danas/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Nedelja ti je u planu/i)).not.toBeInTheDocument();
   });
 });
 

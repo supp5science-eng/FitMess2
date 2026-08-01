@@ -84,7 +84,7 @@ export const treningMessages = {
     "trening.note.plan":
       "Ovo ne menja tvoj dnevni cilj. Tvoj plan već računa da treniraš — ako treniraš više nego što plan pretpostavlja, nedeljno merenje to vidi na vagi i samo podigne cilj.",
     "trening.note.estimate":
-      "Brojke su procena po tabelama potrošnje i tvojoj kilaži — dobre za poređenje sa sobom, ne za merenje na kalorija tačno.",
+      "Brojke su procena po tabelama potrošnje i tvojoj kilaži — dobre za poređenje sa sobom, ne za merenje u kaloriju tačno.",
   },
   en: {
     "workout.activity.teretana": "Gym",

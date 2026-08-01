@@ -382,11 +382,14 @@ export function HomeScreen({
 
           {/* Below the pager, deliberately (2026-08-01): out here its height
               costs nothing but its own, so the three pages stay balanced no
-              matter how much this card has to say. `hasNotice`, not
-              `isAdjusted` -- it also speaks when the plan was NOT moved because
-              a day's log looked incomplete, and staying silent about that is
-              what made the whole feature feel absent. */}
-          {adaptivePlan?.hasNotice ? (
+              matter how much this card has to say.
+              Shown for a moved plan OR a day whose log looked incomplete --
+              both are things to act on today. NOT for `isOnTrackNotice`: "the
+              week is fine" is a standing, not a task, and it now lives at the
+              top of /analitika (`week-on-track-note.tsx`). Hence the explicit
+              pair rather than `hasNotice`, which still includes it. */}
+          {adaptivePlan &&
+          (adaptivePlan.isAdjusted || adaptivePlan.untrustedDays.length > 0) ? (
             <AdaptivePlanCard
               plan={adaptivePlan}
               intro={planIntro}

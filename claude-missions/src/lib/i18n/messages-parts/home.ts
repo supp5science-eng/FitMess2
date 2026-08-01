@@ -53,11 +53,9 @@ export const homeExtraMessages = {
     // drugog čitaju se kao isti broj rečen dvaput.
     "home.adaptive.spill":
       "Višak od {kcal} kcal ne staje u ovu nedelju — prelazi u sledeću.",
-    "home.adaptive.onTrack": "Nedelja ti je u planu",
-    // Nosi i „još N dana", jer u ovom stanju kartica NEMA traku ni red o
-    // potrošenom — ovo joj je ceo sadržaj.
-    "home.adaptive.onTrackRoom":
-      "Još {days} {unit} u nedelji — imaš {kcal} kcal više nego što plan traži.",
+    // „Nedelja ti je u planu" više NIJE ovde: preseljeno na vrh /analitika
+    // (`analytics.onTrack.*`) 2026-08-01 — ova kartica nosi samo ono što traži
+    // potez DANAS, a nedelja koja ne traži ništa nema šta da radi na Početnoj.
 
     // Add sheet
     "home.addSheet.title": "Dodaj unos",
@@ -176,9 +174,6 @@ export const homeExtraMessages = {
       "Why: yesterday came in {kcal} kcal under plan.",
     "home.adaptive.spill":
       "The remaining {kcal} kcal doesn't fit in this week — it rolls into next.",
-    "home.adaptive.onTrack": "Your week is on plan",
-    "home.adaptive.onTrackRoom":
-      "{days} {unit} left — you have {kcal} kcal more than the plan asks for.",
 
     // Add sheet
     "home.addSheet.title": "Add entry",

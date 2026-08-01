@@ -2,24 +2,11 @@ import { cookies } from "next/headers";
 
 import { HomeScreen } from "@/components/home/home-screen";
 import { getCurrentUserId } from "@/lib/auth/current-user";
-import {
-  getBelgradeDayRange,
-  getBelgradeWeekRange,
-  toBelgradeCalendarDay,
-} from "@/lib/dates";
-import {
-  computeAdaptivePlan,
-  computeCarryInFromLastWeek,
-  type AdaptivePlan,
-} from "@/lib/home/adaptive";
-import {
-  DAY_ANSWER_COOKIE,
-  parseDayAnswers,
-  type DayAnswer,
-} from "@/lib/home/day-trust";
+import { getBelgradeDayRange, toBelgradeCalendarDay } from "@/lib/dates";
+import { getAdaptivePlan } from "@/lib/home/adaptive-read";
+import { DAY_ANSWER_COOKIE, parseDayAnswers } from "@/lib/home/day-trust";
 import { bmr } from "@/lib/budget/engine";
 import { PLAN_INTRO_COOKIE } from "@/components/home/adaptive-plan-card";
-import type { GoalType } from "@/lib/types/db";
 import { getDanasProfile } from "@/lib/home/profile";
 import { getTodayData } from "@/lib/home/today";
 import { getT } from "@/lib/i18n/server";
@@ -236,18 +223,16 @@ export default async function DanasPage({
 
   const adaptivePlan =
     isToday && result.data.target
-      ? await getAdaptivePlan(
-          supabase,
-          userId,
-          result.data.target.daily_kcal,
-          profile?.sex ?? "male",
-          result.data.target.goal,
-          stepGoal,
-          userBmr,
+      ? await getAdaptivePlan(supabase, userId, {
+          baseDailyTarget: result.data.target.daily_kcal,
+          sex: profile?.sex ?? "male",
+          goal: result.data.target.goal,
+          baseStepGoal: stepGoal,
+          bmrKcal: userBmr,
           dayAnswers,
-          profile?.weight_kg ?? null,
-          now
-        )
+          weightKg: profile?.weight_kg ?? null,
+          now,
+        })
       : null;
 
   // Nedeljno merenje: is the app still waiting on this week's reading? `null`
@@ -334,82 +319,6 @@ export default async function DanasPage({
       weighInDaysWaiting={weighInDaysWaiting}
     />
   );
-}
-
-/**
- * Fetches this week's + last week's logged kcal and derives today's adaptive
- * plan. Returns null on any read error so the dashboard degrades to the plain
- * daily target rather than failing.
- */
-async function getAdaptivePlan(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  userId: string,
-  baseDailyTarget: number,
-  sex: "male" | "female",
-  goal: GoalType | null,
-  baseStepGoal: number,
-  bmrKcal: number | null,
-  dayAnswers: Map<string, DayAnswer>,
-  weightKg: number | null,
-  now: Date
-): Promise<AdaptivePlan | null> {
-  const thisWeek = getBelgradeWeekRange(now);
-  const lastWeek = getBelgradeWeekRange(
-    new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-  );
-
-  // ONE read covering both weeks, split in memory below. These used to be two
-  // concurrent queries, but this whole function is the LAST stage of the /danas
-  // render -- it can only start once the target row has landed -- so its round
-  // trips sit directly on the critical path with nothing to overlap them. Two
-  // adjacent week windows are one contiguous range, so a single query returns
-  // exactly the same rows.
-  const { data, error } = await supabase
-    .from("logs")
-    .select("logged_at, kcal")
-    .eq("user_id", userId)
-    .gte("logged_at", lastWeek.startIso)
-    .lt("logged_at", thisWeek.endIsoExclusive);
-
-  if (error) {
-    console.error("[/danas adaptive] week logs read failed:", error.message);
-    return null;
-  }
-
-  // Partition by PARSED time, never by comparing the raw strings: Postgres
-  // returns `timestamptz` as "…+00:00" while these bounds are `toISOString()`'s
-  // "….000Z", so a lexicographic compare would mis-sort rows across the week
-  // boundary. Each row is tested against its own week's full range rather than a
-  // single split point, so the result is identical to the two queries even if
-  // the two windows were ever not perfectly adjacent.
-  const at = (row: { logged_at: string }) => Date.parse(row.logged_at);
-  const thisStart = Date.parse(thisWeek.startIso);
-  const thisEnd = Date.parse(thisWeek.endIsoExclusive);
-  const lastStart = Date.parse(lastWeek.startIso);
-  const lastEnd = Date.parse(lastWeek.endIsoExclusive);
-
-  const rows = data ?? [];
-  const thisWeekLogs = rows.filter((r) => at(r) >= thisStart && at(r) < thisEnd);
-  const lastWeekLogs = rows.filter((r) => at(r) >= lastStart && at(r) < lastEnd);
-
-  const carryInKcal = computeCarryInFromLastWeek(lastWeekLogs, baseDailyTarget, {
-    sex,
-    bmrKcal,
-    dayAnswers,
-  });
-
-  return computeAdaptivePlan({
-    weekLogs: thisWeekLogs,
-    baseDailyTarget,
-    sex,
-    goal,
-    baseStepGoal,
-    carryInKcal,
-    bmrKcal,
-    dayAnswers,
-    weightKg,
-    now,
-  });
 }
 
 function RetryErrorState({

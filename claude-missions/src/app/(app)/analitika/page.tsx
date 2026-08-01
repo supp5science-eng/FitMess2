@@ -1,6 +1,8 @@
+import { cookies } from "next/headers";
 import Link from "next/link";
 
 import { MealHistory } from "@/components/analytics/meal-history";
+import { WeekOnTrackNote } from "@/components/analytics/week-on-track-note";
 import { WeeklyDashboard } from "@/components/weekly/weekly-dashboard";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { bmr, tdee } from "@/lib/budget/engine";
@@ -8,6 +10,8 @@ import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { getT } from "@/lib/i18n/server";
 import { groupLogsByDay } from "@/lib/log/group";
 import { getMealHistory } from "@/lib/log/history";
+import { getAdaptivePlan } from "@/lib/home/adaptive-read";
+import { DAY_ANSWER_COOKIE, parseDayAnswers } from "@/lib/home/day-trust";
 import { getMicroHistory } from "@/lib/nutrition/micro-history";
 import { microTargetsForKcal } from "@/lib/nutrition/micro";
 import { computeMicroWeek } from "@/lib/nutrition/micro-week";
@@ -181,6 +185,38 @@ export default async function NedeljaPage() {
   // both inputs are present and valid; otherwise null, and the card shows a
   // calm "dopuni profil" state instead of a number built on defaults.
   const profile = profileResult.data;
+
+  // "Nedelja ti je u planu" (2026-08-01): the same engine the home screen uses,
+  // so the two surfaces can never disagree about where the week stands. One
+  // extra round trip, unavoidably sequential -- it needs `target.daily_kcal`,
+  // which only exists past the gate above. A null plan (read failure) simply
+  // means no note.
+  const dayAnswers = parseDayAnswers(
+    (await cookies()).get(DAY_ANSWER_COOKIE)?.value ?? null
+  );
+  const analyticsBmr =
+    profile?.sex &&
+    profile.weight_kg != null &&
+    profile.height_cm != null &&
+    profile.birth_year != null
+      ? bmr(
+          profile.sex,
+          profile.weight_kg,
+          profile.height_cm,
+          now.getFullYear() - profile.birth_year
+        )
+      : null;
+  const adaptivePlan = await getAdaptivePlan(supabase, userId, {
+    baseDailyTarget: target.daily_kcal,
+    sex: profile?.sex ?? "male",
+    goal: target.goal,
+    baseStepGoal: resolveStepGoal(profile?.activity_level ?? null, customStepGoal)
+      .goal,
+    bmrKcal: analyticsBmr,
+    dayAnswers,
+    weightKg: profile?.weight_kg ?? null,
+    now,
+  });
   const bmi =
     profile?.weight_kg != null &&
     profile.height_cm != null &&
@@ -280,6 +316,14 @@ export default async function NedeljaPage() {
       waterWeek={waterWeek}
       stepsWeek={stepsWeek}
       streak={streak}
+      onTrackNote={
+        adaptivePlan?.isOnTrackNotice ? (
+          <WeekOnTrackNote
+            roomKcal={adaptivePlan.weekRoomKcal}
+            daysLeft={adaptivePlan.daysLeftIncludingToday}
+          />
+        ) : null
+      }
       footer={footer}
     />
   );

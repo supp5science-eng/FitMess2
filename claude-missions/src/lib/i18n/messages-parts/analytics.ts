@@ -14,6 +14,14 @@ export const analyticsMessages = {
       "Još nemaš plan ishrane. Završi upitnik pa se ovde pojavi tvoja nedelja.",
     "analytics.backToToday": "Nazad na Danas",
 
+    // Stanje nedelje, na vrhu (2026-08-01). Preseljeno sa Početne: „sve je u
+    // redu" nije zadatak za danas nego ocena nedelje, pa stoji ovde.
+    "analytics.onTrack.title": "Nedelja ti je u planu",
+    "analytics.onTrack.room":
+      "Još {days} {unit} — imaš {kcal} kcal više nego što plan traži.",
+    "analytics.onTrack.day": "dan",
+    "analytics.onTrack.days": "dana",
+
     // Shared chart read-out
     "analytics.readout.close": "Zatvori detalje dana",
     "analytics.hint.default": "Dodirni dan na grafiku da vidiš tačne brojke.",
@@ -169,6 +177,12 @@ export const analyticsMessages = {
     "analytics.noPlan":
       "You don't have a nutrition plan yet. Finish the questionnaire and your week will show up here.",
     "analytics.backToToday": "Back to Today",
+
+    "analytics.onTrack.title": "Your week is on plan",
+    "analytics.onTrack.room":
+      "{days} {unit} left — you have {kcal} kcal more than the plan asks for.",
+    "analytics.onTrack.day": "day",
+    "analytics.onTrack.days": "days",
 
     // Shared chart read-out
     "analytics.readout.close": "Close day details",

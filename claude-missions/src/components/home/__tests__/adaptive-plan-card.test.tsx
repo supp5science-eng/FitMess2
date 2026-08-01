@@ -343,7 +343,12 @@ describe("what this week cannot absorb", () => {
   });
 });
 
-describe("good news, so the card is not only ever bad news", () => {
+// The good news ("Nedelja ti je u planu") moved to /analitika on 2026-08-01 --
+// this card is for what needs doing TODAY, and a week that needs nothing done
+// is the one case with no task in it. Its own tests live in
+// `components/analytics/__tests__/week-on-track-note.test.tsx`; what belongs
+// here is proof that the card stays out of it.
+describe("the good-news state is NOT this card's job any more", () => {
   const ahead = makePlan({
     isAdjusted: false,
     trimmedKcal: 0,
@@ -352,22 +357,15 @@ describe("good news, so the card is not only ever bad news", () => {
     isOnTrackNotice: true,
   });
 
-  it("leads with 'the week is on plan' rather than 'nothing changed'", () => {
+  it("never prints the analytics headline, even when the flag is set", () => {
     render(<AdaptivePlanCard plan={ahead} />);
-    expect(screen.getByTestId("adaptive-note")).toHaveTextContent(
+    expect(screen.getByTestId("adaptive-note")).not.toHaveTextContent(
       "Nedelja ti je u planu"
     );
   });
 
-  it("states the actual cushion, not just a compliment", () => {
+  it("has no cushion line left to render", () => {
     render(<AdaptivePlanCard plan={ahead} />);
-    expect(screen.getByTestId("adaptive-note-room")).toHaveTextContent(
-      "1.200 kcal"
-    );
-  });
-
-  it("does not appear alongside a trim -- one story at a time", () => {
-    render(<AdaptivePlanCard plan={makePlan()} />);
     expect(screen.queryByTestId("adaptive-note-room")).not.toBeInTheDocument();
   });
 });

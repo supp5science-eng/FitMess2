@@ -28,6 +28,7 @@ export function WeeklyDashboard({
   waterWeek,
   stepsWeek,
   streak,
+  onTrackNote,
   footer,
 }: {
   /** The user's body-mass index (kg/m²), computed from their questionnaire
@@ -58,6 +59,11 @@ export function WeeklyDashboard({
   /** Meal-logging streak (`computeStreak`) — current run, record, and the last
    * 7 days. Always present (the reader degrades to an empty set, not null). */
   streak: StreakSummary | null;
+  /** "Nedelja ti je u planu" — rendered ABOVE everything when the week has
+   * comfortable room left (2026-08-01). A slot rather than props of its own:
+   * whether the week is on track is the page's business to decide, not this
+   * component's. */
+  onTrackNote?: ReactNode;
   footer?: ReactNode;
 }) {
   return (
@@ -68,6 +74,11 @@ export function WeeklyDashboard({
         </h1>
         <p className="text-sm text-muted-foreground">Ova nedelja</p>
       </header>
+
+      {/* The week's standing, before any single chart: it frames everything
+          below it, which is exactly what a disclaimer is for. Absent on a week
+          that is NOT comfortably ahead -- silence is the honest default. */}
+      {onTrackNote}
 
       {/* Niz: the meal-logging streak — the first thing the weekly view answers,
           "am I keeping it up?", before any single number. */}

@@ -4,8 +4,11 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Flame, Minus, Plus, Trash2 } from "lucide-react";
 
+import type { MiniWeekDay } from "@/components/home/mini-week-bars";
+import { StepsCard } from "@/components/home/steps-card";
 import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
+import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import type { MessageKey } from "@/lib/i18n/messages";
 import {
   MAX_WORKOUT_MINUTES,
@@ -51,6 +54,9 @@ export function TreningFlow({
   initialWorkouts = [],
   weightKg = null,
   restingKcal = null,
+  initialSteps = 0,
+  stepsGoal = FALLBACK_STEP_GOAL,
+  stepsWeek = [],
 }: {
   /** Belgrade calendar day these sessions belong to (today). */
   dayKey: string;
@@ -62,6 +68,12 @@ export function TreningFlow({
    * without height/birth year -- the total line is then left out rather than
    * invented. */
   restingKcal?: number | null;
+  /** Koraci, which moved onto this screen on 2026-08-01 when its card left the
+   * home screen (see `page.tsx`). Today's total, the user's own goal, and the
+   * 7-day strip -- the same `StepsCard` as before, unchanged. */
+  initialSteps?: number;
+  stepsGoal?: number;
+  stepsWeek?: MiniWeekDay[];
 }) {
   const { t } = useT();
   const [isPending, startTransition] = useTransition();
@@ -459,6 +471,19 @@ export function TreningFlow({
             </span>
           </div>
         ) : null}
+
+        {/* Koraci. Sits under the day's sessions because it answers the same
+            question in a different unit: a workout is the movement you set out
+            to do, steps are the movement the day happened to contain. Its own
+            card, its own sheet, its own goal -- nothing about it changed when
+            it moved here from the home screen. */}
+        <StepsCard
+          dayKey={dayKey}
+          initialSteps={initialSteps}
+          goal={stepsGoal}
+          week={stepsWeek}
+          className="pt-1"
+        />
 
         <p
           data-testid="trening-note-plan"

@@ -15,7 +15,7 @@ export const treningMessages = {
     "workout.activity.trcanje": "Trčanje",
     "workout.activity.bicikl": "Bicikl",
     "workout.activity.kodKuce": "Trening kod kuće",
-    "workout.activity.sipke": "Šipke / street workout",
+    "workout.activity.sipke": "Street workout",
     "workout.activity.hiit": "HIIT",
     "workout.activity.fudbal": "Fudbal",
     "workout.activity.kosarka": "Košarka",
@@ -36,9 +36,13 @@ export const treningMessages = {
     "workout.intensity.lako": "Lako",
     "workout.intensity.srednje": "Srednje",
     "workout.intensity.jako": "Jako",
-    "workout.intensity.lakoDesc": "Mogu da pričam bez problema",
-    "workout.intensity.srednjeDesc": "Dišem teže, mogu kratke rečenice",
-    "workout.intensity.jakoDesc": "Ne mogu da pričam",
+    // Described by what you'd feel LOOKING BACK at the session, which is when
+    // it gets logged. The old wording ("mogu da pričam bez problema") was the
+    // textbook talk test -- accurate, but it asks about a moment that has
+    // already passed and reads like a quiz.
+    "workout.intensity.lakoDesc": "Bez znoja, mogao sam još dugo",
+    "workout.intensity.srednjeDesc": "Oznojio sam se, ali sam držao tempo",
+    "workout.intensity.jakoDesc": "Dao sam sve, jedva do kraja",
 
     // The /danas card + the "+" menu row
     "trening.card.label": "Trening",
@@ -88,7 +92,7 @@ export const treningMessages = {
     "workout.activity.trcanje": "Running",
     "workout.activity.bicikl": "Cycling",
     "workout.activity.kodKuce": "Home workout",
-    "workout.activity.sipke": "Bars / street workout",
+    "workout.activity.sipke": "Street workout",
     "workout.activity.hiit": "HIIT",
     "workout.activity.fudbal": "Football",
     "workout.activity.kosarka": "Basketball",
@@ -107,9 +111,9 @@ export const treningMessages = {
     "workout.intensity.lako": "Easy",
     "workout.intensity.srednje": "Moderate",
     "workout.intensity.jako": "Hard",
-    "workout.intensity.lakoDesc": "I can talk normally",
-    "workout.intensity.srednjeDesc": "Breathing hard, short sentences",
-    "workout.intensity.jakoDesc": "Can't talk",
+    "workout.intensity.lakoDesc": "No sweat, could've kept going",
+    "workout.intensity.srednjeDesc": "Worked up a sweat, held the pace",
+    "workout.intensity.jakoDesc": "Gave everything, barely finished",
 
     "trening.card.label": "Workout",
     "trening.card.empty": "Nothing today",

@@ -1,6 +1,10 @@
 import { bmr } from "@/lib/budget/engine";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { toBelgradeCalendarDay } from "@/lib/dates";
+import { resolveStepGoal } from "@/lib/steps/step-goal";
+import { getCustomStepGoal } from "@/lib/steps/step-goal-read";
+import { getStepsWeek } from "@/lib/steps/steps";
+import { computeStepsWeek } from "@/lib/steps/steps-week";
 import { createClient } from "@/lib/supabase/server";
 import { getWorkoutsForDay } from "@/lib/workout/workouts";
 
@@ -31,14 +35,22 @@ export default async function TreningPage() {
   const now = new Date();
   const todayKey = toBelgradeCalendarDay(now);
 
-  const [profileResult, workouts] = await Promise.all([
-    supabase
-      .from("profiles")
-      .select("sex, weight_kg, height_cm, birth_year")
-      .eq("user_id", userId)
-      .maybeSingle(),
-    getWorkoutsForDay(supabase, userId, todayKey),
-  ]);
+  // Koraci moved HERE on 2026-08-01: its card left the home screen (it was the
+  // tallest thing there and inflated every pager page), which took the only
+  // way to ENTER steps with it. This is where it belongs anyway -- steps and
+  // workouts are the same question ("what did my body do today"), asked in two
+  // units.
+  const [profileResult, workouts, customStepGoal, stepsWeekRows] =
+    await Promise.all([
+      supabase
+        .from("profiles")
+        .select("sex, weight_kg, height_cm, birth_year, activity_level")
+        .eq("user_id", userId)
+        .maybeSingle(),
+      getWorkoutsForDay(supabase, userId, todayKey),
+      getCustomStepGoal(supabase, userId),
+      getStepsWeek(supabase, userId, now),
+    ]);
 
   const profile = profileResult.data;
 
@@ -55,12 +67,27 @@ export default async function TreningPage() {
         )
       : null;
 
+  // The user's own step goal if they set one, otherwise one derived from their
+  // activity level (never a flat 10.000 -- see `src/lib/steps/step-goal.ts`).
+  const stepGoal = resolveStepGoal(
+    profile?.activity_level ?? null,
+    customStepGoal
+  ).goal;
+  const stepsToday =
+    stepsWeekRows.rows.find((row) => row.day === todayKey)?.steps ?? 0;
+  const stepsWeek = computeStepsWeek(stepsWeekRows.rows, now, stepGoal).days.map(
+    (day) => ({ label: day.label, pct: day.pct, isToday: day.isToday })
+  );
+
   return (
     <TreningFlow
       dayKey={todayKey}
       initialWorkouts={workouts.rows}
       weightKg={profile?.weight_kg ?? null}
       restingKcal={restingKcal}
+      initialSteps={stepsToday}
+      stepsGoal={stepGoal}
+      stepsWeek={stepsWeek}
     />
   );
 }

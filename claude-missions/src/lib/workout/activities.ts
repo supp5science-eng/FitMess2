@@ -138,12 +138,16 @@ export const WORKOUT_ACTIVITIES: readonly WorkoutActivity[] = [
   {
     key: "sipke",
     labelKey: "workout.activity.sipke",
-    emoji: "💪",
-    // Street workout / bars. Priced above `kod-kuce` at the easy and moderate
-    // ends: pull-ups and dips move the whole body against gravity, so even a
-    // relaxed session sits higher than general home calisthenics. The hard end
-    // meets it at the compendium's 8.0 for vigorous calisthenics.
-    mets: { lako: 4.5, srednje: 6.0, jako: 8.0 },
+    emoji: "🧗",
+    // Street workout (bars). Compendium 02054 puts vigorous calisthenics
+    // (pull-ups, push-ups, dips) at 8.0, but that is the MET of the WORK --
+    // and a bar session, like a gym session, is mostly sets separated by rest,
+    // while the user logs the whole time they were out there. Priced for the
+    // SESSION instead: a little above `kod-kuce` (bodyweight against gravity
+    // costs more than general home calisthenics) and a little above `teretana`
+    // (less standing around between sets), with the hard end reaching toward
+    // the compendium's continuous-effort figure.
+    mets: { lako: 4.0, srednje: 5.5, jako: 7.5 },
     defaultMinutes: 45,
   },
   {

@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 
 import { LogAddMoreSheet } from "@/components/food/log-add-more-sheet";
 import { LogDeleteConfirm } from "@/components/food/log-delete-confirm";
+import { LogEatenShareSheet } from "@/components/food/log-eaten-share-sheet";
 import { LogEditSheet } from "@/components/food/log-edit-sheet";
 import { useT } from "@/components/i18n/locale-provider";
 import { ShareMealSheet } from "@/components/share/share-meal-sheet";
@@ -304,6 +305,11 @@ export function MealCard({
               needs no `food` row -- it grows the entry from its own snapshot, so
               it is available on AI meal entries too (which is the point). */}
           <LogAddMoreSheet log={log} onSaved={onSaved} />
+          {/* The mirror of "Dodaj još", and its neighbour on purpose: this row
+              is one family of thoughts -- there was MORE of it, there was LESS
+              of it, it never happened. Like "Dodaj još" it needs no `food` row,
+              so it works on AI meal entries too. */}
+          <LogEatenShareSheet log={log} onSaved={onSaved} />
           {food ? (
             <LogEditSheet log={log} food={food} onSaved={onSaved} />
           ) : null}

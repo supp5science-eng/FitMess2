@@ -443,6 +443,12 @@ export interface Database {
           // "Dodaj još" then only offers whole-entry seconds. Optional for the
           // same fixture reason as the micro columns above.
           components?: LogComponentSnapshot[] | null;
+          // 0025: what share of the SERVED portion was actually eaten (100 =
+          // all of it). The columns above are already the eaten amounts, so
+          // every reader ignores this -- it exists only so "Nisam sve pojeo"
+          // can recover the served plate and be undone. Optional for the same
+          // fixture reason as the columns above.
+          eaten_share?: number | null;
           logged_at: string;
           method: LogMethod;
           created_at: string;
@@ -462,6 +468,7 @@ export interface Database {
           sodium?: number | null;
           sat_fat?: number | null;
           components?: LogComponentSnapshot[] | null;
+          eaten_share?: number | null;
           logged_at?: string;
           method: LogMethod;
           created_at?: string;
@@ -481,6 +488,7 @@ export interface Database {
           sodium?: number | null;
           sat_fat?: number | null;
           components?: LogComponentSnapshot[] | null;
+          eaten_share?: number | null;
           logged_at?: string;
           method?: LogMethod;
           created_at?: string;

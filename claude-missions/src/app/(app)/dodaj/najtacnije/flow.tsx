@@ -20,7 +20,6 @@ import {
 } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
-import { EatenShare } from "@/components/food/eaten-share";
 import { useT } from "@/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import type { TFunction } from "@/lib/i18n/translate";
@@ -45,11 +44,6 @@ import { scaleMealMicros, type MealComponent } from "@/lib/ai/meal-estimate";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import { downscaleImage } from "@/lib/image/downscale";
 import { inspectPhoto, type PhotoIssue } from "@/lib/image/quality";
-import {
-  FULL_EATEN_SHARE,
-  eatenShareForGrams,
-  gramsForEatenShare,
-} from "@/lib/log/eaten-share";
 import { buildScanCard } from "@/lib/share/build-scan-card";
 import { prewarmCard } from "@/lib/share/card-cache";
 import { logMealAction } from "../obrok/actions";
@@ -221,12 +215,6 @@ export function NajtacnijeFlow() {
     carbs: 0,
     fat: 0,
   });
-  // "Nisam pojeo sve": the plate as SERVED, and how much of it was eaten. The
-  // dial earlier in the flow answers "how much was on the plate"; this answers
-  // "how much of that went in", which is a different question and the only one
-  // no photo can settle.
-  const [servedGrams, setServedGrams] = useState(0);
-  const [share, setShare] = useState(FULL_EATEN_SHARE);
 
   // Elapsed-time ticker while recording.
   useEffect(() => {
@@ -440,10 +428,6 @@ export function NajtacnijeFlow() {
     });
     setName(est.naziv);
     setGrams(Math.round(g));
-    // Every fresh estimate starts at the whole plate -- the numbers above
-    // describe what was served, and leftovers are the user's to declare.
-    setServedGrams(Math.round(g));
-    setShare(FULL_EATEN_SHARE);
     setNutrition({
       kcal: est.kcal,
       protein: est.protein_g,
@@ -604,42 +588,17 @@ export function NajtacnijeFlow() {
     }
   }
 
-  /** The slider: a share of the served plate, expressed in the grams that every
-   * other number on this screen already follows (macros, micros, breakdown). */
-  function handleShareChange(next: number) {
-    setShare(next);
-    handleGramsChange(gramsForEatenShare(servedGrams, next));
-  }
-
-  /** The gram field, kept in sync with the slider -- they are two views of one
-   * portion. A figure above the served plate re-bases it (the estimate was low)
-   * rather than pretending someone ate 130% of it. */
-  function handleGramsInput(value: number) {
-    handleGramsChange(value);
-    if (value > servedGrams) {
-      setServedGrams(value);
-      setShare(FULL_EATEN_SHARE);
-      return;
-    }
-    setShare(eatenShareForGrams(servedGrams, value));
-  }
-
   /** Strike a line the user didn't actually eat and re-derive the totals. */
   function removeComponent(index: number) {
     const next = components.filter((_, i) => i !== index);
     setComponents(next);
     if (next.length === 0) {
       setGrams(0);
-      setServedGrams(0);
       setNutrition({ kcal: 0, protein: 0, carbs: 0, fat: 0 });
       return;
     }
     const t = totalsOf(next);
     setGrams(Math.round(t.grams));
-    // The remaining lines are already scaled to the current share, so the
-    // SERVED plate is what they'd weigh at 100% -- without re-basing, the next
-    // nudge of the slider would jump back to a plate that no longer exists.
-    setServedGrams(Math.round((t.grams * FULL_EATEN_SHARE) / Math.max(share, 1)));
     setNutrition({
       kcal: t.kcal,
       protein: t.protein,
@@ -1352,20 +1311,6 @@ export function NajtacnijeFlow() {
             </div>
           ) : null}
 
-          {/* Striking a line above says "that wasn't mine"; this says "I left
-              some of it". Different questions, and a plate half-eaten across
-              every item can only be answered here. */}
-          <EatenShare
-            share={share}
-            onShareChange={handleShareChange}
-            eatenGrams={grams}
-            eatenKcal={nutrition.kcal}
-            // From the CURRENT kcal, so a hand-corrected figure still reports
-            // leftovers honestly.
-            servedKcal={(nutrition.kcal / Math.max(share, 1)) * FULL_EATEN_SHARE}
-            disabled={phase === "saving"}
-          />
-
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-foreground">
               {t("dodaj.field.grams")}
@@ -1376,7 +1321,7 @@ export function NajtacnijeFlow() {
               min={1}
               value={grams === 0 ? "" : grams}
               onChange={(event) =>
-                handleGramsInput(Math.max(0, Number(event.target.value) || 0))
+                handleGramsChange(Math.max(0, Number(event.target.value) || 0))
               }
               className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
             />

@@ -13,6 +13,7 @@ import { MealList } from "@/components/home/meal-list";
 import { StepsCard } from "@/components/home/steps-card";
 import { useT } from "@/components/i18n/locale-provider";
 import { GricButton } from "@/components/home/gric-button";
+import { PushNudge } from "@/components/home/push-nudge";
 import { WaterButton } from "@/components/home/water-button";
 import { WeighInBanner } from "@/components/home/weigh-in-banner";
 import { WorkoutButton } from "@/components/home/workout-button";
@@ -268,6 +269,13 @@ export function HomeScreen({
       {isToday && weighInDaysWaiting !== null && !introActive ? (
         <WeighInBanner daysWaiting={weighInDaysWaiting} />
       ) : null}
+
+      {/* The one place notification permission is asked for (2026-08-01).
+          Gated on `logs.length > 0` on purpose: the ask lands after the user
+          has written something down today, never on a first blank screen. The
+          row hides itself when the browser has already been asked, so this
+          condition is only about WHEN it may appear. */}
+      {isToday && logs.length > 0 && !introActive ? <PushNudge /> : null}
 
       {target ? (
         <div className="flex flex-col gap-7">

@@ -87,6 +87,17 @@ export const homeExtraMessages = {
     "home.water.inputAria": "Količina vode u mililitrima",
     "home.water.loggedToday": "Uneseno: {total}",
     "home.water.totalToday": "Ukupno danas: {total}",
+
+    // Podsetnik za merenje — the one permission ask, on the home screen
+    "home.pushNudge.title": "Da te podsetimo na merenje?",
+    "home.pushNudge.body":
+      "Jednom nedeljno, na dan merenja. Ništa drugo ti ne šaljemo.",
+    "home.pushNudge.accept": "Podseti me",
+    "home.pushNudge.decline": "Ne treba",
+    "home.pushNudge.working": "Uključujem...",
+    "home.pushNudge.done":
+      "Važi — javićemo ti na dan merenja. Menjaš ga u Podešavanja → Dan merenja.",
+    "home.pushNudge.error": "Nismo uspeli da uključimo podsetnik.",
   },
   en: {
     // Add sheet
@@ -166,5 +177,15 @@ export const homeExtraMessages = {
     "home.water.inputAria": "Water amount in milliliters",
     "home.water.loggedToday": "Logged: {total}",
     "home.water.totalToday": "Total today: {total}",
+
+    "home.pushNudge.title": "Remind you to weigh in?",
+    "home.pushNudge.body":
+      "Once a week, on your weigh-in day. Nothing else gets sent.",
+    "home.pushNudge.accept": "Remind me",
+    "home.pushNudge.decline": "No thanks",
+    "home.pushNudge.working": "Turning on...",
+    "home.pushNudge.done":
+      "Done — we'll ping you on weigh-in day. Change it in Settings → Weigh-in day.",
+    "home.pushNudge.error": "We couldn't turn the reminder on.",
   },
 } as const;

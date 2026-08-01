@@ -306,7 +306,11 @@ export function MealCard({
             neighbour to mis-tap, and the difference is visible before the
             finger lands rather than only in the confirm that follows. */}
         <div className="flex flex-col gap-2 border-t border-border/60 pt-3">
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Centred, not left-aligned: the chips wrap onto two rows and the
+              delete bar under them spans the full width, so a left-packed row
+              left a lopsided hole on the right. Centring makes the group read
+              as one block sitting under the entry. */}
+          <div className="flex flex-wrap items-center justify-center gap-2">
             {/* "Dodaj još" leads: seconds are the common follow-up action on an
                 entry, while editing is a correction. Unlike "Izmeni" it needs no
                 `food` row -- it grows the entry from its own snapshot, so it is

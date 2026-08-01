@@ -264,6 +264,9 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     daysAfterToday: 4,
     untrustedDays: [],
     hasNotice: true,
+    causeDays: [],
+    spillToNextWeekKcal: 0,
+    isMaterial: false,
   };
 
   it("test_the_ring_targets_the_adapted_number_and_a_note_explains_why", () => {

@@ -91,6 +91,23 @@ export const MAX_TRAINING_SUGGESTION_KCAL = 250;
 /** Goals measured by HITTING a number rather than staying under one. */
 const SYMMETRIC_GOALS: readonly GoalType[] = ["gain", "maintain"];
 
+/**
+ * How big a daily change has to be, as a share of base, before it is worth
+ * interrupting someone with a full-screen explanation (`isMaterial`).
+ *
+ * 5% is roughly the point where the change survives contact with reality: on a
+ * 3000 kcal target that is 150 kcal, a real slice of a meal. Below it the
+ * honest presentation is the quiet card -- a Monday overshoot of 500 kcal
+ * spread over six days is 83 kcal/day, and taking over the screen to announce
+ * "2917 instead of 3000" teaches people to dismiss the screen unread. The
+ * threshold is a PERCENTAGE, not a fixed number, so it scales with a 1500 kcal
+ * target as well as a 4000 kcal one.
+ */
+export const MATERIAL_CHANGE_PCT = 0.05;
+
+/** A day's deviation is only worth naming as a CAUSE above this many kcal. */
+const CAUSE_MIN_DELTA_KCAL = 50;
+
 /** Round a kcal amount to the nearest 50 for a friendly, non-fake-precise hint. */
 function roundTo50(value: number): number {
   return Math.round(value / 50) * 50;
@@ -142,6 +159,38 @@ export interface AdaptivePlan {
   /** True when the card has something to say: an adjustment, or a day to ask
    * about. A plan that is on track AND fully logged shows nothing. */
   hasNotice: boolean;
+  /**
+   * The days that CAUSED the adjustment -- trusted days before today whose
+   * intake deviated from base by more than `CAUSE_MIN_DELTA_KCAL`, biggest
+   * deviation first. `deltaKcal` is signed (positive = ate more than planned).
+   *
+   * The plan could always show WHAT changed; without this it could never say
+   * WHY, and "your target is lower today" with no named reason reads as the
+   * app being arbitrary.
+   */
+  causeDays: CauseDay[];
+  /**
+   * kcal this week's remaining days genuinely cannot absorb, because the daily
+   * trim cap refuses to cut them further. It leaves the week over budget and
+   * returns as next week's carry-in. Surfaced so the screen can say so out
+   * loud instead of letting the number quietly vanish.
+   */
+  spillToNextWeekKcal: number;
+  /**
+   * True when the change is big enough to deserve a full-screen moment rather
+   * than the quiet card (see `MATERIAL_CHANGE_PCT`). Activity suggestions
+   * always qualify -- being asked to walk is an ask, not a footnote.
+   */
+  isMaterial: boolean;
+}
+
+export interface CauseDay {
+  /** Belgrade calendar day, `"YYYY-MM-DD"`. */
+  dayKey: string;
+  /** What was logged that day. */
+  kcal: number;
+  /** Signed deviation from the base daily target (+ = over). */
+  deltaKcal: number;
 }
 
 export interface AdaptivePlanInput {
@@ -260,6 +309,30 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
   const isAdjusted =
     trimmedKcal > 0 || liftedKcal > 0 || trainingSuggestionKcal > 0;
 
+  // What the trim cap refuses to take out of this week, across ALL the days it
+  // still applies to -- not just today. This is the number that rolls forward.
+  const spillToNextWeekKcal =
+    uncovered > 0 ? Math.round(uncovered * daysLeft) : 0;
+
+  // Why the plan moved: the trusted days that actually deviated. Untrusted
+  // days are excluded on purpose -- a day we refused to believe must never be
+  // named as the reason for anything.
+  const causeDays: CauseDay[] = verdicts
+    .filter(
+      (day) => day.counts && Math.abs(day.kcal - base) >= CAUSE_MIN_DELTA_KCAL
+    )
+    .map((day) => ({
+      dayKey: day.dayKey,
+      kcal: day.kcal,
+      deltaKcal: day.kcal - base,
+    }))
+    .sort((a, b) => Math.abs(b.deltaKcal) - Math.abs(a.deltaKcal));
+
+  const changeKcal = Math.max(trimmedKcal, liftedKcal);
+  const isMaterial =
+    trainingSuggestionKcal > 0 ||
+    (base > 0 && changeKcal >= base * MATERIAL_CHANGE_PCT);
+
   return {
     baseDailyTarget: base,
     adaptiveDailyTarget: adaptive,
@@ -277,6 +350,9 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
     daysAfterToday: daysLeft - 1,
     untrustedDays,
     hasNotice: isAdjusted || untrustedDays.some((day) => day.needsAnswer),
+    causeDays,
+    spillToNextWeekKcal,
+    isMaterial,
   };
 }
 

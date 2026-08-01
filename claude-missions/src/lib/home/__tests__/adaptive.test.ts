@@ -13,6 +13,12 @@ const WED = new Date("2026-01-07T12:00:00.000Z");
 const MON = "2026-01-05T12:00:00.000Z";
 const TUE = "2026-01-06T12:00:00.000Z";
 const WED_LOG = "2026-01-07T12:00:00.000Z";
+/** Same week, other vantage points -- the size of a redistribution depends
+ * entirely on how many days are left to spread it over. */
+const TUE_NOW = new Date("2026-01-06T12:00:00.000Z");
+const THU = new Date("2026-01-08T12:00:00.000Z");
+const THU_LOG = "2026-01-08T12:00:00.000Z";
+const FRI = new Date("2026-01-09T12:00:00.000Z");
 
 function log(logged_at: string, kcal: number) {
   return { logged_at, kcal };
@@ -366,6 +372,143 @@ describe("day trust: a day only moves the plan if its log is plausible as a whol
       now: WED,
     });
     expect(plan.daysAfterToday).toBe(4); // Thu..Sun
+  });
+});
+
+describe("why the plan moved: the cause, the spill, and whether it deserves a screen", () => {
+  it("names the day that caused it, with its signed deviation", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 2100), log(TUE, 3500)],
+      baseDailyTarget: 3000,
+      sex: "male",
+      bmrKcal: 1900,
+      now: WED,
+    });
+    // Monday is 900 under, Tuesday 500 over -- biggest deviation first.
+    expect(plan.causeDays).toEqual([
+      { dayKey: "2026-01-05", kcal: 2100, deltaKcal: -900 },
+      { dayKey: "2026-01-06", kcal: 3500, deltaKcal: 500 },
+    ]);
+  });
+
+  it("ignores deviations too small to be worth naming", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3020), log(TUE, 2990)],
+      baseDailyTarget: 3000,
+      sex: "male",
+      bmrKcal: 1900,
+      now: WED,
+    });
+    expect(plan.causeDays).toEqual([]);
+  });
+
+  it("never blames a day it refused to believe", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3500), log(TUE, 122)],
+      baseDailyTarget: 3000,
+      sex: "male",
+      bmrKcal: 1900,
+      now: WED,
+    });
+    expect(plan.causeDays.map((d) => d.dayKey)).toEqual(["2026-01-05"]);
+  });
+
+  it("reports what this week cannot absorb, across every remaining day", () => {
+    // Huge Monday: the 25% trim cap holds each remaining day at 1500, so the
+    // shortfall is per-day and must be multiplied by the days it applies to.
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 9000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1600,
+      now: WED,
+    });
+    // spent-before 9000 + 2000 (untrusted-free: Tue empty -> base) = 11000.
+    // ideal = (14000 - 11000) / 5 = 600; cap floor 1500 -> 900 short per day.
+    expect(plan.spillToNextWeekKcal).toBe(4500);
+  });
+
+  it("has no spill when food alone absorbs the overshoot", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3000), log(TUE, 3000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1600,
+      now: WED,
+    });
+    expect(plan.spillToNextWeekKcal).toBe(0);
+  });
+
+  it("calls a small early-week trim IMMATERIAL -- not worth a whole screen", () => {
+    // The user's own example: 3500 instead of 3000 yesterday, six days left.
+    // 500 spread over 6 days is 83 kcal/day; taking over the screen for that
+    // is how a moment becomes an annoyance.
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3500)],
+      baseDailyTarget: 3000,
+      sex: "male",
+      bmrKcal: 1900,
+      now: TUE_NOW,
+    });
+    expect(plan.isAdjusted).toBe(true);
+    expect(plan.trimmedKcal).toBe(83);
+    expect(plan.isMaterial).toBe(false);
+  });
+
+  it("calls the SAME overshoot material once it lands on few enough days", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [
+        log(MON, 3000),
+        log(TUE, 3000),
+        log(WED_LOG, 3000),
+        log(THU_LOG, 3500),
+      ],
+      baseDailyTarget: 3000,
+      sex: "male",
+      bmrKcal: 1900,
+      now: FRI,
+    });
+    // The identical 500 kcal overshoot now falls on three days instead of six:
+    // 167/day, past the 150 (5% of 3000) line. Same event, different weight --
+    // which is exactly why the threshold is on the DAILY change, not on the
+    // size of the overshoot.
+    expect(plan.trimmedKcal).toBe(167);
+    expect(plan.isMaterial).toBe(true);
+  });
+
+  it("stays immaterial on Thursday, where the same overshoot is only 125/day", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3000), log(TUE, 3000), log(WED_LOG, 3500)],
+      baseDailyTarget: 3000,
+      sex: "male",
+      bmrKcal: 1900,
+      now: THU,
+    });
+    expect(plan.trimmedKcal).toBe(125);
+    expect(plan.isMaterial).toBe(false);
+  });
+
+  it("always treats an activity ask as material -- walking is not a footnote", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 9000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1600,
+      now: WED,
+    });
+    expect(plan.trainingSuggestionKcal).toBeGreaterThan(0);
+    expect(plan.isMaterial).toBe(true);
+  });
+
+  it("is never material when nothing moved", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 2000), log(TUE, 2000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1600,
+      now: WED,
+    });
+    expect(plan.isMaterial).toBe(false);
   });
 });
 

@@ -31,6 +31,9 @@ function makePlan(overrides: Partial<AdaptivePlan> = {}): AdaptivePlan {
     daysAfterToday: 4,
     untrustedDays: [],
     hasNotice: true,
+    causeDays: [],
+    spillToNextWeekKcal: 0,
+    isMaterial: false,
     ...overrides,
   };
 }

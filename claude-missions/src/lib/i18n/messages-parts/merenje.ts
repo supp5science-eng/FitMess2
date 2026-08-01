@@ -74,6 +74,8 @@ export const merenjeMessages = {
       "Merenja su preblizu jedno drugom da bi se videla nedeljna promena. Sledeće za koji dan.",
     "merenje.explain.untrustedIntake":
       "Vagu vidimo, ali dnevnik ishrane je previše prazan da bismo iz njega izračunali potrošnju. Ne znamo šta si jeo — zato ne diramo plan.",
+    "merenje.explain.implausibleMeasurement":
+      "Vaga se pomerila više nego što na tvom unosu telo stvarno može da se promeni za toliko dana — to su skoro uvek voda, so i različito doba merenja. Iz ovoga se potrošnja ne može izračunati, pa plan ostaje kakav jeste do sledećeg merenja.",
 
     // The suggestion
     "merenje.suggest.title": "Predlog",
@@ -175,6 +177,8 @@ export const merenjeMessages = {
       "The weigh-ins are too close together to show a weekly change. The next one is in a few days.",
     "merenje.explain.untrustedIntake":
       "We can see the scale, but the food log is too empty to compute your burn from. We don't know what you ate — so we're not touching the plan.",
+    "merenje.explain.implausibleMeasurement":
+      "The scale moved further than your body could actually change on your intake over that many days — that is almost always water, salt, and weighing at different times. Your burn can't be computed from this, so the plan stays as it is until the next weigh-in.",
 
     "merenje.suggest.title": "Suggestion",
     "merenje.suggest.cut": "We suggest {kcal} kcal a day instead of {old}.",

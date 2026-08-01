@@ -60,6 +60,7 @@ const REASON_EXPLAIN: Record<
   few_weigh_ins: "merenje.explain.fewWeighIns",
   span_too_short: "merenje.explain.spanTooShort",
   untrusted_intake: "merenje.explain.untrustedIntake",
+  implausible_measurement: "merenje.explain.implausibleMeasurement",
 };
 
 function formatKg(kg: number): string {

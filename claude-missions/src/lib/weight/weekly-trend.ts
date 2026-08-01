@@ -120,6 +120,33 @@ export const MIN_SPAN_DAYS = 5;
 /** A segment of days with fewer trusted days than this is not usable intake. */
 export const MIN_TRUSTED_DAY_RATIO = 0.5;
 
+/**
+ * Lowest daily burn any adult body can plausibly have.
+ *
+ * The balance method (`TDEE = unos + (Δkg x 7700) / dani`) is arithmetic, not
+ * physiology: hand it a weight jump that water and glycogen produced and it will
+ * happily return a metabolism no human has. On 2026-08-01 a real user's card
+ * read **-204 kcal/dan** -- a negative metabolism -- because the scale moved
+ * +3,4 kg in ten days on a 2.414 kcal average. Three and a half kilograms of
+ * actual tissue in ten days would need something like 26.000 kcal of surplus on
+ * top of maintenance; it was water, salt, and a Wednesday reading compared
+ * against a Saturday one. The app proposed cutting 250 kcal off that.
+ */
+export const MIN_PLAUSIBLE_TDEE_KCAL = 1000;
+
+/**
+ * How far the measurement may sit from the app's own Mifflin estimate before
+ * it is treated as noise rather than metabolism.
+ *
+ * The whole point of this feature is that the estimate CAN be wrong, so the
+ * band has to be wide enough to let a real correction through -- the activity
+ * multiplier a person picked about themselves is routinely off by 15-20%. But
+ * a metabolism that is 40% away from the prediction is not a discovery about
+ * the user, it is a discovery that the scale and the food log disagree about
+ * what week it is.
+ */
+export const MAX_TDEE_DEVIATION_PCT = 0.4;
+
 /** Smallest correction worth making -- below this it is noise dressed as advice. */
 export const MIN_CORRECTION_KCAL = 150;
 
@@ -170,7 +197,13 @@ export type InsufficientReason =
   /** Two weigh-ins, but too close together to read as a weekly trend. */
   | "span_too_short"
   /** The weight side is fine; the FOOD log is not complete enough to trust. */
-  | "untrusted_intake";
+  | "untrusted_intake"
+  /**
+   * Both sides are present but their arithmetic produces a burn no body has
+   * (see `MIN_PLAUSIBLE_TDEE_KCAL` / `MAX_TDEE_DEVIATION_PCT`) -- the scale
+   * moved for reasons that are not metabolism.
+   */
+  | "implausible_measurement";
 
 /** Which way the food target has to move. */
 export type CorrectionDirection = "cut" | "add";
@@ -375,6 +408,28 @@ interface Measurement {
  * trusted mean rather than counted at their logged value -- the same "absence
  * of data is not data" posture as `day-trust.ts`.
  */
+/**
+ * Could a body have produced this number?
+ *
+ * Two independent floors, because they catch different failures. The absolute
+ * one catches arithmetic that has come off the rails entirely (a negative
+ * burn). The relative one catches a result that is internally sensible but
+ * disagrees with everything else we know about this person -- which, given the
+ * estimate is built from their own height, weight, age and sex, means the
+ * scale and the food log are describing different weeks.
+ */
+export function measurementIsPlausible(
+  tdeeKcal: number,
+  plannedTdeeKcal: number | null
+): boolean {
+  if (!Number.isFinite(tdeeKcal)) return false;
+  if (tdeeKcal < MIN_PLAUSIBLE_TDEE_KCAL) return false;
+  if (plannedTdeeKcal == null || plannedTdeeKcal <= 0) return true;
+
+  const deviation = Math.abs(tdeeKcal - plannedTdeeKcal) / plannedTdeeKcal;
+  return deviation <= MAX_TDEE_DEVIATION_PCT;
+}
+
 function measureTdee(
   weighIns: readonly WeighInPoint[],
   days: readonly TrustedDayIntake[]
@@ -647,6 +702,13 @@ export function computeWeeklyTrend(input: WeeklyTrendInput): WeeklyTrendResult {
     return emptyResult("untrusted_intake", { ...shared });
   }
 
+  // ...and a measurement the body could not have produced is no measurement
+  // either. Same conclusion as an untrusted log, reached from the other side:
+  // show the scale, say nothing about the plan.
+  if (!measurementIsPlausible(measurement.tdeeKcal, plannedTdeeKcal)) {
+    return emptyResult("implausible_measurement", { ...shared });
+  }
+
   // Progress = movement in the direction this goal wants.
   const progressPct =
     goal === "gain" ? trendPctPerWeek : -trendPctPerWeek;
@@ -675,8 +737,15 @@ export function computeWeeklyTrend(input: WeeklyTrendInput): WeeklyTrendResult {
           ? "add"
           : "cut";
 
+  // A READING is worth showing at two weigh-ins; a CORRECTION is not worth
+  // making. Two points are a line through whatever the water was doing on
+  // those two mornings -- the third is the first one that can disagree with
+  // them. The card still reports the trend and still says why it is waiting
+  // (`merenje.result.lowConfidence`), so this is a delay, not a silence.
+  const canSuggest = weighIns.length >= GOOD_CONFIDENCE_WEIGH_INS;
+
   const suggestion =
-    direction === null
+    direction === null || !canSuggest
       ? null
       : buildSuggestion({
           direction,

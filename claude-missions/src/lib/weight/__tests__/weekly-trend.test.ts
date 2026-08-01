@@ -5,8 +5,12 @@ import { KCAL_FLOOR, MAX_DEFICIT_PCT } from "@/lib/budget/engine";
 import {
   computeWeeklyTrend,
   daysBetween,
+  GOOD_CONFIDENCE_WEIGH_INS,
   MAX_CORRECTION_KCAL,
+  MAX_TDEE_DEVIATION_PCT,
+  measurementIsPlausible,
   MIN_CORRECTION_KCAL,
+  MIN_PLAUSIBLE_TDEE_KCAL,
   MIN_SPAN_DAYS,
   type TrustedDayIntake,
   type WeighInPoint,
@@ -198,6 +202,78 @@ describe("untrusted intake", () => {
 // ---------------------------------------------------------------------
 // The measurement itself
 // ---------------------------------------------------------------------
+
+describe("implausible measurement (2026-08-01)", () => {
+  it("test_measurementIsPlausible_rejects_a_burn_no_body_has", () => {
+    expect(measurementIsPlausible(-204, 3362)).toBe(false);
+    expect(measurementIsPlausible(0, 3362)).toBe(false);
+    expect(measurementIsPlausible(MIN_PLAUSIBLE_TDEE_KCAL - 1, null)).toBe(
+      false
+    );
+    expect(measurementIsPlausible(Number.NaN, 3362)).toBe(false);
+  });
+
+  it("test_a_real_correction_still_gets_through_the_band", () => {
+    // The whole feature exists because the Mifflin estimate can be wrong by
+    // 15-20%. That must not be filtered out as implausible.
+    expect(measurementIsPlausible(2600, 2850)).toBe(true);
+    expect(measurementIsPlausible(2300, 2850)).toBe(true);
+    const edge = 2850 * (1 - MAX_TDEE_DEVIATION_PCT);
+    expect(measurementIsPlausible(edge, 2850)).toBe(true);
+    expect(measurementIsPlausible(edge - 100, 2850)).toBe(false);
+  });
+
+  it("test_the_users_real_card_no_longer_proposes_a_cut", () => {
+    // Reproduces the screenshot: 85,0 kg on 22 July, 88,4 kg on 1 August, an
+    // average of ~2.414 kcal logged throughout. The balance method makes that
+    // a NEGATIVE metabolism, and the app offered to cut 250 kcal off it.
+    const result = computeWeeklyTrend(
+      input({
+        weighIns: [
+          { day: "2026-07-22", weightKg: 85 },
+          { day: "2026-08-01", weightKg: 88.4 },
+        ],
+        days: days("2026-07-22", 10, 2414),
+        currentDailyKcal: 3142,
+        plannedTdeeKcal: 3362,
+      })
+    );
+
+    expect(result.status).toBe("INSUFFICIENT_DATA");
+    expect(result.reason).toBe("implausible_measurement");
+    expect(result.suggestion).toBeNull();
+    // The scale itself is still the user's own number and is still reported.
+    expect(result.trendKgPerWeek).toBeGreaterThan(0);
+  });
+});
+
+describe("a suggestion waits for the third weigh-in", () => {
+  it("test_two_weigh_ins_report_a_trend_but_propose_nothing", () => {
+    const result = computeWeeklyTrend(
+      input({
+        weighIns: weighIns("2026-07-06", [90, 89.95]),
+        days: days("2026-07-06", 7, 2400),
+      })
+    );
+
+    expect(result.weighInCount).toBe(2);
+    expect(result.confidence).toBe("low");
+    expect(result.status).not.toBe("INSUFFICIENT_DATA");
+    expect(result.suggestion).toBeNull();
+  });
+
+  it("test_the_third_weigh_in_unlocks_the_proposal", () => {
+    const result = computeWeeklyTrend(
+      input({
+        weighIns: weighIns("2026-07-06", [90, 89.95, 89.9]),
+        days: days("2026-07-06", 14, 2400),
+      })
+    );
+
+    expect(result.weighInCount).toBe(GOOD_CONFIDENCE_WEIGH_INS);
+    expect(result.suggestion).not.toBeNull();
+  });
+});
 
 describe("measured TDEE", () => {
   it("test_intake_balance_recovers_a_hand_computed_expenditure", () => {
@@ -454,6 +530,10 @@ describe("suggestion", () => {
     expect(result.suggestion!.deltaKcal).toBe(MAX_CORRECTION_KCAL);
   });
 
+  // These three describe a 55 kg woman, so they also carry a planned TDEE that
+  // suits her (~1.500). They used to inherit the 2.900 default, which is a
+  // prediction no formula would make for this body -- and which the
+  // plausibility band now correctly refuses to measure against.
   it("test_the_cut_never_goes_under_the_sex_specific_kcal_floor", () => {
     const result = computeWeeklyTrend(
       input({
@@ -461,6 +541,7 @@ describe("suggestion", () => {
         days: days("2026-07-06", 14, 1300),
         sex: "female",
         currentDailyKcal: 1300,
+        plannedTdeeKcal: 1500,
       })
     );
 
@@ -477,6 +558,7 @@ describe("suggestion", () => {
         days: days("2026-07-06", 14, 1200),
         sex: "female",
         currentDailyKcal: 1200,
+        plannedTdeeKcal: 1500,
       })
     );
 
@@ -492,6 +574,7 @@ describe("suggestion", () => {
         days: days("2026-07-06", 14, 1150),
         sex: "female",
         currentDailyKcal: 1150,
+        plannedTdeeKcal: 1500,
       })
     );
 

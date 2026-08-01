@@ -59,8 +59,11 @@ import type { GoalType, Sex } from "@/lib/types/db";
 /** Rough kcal burned per minute of brisk walking, for the activity hint. */
 const BRISK_WALK_KCAL_PER_MIN = 5;
 
-/** Rough steps per kcal of brisk walking (~100 steps/min at ~5 kcal/min). */
-const STEPS_PER_KCAL = 20;
+/** Rough steps per kcal of brisk walking (~100 steps/min at ~5 kcal/min).
+ * Exported because the weekly weigh-in (`lib/weight/weekly-trend.ts`) offers
+ * the same "walk it instead" alternative, and the two must never quote a user
+ * two different step counts for the same number of calories. */
+export const STEPS_PER_KCAL = 20;
 
 /**
  * The most a single day's target may be cut below base, as a fraction of base.

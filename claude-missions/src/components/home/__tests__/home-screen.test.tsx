@@ -105,48 +105,63 @@ describe("AS-047/AS-048/AS-049: HomeScreen renders the ring, bars, and meal list
     expect(screen.getByTestId("meal-card-log-1")).toBeInTheDocument();
   });
 
-  it("states each daily goal once, on the Koraci/Voda card that logs against it", () => {
+  it("states the daily goal once, on the Voda card that logs against it", () => {
     // 2026-07-25: the separate "Preporučeni dnevni ciljevi" tile row is GONE --
     // it repeated the goal each card already prints, and the leftover height on
     // that page pushed the three blocks far apart. The goal now lives on the
-    // card itself ("7.240 / 10.000"), and the kcal goal is not repeated at all:
-    // it is already the ring's own centre number (`home-ring-target`).
+    // card itself, and the kcal goal is not repeated at all: it is already the
+    // ring's own centre number (`home-ring-target`).
     render(
       <HomeScreen
         initialLogs={[]}
         target={makeTarget({ daily_kcal: 2000 })}
         dayKey="2026-07-25"
-        stepsGoal={10000}
         waterGoal={2500}
       />
     );
 
     const movementPage = screen.getByTestId("intake-page-aktivnost");
     expect(screen.queryByTestId("daily-targets")).not.toBeInTheDocument();
-    expect(movementPage).toContainElement(screen.getByTestId("steps-total"));
-    expect(screen.getByTestId("steps-goal")).toHaveTextContent(
-      "Dnevni cilj: 10.000"
-    );
+    expect(movementPage).toContainElement(screen.getByTestId("water-total"));
     expect(screen.getByTestId("water-goal")).toHaveTextContent(
       "Dnevni cilj: 2,5 L"
     );
     expect(screen.getByTestId("home-ring-target")).toHaveTextContent("2000");
   });
 
-  it("puts one-tap quick-add presets on the Koraci and Voda cards", () => {
-    // The fastest path ("popio sam čašu vode", "prošetao sam") must not require
-    // opening a sheet -- a chip tap saves straight away.
+  it("test_koraci_no_longer_takes_up_the_movement_page", () => {
+    // 2026-08-01, the product owner's call: the Koraci card was the tallest
+    // thing on the screen (ring + quick-add chips + 7-day strip), and since
+    // every pager page shares the tallest page's height, it inflated the other
+    // two pages into visible dead space. Steps are not deleted -- the goal
+    // still lives at /profil/koraci and the history in Analitika -- they just
+    // no longer sit on the home screen.
     render(
       <HomeScreen
         initialLogs={[]}
         target={makeTarget()}
         dayKey="2026-07-25"
-        stepsGoal={10000}
         waterGoal={2500}
       />
     );
 
-    expect(screen.getByTestId("steps-quick-1000")).toBeInTheDocument();
+    expect(screen.queryByTestId("steps-total")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("steps-quick-1000")).not.toBeInTheDocument();
+    expect(screen.getByTestId("workout-open-button")).toBeInTheDocument();
+  });
+
+  it("puts one-tap quick-add presets on the Voda card", () => {
+    // The fastest path ("popio sam čašu vode") must not require opening a
+    // sheet -- a chip tap saves straight away.
+    render(
+      <HomeScreen
+        initialLogs={[]}
+        target={makeTarget()}
+        dayKey="2026-07-25"
+        waterGoal={2500}
+      />
+    );
+
     expect(screen.getByTestId("water-quick-250")).toBeInTheDocument();
   });
 });
@@ -291,7 +306,11 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     expect(screen.getByTestId("home-ring-value")).toHaveTextContent("1400");
   });
 
-  it("test_the_step_goal_follows_the_plan_even_though_nothing_explains_it", () => {
+  it("test_the_plan_still_moves_the_ring_when_the_steps_card_is_gone", () => {
+    // The adaptive plan's raised step goal used to be rendered by the Koraci
+    // card, which left this screen on 2026-08-01. The plan still computes it
+    // (`adaptiveStepGoal`); it simply has nothing here to render into. What
+    // must NOT change is the number the ring is measured against.
     render(
       <HomeScreen
         initialLogs={[makeLog({ kcal: 200 })]}
@@ -309,7 +328,8 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
       />
     );
 
-    expect(screen.getByTestId("steps-open-button")).toHaveTextContent("15.000");
+    expect(screen.getByTestId("home-ring-target")).toHaveTextContent("1500");
+    expect(screen.queryByTestId("steps-open-button")).not.toBeInTheDocument();
   });
 
   it("test_base_target_when_there_is_no_plan", () => {
@@ -362,7 +382,7 @@ describe("Gric: the quick-log button on the home screen", () => {
     const gric = screen.getByTestId("gric-open-button");
     expect(gric).toHaveAttribute("href", "/dodaj/gric");
 
-    // 2026-07-25 product decision: Koraci/Voda moved to the pager's SECOND page,
+    // 2026-07-25 product decision: the movement page is the pager's SECOND,
     // but Gric stays on the FIRST -- it is the fastest "I ate something small"
     // path and belongs beside the calorie ring it affects, not behind a swipe.
     expect(screen.getByTestId("intake-page-kalorije")).toContainElement(gric);
@@ -370,11 +390,14 @@ describe("Gric: the quick-log button on the home screen", () => {
       screen.getByTestId("water-open-button")
     );
     expect(screen.getByTestId("intake-page-aktivnost")).toContainElement(
-      screen.getByTestId("steps-open-button")
+      screen.getByTestId("workout-open-button")
     );
   });
 
-  it("test_the_pager_has_three_pages_with_koraci_i_voda_last", () => {
+  it("test_the_pager_reads_kalorije_then_kretanje_then_nutrijenti", () => {
+    // 2026-08-01, the product owner's order: the day is read as calories ->
+    // movement -> nutrient quality, so Voda/Trening sit in the middle and the
+    // micronutrients close it out.
     render(
       <HomeScreen
         initialLogs={[]}
@@ -389,8 +412,8 @@ describe("Gric: the quick-log button on the home screen", () => {
       .filter((region) => region.dataset.testid?.startsWith("intake-page-"));
     expect(pages.map((page) => page.dataset.testid)).toEqual([
       "intake-page-kalorije",
-      "intake-page-nutrijenti",
       "intake-page-aktivnost",
+      "intake-page-nutrijenti",
     ]);
     expect(
       screen.getAllByRole("button", { name: /^Prikaži:/ })

@@ -136,6 +136,17 @@ export const WORKOUT_ACTIVITIES: readonly WorkoutActivity[] = [
     defaultMinutes: 30,
   },
   {
+    key: "sipke",
+    labelKey: "workout.activity.sipke",
+    emoji: "💪",
+    // Street workout / bars. Priced above `kod-kuce` at the easy and moderate
+    // ends: pull-ups and dips move the whole body against gravity, so even a
+    // relaxed session sits higher than general home calisthenics. The hard end
+    // meets it at the compendium's 8.0 for vigorous calisthenics.
+    mets: { lako: 4.5, srednje: 6.0, jako: 8.0 },
+    defaultMinutes: 45,
+  },
+  {
     key: "hiit",
     labelKey: "workout.activity.hiit",
     emoji: "⚡",

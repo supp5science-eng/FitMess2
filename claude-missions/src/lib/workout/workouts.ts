@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { toBelgradeCalendarDay } from "@/lib/dates";
 import type { Database, Workout } from "@/lib/types/db";
+import type { WorkoutDayInput } from "@/lib/workout/workout-week";
 
 /**
  * Trening: reads of the `workouts` table (0026).
@@ -55,6 +57,45 @@ export interface WorkoutDayTotals {
   minutes: number;
   sessions: number;
   error: { message: string } | null;
+}
+
+/**
+ * The 7 Belgrade days ending on `now`, for the home card's strip.
+ *
+ * Replaces the older per-day totals read on `/danas`: the viewed day is the
+ * LAST row of this window, so asking for both would be two round trips for one
+ * number. Same degrade-to-empty posture -- a failed read (or an environment
+ * without migration 0026) costs the card its strip, never the dashboard.
+ */
+export interface WorkoutWeekResult {
+  rows: WorkoutDayInput[];
+  error: { message: string } | null;
+}
+
+export async function getWorkoutWeek(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  now: Date = new Date()
+): Promise<WorkoutWeekResult> {
+  const todayKey = toBelgradeCalendarDay(now);
+  const [year, month, day] = todayKey.split("-").map(Number);
+  const firstKey = toBelgradeCalendarDay(
+    new Date(Date.UTC(year!, month! - 1, day! - 6))
+  );
+
+  const { data, error } = await supabase
+    .from("workouts")
+    .select("day, kcal, minutes")
+    .eq("user_id", userId)
+    .gte("day", firstKey)
+    .lte("day", todayKey)
+    .order("day", { ascending: true });
+
+  if (error) {
+    return { rows: [], error: { message: error.message } };
+  }
+
+  return { rows: data ?? [], error: null };
 }
 
 export async function getWorkoutTotalsForDay(

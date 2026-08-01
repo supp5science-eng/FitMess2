@@ -10,16 +10,15 @@ import { getDanasProfile } from "@/lib/home/profile";
 import { getTodayData } from "@/lib/home/today";
 import { getT } from "@/lib/i18n/server";
 import type { Locale } from "@/lib/i18n/locale";
-import { getStepsWeek } from "@/lib/steps/steps";
 import { resolveStepGoal } from "@/lib/steps/step-goal";
 import { getCustomStepGoal } from "@/lib/steps/step-goal-read";
-import { computeStepsWeek } from "@/lib/steps/steps-week";
 import { getWaterWeek } from "@/lib/water/water";
 import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
 import { createClient } from "@/lib/supabase/server";
 import { weighInDueState } from "@/lib/weight/weigh-in-day";
 import { getLastWeighInDay, getWeighInDay } from "@/lib/weight/weigh-ins";
-import { getWorkoutTotalsForDay } from "@/lib/workout/workouts";
+import { computeWorkoutWeek } from "@/lib/workout/workout-week";
+import { getWorkoutWeek } from "@/lib/workout/workouts";
 
 const SR_MONTHS_SHORT = [
   "jan",
@@ -129,11 +128,10 @@ export default async function DanasPage({
     profile,
     customStepGoal,
     cookieStore,
-    stepsWeekRows,
     waterWeekRows,
     lastWeighInDay,
     weighInDay,
-    workoutTotals,
+    workoutWeekRows,
   ] = await Promise.all([
     getTodayData(supabase, userId, range),
     // Shared with `layout.tsx` via React `cache()` -- the layout already reads
@@ -147,18 +145,20 @@ export default async function DanasPage({
     // dropped by `plan-reveal.tsx` just before navigating here) -- local, no
     // round trip, but it belongs in the same stage rather than gating one.
     cookies(),
-    // The 7 days ending on the selected one, for the mini strips at the foot of
-    // the Koraci/Voda cards. A failed read degrades to "no strip", never to a
-    // failed day render.
+    // The 7 days ending on the selected one, for the mini strip at the foot of
+    // the Voda card. A failed read degrades to "no strip", never to a failed
+    // day render.
     //
-    // These two ALSO supply the selected day's own step/water totals (see
-    // `dayValue` below). This screen used to additionally fire
-    // `getStepsForDay` + `getWaterMl` for exactly the day that is already the
-    // LAST row of each of these windows -- two extra Supabase round trips per
-    // day switch, fetching numbers we had in hand. Same degrade-to-0 posture as
-    // the dedicated day reads had: a failed window read yields no rows, so the
-    // day reads 0 and the button/card still work.
-    getStepsWeek(supabase, userId, selectedNoon),
+    // It ALSO supplies the selected day's own water total (see below). This
+    // screen used to additionally fire `getWaterMl` for exactly the day that is
+    // already the LAST row of this window -- an extra Supabase round trip per
+    // day switch, fetching a number we had in hand. Same degrade-to-0 posture
+    // as the dedicated day read had: a failed window read yields no rows, so
+    // the day reads 0 and the card still works.
+    //
+    // The matching `getStepsWeek` read was dropped on 2026-08-01 with the
+    // Koraci card -- one fewer round trip on the dashboard's hot path. Steps
+    // still power Analitika, which does its own read.
     getWaterWeek(supabase, userId, selectedNoon),
     // Nedeljno merenje: two point lookups on indexed columns, both needing
     // nothing but `userId`, so they cost no wall-clock here -- they finish
@@ -168,18 +168,18 @@ export default async function DanasPage({
     // missing column must cost the banner, not the dashboard.
     getLastWeighInDay(supabase, userId),
     getWeighInDay(supabase, userId),
-    // Trening: the viewed day's session totals for the "Trening" card. Same
-    // degrade-to-zero posture as the reads above -- a table this environment
-    // hasn't migrated yet costs the card its number, never the dashboard.
-    getWorkoutTotalsForDay(supabase, userId, selectedKey),
+    // Trening: the 7 days ending on the viewed one -- the card's strip AND
+    // (as its last row) that day's own totals, so this is one round trip
+    // rather than two. Same degrade-to-zero posture as the reads above: a
+    // table this environment hasn't migrated yet costs the card its numbers,
+    // never the dashboard.
+    getWorkoutWeek(supabase, userId, selectedNoon),
   ]);
 
   // The viewed day is the LAST day of each window above, so its own total comes
   // straight out of the rows. Absent (nothing logged that day) reads as 0.
   const waterMl =
     waterWeekRows.rows.find((row) => row.day === selectedKey)?.ml ?? 0;
-  const stepsCount =
-    stepsWeekRows.rows.find((row) => row.day === selectedKey)?.steps ?? 0;
 
   if (result.error) {
     console.error("[F027 /danas] getTodayData failed:", result.error.message);
@@ -250,14 +250,16 @@ export default async function DanasPage({
   const weighInDaysWaiting = weighIn.due ? weighIn.daysWaiting : null;
 
   const waterGoal = waterGoalMl(profile?.weight_kg ?? null);
-  // Map the two week models onto the strip's tiny shape (label + share of goal
-  // + which column is the viewed day) -- the same derivation Analitika uses, so
+  // Map the week model onto the strip's tiny shape (label + share of goal +
+  // which column is the viewed day) -- the same derivation Analitika uses, so
   // the two screens can never disagree about a day.
-  const stepsWeek = computeStepsWeek(
-    stepsWeekRows.rows,
-    selectedNoon,
-    stepGoal
-  ).days.map((day) => ({
+  // Trening: the same window, scaled against the week's own busiest day (there
+  // is no training goal on purpose -- see `workout-week.ts`).
+  const workoutWeekModel = computeWorkoutWeek(
+    workoutWeekRows.rows,
+    selectedNoon
+  );
+  const workoutWeek = workoutWeekModel.days.map((day) => ({
     label: day.label,
     pct: day.pct,
     isToday: day.isToday,
@@ -302,15 +304,14 @@ export default async function DanasPage({
       adaptivePlan={adaptivePlan}
       dayKey={selectedKey}
       initialWaterMl={waterMl}
-      initialSteps={stepsCount}
-      stepsGoal={stepGoal}
       waterGoal={waterGoal}
-      stepsWeek={stepsWeek}
       waterWeek={waterWeek}
       isToday={isToday}
       weighInDaysWaiting={weighInDaysWaiting}
-      workoutKcal={workoutTotals.kcal}
-      workoutMinutes={workoutTotals.minutes}
+      workoutKcal={workoutWeekModel.todayKcal}
+      workoutMinutes={workoutWeekModel.todayMinutes}
+      workoutWeek={workoutWeek}
+      restingKcal={userBmr}
     />
   );
 }

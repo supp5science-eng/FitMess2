@@ -15,6 +15,7 @@ export const treningMessages = {
     "workout.activity.trcanje": "Trčanje",
     "workout.activity.bicikl": "Bicikl",
     "workout.activity.kodKuce": "Trening kod kuće",
+    "workout.activity.sipke": "Šipke / street workout",
     "workout.activity.hiit": "HIIT",
     "workout.activity.fudbal": "Fudbal",
     "workout.activity.kosarka": "Košarka",
@@ -41,8 +42,11 @@ export const treningMessages = {
 
     // The /danas card + the "+" menu row
     "trening.card.label": "Trening",
-    "trening.card.empty": "Upiši šta si radio danas",
-    "trening.card.summary": "{minutes} min · potrošeno ≈ {kcal} kcal",
+    "trening.card.empty": "Danas ništa",
+    "trening.card.kcal": "{kcal} kcal",
+    "trening.card.minutes": "{minutes} min kretanja",
+    "trening.card.breakdown":
+      "Mirovanje {resting} + trening {training} = {total} kcal danas",
     "trening.addSheet.desc": "Teretana, trčanje, fudbal…",
 
     // /dodaj/trening
@@ -84,6 +88,7 @@ export const treningMessages = {
     "workout.activity.trcanje": "Running",
     "workout.activity.bicikl": "Cycling",
     "workout.activity.kodKuce": "Home workout",
+    "workout.activity.sipke": "Bars / street workout",
     "workout.activity.hiit": "HIIT",
     "workout.activity.fudbal": "Football",
     "workout.activity.kosarka": "Basketball",
@@ -107,8 +112,11 @@ export const treningMessages = {
     "workout.intensity.jakoDesc": "Can't talk",
 
     "trening.card.label": "Workout",
-    "trening.card.empty": "Log what you did today",
-    "trening.card.summary": "{minutes} min · burned ≈ {kcal} kcal",
+    "trening.card.empty": "Nothing today",
+    "trening.card.kcal": "{kcal} kcal",
+    "trening.card.minutes": "{minutes} min of movement",
+    "trening.card.breakdown":
+      "At rest {resting} + training {training} = {total} kcal today",
     "trening.addSheet.desc": "Gym, running, football…",
 
     "trening.title": "Workout",

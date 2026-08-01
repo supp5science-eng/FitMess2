@@ -10,7 +10,6 @@ import { IntakeConfluence } from "@/components/home/intake-confluence";
 import { MicroCards } from "@/components/home/micro-cards";
 import type { MiniWeekDay } from "@/components/home/mini-week-bars";
 import { MealList } from "@/components/home/meal-list";
-import { StepsCard } from "@/components/home/steps-card";
 import { useT } from "@/components/i18n/locale-provider";
 import { GricButton } from "@/components/home/gric-button";
 import { PushNudge } from "@/components/home/push-nudge";
@@ -22,7 +21,6 @@ import type { LogWithFood } from "@/lib/home/attach-food";
 import { computeDayTotals } from "@/lib/home/totals";
 import { computeHealthScore } from "@/lib/nutrition/health-score";
 import { computeMicroTotals, microTargetsForKcal } from "@/lib/nutrition/micro";
-import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { waterGoalMl } from "@/lib/water/water-week";
 import type { Log, Target } from "@/lib/types/db";
 
@@ -64,15 +62,14 @@ export function HomeScreen({
   adaptivePlan = null,
   dayKey,
   initialWaterMl = 0,
-  initialSteps = 0,
-  stepsGoal = FALLBACK_STEP_GOAL,
   waterGoal = waterGoalMl(null),
-  stepsWeek = [],
   waterWeek = [],
   isToday = true,
   weighInDaysWaiting = null,
   workoutKcal = 0,
   workoutMinutes = 0,
+  workoutWeek = [],
+  restingKcal = null,
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
@@ -98,22 +95,20 @@ export function HomeScreen({
   // standing lives at the top of /analitika. The plan still moves the numbers;
   // it just stopped narrating itself on the home screen.
   adaptivePlan?: AdaptivePlan | null;
-  // Voda + Koraci: the Belgrade day this screen shows + that day's already-
-  // logged water (ml) and steps. When `dayKey` is provided the "Koraci" card
-  // and "Voda" button render below the daily-intake block. Omitted in unit
-  // tests that don't exercise them.
+  // Voda: the Belgrade day this screen shows + that day's already-logged water
+  // (ml). When `dayKey` is provided the "Voda" and "Trening" cards render on
+  // the pager's movement page. Omitted in unit tests that don't exercise them.
+  //
+  // The step props (`initialSteps` / `stepsGoal` / `stepsWeek`) were removed on
+  // 2026-08-01 along with the Koraci card -- see the pager below.
   dayKey?: string;
   initialWaterMl?: number;
-  initialSteps?: number;
-  // Recommended daily goals shown alongside the kcal target and used by the
-  // steps/water cards. Steps defaults to the classic 10k; water is derived from
-  // bodyweight (the same `waterGoalMl` the Analitika card uses).
-  stepsGoal?: number;
+  // Recommended daily water, derived from bodyweight (the same `waterGoalMl`
+  // the Analitika card uses).
   waterGoal?: number;
-  // The 7 days ending on `dayKey`, each as a share of its goal — the strip at
-  // the foot of the Koraci/Voda cards. Derived server-side by the SAME
-  // `computeStepsWeek`/`computeWaterWeek` the Analitika cards use.
-  stepsWeek?: MiniWeekDay[];
+  // The 7 days ending on `dayKey`, each as a share of the goal — the strip at
+  // the foot of the Voda card. Derived server-side by the SAME
+  // `computeWaterWeek` the Analitika card uses.
   waterWeek?: MiniWeekDay[];
   // Whether `dayKey` is the current Belgrade day. Gates "Gric", which always
   // writes at `now()` and so has no meaning on a past day.
@@ -130,6 +125,11 @@ export function HomeScreen({
   // beside the calorie ring, for exactly that reason.
   workoutKcal?: number;
   workoutMinutes?: number;
+  /** The last 7 days of training, each as a share of the week's BUSIEST day --
+   * there is no training goal, on purpose (see `lib/workout/workout-week.ts`). */
+  workoutWeek?: MiniWeekDay[];
+  /** The user's BMR, for the card's "mirovanje + trening = ukupno" line. */
+  restingKcal?: number | null;
 }) {
   const { t } = useT();
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
@@ -220,16 +220,11 @@ export function HomeScreen({
       ? adaptivePlan.adaptiveDailyTarget
       : (target?.daily_kcal ?? 0);
 
-  // The step goal follows the SAME plan (2026-07-25). When food alone cannot
-  // absorb an overshoot, the adaptive plan turns the remainder into movement --
-  // and that has to be the number the "Koraci" card counts toward, otherwise the
-  // app says "walk 50 minutes" in one place and "10.000 koraka" in another and
-  // means one thing by both.
-  const effectiveStepGoal = adaptivePlan?.isAdjusted
-    ? adaptivePlan.adaptiveStepGoal
-    : stepsGoal;
+  // (The adaptive plan's raised step goal used to be resolved here, for the
+  // Koraci card. The card is gone from this screen as of 2026-08-01; the plan
+  // still computes `adaptiveStepGoal`, it simply has nothing to render into.)
 
-  // Second page (2026-07-25): fiber / sugar / sodium / saturated fat and the
+  // Last page (2026-07-25): fiber / sugar / sodium / saturated fat and the
   // health score. Both are pure functions of the SAME `logs` state the ring uses,
   // so an edit or delete updates all of it in one re-render, with no extra fetch
   // (the AS-043 "no full page reload" rule). Micros fall back to the referenced
@@ -347,28 +342,22 @@ export function HomeScreen({
                   </div>
                 ),
               },
-              {
-                id: "nutrijenti",
-                labelSr: "Vlakna, šećer, so i zasićene masti",
-                content: (
-                  // Centred, not `justify-between`: the cards keep their own
-                  // size and any leftover height breathes above and below the
-                  // pair — the same rule as the Koraci/Voda page, so no page
-                  // ever pulls its contents apart to fill space.
-                  <div className="home-body flex flex-1 flex-col justify-center gap-2.5">
-                    <MicroCards micros={micros} targets={microTargets} />
-                    <HealthScoreCard score={healthScore} />
-                  </div>
-                ),
-              },
-              // Koraci + Voda, LAST (2026-07-25, the product owner's order):
-              // kalorije -> nutrijenti -> kretanje. Only when we know which day
-              // we're on -- both write to that day's row.
+              // Voda + Trening, page TWO (2026-08-01, the product owner's
+              // order): kalorije -> kretanje -> nutrijenti. Only when we know
+              // which day we're on -- both write to that day's row.
+              //
+              // "Koraci" was REMOVED from this page in the same change. It was
+              // the tallest card on the screen (ring + quick-add chips + its own
+              // 7-day strip), and since every pager page shares the tallest
+              // page's height, it was single-handedly inflating the other two --
+              // the empty space the product owner reported. Steps themselves are
+              // not gone: the goal still lives at `/profil/koraci`, the history
+              // in Analitika, and walking is an activity in Trening.
               ...(dayKey
                 ? [
                     {
                       id: "aktivnost",
-                      labelSr: "Koraci i voda",
+                      labelSr: "Voda i trening",
                       content: (
                         // Two self-sized cards, centred as a pair (2026-07-25).
                         // Neither the page nor the cards stretch: the pager's
@@ -376,35 +365,39 @@ export function HomeScreen({
                         // earlier attempt to swallow that slack -- spreading the
                         // blocks apart, then inflating the cards -- is what the
                         // product owner (rightly) called a mess. The leftover
-                        // now breathes ABOVE and BELOW the pair, while the
-                        // cards' own 7-day strips earn most of the height back.
+                        // breathes ABOVE and BELOW the pair instead.
                         <div className="home-body flex flex-1 flex-col justify-center gap-3">
-                          <StepsCard
-                            dayKey={dayKey}
-                            initialSteps={initialSteps}
-                            goal={effectiveStepGoal}
-                            week={stepsWeek}
-                          />
                           <WaterButton
                             dayKey={dayKey}
                             initialMl={initialWaterMl}
                             goalMl={waterGoal}
                             week={waterWeek}
                           />
-                          {/* Trening, deliberately last and deliberately one
-                              row tall: this page's height is shared by every
-                              other pager page, so a third full card here would
-                              show up as dead air on the calorie and
-                              micronutrient pages. */}
                           <WorkoutButton
                             kcal={workoutKcal}
                             minutes={workoutMinutes}
+                            restingKcal={restingKcal}
+                            week={workoutWeek}
                           />
                         </div>
                       ),
                     },
                   ]
                 : []),
+              {
+                id: "nutrijenti",
+                labelSr: "Vlakna, šećer, so i zasićene masti",
+                content: (
+                  // Centred, not `justify-between`: the cards keep their own
+                  // size and any leftover height breathes above and below the
+                  // pair — the same rule as the Voda/Trening page, so no page
+                  // ever pulls its contents apart to fill space.
+                  <div className="home-body flex flex-1 flex-col justify-center gap-2.5">
+                    <MicroCards micros={micros} targets={microTargets} />
+                    <HealthScoreCard score={healthScore} />
+                  </div>
+                ),
+              },
             ]}
           />
 
@@ -418,23 +411,23 @@ export function HomeScreen({
         </div>
       )}
 
-      {/* Koraci, Voda and Gric used to sit here as a fixed row; they now live
-          inside the pager (Koraci/Voda on page two, Gric on page one). Kept out
+      {/* Voda, Trening and Gric used to sit here as a fixed row; they now live
+          inside the pager (Voda/Trening on page two, Gric on page one). Kept out
           of the "no target set" branch above on purpose -- a user without a plan
           still sees the meal list below. */}
       {!target && dayKey ? (
         <div className="home-body flex flex-col gap-3">
-          <StepsCard
-            dayKey={dayKey}
-            initialSteps={initialSteps}
-            goal={stepsGoal}
-          />
           <WaterButton
             dayKey={dayKey}
             initialMl={initialWaterMl}
             goalMl={waterGoal}
           />
-          <WorkoutButton kcal={workoutKcal} minutes={workoutMinutes} />
+          <WorkoutButton
+            kcal={workoutKcal}
+            minutes={workoutMinutes}
+            restingKcal={restingKcal}
+            week={workoutWeek}
+          />
           {isToday ? <GricButton /> : null}
         </div>
       ) : null}

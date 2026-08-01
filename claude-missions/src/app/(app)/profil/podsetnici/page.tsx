@@ -13,12 +13,15 @@ import {
 import type { ReminderPreferences } from "./actions";
 import { RemindersForm } from "./reminders-form";
 
-// `/profil/podsetnici` — the Podsetnici screen (2026-07-25, reworked 2026-07-26).
+// `/profil/podsetnici` — the Podsetnici screen (2026-07-25, reworked 2026-08-01).
 //
 // v1 shipped one conditional reminder ("danas nisi ništa uneo") that only fired
-// on a day with ZERO logs — which meant the people actually using the app never
-// saw it. v2 is two DAILY reminders that arrive regardless (a morning nudge and
-// an evening recap), plus the earned "pun dan" trophy push.
+// on a day with ZERO logs — the people actually using the app never saw it. v2
+// over-corrected into two DAILY reminders that arrived regardless, which is the
+// version people mute. v3 is four switches, each conditional on something real:
+// the missing meal (timed by the user's own rhythm), the evening close-out (only
+// when it has news), the weekly weigh-in, and the earned "pun dan" trophy — with
+// a hard ceiling of two pushes a day across all of them.
 //
 // Server Component: reads the saved row (auth is already guaranteed by
 // middleware) and hands it to the client form, which owns the parts only the
@@ -29,8 +32,7 @@ import { RemindersForm } from "./reminders-form";
  * ON: someone opening the screen came here to be reminded, and the switches are
  * right there to say otherwise. */
 const DEFAULTS: ReminderPreferences = {
-  morningEnabled: true,
-  morningTime: "10:00",
+  mealEnabled: true,
   eveningEnabled: true,
   eveningTime: "20:00",
   awardEnabled: true,
@@ -51,18 +53,15 @@ export default async function PodsetniciPage() {
   if (userId) {
     const { data } = await supabase
       .from("reminder_settings")
-      .select(
-        "morning_enabled, morning_time, evening_enabled, evening_time, award_enabled"
-      )
+      .select("meal_enabled, evening_enabled, evening_time, award_enabled")
       .eq("user_id", userId)
       .maybeSingle();
 
     if (data) {
       preferences = {
-        morningEnabled: data.morning_enabled,
-        // Postgres hands back "HH:MM:SS"; the picker speaks "HH:MM".
-        morningTime: data.morning_time.slice(0, 5),
+        mealEnabled: data.meal_enabled ?? true,
         eveningEnabled: data.evening_enabled,
+        // Postgres hands back "HH:MM:SS"; the picker speaks "HH:MM".
         eveningTime: data.evening_time.slice(0, 5),
         awardEnabled: data.award_enabled,
       };

@@ -33,8 +33,9 @@ export interface SaveReminderResult {
  * same weekday drives the `/danas` banner and the trend). Only its on/off
  * travels through here, via `saveWeighInEnabledAction`. */
 export interface ReminderPreferences {
-  morningEnabled: boolean;
-  morningTime: string;
+  /** The meal nudge (0027). Deliberately has no time: it is timed by the
+   * user's own logging rhythm, not by a picker. */
+  mealEnabled: boolean;
   eveningEnabled: boolean;
   eveningTime: string;
   awardEnabled: boolean;
@@ -48,10 +49,7 @@ function isValidTime(value: string): boolean {
 export async function saveRemindersAction(
   preferences: ReminderPreferences
 ): Promise<SaveReminderResult> {
-  if (
-    !isValidTime(preferences.morningTime) ||
-    !isValidTime(preferences.eveningTime)
-  ) {
+  if (!isValidTime(preferences.eveningTime)) {
     return { ok: false, error_sr: INVALID_TIME_ERROR_SR };
   }
 
@@ -65,14 +63,13 @@ export async function saveRemindersAction(
   const { error } = await supabase.from("reminder_settings").upsert(
     {
       user_id: userId,
-      morning_enabled: preferences.morningEnabled,
-      morning_time: `${preferences.morningTime}:00`,
+      meal_enabled: preferences.mealEnabled,
       evening_enabled: preferences.eveningEnabled,
       evening_time: `${preferences.eveningTime}:00`,
       award_enabled: preferences.awardEnabled,
       // Turning a reminder ON (or moving its time) clears the once-a-day
-      // guard, so a user who enables it at 09:50 for 10:00 still gets today's.
-      morning_last_sent: null,
+      // guard, so a user who enables it at 19:50 for 20:00 still gets today's.
+      meal_last_sent: null,
       evening_last_sent: null,
     },
     { onConflict: "user_id" }

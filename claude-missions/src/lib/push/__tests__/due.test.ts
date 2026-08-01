@@ -1,21 +1,25 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  EVENING_LEFTOVER_KCAL,
   MAX_LATE_MINUTES,
+  MAX_PER_DAY,
+  eveningHasSomethingToSay,
   remindersDue,
   timeToMinutes,
   type DueReminder,
   type ReminderSettingsRow,
+  type UserDayFacts,
 } from "@/lib/push/due";
 
 const TODAY = "2026-07-25";
+const USER = "user-1";
 
 function row(overrides: Partial<ReminderSettingsRow> = {}): ReminderSettingsRow {
   return {
-    user_id: "user-1",
-    morning_enabled: true,
-    morning_time: "10:00:00",
-    morning_last_sent: null,
+    user_id: USER,
+    meal_enabled: true,
+    meal_last_sent: null,
     evening_enabled: true,
     evening_time: "20:00:00",
     evening_last_sent: null,
@@ -23,11 +27,35 @@ function row(overrides: Partial<ReminderSettingsRow> = {}): ReminderSettingsRow 
   };
 }
 
+/** A day in which nothing has happened and nothing is missing — every reminder
+ * below then has to earn its way out of silence. */
+function facts(overrides: Partial<UserDayFacts> = {}): UserDayFacts {
+  return {
+    todayLogMinutes: [],
+    history: { byslot: { breakfast: [], lunch: [], dinner: [] } },
+    hasWorkoutToday: false,
+    usesWorkouts: false,
+    loggedMeals: 0,
+    hasTarget: false,
+    remainingKcal: 0,
+    overshootKcal: 0,
+    ...overrides,
+  };
+}
+
 function due(
   settings: ReminderSettingsRow[],
-  nowMinutes: number
+  nowMinutes: number,
+  userFacts: UserDayFacts = facts(),
+  todayWeekdayIndex?: number
 ): DueReminder[] {
-  return remindersDue({ settings, todayKey: TODAY, nowMinutes });
+  return remindersDue({
+    settings,
+    facts: new Map([[USER, userFacts]]),
+    todayKey: TODAY,
+    nowMinutes,
+    todayWeekdayIndex,
+  });
 }
 
 /** Minutes since midnight for a readable `"HH:MM"`. */
@@ -43,197 +71,199 @@ describe("timeToMinutes", () => {
     expect(timeToMinutes("23:45")).toBe(1425);
   });
 
-  it("rejects nonsense rather than guessing", () => {
+  it("rejects nonsense instead of inventing a time", () => {
     expect(timeToMinutes("")).toBeNull();
-    expect(timeToMinutes("noon")).toBeNull();
-    expect(timeToMinutes("24:00")).toBeNull();
-    expect(timeToMinutes("12:99")).toBeNull();
+    expect(timeToMinutes("25:00")).toBeNull();
+    expect(timeToMinutes("12:60")).toBeNull();
+    expect(timeToMinutes("podne")).toBeNull();
   });
 });
 
-describe("remindersDue", () => {
-  it("sends the morning reminder once its time has passed", () => {
-    expect(due([row()], at("10:00"))).toEqual([
-      { userId: "user-1", kind: "morning" },
-    ]);
+describe("eveningHasSomethingToSay", () => {
+  it("speaks when the day is empty", () => {
+    expect(eveningHasSomethingToSay(facts({ loggedMeals: 0 }))).toBe(true);
   });
 
-  it("stays quiet before the chosen time", () => {
-    expect(due([row()], at("09:45"))).toEqual([]);
+  it("speaks when a training day went unlogged", () => {
+    expect(
+      eveningHasSomethingToSay(
+        facts({ loggedMeals: 3, usesWorkouts: true, hasWorkoutToday: false })
+      )
+    ).toBe(true);
   });
 
-  it("sends the evening recap on its own schedule", () => {
-    expect(due([row()], at("20:00"))).toEqual([
-      { userId: "user-1", kind: "evening" },
-    ]);
+  it("does not ask about training from someone who never logs any", () => {
+    expect(
+      eveningHasSomethingToSay(
+        facts({ loggedMeals: 3, usesWorkouts: false, hasTarget: true })
+      )
+    ).toBe(false);
   });
 
-  // The whole point of v2: a user who logs every day must still be reminded.
-  // There is no longer any "did they log?" input to this decision at all.
-  it("does not depend on whether the user has logged anything", () => {
-    expect(due([row()], at("10:30"))).toEqual([
-      { userId: "user-1", kind: "morning" },
-    ]);
+  it("speaks about an overshoot", () => {
+    expect(
+      eveningHasSomethingToSay(
+        facts({ loggedMeals: 3, hasTarget: true, overshootKcal: 300 })
+      )
+    ).toBe(true);
   });
 
-  it("skips a reminder that is switched off, keeping the other", () => {
-    expect(due([row({ morning_enabled: false })], at("10:00"))).toEqual([]);
-    expect(due([row({ morning_enabled: false })], at("20:00"))).toEqual([
-      { userId: "user-1", kind: "evening" },
-    ]);
+  it("speaks when a lot of the budget is still unspent", () => {
+    expect(
+      eveningHasSomethingToSay(
+        facts({
+          loggedMeals: 2,
+          hasTarget: true,
+          remainingKcal: EVENING_LEFTOVER_KCAL,
+        })
+      )
+    ).toBe(true);
   });
 
-  it("never sends the same reminder twice in a day", () => {
-    expect(due([row({ morning_last_sent: TODAY })], at("10:15"))).toEqual([]);
-  });
-
-  it("tracks the two guards independently", () => {
-    // Morning already went out; the evening recap is still owed.
-    const settings = [row({ morning_last_sent: TODAY })];
-    expect(due(settings, at("20:00"))).toEqual([
-      { userId: "user-1", kind: "evening" },
-    ]);
-  });
-
-  it("still sends a reminder the scheduler was late for", () => {
-    expect(due([row()], at("10:00") + MAX_LATE_MINUTES)).toEqual([
-      { userId: "user-1", kind: "morning" },
-    ]);
-  });
-
-  it("gives up rather than sending a badly stale reminder", () => {
-    expect(due([row()], at("10:00") + MAX_LATE_MINUTES + 1)).toEqual([]);
-  });
-
-  it("ignores an unparseable stored time instead of throwing", () => {
-    expect(due([row({ morning_time: "" })], at("10:00"))).toEqual([]);
-  });
-
-  it("can owe one user both reminders when their times overlap", () => {
-    const settings = [row({ morning_time: "20:00:00" })];
-    expect(due(settings, at("20:00"))).toEqual([
-      { userId: "user-1", kind: "morning" },
-      { userId: "user-1", kind: "evening" },
-    ]);
-  });
-
-  it("decides each user independently", () => {
-    const settings = [
-      row({ user_id: "a" }),
-      row({ user_id: "b", morning_enabled: false }),
-      row({ user_id: "c", morning_last_sent: TODAY }),
-    ];
-
-    expect(due(settings, at("10:00"))).toEqual([
-      { userId: "a", kind: "morning" },
-    ]);
+  it("stays quiet on a day that went fine and is written down", () => {
+    expect(
+      eveningHasSomethingToSay(
+        facts({
+          loggedMeals: 3,
+          hasTarget: true,
+          remainingKcal: 120,
+          usesWorkouts: true,
+          hasWorkoutToday: true,
+        })
+      )
+    ).toBe(false);
   });
 });
 
-// Nedeljno merenje (0024): the third reminder, and the only weekly one. It
-// exists because a weigh-in is only comparable week to week if it happens on
-// the same weekday -- so "is it that day?" is part of being due.
+describe("remindersDue — the meal nudge", () => {
+  it("fires once the user's usual meal time has passed unlogged", () => {
+    const result = due([row()], at("09:50"));
+    expect(result).toEqual([
+      { userId: USER, kind: "meal", mealReason: { kind: "slot", slot: "breakfast" } },
+    ]);
+  });
 
-/** 2026-07-25 is a Saturday, i.e. weekday index 5 (Monday = 0). */
-const SATURDAY = 5;
-const SUNDAY = 6;
+  it("stays quiet when that meal is already logged", () => {
+    expect(
+      due([row()], at("09:50"), facts({ todayLogMinutes: [at("08:30")] }))
+    ).toEqual([]);
+  });
 
-function weighInRow(
-  overrides: Partial<ReminderSettingsRow> = {}
-): ReminderSettingsRow {
-  return row({
-    morning_enabled: false,
+  it("is off when the user switched it off", () => {
+    expect(due([row({ meal_enabled: false })], at("09:50"))).toEqual([]);
+  });
+
+  it("never sends twice in one day", () => {
+    expect(due([row({ meal_last_sent: TODAY })], at("09:50"))).toEqual([]);
+  });
+
+  it("says nothing without facts — an unjudged reminder is not sent", () => {
+    expect(
+      remindersDue({
+        settings: [row()],
+        todayKey: TODAY,
+        nowMinutes: at("09:50"),
+      })
+    ).toEqual([]);
+  });
+});
+
+describe("remindersDue — the evening close-out", () => {
+  const emptyDay = facts({ loggedMeals: 0 });
+
+  it("goes out at its time when it has something to say", () => {
+    const result = due([row({ meal_enabled: false })], at("20:00"), emptyDay);
+    expect(result).toEqual([{ userId: USER, kind: "evening" }]);
+  });
+
+  it("is skipped entirely on a day with no news", () => {
+    const quietDay = facts({
+      loggedMeals: 3,
+      hasTarget: true,
+      remainingKcal: 100,
+    });
+    expect(due([row({ meal_enabled: false })], at("20:00"), quietDay)).toEqual(
+      []
+    );
+  });
+
+  it("still goes out late, but not hours late", () => {
+    expect(
+      due([row({ meal_enabled: false })], at("20:00") + MAX_LATE_MINUTES, emptyDay)
+    ).toHaveLength(1);
+    expect(
+      due(
+        [row({ meal_enabled: false })],
+        at("20:00") + MAX_LATE_MINUTES + 1,
+        emptyDay
+      )
+    ).toEqual([]);
+  });
+
+  it("never sends twice in one day", () => {
+    expect(
+      due([row({ meal_enabled: false, evening_last_sent: TODAY })], at("20:00"), emptyDay)
+    ).toEqual([]);
+  });
+});
+
+describe("remindersDue — the weekly weigh-in", () => {
+  const weighInRow = row({
+    meal_enabled: false,
     evening_enabled: false,
     weighin_enabled: true,
-    weighin_day: SATURDAY,
+    weighin_day: 6,
     weighin_time: "09:00:00",
-    weighin_last_sent: null,
-    ...overrides,
-  });
-}
-
-describe("weekly weigh-in reminder", () => {
-  it("test_it_fires_on_its_own_weekday_at_its_own_time", () => {
-    const result = remindersDue({
-      settings: [weighInRow()],
-      todayKey: TODAY,
-      nowMinutes: at("09:00"),
-      todayWeekdayIndex: SATURDAY,
-    });
-
-    expect(result).toEqual([{ userId: "user-1", kind: "weighin" }]);
   });
 
-  it("test_it_stays_silent_on_every_other_day_of_the_week", () => {
-    const result = remindersDue({
-      settings: [weighInRow({ weighin_day: SUNDAY })],
-      todayKey: TODAY,
-      nowMinutes: at("09:00"),
-      todayWeekdayIndex: SATURDAY,
-    });
-
-    expect(result).toEqual([]);
+  it("fires on its weekday", () => {
+    expect(due([weighInRow], at("09:00"), facts(), 6)).toEqual([
+      { userId: USER, kind: "weighin" },
+    ]);
   });
 
-  it("test_a_caller_with_no_weekday_never_triggers_it", () => {
-    // Silence beats nagging on a Tuesday: without a calendar we don't guess.
-    const result = remindersDue({
-      settings: [weighInRow()],
-      todayKey: TODAY,
-      nowMinutes: at("09:00"),
-    });
-
-    expect(result).toEqual([]);
+  it("is silent on every other day", () => {
+    expect(due([weighInRow], at("09:00"), facts(), 2)).toEqual([]);
   });
 
-  it("test_a_row_written_before_the_migration_simply_has_no_weigh_in", () => {
-    const result = remindersDue({
-      settings: [row({ morning_enabled: false, evening_enabled: false })],
-      todayKey: TODAY,
-      nowMinutes: at("09:00"),
-      todayWeekdayIndex: SATURDAY,
-    });
+  it("is silent when the caller has no calendar to check against", () => {
+    expect(due([weighInRow], at("09:00"))).toEqual([]);
+  });
+});
 
-    expect(result).toEqual([]);
+describe("remindersDue — the daily ceiling", () => {
+  it("sends at most two in a day, counting what already went out", () => {
+    const spent = row({ sent_day: TODAY, sent_count: MAX_PER_DAY });
+    expect(due([spent], at("09:50"))).toEqual([]);
   });
 
-  it("test_it_obeys_the_same_late_window_as_the_daily_reminders", () => {
-    const inWindow = remindersDue({
-      settings: [weighInRow()],
-      todayKey: TODAY,
-      nowMinutes: at("09:00") + MAX_LATE_MINUTES,
-      todayWeekdayIndex: SATURDAY,
-    });
-    expect(inWindow).toHaveLength(1);
-
-    const tooLate = remindersDue({
-      settings: [weighInRow()],
-      todayKey: TODAY,
-      nowMinutes: at("09:00") + MAX_LATE_MINUTES + 1,
-      todayWeekdayIndex: SATURDAY,
-    });
-    expect(tooLate).toEqual([]);
+  it("ignores a count left over from a previous day", () => {
+    const stale = row({ sent_day: "2026-07-24", sent_count: MAX_PER_DAY });
+    expect(due([stale], at("09:50"))).toHaveLength(1);
   });
 
-  it("test_it_cannot_go_out_twice_in_a_day", () => {
-    const result = remindersDue({
-      settings: [weighInRow({ weighin_last_sent: TODAY })],
-      todayKey: TODAY,
-      nowMinutes: at("09:30"),
-      todayWeekdayIndex: SATURDAY,
+  it("gives the last slot to the higher-priority reminder", () => {
+    // One slot left, and both the meal nudge and the weigh-in are due: the
+    // weekly one wins, because the plan's self-correction depends on it.
+    const both = row({
+      sent_day: TODAY,
+      sent_count: MAX_PER_DAY - 1,
+      weighin_enabled: true,
+      weighin_day: 6,
+      weighin_time: "09:00:00",
     });
-
-    expect(result).toEqual([]);
+    expect(due([both], at("09:50"), facts(), 6)).toEqual([
+      { userId: USER, kind: "weighin" },
+    ]);
   });
 
-  it("test_switching_it_off_switches_it_off", () => {
-    const result = remindersDue({
-      settings: [weighInRow({ weighin_enabled: false })],
-      todayKey: TODAY,
-      nowMinutes: at("09:00"),
-      todayWeekdayIndex: SATURDAY,
+  it("can send two in one run when the budget allows", () => {
+    const both = row({
+      weighin_enabled: true,
+      weighin_day: 6,
+      weighin_time: "09:00:00",
     });
-
-    expect(result).toEqual([]);
+    const result = due([both], at("09:50"), facts(), 6);
+    expect(result.map((item) => item.kind)).toEqual(["weighin", "meal"]);
   });
 });

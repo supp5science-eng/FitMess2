@@ -41,10 +41,11 @@ import {
 // state on mount so it can never claim reminders are on when the OS has muted
 // them.
 //
-// v2 (2026-07-26) has three switches sharing ONE device subscription: the
-// morning nudge, the evening recap, and the earned "pun dan" trophy. The
-// subscription is not per-reminder — it belongs to the device — so it is armed
-// the moment anything is switched on and released only when everything is off.
+// The switches share ONE device subscription: it is not per-reminder, it
+// belongs to the device — so it is armed the moment anything is switched on and
+// released only when everything is off. That "everything" must include the
+// weekly weigh-in (2026-08-01), or turning the daily ones off silently takes
+// the weekly one down with them.
 //
 // Everything the environment cannot do is said plainly instead of failing
 // silently: an iPhone in a Safari tab is told to install the app, a blocked
@@ -98,7 +99,6 @@ export function RemindersForm({
   const { t } = useT();
   const [preferences, setPreferences] = useState<ReminderPreferences>({
     ...initial,
-    morningTime: fallbackTime(initial.morningTime, "10:00"),
     eveningTime: fallbackTime(initial.eveningTime, "20:00"),
   });
   const [weighInEnabled, setWeighInEnabled] = useState(weighIn.enabled);
@@ -136,7 +136,7 @@ export function RemindersForm({
   // off tore down the subscription the weekly weigh-in was still relying on —
   // and the user who wanted ONLY the weigh-in got nothing at all.
   const anyOn =
-    preferences.morningEnabled ||
+    preferences.mealEnabled ||
     preferences.eveningEnabled ||
     preferences.awardEnabled ||
     weighInEnabled;
@@ -171,7 +171,7 @@ export function RemindersForm({
    */
   async function apply(next: ReminderPreferences) {
     const willBeOn =
-      next.morningEnabled ||
+      next.mealEnabled ||
       next.eveningEnabled ||
       next.awardEnabled ||
       weighInEnabled;
@@ -195,7 +195,7 @@ export function RemindersForm({
    * row links to `/profil/merenje`, which owns them. */
   async function applyWeighIn(next: boolean) {
     const willBeOn =
-      preferences.morningEnabled ||
+      preferences.mealEnabled ||
       preferences.eveningEnabled ||
       preferences.awardEnabled ||
       next;
@@ -271,19 +271,19 @@ export function RemindersForm({
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
+        {/* No time picker, and that is the whole point (2026-08-01): this
+            reminder is timed by the user's own median logging time for the
+            meal that is missing. Its predecessor was a fixed 10:00 "upiši
+            doručak" that fired whether or not you had already logged — a
+            clock, not a reminder. */}
         <ReminderRow
           icon={<Sun className="size-5" aria-hidden="true" />}
-          title={t("profil.reminders.morningTitle")}
-          description={t("profil.reminders.morningDesc")}
-          testId="reminder-morning"
-          enabled={preferences.morningEnabled}
-          disabled={busy || (!preferences.morningEnabled && !canArm)}
-          onToggle={(value) => apply({ ...preferences, morningEnabled: value })}
-          time={preferences.morningTime}
-          onTimeChange={(value) =>
-            apply({ ...preferences, morningTime: value, morningEnabled: true })
-          }
-          timeDisabled={busy}
+          title={t("profil.reminders.mealTitle")}
+          description={t("profil.reminders.mealDesc")}
+          testId="reminder-meal"
+          enabled={preferences.mealEnabled}
+          disabled={busy || (!preferences.mealEnabled && !canArm)}
+          onToggle={(value) => apply({ ...preferences, mealEnabled: value })}
         />
 
         <ReminderRow

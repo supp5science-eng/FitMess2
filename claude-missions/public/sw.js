@@ -193,13 +193,26 @@ self.addEventListener("push", (event) => {
   }
 
   const title = payload.title || "FitMess";
+
+  // Buttons on the notification (2026-08-01). The url each one opens travels
+  // in `data.actionUrls` because the Notification API hands the click handler
+  // only the action's id, not whatever we attached to it.
+  const actions = Array.isArray(payload.actions) ? payload.actions.slice(0, 2) : [];
+  const actionUrls = {};
+  for (const item of actions) {
+    if (item && item.action && item.url) actionUrls[item.action] = item.url;
+  }
+
   const options = {
     body: payload.body || "",
     tag: payload.tag || "fitmess",
     renotify: true,
     icon: "/icons/icon-192.png",
     badge: "/icons/icon-192.png",
-    data: { url: payload.url || "/danas" },
+    data: { url: payload.url || "/danas", actionUrls },
+    // iOS ignores these and shows the plain notification, which is why every
+    // body text has to stand on its own.
+    actions: actions.map((item) => ({ action: item.action, title: item.title })),
   };
 
   event.waitUntil(self.registration.showNotification(title, options));
@@ -208,7 +221,12 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const target = (event.notification.data && event.notification.data.url) || "/danas";
+  const data = event.notification.data || {};
+  // A tapped BUTTON goes where that button promised; a tap on the notification
+  // body goes to the reminder's own destination.
+  const fromAction =
+    event.action && data.actionUrls ? data.actionUrls[event.action] : null;
+  const target = fromAction || data.url || "/danas";
   const targetUrl = new URL(target, self.location.origin).href;
 
   // Reuse the already-open app window when there is one (tapping a reminder

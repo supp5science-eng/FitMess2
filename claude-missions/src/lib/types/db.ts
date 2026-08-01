@@ -640,12 +640,15 @@ export interface Database {
       reminder_settings: {
         Row: {
           user_id: string;
-          morning_enabled: boolean;
-          /** Belgrade wall-clock time, `"HH:MM:SS"` (a Postgres `time`). */
-          morning_time: string;
+          // 0027: the meal nudge REPLACED the fixed-time morning one. No time
+          // column on purpose — it fires off the user's own median logging
+          // time (src/lib/push/meal-rhythm.ts). Optional for the same reason
+          // as the 0024 columns below.
+          meal_enabled?: boolean;
           /** Belgrade calendar day it last fired (`"YYYY-MM-DD"`), or null. */
-          morning_last_sent: string | null;
+          meal_last_sent?: string | null;
           evening_enabled: boolean;
+          /** Belgrade wall-clock time, `"HH:MM:SS"` (a Postgres `time`). */
           evening_time: string;
           evening_last_sent: string | null;
           /** The earned "pun dan" push, independent of the scheduled two. */
@@ -659,14 +662,16 @@ export interface Database {
           weighin_day?: number;
           weighin_time?: string;
           weighin_last_sent?: string | null;
+          // 0027: the hard two-a-day ceiling's bookkeeping.
+          sent_day?: string | null;
+          sent_count?: number;
           created_at: string;
           updated_at: string;
         };
         Insert: {
           user_id: string;
-          morning_enabled?: boolean;
-          morning_time?: string;
-          morning_last_sent?: string | null;
+          meal_enabled?: boolean;
+          meal_last_sent?: string | null;
           evening_enabled?: boolean;
           evening_time?: string;
           evening_last_sent?: string | null;
@@ -675,14 +680,15 @@ export interface Database {
           weighin_day?: number;
           weighin_time?: string;
           weighin_last_sent?: string | null;
+          sent_day?: string | null;
+          sent_count?: number;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
           user_id?: string;
-          morning_enabled?: boolean;
-          morning_time?: string;
-          morning_last_sent?: string | null;
+          meal_enabled?: boolean;
+          meal_last_sent?: string | null;
           evening_enabled?: boolean;
           evening_time?: string;
           evening_last_sent?: string | null;
@@ -691,6 +697,8 @@ export interface Database {
           weighin_day?: number;
           weighin_time?: string;
           weighin_last_sent?: string | null;
+          sent_day?: string | null;
+          sent_count?: number;
           created_at?: string;
           updated_at?: string;
         };

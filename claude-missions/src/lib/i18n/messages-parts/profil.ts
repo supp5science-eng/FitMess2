@@ -100,13 +100,15 @@ export const profilMessages = {
 
     // Podsetnici (/profil/podsetnici)
     "profil.reminders.subtitle":
-      "Najvažniji je nedeljno merenje — bez njega plan nema po čemu da se pomeri. Ostale uključi koliko ti treba.",
+      "Najviše dve notifikacije dnevno, i samo kad stvarno ima šta da se kaže. Najvažnije je nedeljno merenje — bez njega plan nema po čemu da se pomeri.",
     "profil.reminders.errorGeneric": "Nešto je pošlo naopako.",
     "profil.reminders.testError": "Nismo uspeli da pošaljemo probnu notifikaciju.",
-    "profil.reminders.morningTitle": "Jutarnji podsetnik",
-    "profil.reminders.morningDesc": "Podseti me da upišem doručak.",
-    "profil.reminders.eveningTitle": "Večernji pregled",
-    "profil.reminders.eveningDesc": "Koliko ti je kalorija ostalo i šta si upisao.",
+    "profil.reminders.mealTitle": "Obrok koji fali",
+    "profil.reminders.mealDesc":
+      "Javimo ti kad prođe tvoje uobičajeno vreme obroka, a nisi ga upisao. Najviše jednom dnevno.",
+    "profil.reminders.eveningTitle": "Zatvaranje dana",
+    "profil.reminders.eveningDesc":
+      "Uveče, ali samo kad ima šta da se kaže — prazan dan, prekoračenje ili neupisan trening.",
     "profil.reminders.awardTitle": "Nagrada za pun dan",
     "profil.reminders.awardDesc": "Javi mi kad upišem treći obrok.",
     "profil.reminders.weighInTitle": "Nedeljno merenje",
@@ -244,13 +246,15 @@ export const profilMessages = {
     "profil.data.choose": "Choose",
 
     "profil.reminders.subtitle":
-      "The weekly weigh-in matters most — without it your plan has nothing to adjust to. Turn the rest on as you need them.",
+      "Two notifications a day at most, and only when there's really something to say. The weekly weigh-in matters most — without it your plan has nothing to adjust to.",
     "profil.reminders.errorGeneric": "Something went wrong.",
     "profil.reminders.testError": "We couldn't send the test notification.",
-    "profil.reminders.morningTitle": "Morning reminder",
-    "profil.reminders.morningDesc": "Remind me to log breakfast.",
-    "profil.reminders.eveningTitle": "Evening recap",
-    "profil.reminders.eveningDesc": "How many calories you have left and what you logged.",
+    "profil.reminders.mealTitle": "The meal you missed",
+    "profil.reminders.mealDesc":
+      "We ping you when your usual meal time has passed and it isn't logged. Once a day at most.",
+    "profil.reminders.eveningTitle": "Closing the day",
+    "profil.reminders.eveningDesc":
+      "In the evening, but only when there's something to say — an empty day, an overshoot, or an unlogged workout.",
     "profil.reminders.awardTitle": "Full-day reward",
     "profil.reminders.awardDesc": "Let me know when I log my third meal.",
     "profil.reminders.weighInTitle": "Weekly weigh-in",

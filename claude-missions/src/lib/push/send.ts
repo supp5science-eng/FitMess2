@@ -1,11 +1,22 @@
 import webpush from "web-push";
 
+import type { MealNudgeReason, MealSlot } from "./meal-rhythm";
+
 // Podsetnici: the thin wrapper around `web-push` — VAPID config, one typed
 // payload shape, and the "a dead subscription must delete itself" rule.
 //
 // Kept apart from the routes so both the cron sender and the "pošalji probnu
 // notifikaciju" button go through exactly one code path: whatever the test
 // button proves is literally what the scheduler does at noon.
+
+/** One tappable button on the notification itself. */
+export interface PushAction {
+  /** Matched in the service worker's `notificationclick` handler. */
+  action: string;
+  title: string;
+  /** In-app path this button opens. */
+  url: string;
+}
 
 /** What the service worker's `push` handler expects to receive. */
 export interface PushPayload {
@@ -15,6 +26,16 @@ export interface PushPayload {
   url: string;
   /** Groups/replaces notifications so a reminder can never stack up. */
   tag: string;
+  /**
+   * Buttons on the notification (2026-08-01).
+   *
+   * The reason people don't log a meal is friction, not forgetting: "Slikaj"
+   * lands on the camera instead of on the home screen, saving two taps at the
+   * exact moment the user has already decided to comply. Android and desktop
+   * render these; iOS mostly ignores them and shows the plain notification,
+   * which is why the body text must always stand on its own.
+   */
+  actions?: PushAction[];
 }
 
 export interface StoredSubscription {
@@ -106,15 +127,51 @@ export async function sendToAll(
   );
 }
 
-/** The morning nudge. Sent whether or not the user has logged — by 10:00 most
- * people have eaten but not written it down, which is exactly the gap. */
-export function morningPayload(): PushPayload {
+/** The camera, one tap from the notification. `/dodaj/obrok` is the photo flow
+ * itself, not the add menu — the button promises a photo, so it opens one. */
+const SHOOT_ACTION: PushAction = {
+  action: "slikaj",
+  title: "Slikaj",
+  url: "/dodaj/obrok",
+};
+
+const MEAL_SLOT_TITLES: Record<MealSlot, string> = {
+  breakfast: "Doručak još nije upisan",
+  lunch: "Ručak još nije upisan",
+  dinner: "Večera još nije upisana",
+};
+
+/**
+ * The meal nudge — the replacement for the old fixed-time morning push.
+ *
+ * It knows WHICH meal is missing, because it is timed off the user's own median
+ * logging time (`meal-rhythm.ts`), so it can name it. Naming it is most of the
+ * value: "upiši doručak" at 10:00 is advice, "ručak još nije upisan" at 14:15
+ * is an observation the user can check against their own morning.
+ */
+export function mealPayload(reason: MealNudgeReason): PushPayload {
+  const base = { url: "/dodaj/obrok", tag: "fitmess-obrok", actions: [SHOOT_ACTION] };
+
+  if (reason.kind === "slot") {
+    return {
+      ...base,
+      title: MEAL_SLOT_TITLES[reason.slot],
+      body: "Slikaj ga i gotovo — traje 10 sekundi.",
+    };
+  }
+
+  const hours = Math.floor(reason.sinceMinutes / 60);
   return {
-    title: "Dobro jutro 👋",
-    body: "Upiši doručak dok ti je svež u glavi — traje 10 sekundi.",
-    url: "/danas",
-    tag: "fitmess-jutro",
+    ...base,
+    title: `${hours} ${hourWord(hours)} bez upisa`,
+    body: "Ako si nešto jeo u međuvremenu, upiši dok se sećaš.",
   };
+}
+
+/** Serbian hour count: 1 sat, 2–4 sata, 5+ sati. */
+function hourWord(count: number): string {
+  if (count === 1) return "sat";
+  return count >= 2 && count <= 4 ? "sata" : "sati";
 }
 
 /**
@@ -145,14 +202,19 @@ export interface EveningRecap {
   overshootKcal: number;
   /** False when the user has no daily target yet (fresh account). */
   hasTarget: boolean;
+  /** True when this person logs training and today has none (0026/0027). */
+  missingWorkout?: boolean;
 }
 
 /**
- * The evening recap — the reminder that earns its place on a day the user DID
- * log, which is why the whole reminder system stopped skipping those days.
+ * The evening close-out.
  *
- * Four things it can say, and the tone rule is the app's existing one: an
- * overshoot is reported, never scolded.
+ * It is only ever sent when it has something to say (`eveningHasSomethingToSay`
+ * in `due.ts` decides that) — the version that went out every night at 20:00
+ * regardless is what taught people to swipe these away.
+ *
+ * The tone rule is the app's existing one: an overshoot is reported, never
+ * scolded.
  */
 export function eveningPayload(recap: EveningRecap): PushPayload {
   const base = { url: "/danas", tag: "fitmess-vece" } as const;
@@ -162,6 +224,20 @@ export function eveningPayload(recap: EveningRecap): PushPayload {
       ...base,
       title: "Dan ti je još prazan",
       body: "Upiši šta si danas jeo — bolje i na brzinu nego nikako.",
+    };
+  }
+
+  // The training question comes before the calorie report: food is written
+  // down (that is what got us past the branch above), so the thing actually
+  // missing from the day is the session. Asked ONLY of people who log
+  // training — see `usesWorkouts` in `due.ts`.
+  if (recap.missingWorkout) {
+    return {
+      ...base,
+      title: "Jesi li se danas kretao?",
+      body: "Upiši trening ili šetnju pa ti je dan kompletan.",
+      url: "/dodaj/trening",
+      actions: [{ action: "trening", title: "Upiši trening", url: "/dodaj/trening" }],
     };
   }
 

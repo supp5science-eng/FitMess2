@@ -261,6 +261,9 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     trainingWalkMinutes: 0,
     adaptiveStepGoal: 10000,
     extraSteps: 0,
+    daysAfterToday: 4,
+    untrustedDays: [],
+    hasNotice: true,
   };
 
   it("test_the_ring_targets_the_adapted_number_and_a_note_explains_why", () => {

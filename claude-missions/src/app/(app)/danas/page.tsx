@@ -12,6 +12,12 @@ import {
   computeCarryInFromLastWeek,
   type AdaptivePlan,
 } from "@/lib/home/adaptive";
+import {
+  DAY_ANSWER_COOKIE,
+  parseDayAnswers,
+  type DayAnswer,
+} from "@/lib/home/day-trust";
+import { bmr } from "@/lib/budget/engine";
 import { PLAN_INTRO_COOKIE } from "@/components/home/adaptive-plan-card";
 import type { GoalType } from "@/lib/types/db";
 import { getDanasProfile } from "@/lib/home/profile";
@@ -199,6 +205,23 @@ export default async function DanasPage({
   // failed read falls back to no adjustment.
   // The date strip itself (mini-ring fills, sign-up bound, streak) is built in
   // the persistent `layout.tsx`, so this page no longer reads any of that.
+  // The line below which a day's log reads as "not fully entered" rather than
+  // as a real day (see `lib/home/day-trust.ts`). Computed here because only
+  // this page has the profile; a row missing height/birth year yields null and
+  // the trust pass falls back to the sex floor.
+  const userBmr =
+    profile?.sex && profile.weight_kg && profile.height_cm && profile.birth_year
+      ? bmr(
+          profile.sex,
+          profile.weight_kg,
+          profile.height_cm,
+          now.getUTCFullYear() - profile.birth_year
+        )
+      : null;
+  const dayAnswers = parseDayAnswers(
+    cookieStore.get(DAY_ANSWER_COOKIE)?.value ?? null
+  );
+
   const adaptivePlan =
     isToday && result.data.target
       ? await getAdaptivePlan(
@@ -208,6 +231,8 @@ export default async function DanasPage({
           profile?.sex ?? "male",
           result.data.target.goal,
           stepGoal,
+          userBmr,
+          dayAnswers,
           now
         )
       : null;
@@ -296,6 +321,8 @@ async function getAdaptivePlan(
   sex: "male" | "female",
   goal: GoalType | null,
   baseStepGoal: number,
+  bmrKcal: number | null,
+  dayAnswers: Map<string, DayAnswer>,
   now: Date
 ): Promise<AdaptivePlan | null> {
   const thisWeek = getBelgradeWeekRange(now);
@@ -337,7 +364,11 @@ async function getAdaptivePlan(
   const thisWeekLogs = rows.filter((r) => at(r) >= thisStart && at(r) < thisEnd);
   const lastWeekLogs = rows.filter((r) => at(r) >= lastStart && at(r) < lastEnd);
 
-  const carryInKcal = computeCarryInFromLastWeek(lastWeekLogs, baseDailyTarget);
+  const carryInKcal = computeCarryInFromLastWeek(lastWeekLogs, baseDailyTarget, {
+    sex,
+    bmrKcal,
+    dayAnswers,
+  });
 
   return computeAdaptivePlan({
     weekLogs: thisWeekLogs,
@@ -346,6 +377,8 @@ async function getAdaptivePlan(
     goal,
     baseStepGoal,
     carryInKcal,
+    bmrKcal,
+    dayAnswers,
     now,
   });
 }

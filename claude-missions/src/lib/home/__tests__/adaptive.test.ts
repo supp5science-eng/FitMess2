@@ -18,6 +18,13 @@ function log(logged_at: string, kcal: number) {
   return { logged_at, kcal };
 }
 
+// Most of these fixtures log 1000-3000 kcal days against a 2000 base. The
+// trust pass (2026-08-01) reads anything below BMR as an incomplete log rather
+// than a real day, so tests that mean "the user genuinely ate little" state a
+// low BMR explicitly -- otherwise they would be asserting on the neutralized
+// path instead of the one they describe.
+const LOW_BMR = 900;
+
 describe("computeAdaptivePlan: redistribute an overshoot across the rest of the week", () => {
   it("trims the remaining days after an earlier-in-week overshoot", () => {
     // Mon+Tue: 3000 each (base 2000 -> 1000 over each day, 2000 total over).
@@ -94,6 +101,7 @@ describe("computeAdaptivePlan: redistribute an overshoot across the rest of the 
       weekLogs: [log(MON, 1000), log(TUE, 1000)],
       baseDailyTarget: 2000,
       sex: "male",
+      bmrKcal: LOW_BMR,
       now: WED,
     });
     expect(plan.adaptiveDailyTarget).toBe(2000); // capped at base, not 2400
@@ -124,6 +132,7 @@ describe("goal awareness: under-eating is only corrected upward where the goal i
       baseDailyTarget: 2000,
       sex: "male",
       goal: "gain",
+      bmrKcal: LOW_BMR,
       now: WED,
     });
     // 14000 - 2000 = 12000 over 5 days = 2400 ideal, within the +20% cap.
@@ -133,17 +142,35 @@ describe("goal awareness: under-eating is only corrected upward where the goal i
     expect(plan.isAdjusted).toBe(true);
   });
 
-  it("caps the lift so one skipped day cannot mandate a feast", () => {
+  it("caps the lift so one genuinely tiny day cannot mandate a feast", () => {
     const plan = computeAdaptivePlan({
-      // Nothing logged Mon/Tue at all on a bulk.
+      // Two real but very small days, confirmed plausible by a low BMR.
+      weekLogs: [log(MON, 400), log(TUE, 400)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      goal: "gain",
+      bmrKcal: 300,
+      now: WED,
+    });
+    // Ideal would be (14000 - 800) / 5 = 2640; the +20% cap holds it at 2400.
+    expect(plan.adaptiveDailyTarget).toBe(2400);
+  });
+
+  it("does NOT lift a bulk on days that were simply never logged", () => {
+    // The dangerous case this feature exists to kill: nothing logged Mon/Tue,
+    // so the old engine read 0 kcal as fact and told a bulking user to eat
+    // 2400 -- to make up food they had very likely already eaten.
+    const plan = computeAdaptivePlan({
       weekLogs: [],
       baseDailyTarget: 2000,
       sex: "male",
       goal: "gain",
+      bmrKcal: 1600,
       now: WED,
     });
-    // Ideal would be 14000/5 = 2800; the +20% cap holds it at 2400.
-    expect(plan.adaptiveDailyTarget).toBe(2400);
+    expect(plan.adaptiveDailyTarget).toBe(2000);
+    expect(plan.liftedKcal).toBe(0);
+    expect(plan.isAdjusted).toBe(false);
   });
 
   it("corrects maintenance upward too -- maintaining also means hitting the number", () => {
@@ -152,6 +179,7 @@ describe("goal awareness: under-eating is only corrected upward where the goal i
       baseDailyTarget: 2000,
       sex: "male",
       goal: "maintain",
+      bmrKcal: LOW_BMR,
       now: WED,
     });
     expect(plan.adaptiveDailyTarget).toBe(2400);
@@ -165,6 +193,7 @@ describe("goal awareness: under-eating is only corrected upward where the goal i
         baseDailyTarget: 2000,
         sex: "male",
         goal,
+        bmrKcal: LOW_BMR,
         now: WED,
       });
       expect(plan.adaptiveDailyTarget).toBe(2000);
@@ -179,6 +208,7 @@ describe("goal awareness: under-eating is only corrected upward where the goal i
       baseDailyTarget: 2000,
       sex: "male",
       goal: null,
+      bmrKcal: LOW_BMR,
       now: WED,
     });
     expect(plan.adaptiveDailyTarget).toBe(2000);
@@ -238,21 +268,163 @@ describe("the activity suggestion and the step goal are one number, not two", ()
   });
 });
 
+describe("day trust: a day only moves the plan if its log is plausible as a whole day", () => {
+  it("does not read a forgotten day as a real day", () => {
+    // The reported case: Tuesday holds one 122 kcal entry the user never
+    // finished. Charged at base (2000) instead of 122, so Monday's real
+    // overshoot is the only thing that moves the plan.
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3000), log(TUE, 122)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 2000,
+      now: WED,
+    });
+    expect(plan.spentBeforeToday).toBe(5000); // 3000 real + 2000 assumed
+    expect(plan.adaptiveDailyTarget).toBe(1800);
+    expect(plan.untrustedDays).toHaveLength(1);
+    expect(plan.untrustedDays[0]).toMatchObject({
+      kcal: 122,
+      trust: "incomplete",
+      counts: false,
+      needsAnswer: true,
+    });
+  });
+
+  it("reacts to an overshoot even when an earlier day was never logged", () => {
+    // Before the trust pass, an unlogged Monday donated a phantom 2000 kcal of
+    // unspent allowance, which swallowed Tuesday's overshoot whole and left
+    // the plan looking untouched -- the "I never see it do anything" bug.
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(TUE, 3000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1600,
+      now: WED,
+    });
+    expect(plan.spentBeforeToday).toBe(5000);
+    expect(plan.adaptiveDailyTarget).toBe(1800);
+    expect(plan.trimmedKcal).toBe(200);
+    expect(plan.isAdjusted).toBe(true);
+  });
+
+  it("lets the user's own answer beat the heuristic", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3000), log(TUE, 122)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 2000,
+      dayAnswers: new Map([["2026-01-06", "complete"]]),
+      now: WED,
+    });
+    expect(plan.spentBeforeToday).toBe(3122); // 122 taken at face value
+    expect(plan.untrustedDays).toHaveLength(0);
+  });
+
+  it("stops asking once the user says the day was not fully logged", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3000), log(TUE, 122)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 2000,
+      dayAnswers: new Map([["2026-01-06", "partial"]]),
+      now: WED,
+    });
+    expect(plan.spentBeforeToday).toBe(5000); // still neutralized
+    expect(plan.untrustedDays[0]?.needsAnswer).toBe(false);
+  });
+
+  it("never questions a day with nothing logged at all", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1600,
+      now: WED,
+    });
+    const tuesday = plan.untrustedDays.find((d) => d.dayKey === "2026-01-06");
+    expect(tuesday).toMatchObject({ trust: "empty", needsAnswer: false });
+  });
+
+  it("says nothing at all when the week is on track and fully logged", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 2000), log(TUE, 2000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1600,
+      now: WED,
+    });
+    expect(plan.hasNotice).toBe(false);
+  });
+
+  it("reports the days still ahead so the note can look forward", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3000), log(TUE, 3000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1600,
+      now: WED,
+    });
+    expect(plan.daysAfterToday).toBe(4); // Thu..Sun
+  });
+});
+
 describe("computeCarryInFromLastWeek: 1-week debt lookback", () => {
+  // Last week relative to Wed 2026-01-07 is Mon 2025-12-29 .. Sun 2026-01-04.
+  function lastWeek(kcalPerDay: number[]) {
+    return kcalPerDay.map((kcal, index) =>
+      log(
+        new Date(Date.UTC(2025, 11, 29 + index, 12)).toISOString(),
+        kcal
+      )
+    );
+  }
+
   it("carries the amount last week went over budget", () => {
-    // base 2000 -> weekly budget 14000; last week logged 16000 -> 2000 debt.
+    // Six days at target plus a 4000 Saturday -> 16000 vs a 14000 budget.
     const carry = computeCarryInFromLastWeek(
-      [log("2025-12-29T12:00:00.000Z", 16000)],
-      2000
+      lastWeek([2000, 2000, 2000, 2000, 2000, 4000, 2000]),
+      2000,
+      { sex: "male", bmrKcal: 1600 }
     );
     expect(carry).toBe(2000);
   });
 
   it("carries nothing when last week was under budget", () => {
     const carry = computeCarryInFromLastWeek(
-      [log("2025-12-29T12:00:00.000Z", 10000)],
-      2000
+      lastWeek([1500, 1500, 1500, 1500, 1500, 1500, 1500]),
+      2000,
+      { sex: "male", bmrKcal: 1400 }
     );
     expect(carry).toBe(0);
+  });
+
+  it("invents no debt from a week that was never logged", () => {
+    const carry = computeCarryInFromLastWeek([], 2000, {
+      sex: "male",
+      bmrKcal: 1600,
+    });
+    expect(carry).toBe(0);
+  });
+
+  it("still carries one genuine blowout from an otherwise unlogged week", () => {
+    // Six unlogged days are assumed on plan; the logged 5000 day is 3000 over.
+    const carry = computeCarryInFromLastWeek(
+      [log("2026-01-03T12:00:00.000Z", 5000)],
+      2000,
+      { sex: "male", bmrKcal: 1600 }
+    );
+    expect(carry).toBe(3000);
+  });
+
+  it("ignores a day whose log is too small to be a whole day", () => {
+    const carry = computeCarryInFromLastWeek(
+      lastWeek([2000, 2000, 2000, 2000, 2000, 4000, 90]),
+      2000,
+      { sex: "male", bmrKcal: 1600 }
+    );
+    // The 90 kcal Sunday is charged at base, so the debt is still just the
+    // Saturday overshoot -- not 90 kcal worth of fictional credit.
+    expect(carry).toBe(2000);
   });
 });

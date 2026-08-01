@@ -14,6 +14,11 @@ export interface DanasProfile {
   sex: Sex | null;
   weight_kg: number | null;
   activity_level: ActivityLevel | null;
+  /** With `weight_kg` + `sex`, these two complete the Mifflin-St Jeor inputs
+   * the adaptive plan needs to tell a real light day from a forgotten one
+   * (see `day-trust.ts`). Older rows may lack them; the caller falls back. */
+  height_cm: number | null;
+  birth_year: number | null;
 }
 
 /**
@@ -40,7 +45,7 @@ export const getDanasProfile = cache(
     const supabase = await createClient();
     const { data } = await supabase
       .from("profiles")
-      .select("created_at, sex, weight_kg, activity_level")
+      .select("created_at, sex, weight_kg, activity_level, height_cm, birth_year")
       .eq("user_id", userId)
       .maybeSingle();
     return data ?? null;

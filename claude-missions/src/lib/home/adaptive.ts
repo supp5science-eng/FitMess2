@@ -33,9 +33,25 @@
  *    instead of two unrelated things. Capped at
  *    `MAX_TRAINING_SUGGESTION_KCAL`; the rest rolls into next week like any
  *    other untrimmed overshoot.
+ *  - Trust (2026-08-01): a past day only moves the plan if its log is
+ *    PLAUSIBLE as a whole day's food (see `day-trust.ts`). Days we cannot
+ *    vouch for are counted AS PLANNED -- base target, zero delta -- never as
+ *    their logged number. Before this, a Tuesday holding one forgotten 122
+ *    kcal entry was read as a 122 kcal day: on a cut that quietly did nothing,
+ *    and on a bulk it ordered the user to eat back food they had already
+ *    eaten. It also cuts the other way: an overshoot on Tuesday now moves the
+ *    plan even when Monday was never logged, because Monday no longer donates
+ *    a phantom 2000 kcal of unspent allowance to the rest of the week.
  */
 
 import { KCAL_FLOOR } from "@/lib/budget/engine";
+import {
+  bucketDayIntake,
+  classifyDay,
+  plausibilityFloor,
+  type DayAnswer,
+  type DayVerdict,
+} from "@/lib/home/day-trust";
 import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import { computeWeekSummary, type LogForWeek } from "@/lib/week/summary";
 import type { GoalType, Sex } from "@/lib/types/db";
@@ -111,6 +127,18 @@ export interface AdaptivePlan {
   adaptiveStepGoal: number;
   /** Extra steps above the default (0 when none) -- what the note announces. */
   extraSteps: number;
+  /** Days AFTER today still left in the week (0..6) -- the note says what the
+   * plan looks like going forward, not just today. */
+  daysAfterToday: number;
+  /**
+   * Past days this week whose logs did NOT feed the math (see `day-trust.ts`),
+   * newest last. Each was counted as a day ON PLAN instead. The card lists
+   * them, and asks about the ambiguous ones (`needsAnswer`).
+   */
+  untrustedDays: DayVerdict[];
+  /** True when the card has something to say: an adjustment, or a day to ask
+   * about. A plan that is on track AND fully logged shows nothing. */
+  hasNotice: boolean;
 }
 
 export interface AdaptivePlanInput {
@@ -133,6 +161,15 @@ export interface AdaptivePlanInput {
   baseStepGoal?: number;
   /** Debt carried from the previous week (>= 0); default 0. */
   carryInKcal?: number;
+  /**
+   * The user's BMR, the line below which a whole day's log is treated as
+   * incomplete rather than as a real day (see `day-trust.ts`). Omitted (an
+   * older profile without height/birth year) falls back to the sex floor.
+   */
+  bmrKcal?: number | null;
+  /** The user's own verdicts on flagged days, keyed by Belgrade day; always
+   * beats the heuristic. Comes from the `fm_dani` cookie. */
+  dayAnswers?: Map<string, DayAnswer>;
   /** "Now" (injectable for tests); defaults to the real clock at the call. */
   now?: Date;
 }
@@ -151,9 +188,28 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
   const todayIndex = summary.elapsedDays - 1; // 0 = Monday .. 6 = Sunday
   const daysLeft = Math.max(1, 7 - todayIndex);
 
-  const spentBeforeToday = summary.days
+  // Trust pass: a day before today is judged BEFORE it is allowed to move the
+  // plan. An untrusted day is charged at `base` -- the neutral reading -- so
+  // it neither invents a debt nor donates unspent allowance to the days after
+  // it. See `day-trust.ts` for why absence of data must not read as data.
+  const floorKcal = plausibilityFloor(input.bmrKcal, input.sex);
+  const intake = bucketDayIntake(input.weekLogs);
+
+  const verdicts = summary.days
     .filter((day) => day.weekdayIndex < todayIndex)
-    .reduce((sum, day) => sum + day.kcal, 0);
+    .map((day) =>
+      classifyDay(
+        intake.get(day.dayKey) ?? { dayKey: day.dayKey, kcal: 0, logCount: 0 },
+        floorKcal,
+        input.dayAnswers?.get(day.dayKey) ?? null
+      )
+    );
+
+  const spentBeforeToday = verdicts.reduce(
+    (sum, day) => sum + (day.counts ? day.kcal : base),
+    0
+  );
+  const untrustedDays = verdicts.filter((day) => !day.counts);
 
   const remainingAllowance = summary.weeklyBudget - spentBeforeToday - carryIn;
   const idealDaily = remainingAllowance / daysLeft;
@@ -215,6 +271,9 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
     trainingWalkMinutes,
     adaptiveStepGoal: (input.baseStepGoal ?? FALLBACK_STEP_GOAL) + extraSteps,
     extraSteps,
+    daysAfterToday: daysLeft - 1,
+    untrustedDays,
+    hasNotice: isAdjusted || untrustedDays.some((day) => day.needsAnswer),
   };
 }
 
@@ -226,10 +285,39 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
  */
 export function computeCarryInFromLastWeek(
   lastWeekLogs: LogForWeek[],
-  baseDailyTarget: number
+  baseDailyTarget: number,
+  options?: {
+    sex?: Sex;
+    bmrKcal?: number | null;
+    dayAnswers?: Map<string, DayAnswer>;
+  }
 ): number {
   const base = Math.max(0, Math.round(baseDailyTarget));
   const budget = base * 7;
-  const spent = lastWeekLogs.reduce((sum, log) => sum + log.kcal, 0);
+
+  // Same trust rule as the in-week pass: only days we can vouch for are read
+  // at their logged value; every other day of the seven is charged at base.
+  // A week where the user logged nothing therefore carries NO debt, while a
+  // week with one genuine 5000 kcal day carries exactly that day's excess --
+  // instead of the old reading, where six unlogged days silently "paid for"
+  // the one blowout and the debt vanished.
+  const floorKcal = plausibilityFloor(options?.bmrKcal, options?.sex ?? "male");
+  const intake = bucketDayIntake(lastWeekLogs);
+
+  let spent = 0;
+  let trustedDays = 0;
+  for (const day of intake.values()) {
+    const verdict = classifyDay(
+      day,
+      floorKcal,
+      options?.dayAnswers?.get(day.dayKey) ?? null
+    );
+    if (verdict.counts) {
+      spent += verdict.kcal;
+      trustedDays += 1;
+    }
+  }
+  spent += Math.max(0, 7 - trustedDays) * base;
+
   return Math.max(0, Math.round(spent - budget));
 }

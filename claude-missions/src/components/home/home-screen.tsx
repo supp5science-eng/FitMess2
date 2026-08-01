@@ -297,7 +297,11 @@ export function HomeScreen({
                       }}
                       ringRef={ringRef}
                     />
-                    {adaptivePlan?.isAdjusted ? (
+                    {/* `hasNotice`, not `isAdjusted`: the card also appears
+                        when the plan was NOT moved because a day's log looked
+                        incomplete -- staying silent about that is what made
+                        the whole feature feel absent. */}
+                    {adaptivePlan?.hasNotice ? (
                       <AdaptivePlanCard
                         plan={adaptivePlan}
                         intro={planIntro}

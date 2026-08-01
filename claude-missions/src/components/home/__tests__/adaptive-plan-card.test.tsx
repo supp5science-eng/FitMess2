@@ -1,11 +1,17 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 import {
   AdaptivePlanCard,
   PLAN_INTRO_COOKIE,
 } from "@/components/home/adaptive-plan-card";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
+import { DAY_ANSWER_COOKIE } from "@/lib/home/day-trust";
+
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ refresh }),
+}));
 
 function makePlan(overrides: Partial<AdaptivePlan> = {}): AdaptivePlan {
   return {
@@ -22,6 +28,23 @@ function makePlan(overrides: Partial<AdaptivePlan> = {}): AdaptivePlan {
     trainingWalkMinutes: 0,
     adaptiveStepGoal: 10000,
     extraSteps: 0,
+    daysAfterToday: 4,
+    untrustedDays: [],
+    hasNotice: true,
+    ...overrides,
+  };
+}
+
+/** A Tuesday (2026-01-06) whose log is too small to be a whole day. */
+function flaggedTuesday(overrides: Partial<AdaptivePlan["untrustedDays"][number]> = {}) {
+  return {
+    dayKey: "2026-01-06",
+    kcal: 122,
+    logCount: 1,
+    trust: "incomplete" as const,
+    counts: false,
+    needsAnswer: true,
+    answer: null,
     ...overrides,
   };
 }
@@ -41,8 +64,10 @@ function stubMatchMedia(reduced: boolean) {
 
 beforeEach(() => {
   stubMatchMedia(false);
-  // jsdom keeps cookies between tests; clear the one we assert on.
+  refresh.mockClear();
+  // jsdom keeps cookies between tests; clear the ones we assert on.
   document.cookie = `${PLAN_INTRO_COOKIE}=; path=/; max-age=0`;
+  document.cookie = `${DAY_ANSWER_COOKIE}=; path=/; max-age=0`;
 });
 
 afterEach(() => {
@@ -171,5 +196,152 @@ describe("the activity suggestion is expressed as a step goal", () => {
     expect(
       screen.queryByTestId("adaptive-note-training")
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("the plan is announced FORWARD, not just for today", () => {
+  it("names the remaining days and the per-day change", () => {
+    render(<AdaptivePlanCard plan={makePlan()} />);
+    const line = screen.getByTestId("adaptive-note-forward");
+    expect(line).toHaveTextContent("još 4 dana");
+    expect(line).toHaveTextContent("1600 kcal");
+    expect(line).toHaveTextContent("−400/dan");
+  });
+
+  it("shows a lift as a plus, not a minus", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({
+          adaptiveDailyTarget: 2400,
+          trimmedKcal: 0,
+          liftedKcal: 400,
+        })}
+      />
+    );
+    expect(screen.getByTestId("adaptive-note-forward")).toHaveTextContent(
+      "+400/dan"
+    );
+  });
+
+  it("says nothing about the future on the last day of the week", () => {
+    render(<AdaptivePlanCard plan={makePlan({ daysAfterToday: 0 })} />);
+    expect(
+      screen.queryByTestId("adaptive-note-forward")
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("days the plan did not believe", () => {
+  it("names them and says what it did instead of silently ignoring them", () => {
+    render(
+      <AdaptivePlanCard plan={makePlan({ untrustedDays: [flaggedTuesday()] })} />
+    );
+    const block = screen.getByTestId("adaptive-note-untrusted");
+    expect(block).toHaveTextContent("utorak");
+    expect(block).toHaveTextContent(/nisam uračunao/i);
+  });
+
+  it("asks about an ambiguous day and offers both honest answers", () => {
+    render(
+      <AdaptivePlanCard plan={makePlan({ untrustedDays: [flaggedTuesday()] })} />
+    );
+    expect(screen.getByTestId("adaptive-note-untrusted")).toHaveTextContent(
+      "Je li utorak stvarno bio dan od 122 kcal?"
+    );
+    expect(screen.getByTestId("adaptive-answer-complete")).toBeInTheDocument();
+    expect(screen.getByTestId("adaptive-answer-partial")).toBeInTheDocument();
+  });
+
+  it("records a confirmation and re-runs the plan", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({ untrustedDays: [flaggedTuesday()] })}
+        dayKey="2026-01-07"
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("adaptive-answer-complete"));
+
+    expect(document.cookie).toContain(`${DAY_ANSWER_COOKIE}=2026-01-06~c`);
+    expect(refresh).toHaveBeenCalled();
+    // The row goes immediately -- the tap must not wait for the server.
+    expect(
+      screen.queryByTestId("adaptive-answer-complete")
+    ).not.toBeInTheDocument();
+  });
+
+  it("records a 'did not log it all' answer distinctly", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({ untrustedDays: [flaggedTuesday()] })}
+        dayKey="2026-01-07"
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("adaptive-answer-partial"));
+    expect(document.cookie).toContain(`${DAY_ANSWER_COOKIE}=2026-01-06~p`);
+  });
+
+  it("lists an already-answered day without asking again", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({
+          untrustedDays: [flaggedTuesday({ needsAnswer: false, answer: "partial" })],
+        })}
+      />
+    );
+    expect(screen.getByTestId("adaptive-note-untrusted")).toHaveTextContent(
+      "utorak"
+    );
+    expect(
+      screen.queryByTestId("adaptive-answer-complete")
+    ).not.toBeInTheDocument();
+  });
+
+  it("never questions an empty day -- only ambiguous ones", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({
+          untrustedDays: [
+            flaggedTuesday({ kcal: 0, logCount: 0, trust: "empty", needsAnswer: false }),
+          ],
+        })}
+      />
+    );
+    expect(
+      screen.queryByTestId("adaptive-answer-complete")
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("the unadjusted state (nothing moved, but there IS something to say)", () => {
+  const steady = makePlan({
+    adaptiveDailyTarget: 2000,
+    isAdjusted: false,
+    trimmedKcal: 0,
+    liftedKcal: 0,
+    untrustedDays: [flaggedTuesday()],
+  });
+
+  it("says the plan stayed the same instead of claiming an adjustment", () => {
+    render(<AdaptivePlanCard plan={steady} />);
+    expect(screen.getByTestId("adaptive-note")).toHaveTextContent(
+      "Plan za danas ostaje isti"
+    );
+    expect(screen.getByTestId("adaptive-note")).not.toHaveTextContent(
+      /prekoračenja/i
+    );
+  });
+
+  it("drops the 'regular X' comparison when there is nothing to compare", () => {
+    render(<AdaptivePlanCard plan={steady} />);
+    expect(screen.getByTestId("adaptive-note")).not.toHaveTextContent(
+      /redovni/i
+    );
+  });
+
+  it("still asks about the day it could not read", () => {
+    render(<AdaptivePlanCard plan={steady} />);
+    expect(screen.getByTestId("adaptive-answer-complete")).toBeInTheDocument();
   });
 });

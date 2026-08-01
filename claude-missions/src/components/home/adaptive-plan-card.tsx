@@ -1,11 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Footprints, Sparkles, TrendingDown, TrendingUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  CircleHelp,
+  Footprints,
+  Minus,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+} from "lucide-react";
 
 import { useCountUp } from "@/components/home/animated-number";
 import { useT } from "@/components/i18n/locale-provider";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
+import {
+  DAY_ANSWER_COOKIE,
+  withDayAnswer,
+  type DayAnswer,
+} from "@/lib/home/day-trust";
 import { cn } from "@/lib/utils";
 
 import "./adaptive-plan-card.css";
@@ -40,9 +53,34 @@ const NUMBER_TWEEN_MS = 900;
 const NUMBER_START_MS = 380;
 const SETTLE_MS = 2100;
 
+/** How long an answer about a past day is remembered. Comfortably longer than
+ * the 21-day window the plan itself looks back over. */
+const DAY_ANSWER_MAX_AGE = 60 * 60 * 24 * 60;
+
 /** `10000` -> `"10.000"` (Serbian thousands separator). */
 function formatSteps(steps: number): string {
   return String(steps).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+/** Module scope on purpose: writing `document.cookie` from a component body
+ * trips `react-hooks/immutability`, and the write is not React state anyway. */
+function writeCookie(name: string, value: string, maxAgeSeconds: number): void {
+  if (typeof document === "undefined") return;
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; samesite=lax`;
+}
+
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(
+    new RegExp(`(?:^|; )${name}=([^;]*)`)
+  );
+  return match ? decodeURIComponent(match[1]!) : null;
+}
+
+/** `"2026-01-06"` -> 0 = Monday .. 6 = Sunday. */
+function weekdayIndexOf(dayKey: string): number {
+  const utcDay = new Date(`${dayKey}T12:00:00.000Z`).getUTCDay();
+  return (utcDay + 6) % 7;
 }
 
 function prefersReducedMotion(): boolean {
@@ -65,6 +103,7 @@ export function AdaptivePlanCard({
   dayKey?: string;
 }) {
   const { t } = useT();
+  const router = useRouter();
   // `playing` drives the CSS; `revealed` flips the count-up's target.
   const [playing, setPlaying] = useState(intro);
   const [revealed, setRevealed] = useState(!intro);
@@ -103,7 +142,36 @@ export function AdaptivePlanCard({
   }, [intro, dayKey]);
 
   const lifted = plan.liftedKcal > 0;
-  const Icon = lifted ? TrendingUp : TrendingDown;
+  const adjusted = plan.isAdjusted;
+  const Icon = !adjusted ? Minus : lifted ? TrendingUp : TrendingDown;
+
+  // Days the plan deliberately did NOT believe. Answering one hides its row
+  // immediately (the server refresh that follows is the authority, but the tap
+  // has to feel instant) and re-runs the plan with the answer applied.
+  const [answered, setAnswered] = useState<string[]>([]);
+  const asked = plan.untrustedDays.filter(
+    (day) => day.needsAnswer && !answered.includes(day.dayKey)
+  );
+
+  function answerDay(untrustedDayKey: string, answer: DayAnswer) {
+    setAnswered((previous) => [...previous, untrustedDayKey]);
+    try {
+      const next = withDayAnswer(
+        readCookie(DAY_ANSWER_COOKIE),
+        untrustedDayKey,
+        answer,
+        dayKey ?? untrustedDayKey
+      );
+      writeCookie(DAY_ANSWER_COOKIE, next, DAY_ANSWER_MAX_AGE);
+    } catch {
+      // A blocked cookie costs the answer, never the screen.
+    }
+    router.refresh();
+  }
+
+  const weekdayNames = t("home.adaptive.weekdays").split(" ");
+  const dayName = (key: string) =>
+    weekdayNames[weekdayIndexOf(key)] ?? key;
 
   // Week bar geometry: how much of the weekly budget is already gone, and the
   // slice today is allowed to take out of what remains.
@@ -130,7 +198,7 @@ export function AdaptivePlanCard({
         style={nextDelay()}
       >
         <Sparkles className="size-4 text-primary" aria-hidden="true" />
-        {t("home.adaptive.adjusted")}
+        {adjusted ? t("home.adaptive.adjusted") : t("home.adaptive.unchanged")}
       </p>
 
       <p className="apc-line mt-1.5 flex items-baseline gap-2" style={nextDelay()}>
@@ -141,9 +209,11 @@ export function AdaptivePlanCard({
         >
           {Math.round(shownTarget)} kcal
         </span>
-        <span className="text-xs text-muted-foreground">
-          {t("home.adaptive.regular", { kcal: plan.baseDailyTarget })}
-        </span>
+        {adjusted ? (
+          <span className="text-xs text-muted-foreground">
+            {t("home.adaptive.regular", { kcal: plan.baseDailyTarget })}
+          </span>
+        ) : null}
       </p>
 
       <div className="apc-line mt-2.5" style={nextDelay()}>
@@ -174,17 +244,39 @@ export function AdaptivePlanCard({
         </p>
       </div>
 
-      <p className="apc-line mt-2 text-muted-foreground" style={nextDelay()}>
-        {lifted
-          ? t("home.adaptive.lifted")
-          : t("home.adaptive.lowered")}
-        {plan.carryInKcal > 0 ? (
-          <>
-            {" "}
-            {t("home.adaptive.carry", { kcal: plan.carryInKcal })}
-          </>
-        ) : null}
-      </p>
+      {/* What the change means going FORWARD. The redistribution already
+          spreads evenly over every remaining day, so the same number holds for
+          the rest of the week -- saying only "today is 2.890" hid the fact
+          that a plan was actually made. */}
+      {adjusted && plan.daysAfterToday > 0 ? (
+        <p
+          data-testid="adaptive-note-forward"
+          className="apc-line mt-2 text-xs text-muted-foreground"
+          style={nextDelay()}
+        >
+          {t("home.adaptive.forward", {
+            days: plan.daysAfterToday,
+            unit:
+              plan.daysAfterToday === 1
+                ? t("home.adaptive.day")
+                : t("home.adaptive.days"),
+            kcal: plan.adaptiveDailyTarget,
+            delta: `${lifted ? "+" : "−"}${lifted ? plan.liftedKcal : plan.trimmedKcal}`,
+          })}
+        </p>
+      ) : null}
+
+      {adjusted ? (
+        <p className="apc-line mt-2 text-muted-foreground" style={nextDelay()}>
+          {lifted ? t("home.adaptive.lifted") : t("home.adaptive.lowered")}
+          {plan.carryInKcal > 0 ? (
+            <>
+              {" "}
+              {t("home.adaptive.carry", { kcal: plan.carryInKcal })}
+            </>
+          ) : null}
+        </p>
+      ) : null}
 
       {plan.trainingSuggestionKcal > 0 ? (
         <p
@@ -213,6 +305,60 @@ export function AdaptivePlanCard({
             {plan.extraSteps > 0 ? ` (+${formatSteps(plan.extraSteps)})` : null}.
           </span>
         </p>
+      ) : null}
+
+      {/* The days the plan refused to believe, and the one question that can
+          settle them. Saying this out loud is the difference between "the app
+          ignored my Tuesday" and "the app told me why Tuesday didn't count". */}
+      {plan.untrustedDays.length > 0 ? (
+        <div
+          data-testid="adaptive-note-untrusted"
+          className="apc-line mt-2.5 rounded-xl border border-border/60 bg-background/40 px-3 py-2.5"
+          style={nextDelay()}
+        >
+          <p className="flex items-start gap-1.5 text-xs text-muted-foreground">
+            <CircleHelp
+              className="size-3.5 shrink-0 translate-y-0.5"
+              aria-hidden="true"
+            />
+            <span>
+              {t("home.adaptive.untrustedLead", {
+                days: plan.untrustedDays
+                  .map((day) => dayName(day.dayKey))
+                  .join(", "),
+              })}
+            </span>
+          </p>
+
+          {asked.map((day) => (
+            <div key={day.dayKey} className="mt-2.5">
+              <p className="text-xs text-foreground">
+                {t("home.adaptive.askDay", {
+                  day: dayName(day.dayKey),
+                  kcal: day.kcal,
+                })}
+              </p>
+              <div className="mt-1.5 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  data-testid="adaptive-answer-complete"
+                  onClick={() => answerDay(day.dayKey, "complete")}
+                  className="min-h-9 rounded-full border border-border bg-muted/60 px-3 text-xs font-medium text-foreground active:scale-[0.97]"
+                >
+                  {t("home.adaptive.answerComplete")}
+                </button>
+                <button
+                  type="button"
+                  data-testid="adaptive-answer-partial"
+                  onClick={() => answerDay(day.dayKey, "partial")}
+                  className="min-h-9 rounded-full border border-border bg-muted/60 px-3 text-xs font-medium text-foreground active:scale-[0.97]"
+                >
+                  {t("home.adaptive.answerPartial")}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : null}
     </div>
   );

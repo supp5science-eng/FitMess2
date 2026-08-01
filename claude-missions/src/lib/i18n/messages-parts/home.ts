@@ -20,6 +20,18 @@ export const homeExtraMessages = {
     "home.adaptive.trainingLead": "Ostatak pokrij kretanjem:",
     "home.adaptive.trainingWalk":
       "(≈ {min} min brzog hoda). Cilj koraka danas je",
+    "home.adaptive.unchanged": "Plan za danas ostaje isti",
+    // "još 1 dan" / "još 4 dana" / "još 5 dana" -- the one phrasing whose
+    // grammar holds for every count without a plural engine.
+    "home.adaptive.forward":
+      "Važi i za još {days} {unit}: {kcal} kcal ({delta}/dan)",
+    "home.adaptive.weekdays":
+      "ponedeljak utorak sreda četvrtak petak subota nedelja",
+    "home.adaptive.untrustedLead":
+      "Nisam uračunao: {days} — unos izgleda nepotpuno, pa je taj dan tretiran kao da je odrađen po planu.",
+    "home.adaptive.askDay": "Je li {day} stvarno bio dan od {kcal} kcal?",
+    "home.adaptive.answerComplete": "Da, bio je lagan dan",
+    "home.adaptive.answerPartial": "Nisam sve upisao",
 
     // Add sheet
     "home.addSheet.title": "Dodaj unos",
@@ -117,6 +129,16 @@ export const homeExtraMessages = {
     "home.adaptive.trainingLead": "Cover the rest with movement:",
     "home.adaptive.trainingWalk":
       "(≈ {min} min of brisk walking). Today's step goal is",
+    "home.adaptive.unchanged": "Today's plan stays the same",
+    "home.adaptive.forward":
+      "Holds for {days} more {unit}: {kcal} kcal ({delta}/day)",
+    "home.adaptive.weekdays":
+      "Monday Tuesday Wednesday Thursday Friday Saturday Sunday",
+    "home.adaptive.untrustedLead":
+      "Left out: {days} — the log looks incomplete, so that day was counted as if it went to plan.",
+    "home.adaptive.askDay": "Was {day} really a {kcal} kcal day?",
+    "home.adaptive.answerComplete": "Yes, it was a light day",
+    "home.adaptive.answerPartial": "I didn't log it all",
 
     // Add sheet
     "home.addSheet.title": "Add entry",

@@ -4,7 +4,7 @@ import { z } from "zod";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { addMoreSelectionSchema, applyAddMore } from "@/lib/log/add-more";
-import { getExtraFoodsByIds } from "@/lib/log/extras";
+import { getExtraFoodsByIds, isAiExtraId } from "@/lib/log/extras";
 import type { Database } from "@/lib/types/db";
 
 // "Dodaj još" (2026-07-25): `POST /api/logs/[id]/dodaj` -- grow an existing
@@ -117,16 +117,26 @@ export async function POST(
       );
     }
 
-    // Extras arrive as bare catalog ids. Their nutrition is read here, from
+    // Catalog extras arrive as bare ids. Their nutrition is read here, from
     // `foods`, so the numbers written are the catalog's and not the client's --
     // the same rule the components path gets for free by recomputing off the
     // stored row.
+    //
+    // Written-in extras (`ai:` ids) are the deliberate exception: there is no
+    // row to read, so they carry their own clamped figures in `ai_dodaci` --
+    // see `aiExtraFoodSchema`. They are filtered OUT of this lookup so a
+    // pathological id can never turn into a catalog query.
     const extraFoods = await getExtraFoodsByIds(
       supabase,
-      parsedBody.data.extras.map((pick) => pick.foodId)
+      parsedBody.data.extras
+        .map((pick) => pick.foodId)
+        .filter((foodId) => !isAiExtraId(foodId))
     );
 
-    const result = applyAddMore(existingLog, parsedBody.data, extraFoods);
+    const result = applyAddMore(existingLog, parsedBody.data, [
+      ...extraFoods,
+      ...parsedBody.data.ai_dodaci,
+    ]);
     if (result.isEmpty) {
       return NextResponse.json(
         { ok: false, error_sr: EMPTY_SELECTION_ERROR_SR },

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
 import { foodEmoji } from "@/lib/food/emoji";
 import type { Database, Food, LogComponentSnapshot } from "@/lib/types/db";
@@ -243,6 +244,79 @@ export async function getExtraFoodsByIds(
   if (error || !data) return [];
   return (data as Food[]).map(toExtraFood);
 }
+
+/* --- written-in extras (2026-08-01) --------------------------------------- */
+
+/**
+ * Marks an extra that came from `POST /api/dodaci/opis` (the user wrote what
+ * they ate) rather than from the catalog.
+ *
+ * The prefix is load-bearing on the save path: catalog picks are re-read from
+ * `foods` server-side precisely so a client cannot author a macro, and an
+ * AI-estimated extra has no row to re-read. The prefix keeps those two
+ * populations apart, so the catalog rule stays intact for everything it can
+ * still apply to.
+ */
+export const AI_EXTRA_ID_PREFIX = "ai:";
+
+export const isAiExtraId = (id: string): boolean =>
+  id.startsWith(AI_EXTRA_ID_PREFIX);
+
+const boundedNumber = (max: number) =>
+  z.coerce
+    .number()
+    .catch(0)
+    .transform((n) => (Number.isFinite(n) ? Math.min(Math.max(n, 0), max) : 0));
+
+const boundedNullableNumber = (max: number) =>
+  z
+    .union([z.coerce.number(), z.null()])
+    .nullish()
+    .catch(null)
+    .transform((n) =>
+      typeof n === "number" && Number.isFinite(n)
+        ? Math.min(Math.max(n, 0), max)
+        : null
+    );
+
+/**
+ * An AI-estimated extra as it comes back over the wire on save.
+ *
+ * These numbers ARE client-authored, which is the one exception to the rule the
+ * rest of this file exists to enforce -- and it is the same exception
+ * `logMealAction` already makes for every photo/voice estimate: the figure was
+ * produced by our own server call, shown to the user, and there is no row
+ * anywhere to re-derive it from. What this schema guarantees instead is that
+ * nothing physically impossible can be written: every field is clamped to the
+ * range a real food can occupy, so the worst a tampered request can do is log a
+ * plausible food the user chose to log.
+ */
+export const aiExtraFoodSchema = z
+  .object({
+    id: z.string().min(1).max(80).startsWith(AI_EXTRA_ID_PREFIX),
+    name_sr: z.string().trim().min(1).max(60),
+    kcal_100g: boundedNumber(900),
+    protein_100g: boundedNumber(100),
+    carbs_100g: boundedNumber(100),
+    fat_100g: boundedNumber(100),
+    fiber_100g: boundedNullableNumber(80),
+    sugar_100g: boundedNullableNumber(100),
+    sodium_100g: boundedNullableNumber(40000),
+    sat_fat_100g: boundedNullableNumber(100),
+    unit_label: z.string().trim().min(1).max(24),
+    // A single "unit" heavier than 2 kg is not a serving of anything.
+    unit_grams: z.coerce.number().min(1).max(2000),
+  })
+  .transform(
+    (extra): ExtraFood => ({
+      ...extra,
+      // Presentation only, and re-derived here so the wire format stays as
+      // small as it can be.
+      emoji: foodEmoji(extra.name_sr),
+      label: extra.name_sr,
+      of: null,
+    })
+  );
 
 /**
  * What `units` taps of an extra contribute, as a breakdown line.

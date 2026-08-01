@@ -247,6 +247,114 @@ describe("LogAddMoreSheet — nije bilo na slici", () => {
       ]);
     });
   });
+  it("carries a written-in extra's own numbers, since it has no catalog row", async () => {
+    mockExtras();
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(
+      (url: string) => {
+        const href = String(url);
+        if (href.includes("/api/dodaci/opis")) {
+          return Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                ok: true,
+                data: {
+                  food: { ...MAYO, id: "ai:xyz", label: "Tartar sos", of: null },
+                  units: 2,
+                  napomena: "Kašika ≈ 15 g.",
+                },
+              }),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              href.includes("/api/dodaci")
+                ? { ok: true, data: [MAYO, PAVLAKA] }
+                : { ok: true, data: null }
+            ),
+        });
+      }
+    );
+
+    render(<LogAddMoreSheet log={baseLog} />);
+    fireEvent.click(screen.getByTestId("log-add-more-open-log-1"));
+
+    fireEvent.click(await screen.findByTestId("log-add-more-write-toggle"));
+    fireEvent.change(screen.getByTestId("log-add-more-write-input"), {
+      target: { value: "tartar sos" },
+    });
+    fireEvent.change(screen.getByTestId("log-add-more-write-amount"), {
+      target: { value: "2 kašike" },
+    });
+    fireEvent.click(screen.getByTestId("log-add-more-write-submit"));
+
+    // It lands as an ordinary stepper row, at the count the model worked out.
+    const row = await screen.findByTestId("log-add-more-extra-ai:xyz");
+    expect(row).toHaveTextContent("Tartar sos");
+    expect(screen.getByTestId("log-add-more-extra-ai:xyz-value")).toHaveTextContent(
+      "2"
+    );
+    // And says what it assumed, so a wrong count is one tap from right.
+    expect(screen.getByTestId("log-add-more-write-note")).toHaveTextContent(
+      "Kašika ≈ 15 g."
+    );
+
+    fireEvent.click(screen.getByTestId("log-add-more-save"));
+    await waitFor(() => {
+      const save = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.find(
+        (call) => String(call[0]).endsWith("/dodaj")
+      );
+      expect(save).toBeTruthy();
+      const body = JSON.parse(String(save![1].body));
+      expect(body.extras).toEqual([{ foodId: "ai:xyz", units: 2 }]);
+      // The definition rides along -- there is no `foods` row to re-read it
+      // from -- but ONLY for the written-in one.
+      expect(body.ai_dodaci).toHaveLength(1);
+      expect(body.ai_dodaci[0].id).toBe("ai:xyz");
+    });
+  });
+
+  it("says so when the estimate fails, and keeps the rest of the sheet usable", async () => {
+    (global.fetch as ReturnType<typeof vi.fn>).mockImplementation(
+      (url: string) => {
+        const href = String(url);
+        if (href.includes("/api/dodaci/opis")) {
+          return Promise.resolve({
+            ok: false,
+            json: () =>
+              Promise.resolve({ ok: false, error_sr: "Ovo nam ne liči na hranu." }),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          json: () =>
+            Promise.resolve(
+              href.includes("/api/dodaci")
+                ? { ok: true, data: [MAYO, PAVLAKA] }
+                : { ok: true, data: null }
+            ),
+        });
+      }
+    );
+
+    render(<LogAddMoreSheet log={baseLog} />);
+    fireEvent.click(screen.getByTestId("log-add-more-open-log-1"));
+    fireEvent.click(await screen.findByTestId("log-add-more-write-toggle"));
+    fireEvent.change(screen.getByTestId("log-add-more-write-input"), {
+      target: { value: "asdf" },
+    });
+    fireEvent.click(screen.getByTestId("log-add-more-write-submit"));
+
+    expect(await screen.findByTestId("log-add-more-write-error")).toHaveTextContent(
+      "Ovo nam ne liči na hranu."
+    );
+    // The steppers are untouched: a failed estimate must not cost the user the
+    // seconds they came here for.
+    expect(screen.getByTestId("log-add-more-component-0")).toBeInTheDocument();
+  });
+
   it("closes from the X in the header", async () => {
     mockExtras();
     render(<LogAddMoreSheet log={baseLog} />);

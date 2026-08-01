@@ -14,12 +14,18 @@ import {
 
 import { AiThinking } from "@/components/ai/ai-thinking";
 import { CameraCapture } from "@/components/camera/camera-capture";
+import { EatenShare } from "@/components/food/eaten-share";
 import { useT } from "@/components/i18n/locale-provider";
 import {
   scaleMealComponents,
   scaleMealMicros,
   type MealEstimate,
 } from "@/lib/ai/meal-estimate";
+import {
+  FULL_EATEN_SHARE,
+  eatenShareForGrams,
+  gramsForEatenShare,
+} from "@/lib/log/eaten-share";
 import { downscaleImage } from "@/lib/image/downscale";
 import { buildScanCard } from "@/lib/share/build-scan-card";
 import { prewarmCard } from "@/lib/share/card-cache";
@@ -100,6 +106,12 @@ export function ObrokFlow() {
     carbs: 0,
     fat: 0,
   });
+  // "Nisam pojeo sve": the plate AS SERVED (what the photo showed) and the
+  // share of it that was actually eaten. `grams` above stays what gets logged,
+  // so every existing rescale keeps working untouched -- these two only decide
+  // what it is set to.
+  const [servedGrams, setServedGrams] = useState(0);
+  const [share, setShare] = useState(FULL_EATEN_SHARE);
 
   async function handlePhoto(file: File) {
     setError(null);
@@ -136,6 +148,11 @@ export function ObrokFlow() {
     });
     setName(est.naziv);
     setGrams(Math.round(g));
+    // A fresh photo always starts at the whole plate: the estimate describes
+    // what was served, and assuming leftovers nobody mentioned would be the
+    // app inventing food that wasn't eaten.
+    setServedGrams(Math.round(g));
+    setShare(FULL_EATEN_SHARE);
     setNutrition({
       kcal: est.kcal,
       protein: est.protein_g,
@@ -162,6 +179,32 @@ export function ObrokFlow() {
       carbs: (per100.carbs * value) / 100,
       fat: (per100.fat * value) / 100,
     });
+  }
+
+  /** The slider: a share of the served plate, converted into the grams every
+   * other number already follows. */
+  function handleShareChange(next: number) {
+    setShare(next);
+    handleGramsChange(gramsForEatenShare(servedGrams, next));
+  }
+
+  /**
+   * The gram field under "Ispravi", kept in sync with the slider -- the two are
+   * two views of one portion, so typing 200 g of a 400 g plate must move the
+   * thumb to 50% rather than leave it lying at 100%.
+   *
+   * More grams than the estimate is not a share at all: the estimate itself was
+   * low, so the served plate is re-based to the typed figure and the slider
+   * returns to "all of it".
+   */
+  function handleGramsInput(value: number) {
+    handleGramsChange(value);
+    if (value > servedGrams) {
+      setServedGrams(value);
+      setShare(FULL_EATEN_SHARE);
+      return;
+    }
+    setShare(eatenShareForGrams(servedGrams, value));
   }
 
   async function handleSave() {
@@ -386,6 +429,20 @@ export function ObrokFlow() {
             ) : null}
           </div>
 
+          {/* Not folded behind "Ispravi", unlike every other correction here:
+              a photo can only ever show what was SERVED, so this is the one
+              number the picture genuinely cannot know. Costs nothing at 100%. */}
+          <EatenShare
+            share={share}
+            onShareChange={handleShareChange}
+            eatenGrams={grams}
+            eatenKcal={nutrition.kcal}
+            // Derived from the CURRENT kcal rather than from the estimate, so a
+            // hand-corrected calorie figure still reports leftovers honestly.
+            servedKcal={(nutrition.kcal / Math.max(share, 1)) * FULL_EATEN_SHARE}
+            disabled={phase === "saving"}
+          />
+
           {isEditing ? (
             <div className="flex flex-col gap-4">
               <label className="flex flex-col gap-1.5">
@@ -408,7 +465,7 @@ export function ObrokFlow() {
                   min={1}
                   value={grams === 0 ? "" : grams}
                   onChange={(event) =>
-                    handleGramsChange(Math.max(0, Number(event.target.value) || 0))
+                    handleGramsInput(Math.max(0, Number(event.target.value) || 0))
                   }
                   className="rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                 />

@@ -45,6 +45,17 @@ export const dodajMessages = {
     "dodaj.macroAbbr.carbs": "UH",
     "dodaj.macroAbbr.fat": "M",
 
+    // "Nisam pojeo sve" — koliko je od slikanog tanjira stvarno pojedeno
+    "dodaj.eaten.question": "Koliko si od ovoga pojeo/la?",
+    "dodaj.eaten.left": "{kcal} kcal je ostalo na tanjiru — to ne računamo.",
+    "dodaj.eaten.all": "Sve sa slike",
+    "dodaj.eaten.almostAll": "Skoro sve",
+    "dodaj.eaten.mostOfIt": "Veći deo",
+    "dodaj.eaten.half": "Otprilike pola",
+    "dodaj.eaten.lessThanHalf": "Manje od pola",
+    "dodaj.eaten.aThird": "Otprilike trećinu",
+    "dodaj.eaten.aBit": "Samo malo",
+
     // New product page
     "dodaj.newProduct.title": "Novi proizvod",
     "dodaj.newProduct.fromLabel.before": "Popunili smo vrednosti sa deklaracije — ",
@@ -255,6 +266,17 @@ export const dodajMessages = {
     "dodaj.macroAbbr.protein": "P",
     "dodaj.macroAbbr.carbs": "C",
     "dodaj.macroAbbr.fat": "F",
+
+    // "I didn't eat it all" — how much of the photographed plate was eaten
+    "dodaj.eaten.question": "How much of this did you eat?",
+    "dodaj.eaten.left": "{kcal} kcal left on the plate — we don't count those.",
+    "dodaj.eaten.all": "All of it",
+    "dodaj.eaten.almostAll": "Almost all",
+    "dodaj.eaten.mostOfIt": "Most of it",
+    "dodaj.eaten.half": "About half",
+    "dodaj.eaten.lessThanHalf": "Less than half",
+    "dodaj.eaten.aThird": "About a third",
+    "dodaj.eaten.aBit": "Just a bit",
 
     // New product page
     "dodaj.newProduct.title": "New product",

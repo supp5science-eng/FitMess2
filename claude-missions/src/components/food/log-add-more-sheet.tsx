@@ -1,7 +1,7 @@
 "use client";
 
-import { Minus, Plus, Search, X } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, Minus, PenLine, Plus, Sparkles, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useCountUp } from "@/components/home/animated-number";
 import { useT } from "@/components/i18n/locale-provider";
@@ -14,10 +14,14 @@ import {
   readComponents,
   type AddMoreSelection,
 } from "@/lib/log/add-more";
-import { toExtraFood, type ExtraFood } from "@/lib/log/extras";
+import {
+  MAX_EXTRA_AMOUNT,
+  MAX_EXTRA_DESCRIPTION,
+} from "@/lib/ai/extra-limits";
+import { isAiExtraId, type ExtraFood } from "@/lib/log/extras";
 import { formatUnitCount } from "@/lib/log/units-sr";
 import type { TFunction } from "@/lib/i18n/translate";
-import type { Food, Log, LogComponentSnapshot } from "@/lib/types/db";
+import type { Log, LogComponentSnapshot } from "@/lib/types/db";
 
 // "Dodaj još" (2026-07-25): the sheet that lets you eat seconds without
 // photographing them.
@@ -46,13 +50,29 @@ import type { Food, Log, LogComponentSnapshot } from "@/lib/types/db";
 //
 // The preview runs `applyAddMore`, the exact function the server re-runs
 // against the stored row (`src/app/api/logs/[id]/dodaj/route.ts`) -- same
-// guarantee as F026's edit sheet: what you see added is what gets written. Only
-// unit counts go over the wire; no macro number is ever client-authored.
+// guarantee as F026's edit sheet: what you see added is what gets written. For
+// catalog picks only unit counts go over the wire; a written-in extra carries
+// the figures our own estimate endpoint produced (see `aiExtraFoodSchema`).
+//
+// (2026-08-01) The extras row lost its catalog search. Searching 350 curated
+// foods for "tartar sos" answers "nema u katalogu", which teaches people the
+// feature doesn't work and leaves the calories unlogged -- so the box now takes
+// what the user WRITES plus how much of it, and asks the model
+// (`POST /api/dodaci/opis`). Anything sayable is loggable.
 
 interface LogResponseBody {
   ok: boolean;
   error_sr?: string;
   data?: Log;
+}
+
+/** What `POST /api/dodaci/opis` answers with: a food shaped exactly like a
+ * catalog chip, how many units the description worked out to, and the one-line
+ * assumption behind it. */
+interface ExtraEstimateBody {
+  ok: boolean;
+  error_sr?: string;
+  data?: { food: ExtraFood; units: number; napomena?: string };
 }
 
 type Phase = "idle" | "splitting" | "saving";
@@ -93,12 +113,16 @@ export function LogAddMoreSheet({
   // "Nije bilo na slici": the curated chips, plus whatever the user has tapped.
   const [extraCatalog, setExtraCatalog] = useState<ExtraFood[]>([]);
   const [extraPicks, setExtraPicks] = useState<ExtraPick[]>([]);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<ExtraFood[] | null>(null);
-  const [searchBusy, setSearchBusy] = useState(false);
-  /** Guards against a slow early query overwriting a later one's results. */
-  const searchSeq = useRef(0);
+  // "Napiši šta si još pojeo/la": the free-text box that replaced search.
+  const [writeOpen, setWriteOpen] = useState(false);
+  const [writeText, setWriteText] = useState("");
+  const [writeAmount, setWriteAmount] = useState("");
+  const [writeBusy, setWriteBusy] = useState(false);
+  const [writeError, setWriteError] = useState<string | undefined>(undefined);
+  /** The model's one-line assumption for the last thing written in ("kašika
+   * majoneza ≈ 15 g"). Shown once, because an estimate that says what it
+   * guessed is one the user can actually correct with the stepper. */
+  const [writeNote, setWriteNote] = useState<string | undefined>(undefined);
 
   const selection = useMemo<AddMoreSelection>(
     () => ({
@@ -110,6 +134,11 @@ export function LogAddMoreSheet({
         foodId: pick.food.id,
         units: pick.units,
       })),
+      // Only the written-in ones travel with their numbers; catalog picks are
+      // re-read from `foods` server-side and must not be client-authored.
+      ai_dodaci: extraPicks
+        .filter((pick) => isAiExtraId(pick.food.id))
+        .map((pick) => pick.food),
     }),
     [whole, units, extraPicks]
   );
@@ -161,9 +190,11 @@ export function LogAddMoreSheet({
     setErrorMessage(undefined);
     setSplitNote(undefined);
     setExtraPicks([]);
-    setSearchOpen(false);
-    setSearchQuery("");
-    setSearchResults(null);
+    setWriteOpen(false);
+    setWriteText("");
+    setWriteAmount("");
+    setWriteError(undefined);
+    setWriteNote(undefined);
     setIsOpen(true);
 
     // Chips load alongside the split rather than after it: they are catalog
@@ -267,38 +298,49 @@ export function LogAddMoreSheet({
     setErrorMessage(undefined);
   }
 
-  // Catalog search, for the extra that isn't one of the ten chips. Debounced so
-  // a two-word food doesn't fire five queries, and sequence-guarded so results
-  // can only ever belong to the text currently in the box.
-  useEffect(() => {
-    if (!searchOpen) return;
-    const query = searchQuery.trim();
-    // Too short to search. Clearing already happened in `onChange` -- this
-    // effect never writes state synchronously (react-hooks/set-state-in-effect).
-    if (query.length < 2) return;
-
-    const timer = setTimeout(async () => {
-      const seq = ++searchSeq.current;
-      try {
-        const response = await fetch(
-          `/api/foods/search?q=${encodeURIComponent(query)}`
-        );
-        const body = (await response.json()) as { ok: boolean; data?: Food[] };
-        if (seq !== searchSeq.current) return;
-        setSearchResults(
-          body.ok && Array.isArray(body.data)
-            ? body.data.slice(0, 6).map(toExtraFood)
-            : []
-        );
-      } catch {
-        if (seq === searchSeq.current) setSearchResults([]);
-      } finally {
-        if (seq === searchSeq.current) setSearchBusy(false);
+  /**
+   * The written-in extra: one estimate call, straight into a stepper row.
+   *
+   * Deliberately explicit ("Izračunaj") rather than as-you-type: every call
+   * costs money and the user is mid-sentence for most of the typing. The
+   * amount box is optional -- an empty one means "a normal serving", which the
+   * model is asked to assume out loud and which then shows up as the note.
+   */
+  async function estimateWritten() {
+    const opis = writeText.trim();
+    if (opis.length < 2 || writeBusy) return;
+    setWriteBusy(true);
+    setWriteError(undefined);
+    setWriteNote(undefined);
+    try {
+      const response = await fetch("/api/dodaci/opis", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ opis, kolicina: writeAmount.trim() }),
+      });
+      const body = (await response.json()) as ExtraEstimateBody;
+      if (!response.ok || !body.ok || !body.data) {
+        setWriteError(body.error_sr || t("food.addMore.extrasWriteFailed"));
+        return;
       }
-    }, 280);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, searchOpen]);
+      const { food, units: estimatedUnits, napomena } = body.data;
+      // Straight into the same promoted-row list a chip lands in: from here on
+      // there is nothing special about a written-in extra.
+      setExtraPicks((current) => [
+        ...current,
+        { food, units: Math.min(Math.max(estimatedUnits, 1), MAX_UNITS) },
+      ]);
+      setWriteNote(napomena?.trim() || undefined);
+      setWriteOpen(false);
+      setWriteText("");
+      setWriteAmount("");
+      setErrorMessage(undefined);
+    } catch {
+      setWriteError(t("food.addMore.extrasWriteFailed"));
+    } finally {
+      setWriteBusy(false);
+    }
+  }
 
   /**
    * Chips worth showing: not already promoted to a row, and not already part of
@@ -553,96 +595,119 @@ export function LogAddMoreSheet({
                       </button>
                     ))}
 
+                    {/* Anything that isn't one of the chips. Not a search box:
+                        the catalog is 350 foods and "nema u katalogu" is how a
+                        snack ends up unlogged. */}
                     <button
                       type="button"
-                      data-testid="log-add-more-search-toggle"
-                      aria-expanded={searchOpen}
-                      onClick={() => setSearchOpen((open) => !open)}
+                      data-testid="log-add-more-write-toggle"
+                      aria-expanded={writeOpen}
+                      onClick={() => {
+                        setWriteOpen((open) => !open);
+                        setWriteError(undefined);
+                      }}
                       className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-colors ${
-                        searchOpen
+                        writeOpen
                           ? "border-primary/50 bg-primary/10 text-primary"
                           : "border-dashed border-border bg-transparent text-muted-foreground"
                       }`}
                     >
-                      <Search className="size-3.5" aria-hidden="true" />
-                      {t("food.addMore.extrasSearch")}
+                      <PenLine className="size-3.5" aria-hidden="true" />
+                      {t("food.addMore.extrasWrite")}
                     </button>
                   </div>
 
-                  {searchOpen ? (
+                  {/* What the estimate assumed, once, under the row it just
+                      created -- so "2 kašike" that should have been one is a
+                      single tap on "−" away. */}
+                  {writeNote && !writeOpen ? (
+                    <p
+                      data-testid="log-add-more-write-note"
+                      className="flex items-start gap-1.5 px-1 text-xs text-muted-foreground"
+                    >
+                      <Sparkles
+                        className="mt-0.5 size-3 shrink-0 text-primary"
+                        aria-hidden="true"
+                      />
+                      {writeNote}
+                    </p>
+                  ) : null}
+
+                  {writeOpen ? (
                     <div className="flex flex-col gap-2">
+                      <p className="px-1 text-xs text-muted-foreground">
+                        {t("food.addMore.extrasWriteHint")}
+                      </p>
                       <input
-                        type="search"
+                        type="text"
                         autoFocus
-                        value={searchQuery}
-                        // The busy/cleared transitions live here rather than in
-                        // the effect: typing is what changes them, and an effect
-                        // that writes state synchronously cascades renders.
+                        value={writeText}
                         onChange={(event) => {
-                          const value = event.target.value;
-                          setSearchQuery(value);
-                          if (value.trim().length < 2) {
-                            // Discard anything already in flight.
-                            searchSeq.current += 1;
-                            setSearchResults(null);
-                            setSearchBusy(false);
-                          } else {
-                            setSearchBusy(true);
+                          setWriteText(event.target.value);
+                          setWriteError(undefined);
+                        }}
+                        // Enter from either box submits: this is a two-field
+                        // form, and reaching for a button after typing three
+                        // words is exactly the friction the chips avoid.
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            event.preventDefault();
+                            void estimateWritten();
                           }
                         }}
-                        aria-label={t("food.addMore.extrasSearchLabel")}
-                        placeholder={t("food.addMore.extrasSearchPlaceholder")}
-                        data-testid="log-add-more-search-input"
+                        maxLength={MAX_EXTRA_DESCRIPTION}
+                        aria-label={t("food.addMore.extrasWriteLabel")}
+                        placeholder={t("food.addMore.extrasWritePlaceholder")}
+                        data-testid="log-add-more-write-input"
                         // 16px keeps iOS from zooming the whole sheet on focus.
                         className="w-full rounded-2xl border border-border bg-card px-3 py-2.5 text-base text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-primary/50"
                       />
-                      {searchBusy ? (
-                        <p className="px-1 text-xs text-muted-foreground">
-                          {t("food.addMore.extrasSearching")}
-                        </p>
-                      ) : null}
-                      {!searchBusy && searchResults?.length === 0 ? (
-                        <p
-                          data-testid="log-add-more-search-empty"
-                          className="px-1 text-xs text-muted-foreground"
-                        >
-                          {t("food.addMore.extrasNoResults")}
-                        </p>
-                      ) : null}
-                      {searchResults?.map((food) => (
-                        <button
-                          key={food.id}
-                          type="button"
-                          data-testid={`log-add-more-result-${food.id}`}
-                          onClick={() => {
-                            stepExtra(food, 1);
-                            setSearchOpen(false);
-                            setSearchQuery("");
-                            setSearchResults(null);
+                      <div className="flex items-stretch gap-2">
+                        <input
+                          type="text"
+                          value={writeAmount}
+                          onChange={(event) => setWriteAmount(event.target.value)}
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter") {
+                              event.preventDefault();
+                              void estimateWritten();
+                            }
                           }}
-                          className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-3 py-2.5 text-left active:border-primary/50"
+                          maxLength={MAX_EXTRA_AMOUNT}
+                          aria-label={t("food.addMore.extrasAmountLabel")}
+                          placeholder={t("food.addMore.extrasAmountPlaceholder")}
+                          data-testid="log-add-more-write-amount"
+                          className="min-w-0 flex-1 rounded-2xl border border-border bg-card px-3 py-2.5 text-base text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-primary/50"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => void estimateWritten()}
+                          disabled={writeText.trim().length < 2 || writeBusy}
+                          data-testid="log-add-more-write-submit"
+                          className="flex shrink-0 items-center gap-1.5 rounded-2xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition-opacity disabled:opacity-40"
                         >
-                          <span className="flex min-w-0 flex-col">
-                            <span className="truncate text-sm font-semibold text-foreground">
-                              {food.emoji} {food.label}
-                            </span>
-                            <span className="truncate text-xs text-muted-foreground">
-                              {t("food.addMore.extrasPerUnit", {
-                                unit: `1 ${food.unit_label} · ${Math.round(
-                                  food.unit_grams
-                                )} g`,
-                                kcal: Math.round(
-                                  (food.kcal_100g * food.unit_grams) / 100
-                                ),
-                              })}
-                            </span>
-                          </span>
-                          <Plus
-                            className="size-5 shrink-0 text-primary"
-                            aria-hidden="true"
-                          />
+                          {writeBusy ? (
+                            <Loader2
+                              className="size-4 animate-spin"
+                              aria-hidden="true"
+                            />
+                          ) : (
+                            <Sparkles className="size-4" aria-hidden="true" />
+                          )}
+                          {writeBusy
+                            ? t("food.addMore.extrasEstimating")
+                            : t("food.addMore.extrasEstimate")}
                         </button>
-                      ))}
+                      </div>
+                      {writeError ? (
+                        <p
+                          role="alert"
+                          data-testid="log-add-more-write-error"
+                          className="px-1 text-xs font-medium text-destructive"
+                        >
+                          {writeError}
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>

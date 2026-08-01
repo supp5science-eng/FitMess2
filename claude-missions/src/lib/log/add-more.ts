@@ -1,6 +1,10 @@
 import { z } from "zod";
 
-import { extraComponent, type ExtraFood } from "@/lib/log/extras";
+import {
+  aiExtraFoodSchema,
+  extraComponent,
+  type ExtraFood,
+} from "@/lib/log/extras";
 import type { Log, LogComponentSnapshot } from "@/lib/types/db";
 
 // "Dodaj još" (2026-07-25): seconds without a second photo.
@@ -42,14 +46,25 @@ export const addMoreSelectionSchema = z.object({
     .max(12)
     .default([]),
   /**
-   * Foods that were never in the entry ("nije bilo na slici"), as catalog ids
-   * plus a tap count. Deliberately ONLY an id: the server resolves the numbers
-   * from `foods` itself, so a tampered or stale client cannot author a macro.
+   * Foods that were never in the entry ("nije bilo na slici"), as ids plus a
+   * tap count. Deliberately ONLY an id for catalog picks: the server resolves
+   * the numbers from `foods` itself, so a tampered or stale client cannot
+   * author a macro.
+   *
+   * Written-in extras appear here too, under their `ai:` id -- what they are
+   * made of travels separately, in `ai_dodaci` below.
    */
   extras: z
     .array(z.object({ foodId: z.string().min(1), units: unitsSchema }))
     .max(12)
     .default([]),
+  /**
+   * The definitions behind any `ai:` picks above -- foods the user described in
+   * their own words, estimated by `POST /api/dodaci/opis`. They have no catalog
+   * row to re-read, so they carry their own per-100 g numbers (clamped by
+   * `aiExtraFoodSchema` to what a real food can be).
+   */
+  ai_dodaci: z.array(aiExtraFoodSchema).max(6).default([]),
 });
 
 export type AddMoreSelection = z.infer<typeof addMoreSelectionSchema>;

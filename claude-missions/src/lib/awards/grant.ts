@@ -11,6 +11,7 @@ import {
   awardPayload,
   type StoredSubscription,
 } from "@/lib/push/send";
+import { MAX_PER_DAY } from "@/lib/push/due";
 import type { Database } from "@/lib/types/db";
 
 import { currentStreak, FULL_DAY_AWARD, MEALS_FOR_FULL_DAY } from "./streak";
@@ -92,7 +93,7 @@ export async function grantFullDayAward(
     }
 
     const streak = await readStreak(supabase, userId, todayKey);
-    const pushed = await pushCelebration(supabase, userId, streak);
+    const pushed = await pushCelebration(supabase, userId, streak, todayKey);
 
     return { granted: true, streak, pushed };
   } catch (error) {
@@ -138,17 +139,28 @@ export async function readStreak(
 async function pushCelebration(
   supabase: SupabaseClient<Database>,
   userId: string,
-  streak: number
+  streak: number,
+  todayKey: string
 ): Promise<number> {
   const { data: settings } = await supabase
     .from("reminder_settings")
-    .select("award_enabled")
+    .select("award_enabled, sent_day, sent_count")
     .eq("user_id", userId)
     .maybeSingle();
 
   // No row at all means the user never opened the reminders screen, so they
   // have never granted notification permission either — nothing to send to.
   if (!settings || !settings.award_enabled) return 0;
+
+  // The daily ceiling applies here too (0027). This push does not go through
+  // the cron sender, so without this check "at most two a day" was a promise
+  // only the scheduled reminders kept — a day could carry a meal nudge, an
+  // evening close-out AND this. The award itself is still granted and the
+  // `/nagrada` screen still celebrates it on the next visit; only the
+  // interruption is skipped.
+  const spent =
+    settings.sent_day === todayKey ? (settings.sent_count ?? 0) : 0;
+  if (spent >= MAX_PER_DAY) return 0;
 
   if (!configureWebPush()) {
     console.error("[nagrade] VAPID env vars missing");
@@ -175,5 +187,16 @@ async function pushCelebration(
     await supabase.from("push_subscriptions").delete().in("id", dead);
   }
 
-  return results.filter((result) => result.status === "sent").length;
+  const sent = results.filter((result) => result.status === "sent").length;
+
+  // Spend one slot of the day's budget, so a celebration at lunchtime can cost
+  // the evening close-out rather than stack on top of it.
+  if (sent > 0) {
+    await supabase
+      .from("reminder_settings")
+      .update({ sent_day: todayKey, sent_count: spent + 1 })
+      .eq("user_id", userId);
+  }
+
+  return sent;
 }

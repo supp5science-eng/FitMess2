@@ -247,4 +247,14 @@ describe("LogAddMoreSheet — nije bilo na slici", () => {
       ]);
     });
   });
+  it("closes from the X in the header", async () => {
+    mockExtras();
+    render(<LogAddMoreSheet log={baseLog} />);
+    fireEvent.click(screen.getByTestId("log-add-more-open-log-1"));
+    await screen.findByTestId("log-add-more-chip-food-mayo");
+
+    // Tapping outside and Escape already worked, but neither is VISIBLE.
+    fireEvent.click(screen.getByTestId("log-add-more-close"));
+    expect(screen.queryByTestId("log-add-more-sheet")).toBeNull();
+  });
 });

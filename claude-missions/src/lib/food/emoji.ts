@@ -93,7 +93,8 @@ const EMOJI_RULES: readonly (readonly [string, ...string[]])[] = [
   ["🍅", "kecap"],
   ["🌶️", "ajvar"],
   ["🥄", "majonez", "senf", "tartar", "dresing", "sos"],
-  ["🥛", "pavlak"],
+  // Sour cream lives in a tub with a spoon in it, not in a milk glass.
+  ["🥣", "pavlak"],
   ["🫒", "ulje", "maslin"],
   ["🍬", "secer"],
 ];

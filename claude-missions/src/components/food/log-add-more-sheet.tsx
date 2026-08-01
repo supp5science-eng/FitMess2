@@ -1,6 +1,6 @@
 "use client";
 
-import { Minus, Plus, Search } from "lucide-react";
+import { Minus, Plus, Search, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useCountUp } from "@/components/home/animated-number";
@@ -395,7 +395,7 @@ export function LogAddMoreSheet({
               >
                 {foodEmoji(entry.name)}
               </span>
-              <div className="flex min-w-0 flex-col">
+              <div className="flex min-w-0 flex-1 flex-col">
                 <h2
                   id="log-add-more-title"
                   className="line-clamp-2 text-base font-semibold text-foreground"
@@ -409,6 +409,20 @@ export function LogAddMoreSheet({
                   })}
                 </p>
               </div>
+              {/* A visible way out. Tapping the dimmed area and Escape both
+                  already closed the sheet, but neither is visible -- on a phone
+                  the only thing that reads as "I can leave" is an X, and
+                  "Otkaži" sits below the fold once the chips are open. */}
+              <button
+                type="button"
+                onClick={closeSheet}
+                disabled={phase === "saving"}
+                aria-label={t("food.addMore.close")}
+                data-testid="log-add-more-close"
+                className="-mr-1 flex size-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-foreground/10 disabled:opacity-30"
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
             </header>
 
             {phase === "splitting" ? (

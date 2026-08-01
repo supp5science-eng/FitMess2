@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   Activity,
   Footprints,
+  Info,
   Minus,
   Scale,
   TrendingDown,
@@ -71,6 +72,34 @@ function formatKg(kg: number): string {
 
 function formatKcal(kcal: number): string {
   return Math.round(kcal).toLocaleString("sr-RS");
+}
+
+/**
+ * The app admitting the limits of what it knows.
+ *
+ * Set apart from the body copy on purpose. "One weigh-in means nothing" and
+ * "your weight is moving slower than planned" are not the same kind of
+ * statement -- one is a reading of the data, the other is a caveat about
+ * whether there IS any -- and rendering them as identical grey paragraphs let
+ * a caveat be skimmed as a verdict. Boxed, marked and quieter, so it reads as
+ * the footnote it is.
+ */
+function Disclaimer({
+  children,
+  testId,
+}: {
+  children: React.ReactNode;
+  testId?: string;
+}) {
+  return (
+    <p
+      data-testid={testId}
+      className="flex items-start gap-2 rounded-xl border border-border/60 bg-muted/30 px-3.5 py-3 text-xs leading-relaxed text-muted-foreground"
+    >
+      <Info className="size-4 shrink-0 translate-y-0.5" aria-hidden={true} />
+      <span>{children}</span>
+    </p>
+  );
 }
 
 export function WeeklyResultCard({
@@ -225,9 +254,9 @@ export function WeeklyResultCard({
       ) : null}
 
       {trend.confidence === "low" && trend.status !== "INSUFFICIENT_DATA" ? (
-        <p className="text-xs text-muted-foreground">
+        <Disclaimer testId="weekly-result-low-confidence">
           {t("merenje.result.lowConfidence")}
-        </p>
+        </Disclaimer>
       ) : null}
 
       {showDecision && suggestion ? (
@@ -318,6 +347,9 @@ export function WeeklyResultCard({
 function PlainLanguage({ trend }: { trend: WeeklyTrendResult }) {
   const { t } = useT();
 
+  const insufficient = trend.status === "INSUFFICIENT_DATA";
+  // Written out rather than reusing `insufficient`: the inline comparison is
+  // what narrows `trend.status` for the STATUS_EXPLAIN lookup below.
   const template =
     trend.status === "INSUFFICIENT_DATA"
       ? t(REASON_EXPLAIN[trend.reason ?? "few_weigh_ins"])
@@ -329,7 +361,7 @@ function PlainLanguage({ trend }: { trend: WeeklyTrendResult }) {
     // Nothing to phrase: "we don't have the data" is already one clear
     // sentence, and spending a model call to reword it would be spending quota
     // on the one case where there is nothing to say.
-    if (trend.status === "INSUFFICIENT_DATA") return;
+    if (insufficient) return;
 
     let cancelled = false;
     const controller = new AbortController();
@@ -355,7 +387,14 @@ function PlainLanguage({ trend }: { trend: WeeklyTrendResult }) {
       cancelled = true;
       controller.abort();
     };
-  }, [trend.status]);
+  }, [trend.status, insufficient]);
+
+  // "We can't read a trend yet" is a caveat, not a finding -- so it wears the
+  // footnote's clothes rather than the verdict's. Everything else is the card
+  // actually answering the question the user opened it with.
+  if (insufficient) {
+    return <Disclaimer testId="weekly-result-message">{text}</Disclaimer>;
+  }
 
   return (
     <p

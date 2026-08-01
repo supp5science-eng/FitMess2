@@ -25,7 +25,7 @@ export const merenjeMessages = {
     "merenje.howToWhy":
       "Uvek na isti način, jer se dnevno kolebanje od 1–2 kg (voda, so, glikogen) inače pomeša sa stvarnom promenom.",
     "merenje.field": "Težina (kg)",
-    "merenje.placeholder": "npr. 82,5",
+    "merenje.readout": "Očitano sa vage",
     "merenje.save": "Sačuvaj merenje",
     "merenje.saving": "Čuvam…",
     "merenje.saved": "Merenje je sačuvano.",
@@ -131,7 +131,7 @@ export const merenjeMessages = {
     "merenje.howToWhy":
       "Always the same way, because a 1–2 kg daily swing (water, salt, glycogen) otherwise gets mistaken for real change.",
     "merenje.field": "Weight (kg)",
-    "merenje.placeholder": "e.g. 82.5",
+    "merenje.readout": "Off the scale",
     "merenje.save": "Save weigh-in",
     "merenje.saving": "Saving…",
     "merenje.saved": "Weigh-in saved.",

@@ -15,6 +15,7 @@ import { useT } from "@/components/i18n/locale-provider";
 import { GricButton } from "@/components/home/gric-button";
 import { WaterButton } from "@/components/home/water-button";
 import { WeighInBanner } from "@/components/home/weigh-in-banner";
+import { WorkoutButton } from "@/components/home/workout-button";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import { computeDayTotals } from "@/lib/home/totals";
@@ -69,6 +70,8 @@ export function HomeScreen({
   waterWeek = [],
   isToday = true,
   weighInDaysWaiting = null,
+  workoutKcal = 0,
+  workoutMinutes = 0,
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
@@ -118,6 +121,14 @@ export function HomeScreen({
   // week's weigh-in, or null when it isn't waiting. Server-decided (the
   // schedule lives in `reminder_settings`), so this component only renders it.
   weighInDaysWaiting?: number | null;
+  // Trening (2026-08-01): the viewed day's logged sessions, as net kcal and
+  // total minutes. Server-read in `/danas`. These are DISPLAY figures -- they
+  // are never folded into `targetKcal` or into the ring, because the plan
+  // already pays for training through the TDEE activity multiplier (see
+  // `src/lib/workout/activities.ts`). The card lives on the movement page, not
+  // beside the calorie ring, for exactly that reason.
+  workoutKcal?: number;
+  workoutMinutes?: number;
 }) {
   const { t } = useT();
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
@@ -372,6 +383,15 @@ export function HomeScreen({
                             goalMl={waterGoal}
                             week={waterWeek}
                           />
+                          {/* Trening, deliberately last and deliberately one
+                              row tall: this page's height is shared by every
+                              other pager page, so a third full card here would
+                              show up as dead air on the calorie and
+                              micronutrient pages. */}
+                          <WorkoutButton
+                            kcal={workoutKcal}
+                            minutes={workoutMinutes}
+                          />
                         </div>
                       ),
                     },
@@ -406,6 +426,7 @@ export function HomeScreen({
             initialMl={initialWaterMl}
             goalMl={waterGoal}
           />
+          <WorkoutButton kcal={workoutKcal} minutes={workoutMinutes} />
           {isToday ? <GricButton /> : null}
         </div>
       ) : null}

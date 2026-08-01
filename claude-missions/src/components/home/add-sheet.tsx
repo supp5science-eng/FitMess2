@@ -3,7 +3,15 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { Camera, Cookie, Plus, Target, UtensilsCrossed, X } from "lucide-react";
+import {
+  Camera,
+  Cookie,
+  Dumbbell,
+  Plus,
+  Target,
+  UtensilsCrossed,
+  X,
+} from "lucide-react";
 
 import { useT } from "@/components/i18n/locale-provider";
 import type { TFunction } from "@/lib/i18n/translate";
@@ -103,6 +111,20 @@ function buildOptions(t: TFunction): AddSheetOption[] {
       label: t("home.addSheet.label"),
       icon: Camera,
       href: "/dodaj/deklaracija",
+    },
+    // "Trening" is the one row here that is not about food. It sits at the
+    // bottom on purpose: this menu's job is logging what went IN, and putting
+    // movement above a meal method would suggest the two cancel out. They do
+    // not -- a logged workout never becomes extra allowance (the plan already
+    // pays for training via the TDEE multiplier; see
+    // `src/lib/workout/activities.ts`), which is why it earns a row rather
+    // than a badge.
+    {
+      key: "trening",
+      label: t("trening.card.label"),
+      icon: Dumbbell,
+      href: "/dodaj/trening",
+      description: t("trening.addSheet.desc"),
     },
     // Barcode scanning was dropped from this menu on purpose: a barcode only
     // yields the per-100g label data the user is already photographing, and it

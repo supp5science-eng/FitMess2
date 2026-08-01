@@ -121,17 +121,36 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
     expect(screen.getByTestId("add-sheet")).not.toHaveTextContent("Reci obrok");
   });
 
-  it("test_the_menu_offers_exactly_the_four_live_methods", () => {
+  it("test_the_menu_offers_exactly_the_five_live_methods", () => {
     render(<AddSheet />);
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
 
     const options = screen
       .getByTestId("add-sheet")
       .querySelectorAll('[data-testid^="add-sheet-option-"]');
-    expect(options.length).toBe(4);
-    expect(options[options.length - 1]).toHaveAttribute(
+    // Four food methods + Trening (0026), which is the only row here that logs
+    // something other than food -- and therefore sits last.
+    expect(options.length).toBe(5);
+    expect(options[3]).toHaveAttribute(
       "data-testid",
       "add-sheet-option-deklaracija"
+    );
+    expect(options[options.length - 1]).toHaveAttribute(
+      "data-testid",
+      "add-sheet-option-trening"
+    );
+  });
+
+  it("test_the_menu_offers_trening_below_the_food_methods", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    expect(screen.getByTestId("add-sheet-option-trening")).toHaveAttribute(
+      "href",
+      "/dodaj/trening"
+    );
+    expect(screen.getByTestId("add-sheet-desc-trening")).toHaveTextContent(
+      "Teretana, trčanje, fudbal"
     );
   });
 

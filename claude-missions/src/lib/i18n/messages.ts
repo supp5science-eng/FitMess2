@@ -11,6 +11,7 @@ import { mediaMessages } from "@/lib/i18n/messages-parts/media";
 import { merenjeMessages } from "@/lib/i18n/messages-parts/merenje";
 import { onboardingMessages } from "@/lib/i18n/messages-parts/onboarding";
 import { profilMessages } from "@/lib/i18n/messages-parts/profil";
+import { treningMessages } from "@/lib/i18n/messages-parts/trening";
 
 /**
  * UI copy dictionary. Serbian (`sr`) is the SOURCE OF TRUTH for the set of
@@ -103,6 +104,7 @@ const sr = {
   ...appMessages.sr,
   ...dataMessages.sr,
   ...merenjeMessages.sr,
+  ...treningMessages.sr,
 } as const;
 
 export type MessageKey = keyof typeof sr;
@@ -181,6 +183,7 @@ const en: Record<MessageKey, string> = {
   ...appMessages.en,
   ...dataMessages.en,
   ...merenjeMessages.en,
+  ...treningMessages.en,
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { sr, en };

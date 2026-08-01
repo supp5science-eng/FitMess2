@@ -56,6 +56,14 @@ export type ActivityLevel =
  */
 export type GoalType = "maintain" | "lose" | "gain" | "tone";
 
+/**
+ * Trening (0026): how hard a logged session was. Serbian keys, because they
+ * are also what the DB check constraint stores -- the catalog in
+ * `src/lib/workout/activities.ts` prices each activity at three MET values,
+ * one per level.
+ */
+export type WorkoutIntensity = "lako" | "srednje" | "jako";
+
 /** F017: a single element of `profiles.rules` (jsonb array). See
  * `src/lib/budget/rules.ts`'s `PersistedRule` -- kept as a separate,
  * structurally-identical type here so this file's DB-shape types don't
@@ -802,6 +810,56 @@ export interface Database {
           },
         ];
       };
+      /** Trening (0026): one row per logged session — MANY per day, unlike
+       * `step_counts`/`water_intake`. DISPLAY ONLY: these rows never move the
+       * calorie budget (the TDEE activity multiplier already pays for training;
+       * the plan is corrected from the scale). See the migration header. */
+      workouts: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** Belgrade calendar day, `"YYYY-MM-DD"` (a Postgres `date`). */
+          day: string;
+          /** Key into the catalog in `src/lib/workout/activities.ts`. */
+          activity_key: string;
+          intensity: WorkoutIntensity;
+          /** Session length, 1..600 minutes. */
+          minutes: number;
+          /** NET kcal above resting metabolism, snapshotted at insert time
+           * from the user's weight THEN (never recomputed). */
+          kcal: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day: string;
+          activity_key: string;
+          intensity?: WorkoutIntensity;
+          minutes: number;
+          kcal?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          day?: string;
+          activity_key?: string;
+          intensity?: WorkoutIntensity;
+          minutes?: number;
+          kcal?: number;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "workouts_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -864,3 +922,6 @@ export type StepCountInsert =
   Database["public"]["Tables"]["step_counts"]["Insert"];
 export type StepCountUpdate =
   Database["public"]["Tables"]["step_counts"]["Update"];
+
+export type Workout = Database["public"]["Tables"]["workouts"]["Row"];
+export type WorkoutInsert = Database["public"]["Tables"]["workouts"]["Insert"];

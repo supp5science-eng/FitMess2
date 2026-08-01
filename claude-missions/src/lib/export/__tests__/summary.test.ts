@@ -75,13 +75,15 @@ describe("collectExportSummary", () => {
       "weighIns",
       "waterIntake",
       "stepCounts",
+      "workouts",
       "habitChecks",
       "mealPhotos",
       "targets",
     ]);
     expect(summary.rows[0]).toMatchObject({ labelSr: "Unosi hrane", count: 342 });
     expect(summary.rows[1].count).toBe(18);
-    expect(summary.rows[4].count).toBe(54);
+    // habitChecks -- index 5 since Trening (0026) took the slot before it.
+    expect(summary.rows[5].count).toBe(54);
   });
 
   it("test_counts_are_head_only_so_no_rows_are_transferred", async () => {

@@ -35,13 +35,22 @@ export interface ExportSummary {
 /** What gets counted, in the order the screen lists it. */
 const COUNTED_TABLES: {
   key: string;
-  table: "logs" | "weigh_ins" | "water_intake" | "step_counts" | "habit_checks" | "meal_photos" | "targets";
+  table:
+    | "logs"
+    | "weigh_ins"
+    | "water_intake"
+    | "step_counts"
+    | "workouts"
+    | "habit_checks"
+    | "meal_photos"
+    | "targets";
   labelSr: string;
 }[] = [
   { key: "logs", table: "logs", labelSr: "Unosi hrane" },
   { key: "weighIns", table: "weigh_ins", labelSr: "Merenja težine" },
   { key: "waterIntake", table: "water_intake", labelSr: "Dani sa unetom vodom" },
   { key: "stepCounts", table: "step_counts", labelSr: "Dani sa koracima" },
+  { key: "workouts", table: "workouts", labelSr: "Upisani treninzi" },
   { key: "habitChecks", table: "habit_checks", labelSr: "Čekirane navike" },
   { key: "mealPhotos", table: "meal_photos", labelSr: "Slike obroka" },
   { key: "targets", table: "targets", labelSr: "Izmene plana" },

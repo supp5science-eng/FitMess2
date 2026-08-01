@@ -19,6 +19,7 @@ import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
 import { createClient } from "@/lib/supabase/server";
 import { weighInDueState } from "@/lib/weight/weigh-in-day";
 import { getLastWeighInDay, getWeighInDay } from "@/lib/weight/weigh-ins";
+import { getWorkoutTotalsForDay } from "@/lib/workout/workouts";
 
 const SR_MONTHS_SHORT = [
   "jan",
@@ -132,6 +133,7 @@ export default async function DanasPage({
     waterWeekRows,
     lastWeighInDay,
     weighInDay,
+    workoutTotals,
   ] = await Promise.all([
     getTodayData(supabase, userId, range),
     // Shared with `layout.tsx` via React `cache()` -- the layout already reads
@@ -166,6 +168,10 @@ export default async function DanasPage({
     // missing column must cost the banner, not the dashboard.
     getLastWeighInDay(supabase, userId),
     getWeighInDay(supabase, userId),
+    // Trening: the viewed day's session totals for the "Trening" card. Same
+    // degrade-to-zero posture as the reads above -- a table this environment
+    // hasn't migrated yet costs the card its number, never the dashboard.
+    getWorkoutTotalsForDay(supabase, userId, selectedKey),
   ]);
 
   // The viewed day is the LAST day of each window above, so its own total comes
@@ -303,6 +309,8 @@ export default async function DanasPage({
       waterWeek={waterWeek}
       isToday={isToday}
       weighInDaysWaiting={weighInDaysWaiting}
+      workoutKcal={workoutTotals.kcal}
+      workoutMinutes={workoutTotals.minutes}
     />
   );
 }

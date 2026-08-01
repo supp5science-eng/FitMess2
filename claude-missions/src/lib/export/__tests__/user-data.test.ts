@@ -161,6 +161,20 @@ const PLAN_ADJUSTMENT_ROWS = [
   },
 ];
 
+// 0026 (Trening).
+const WORKOUT_ROWS = [
+  {
+    id: "workout-1",
+    user_id: "user-1",
+    day: "2026-08-01",
+    activity_key: "teretana",
+    intensity: "srednje",
+    minutes: 60,
+    kcal: 357,
+    created_at: "2026-08-01T18:00:00.000Z",
+  },
+];
+
 const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
   targets: TARGET_ROWS,
   logs: LOG_ROWS,
@@ -171,6 +185,7 @@ const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
   reminder_settings: REMINDER_SETTINGS_ROWS,
   awards: AWARD_ROWS,
   plan_adjustments: PLAN_ADJUSTMENT_ROWS,
+  workouts: WORKOUT_ROWS,
   meal_photos: MEAL_PHOTO_ROWS,
 };
 

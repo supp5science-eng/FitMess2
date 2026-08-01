@@ -86,6 +86,16 @@ const EMOJI_RULES: readonly (readonly [string, ...string[]])[] = [
   ["🍺", "pivo", "toceno"],
   ["🍷", "vino", "vinj"],
   ["💧", "voda", "mineraln"],
+  // Condiments and added fats, last on purpose: these words also appear inside
+  // dish names ("kupus salata sa uljem"), and there the DISH is what the row is
+  // about. Only a food that matched nothing above is really the condiment
+  // itself -- which is exactly what "Dodaj još" adds as a standalone line.
+  ["🍅", "kecap"],
+  ["🌶️", "ajvar"],
+  ["🥄", "majonez", "senf", "tartar", "dresing", "sos"],
+  ["🥛", "pavlak"],
+  ["🫒", "ulje", "maslin"],
+  ["🍬", "secer"],
 ];
 
 /** Returns the emoji for a food/meal name; falls back to 🍽️ if nothing

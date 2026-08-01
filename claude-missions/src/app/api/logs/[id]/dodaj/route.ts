@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { addMoreSelectionSchema, applyAddMore } from "@/lib/log/add-more";
+import { getExtraFoodsByIds } from "@/lib/log/extras";
 import type { Database } from "@/lib/types/db";
 
 // "Dodaj još" (2026-07-25): `POST /api/logs/[id]/dodaj` -- grow an existing
@@ -116,7 +117,16 @@ export async function POST(
       );
     }
 
-    const result = applyAddMore(existingLog, parsedBody.data);
+    // Extras arrive as bare catalog ids. Their nutrition is read here, from
+    // `foods`, so the numbers written are the catalog's and not the client's --
+    // the same rule the components path gets for free by recomputing off the
+    // stored row.
+    const extraFoods = await getExtraFoodsByIds(
+      supabase,
+      parsedBody.data.extras.map((pick) => pick.foodId)
+    );
+
+    const result = applyAddMore(existingLog, parsedBody.data, extraFoods);
     if (result.isEmpty) {
       return NextResponse.json(
         { ok: false, error_sr: EMPTY_SELECTION_ERROR_SR },

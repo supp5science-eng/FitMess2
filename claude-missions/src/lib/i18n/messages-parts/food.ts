@@ -66,6 +66,14 @@ export const foodMessages = {
     "food.addMore.add": "Dodaj",
     "food.addMore.decrease": "Smanji: {label}",
     "food.addMore.increase": "Dodaj: {label}",
+    "food.addMore.extrasHeading": "Nije bilo na slici?",
+    "food.addMore.extrasHint": "Ono što se najčešće zaboravi — jedan dodir je jedna kašika.",
+    "food.addMore.extrasSearch": "Pretraži",
+    "food.addMore.extrasSearchLabel": "Pretraži namirnicu za dodatak",
+    "food.addMore.extrasSearchPlaceholder": "Npr. tartar, kikiriki puter...",
+    "food.addMore.extrasSearching": "Tražimo…",
+    "food.addMore.extrasNoResults": "Nema u katalogu. Probaj Gric — izgovori šta si pojeo/la.",
+    "food.addMore.extrasPerUnit": "{unit} · {kcal} kcal",
 
     // New product form
     "food.newProduct.labelReadError":
@@ -180,6 +188,14 @@ export const foodMessages = {
     "food.addMore.add": "Add",
     "food.addMore.decrease": "Decrease: {label}",
     "food.addMore.increase": "Add: {label}",
+    "food.addMore.extrasHeading": "Wasn't in the photo?",
+    "food.addMore.extrasHint": "The things most often forgotten — one tap is one spoon.",
+    "food.addMore.extrasSearch": "Search",
+    "food.addMore.extrasSearchLabel": "Search for a food to add",
+    "food.addMore.extrasSearchPlaceholder": "e.g. tartar, peanut butter...",
+    "food.addMore.extrasSearching": "Searching…",
+    "food.addMore.extrasNoResults": "Not in the catalog. Try Gric — just say what you ate.",
+    "food.addMore.extrasPerUnit": "{unit} · {kcal} kcal",
 
     // New product form
     "food.newProduct.labelReadError":

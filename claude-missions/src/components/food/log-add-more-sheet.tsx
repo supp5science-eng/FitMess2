@@ -1,12 +1,12 @@
 "use client";
 
-import { Minus, Plus } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Minus, Plus, Search } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useCountUp } from "@/components/home/animated-number";
 import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
-import { foodEmoji } from "@/lib/food/emoji";
+import { foldSerbian, foodEmoji } from "@/lib/food/emoji";
 import {
   applyAddMore,
   componentPieceCount,
@@ -14,9 +14,10 @@ import {
   readComponents,
   type AddMoreSelection,
 } from "@/lib/log/add-more";
+import { toExtraFood, type ExtraFood } from "@/lib/log/extras";
 import { formatUnitCount } from "@/lib/log/units-sr";
 import type { TFunction } from "@/lib/i18n/translate";
-import type { Log, LogComponentSnapshot } from "@/lib/types/db";
+import type { Food, Log, LogComponentSnapshot } from "@/lib/types/db";
 
 // "Dodaj još" (2026-07-25): the sheet that lets you eat seconds without
 // photographing them.
@@ -56,6 +57,14 @@ interface LogResponseBody {
 
 type Phase = "idle" | "splitting" | "saving";
 
+/** An extra the user has tapped, and how many units of it. Kept as a list so
+ * the promoted rows stay in the order they were added -- a row that reorders
+ * itself under the thumb is how you tap the wrong `+`. */
+interface ExtraPick {
+  food: ExtraFood;
+  units: number;
+}
+
 export function LogAddMoreSheet({
   log,
   onSaved,
@@ -81,17 +90,39 @@ export function LogAddMoreSheet({
   const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined);
   const [splitNote, setSplitNote] = useState<string | undefined>(undefined);
 
+  // "Nije bilo na slici": the curated chips, plus whatever the user has tapped.
+  const [extraCatalog, setExtraCatalog] = useState<ExtraFood[]>([]);
+  const [extraPicks, setExtraPicks] = useState<ExtraPick[]>([]);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<ExtraFood[] | null>(null);
+  const [searchBusy, setSearchBusy] = useState(false);
+  /** Guards against a slow early query overwriting a later one's results. */
+  const searchSeq = useRef(0);
+
   const selection = useMemo<AddMoreSelection>(
     () => ({
       whole,
       components: units
         .map((value, index) => ({ index, units: value }))
         .filter((pick) => pick.units > 0),
+      extras: extraPicks.map((pick) => ({
+        foodId: pick.food.id,
+        units: pick.units,
+      })),
     }),
-    [whole, units]
+    [whole, units, extraPicks]
   );
 
-  const preview = useMemo(() => applyAddMore(entry, selection), [entry, selection]);
+  const pickedFoods = useMemo(
+    () => extraPicks.map((pick) => pick.food),
+    [extraPicks]
+  );
+
+  const preview = useMemo(
+    () => applyAddMore(entry, selection, pickedFoods),
+    [entry, selection, pickedFoods]
+  );
   // Tweens on every change of the added figure, so the number visibly RESPONDS
   // to each tap instead of jumping -- the tap and the consequence read as one
   // motion.
@@ -114,14 +145,44 @@ export function LogAddMoreSheet({
           : t("food.addMore.wholeMealMultiple", { count: whole })
       );
     }
+    // "2 kašike majoneza" when we know the genitive, "2 kašike · Tartar" when
+    // the food came from search and we don't -- plain beats confidently wrong.
+    for (const pick of extraPicks) {
+      const amount = formatUnitCount(pick.units, pick.food.unit_label);
+      picked.push(
+        pick.food.of ? `${amount} ${pick.food.of}` : `${amount} · ${pick.food.label}`
+      );
+    }
     return picked;
-  }, [components, units, whole, t]);
+  }, [components, units, whole, extraPicks, t]);
 
   async function openSheet() {
     setUnits(components.map(() => 0));
     setErrorMessage(undefined);
     setSplitNote(undefined);
+    setExtraPicks([]);
+    setSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults(null);
     setIsOpen(true);
+
+    // Chips load alongside the split rather than after it: they are catalog
+    // reads with nothing to wait for, and the row must be there the moment the
+    // user looks past the steppers. A failure leaves the row empty and silent.
+    if (extraCatalog.length === 0) {
+      void (async () => {
+        try {
+          const response = await fetch("/api/dodaci");
+          const body = (await response.json()) as {
+            ok: boolean;
+            data?: ExtraFood[];
+          };
+          if (body.ok && Array.isArray(body.data)) setExtraCatalog(body.data);
+        } catch {
+          // Silent: the steppers are the feature, the chips are the shortcut.
+        }
+      })();
+    }
 
     if (hasBreakdown) {
       setWhole(0);
@@ -189,6 +250,76 @@ export function LogAddMoreSheet({
     );
     setErrorMessage(undefined);
   }
+
+  /** Tapping a chip promotes it into a stepper row at one unit. Tapping it back
+   * down to zero removes the row and returns the chip -- the gesture is
+   * reversible, so nothing about it needs a confirmation. */
+  function stepExtra(food: ExtraFood, delta: number) {
+    setExtraPicks((current) => {
+      const at = current.findIndex((pick) => pick.food.id === food.id);
+      if (at === -1) {
+        return delta > 0 ? [...current, { food, units: 1 }] : current;
+      }
+      const next = Math.min(Math.max(current[at].units + delta, 0), MAX_UNITS);
+      if (next === 0) return current.filter((_, i) => i !== at);
+      return current.map((pick, i) => (i === at ? { ...pick, units: next } : pick));
+    });
+    setErrorMessage(undefined);
+  }
+
+  // Catalog search, for the extra that isn't one of the ten chips. Debounced so
+  // a two-word food doesn't fire five queries, and sequence-guarded so results
+  // can only ever belong to the text currently in the box.
+  useEffect(() => {
+    if (!searchOpen) return;
+    const query = searchQuery.trim();
+    // Too short to search. Clearing already happened in `onChange` -- this
+    // effect never writes state synchronously (react-hooks/set-state-in-effect).
+    if (query.length < 2) return;
+
+    const timer = setTimeout(async () => {
+      const seq = ++searchSeq.current;
+      try {
+        const response = await fetch(
+          `/api/foods/search?q=${encodeURIComponent(query)}`
+        );
+        const body = (await response.json()) as { ok: boolean; data?: Food[] };
+        if (seq !== searchSeq.current) return;
+        setSearchResults(
+          body.ok && Array.isArray(body.data)
+            ? body.data.slice(0, 6).map(toExtraFood)
+            : []
+        );
+      } catch {
+        if (seq === searchSeq.current) setSearchResults([]);
+      } finally {
+        if (seq === searchSeq.current) setSearchBusy(false);
+      }
+    }, 280);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchOpen]);
+
+  /**
+   * Chips worth showing: not already promoted to a row, and not already part of
+   * the meal. A chip for bread on a meal whose breakdown already has a bread
+   * line would give the user two different controls for one food -- the
+   * stepper above is the right one, so the chip steps aside.
+   */
+  const availableChips = useMemo(() => {
+    const pickedIds = new Set(extraPicks.map((pick) => pick.food.id));
+    // Empty names are dropped: `"".includes(anything)` is false but
+    // `anything.includes("")` is TRUE, which would hide every chip.
+    const inMeal = components
+      .map((component) => foldSerbian(component.naziv))
+      .filter((naziv) => naziv.length > 0);
+    return extraCatalog.filter((food) => {
+      if (pickedIds.has(food.id)) return false;
+      const chip = foldSerbian(food.label);
+      if (!chip) return true;
+      return !inMeal.some((naziv) => naziv.includes(chip) || chip.includes(naziv));
+    });
+  }, [extraCatalog, extraPicks, components]);
 
   const canConfirm = !preview.isEmpty && phase === "idle";
 
@@ -356,6 +487,151 @@ export function LogAddMoreSheet({
                     {splitNote}
                   </p>
                 ) : null}
+
+                {/* "Nije bilo na slici" -- the half of the problem the steppers
+                    above cannot express. Kept BELOW them because adding more of
+                    what you photographed is the common case; this is the one
+                    that saves the meal from being quietly wrong. */}
+                <div className="flex flex-col gap-2 border-t border-border pt-3">
+                  <div className="flex flex-col gap-0.5">
+                    <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {t("food.addMore.extrasHeading")}
+                    </p>
+                    <p className="text-xs text-muted-foreground/80">
+                      {t("food.addMore.extrasHint")}
+                    </p>
+                  </div>
+
+                  {/* Promoted picks: a tapped chip becomes a full stepper row,
+                      identical to the meal's own parts, so "one more spoon"
+                      is the same gesture wherever the food came from. */}
+                  {extraPicks.map((pick) => (
+                    <StepperRow
+                      key={pick.food.id}
+                      testId={`log-add-more-extra-${pick.food.id}`}
+                      label={`${pick.food.emoji} ${pick.food.label}`}
+                      detail={t("food.addMore.extrasPerUnit", {
+                        unit: `1 ${pick.food.unit_label} · ${Math.round(
+                          pick.food.unit_grams
+                        )} g`,
+                        kcal: Math.round(
+                          (pick.food.kcal_100g * pick.food.unit_grams) / 100
+                        ),
+                      })}
+                      stepHint={null}
+                      value={pick.units}
+                      onStep={(delta) => stepExtra(pick.food, delta)}
+                      t={t}
+                    />
+                  ))}
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {availableChips.map((food) => (
+                      <button
+                        key={food.id}
+                        type="button"
+                        data-testid={`log-add-more-chip-${food.id}`}
+                        onClick={() => stepExtra(food, 1)}
+                        className="flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-2 text-sm font-medium text-foreground transition-colors active:border-primary/50 active:bg-primary/10"
+                      >
+                        <span aria-hidden="true">{food.emoji}</span>
+                        {food.label}
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      data-testid="log-add-more-search-toggle"
+                      aria-expanded={searchOpen}
+                      onClick={() => setSearchOpen((open) => !open)}
+                      className={`flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-medium transition-colors ${
+                        searchOpen
+                          ? "border-primary/50 bg-primary/10 text-primary"
+                          : "border-dashed border-border bg-transparent text-muted-foreground"
+                      }`}
+                    >
+                      <Search className="size-3.5" aria-hidden="true" />
+                      {t("food.addMore.extrasSearch")}
+                    </button>
+                  </div>
+
+                  {searchOpen ? (
+                    <div className="flex flex-col gap-2">
+                      <input
+                        type="search"
+                        autoFocus
+                        value={searchQuery}
+                        // The busy/cleared transitions live here rather than in
+                        // the effect: typing is what changes them, and an effect
+                        // that writes state synchronously cascades renders.
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSearchQuery(value);
+                          if (value.trim().length < 2) {
+                            // Discard anything already in flight.
+                            searchSeq.current += 1;
+                            setSearchResults(null);
+                            setSearchBusy(false);
+                          } else {
+                            setSearchBusy(true);
+                          }
+                        }}
+                        aria-label={t("food.addMore.extrasSearchLabel")}
+                        placeholder={t("food.addMore.extrasSearchPlaceholder")}
+                        data-testid="log-add-more-search-input"
+                        // 16px keeps iOS from zooming the whole sheet on focus.
+                        className="w-full rounded-2xl border border-border bg-card px-3 py-2.5 text-base text-foreground outline-none placeholder:text-muted-foreground/70 focus:border-primary/50"
+                      />
+                      {searchBusy ? (
+                        <p className="px-1 text-xs text-muted-foreground">
+                          {t("food.addMore.extrasSearching")}
+                        </p>
+                      ) : null}
+                      {!searchBusy && searchResults?.length === 0 ? (
+                        <p
+                          data-testid="log-add-more-search-empty"
+                          className="px-1 text-xs text-muted-foreground"
+                        >
+                          {t("food.addMore.extrasNoResults")}
+                        </p>
+                      ) : null}
+                      {searchResults?.map((food) => (
+                        <button
+                          key={food.id}
+                          type="button"
+                          data-testid={`log-add-more-result-${food.id}`}
+                          onClick={() => {
+                            stepExtra(food, 1);
+                            setSearchOpen(false);
+                            setSearchQuery("");
+                            setSearchResults(null);
+                          }}
+                          className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-card px-3 py-2.5 text-left active:border-primary/50"
+                        >
+                          <span className="flex min-w-0 flex-col">
+                            <span className="truncate text-sm font-semibold text-foreground">
+                              {food.emoji} {food.label}
+                            </span>
+                            <span className="truncate text-xs text-muted-foreground">
+                              {t("food.addMore.extrasPerUnit", {
+                                unit: `1 ${food.unit_label} · ${Math.round(
+                                  food.unit_grams
+                                )} g`,
+                                kcal: Math.round(
+                                  (food.kcal_100g * food.unit_grams) / 100
+                                ),
+                              })}
+                            </span>
+                          </span>
+                          <Plus
+                            className="size-5 shrink-0 text-primary"
+                            aria-hidden="true"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
               </>
             )}
 

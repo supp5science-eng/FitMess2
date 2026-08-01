@@ -69,8 +69,12 @@ describe("LogAddMoreSheet", () => {
     expect(screen.getByTestId("log-add-more-component-1")).toHaveTextContent(
       "u obroku: 2 kašike"
     );
-    // An entry that already has a breakdown needs no split call.
-    expect(global.fetch).not.toHaveBeenCalled();
+    // An entry that already has a breakdown needs no split call. (Opening does
+    // fetch the "nije bilo na slici" chips -- that read is unconditional.)
+    const called = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.map(
+      (call) => String(call[0])
+    );
+    expect(called.some((url) => url.includes("/razlozi"))).toBe(false);
   });
 
   it("closes when the dimmed area outside the panel is tapped", async () => {
@@ -135,5 +139,112 @@ describe("LogAddMoreSheet", () => {
     });
     // Falls back to whole-entry seconds, pre-selected so the flow still works.
     expect(screen.getByTestId("log-add-more-whole-value")).toHaveTextContent("1");
+  });
+});
+
+// "Nije bilo na slici": the half of the sheet that adds a food the photo never
+// contained. The chips are the whole interaction, so what matters is that a tap
+// turns into something steppable and lands in the running total.
+const MAYO = {
+  id: "food-mayo",
+  name_sr: "Majonez",
+  kcal_100g: 687,
+  protein_100g: 1.1,
+  carbs_100g: 1.6,
+  fat_100g: 75,
+  fiber_100g: 0,
+  sugar_100g: 1.6,
+  sodium_100g: 600,
+  sat_fat_100g: 11,
+  unit_label: "kašika",
+  unit_grams: 15,
+  emoji: "🥄",
+  label: "Majonez",
+  of: "majoneza",
+};
+
+const PAVLAKA = { ...MAYO, id: "food-pavlaka", name_sr: "Pavlaka, kisela 18%", label: "Pavlaka", of: "pavlake", kcal_100g: 185 };
+
+function mockExtras(extras: unknown[] = [MAYO, PAVLAKA]) {
+  (global.fetch as ReturnType<typeof vi.fn>).mockImplementation((url: string) =>
+    Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve(
+          String(url).includes("/api/dodaci")
+            ? { ok: true, data: extras }
+            : { ok: true, data: null }
+        ),
+    })
+  );
+}
+
+describe("LogAddMoreSheet — nije bilo na slici", () => {
+  it("turns a tapped chip into a stepper row and counts it toward the total", async () => {
+    mockExtras();
+    render(<LogAddMoreSheet log={baseLog} />);
+    fireEvent.click(screen.getByTestId("log-add-more-open-log-1"));
+
+    const chip = await screen.findByTestId("log-add-more-chip-food-mayo");
+    expect(chip).toHaveTextContent("Majonez");
+    fireEvent.click(chip);
+
+    // The chip is gone; a full stepper row stands in its place.
+    expect(screen.queryByTestId("log-add-more-chip-food-mayo")).toBeNull();
+    const row = screen.getByTestId("log-add-more-extra-food-mayo");
+    // One tap says what it costs, in the unit a person uses.
+    expect(row).toHaveTextContent("1 kašika · 15 g");
+    expect(row).toHaveTextContent("103 kcal");
+
+    // And it reads back in declined Serbian on the confirmation strip.
+    expect(screen.getByTestId("log-add-more-preview")).toHaveTextContent(
+      "1 kašika majoneza"
+    );
+  });
+
+  it("steps a promoted extra back to zero and returns it to the chip row", async () => {
+    mockExtras();
+    render(<LogAddMoreSheet log={baseLog} />);
+    fireEvent.click(screen.getByTestId("log-add-more-open-log-1"));
+
+    fireEvent.click(await screen.findByTestId("log-add-more-chip-food-mayo"));
+    fireEvent.click(screen.getByTestId("log-add-more-extra-food-mayo-plus"));
+    expect(screen.getByTestId("log-add-more-preview")).toHaveTextContent(
+      "2 kašike majoneza"
+    );
+
+    fireEvent.click(screen.getByTestId("log-add-more-extra-food-mayo-minus"));
+    fireEvent.click(screen.getByTestId("log-add-more-extra-food-mayo-minus"));
+    expect(screen.queryByTestId("log-add-more-extra-food-mayo")).toBeNull();
+    expect(screen.getByTestId("log-add-more-chip-food-mayo")).toBeInTheDocument();
+  });
+
+  it("hides a chip for a food the meal already contains", async () => {
+    // baseLog's breakdown already has a "kisela pavlaka" line, which the
+    // steppers above handle -- two controls for one food is how you double-log.
+    mockExtras();
+    render(<LogAddMoreSheet log={baseLog} />);
+    fireEvent.click(screen.getByTestId("log-add-more-open-log-1"));
+
+    await screen.findByTestId("log-add-more-chip-food-mayo");
+    expect(screen.queryByTestId("log-add-more-chip-food-pavlaka")).toBeNull();
+  });
+
+  it("sends only ids and unit counts, never a macro value", async () => {
+    mockExtras();
+    render(<LogAddMoreSheet log={baseLog} />);
+    fireEvent.click(screen.getByTestId("log-add-more-open-log-1"));
+    fireEvent.click(await screen.findByTestId("log-add-more-chip-food-mayo"));
+    fireEvent.click(screen.getByTestId("log-add-more-save"));
+
+    await waitFor(() => {
+      const save = (global.fetch as ReturnType<typeof vi.fn>).mock.calls.find(
+        (call) => String(call[0]).endsWith("/dodaj")
+      );
+      expect(save).toBeTruthy();
+      expect(JSON.parse(String(save![1].body)).extras).toEqual([
+        { foodId: "food-mayo", units: 1 },
+      ]);
+    });
   });
 });

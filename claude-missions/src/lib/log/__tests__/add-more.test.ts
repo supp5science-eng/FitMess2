@@ -7,6 +7,7 @@ import {
   readComponents,
   type AddMoreLogInput,
 } from "@/lib/log/add-more";
+import type { ExtraFood } from "@/lib/log/extras";
 import type { LogComponentSnapshot } from "@/lib/types/db";
 
 // "Dodaj još": seconds without a second photo. These lock the two shapes the
@@ -210,5 +211,138 @@ describe("component unit helpers", () => {
     expect(componentUnitLabel({ ...eggs, kom_naziv: "", kom_grami: 0 })).toBe(
       "cela stavka · 120 g"
     );
+  });
+});
+
+// "Nije bilo na slici" (2026-08-01): the entry grows by a food that was never
+// part of it. Mayonnaise is the case the feature was built for -- 687 kcal/100 g
+// that nobody photographs, and that no stepper above could express.
+const mayo: ExtraFood = {
+  id: "food-mayo",
+  name_sr: "Majonez",
+  kcal_100g: 687,
+  protein_100g: 1.1,
+  carbs_100g: 1.6,
+  fat_100g: 75,
+  fiber_100g: 0,
+  sugar_100g: 1.6,
+  sodium_100g: 600,
+  sat_fat_100g: 11,
+  unit_label: "kašika",
+  unit_grams: 15,
+  emoji: "🥄",
+  label: "Majonez",
+  of: "majoneza",
+};
+
+describe("applyAddMore — extras that were never in the photo", () => {
+  it("adds a spoon of mayonnaise to a photographed plate", () => {
+    const result = applyAddMore(
+      plate,
+      { extras: [{ foodId: "food-mayo", units: 1 }] },
+      [mayo]
+    );
+
+    // 15 g at 687 kcal/100 g.
+    expect(result.addedKcal).toBe(103);
+    expect(result.totals.grams).toBe(245);
+    expect(result.totals.kcal).toBe(435);
+    expect(result.isEmpty).toBe(false);
+  });
+
+  it("appends the extra to the breakdown so it can be stepped next time", () => {
+    const result = applyAddMore(
+      plate,
+      { extras: [{ foodId: "food-mayo", units: 2 }] },
+      [mayo]
+    );
+
+    expect(result.components).toHaveLength(4);
+    expect(result.components?.[3]).toMatchObject({
+      naziv: "Majonez",
+      grami: 30,
+      // The natural unit survives, so the NEXT "+1" adds one spoon, not two.
+      kom_naziv: "kašika",
+      kom_grami: 15,
+    });
+  });
+
+  it("grows the existing line instead of stacking a duplicate on a second visit", () => {
+    const once = applyAddMore(
+      plate,
+      { extras: [{ foodId: "food-mayo", units: 1 }] },
+      [mayo]
+    );
+    const twice = applyAddMore(
+      { ...plate, components: once.components, grams: once.totals.grams, kcal: once.totals.kcal },
+      { extras: [{ foodId: "food-mayo", units: 1 }] },
+      [mayo]
+    );
+
+    const mayoLines = twice.components?.filter((line) => line.naziv === "Majonez");
+    expect(mayoLines).toHaveLength(1);
+    expect(mayoLines?.[0].grami).toBe(30);
+  });
+
+  it("turns an entry with no breakdown into one, rather than claiming it IS the extra", () => {
+    const result = applyAddMore(
+      { ...wafer, name: "Napolitanka" },
+      { extras: [{ foodId: "food-mayo", units: 1 }] },
+      [mayo]
+    );
+
+    // The entry's own totals become the first line; the extra sits beside it,
+    // so the breakdown still adds up to the row.
+    expect(result.components).toHaveLength(2);
+    expect(result.components?.[0]).toMatchObject({
+      naziv: "Napolitanka",
+      grami: 25,
+      kcal: 130,
+    });
+    expect(result.components?.[1]?.naziv).toBe("Majonez");
+  });
+
+  it("counts the extra's own micronutrients, not the meal's scaled by its mass", () => {
+    const result = applyAddMore(
+      { ...plate, sugar: 2, sodium: 600 },
+      { extras: [{ foodId: "food-mayo", units: 1 }] },
+      [mayo]
+    );
+
+    // Sugar: 2 g (unchanged, no same-food additions) + 1.6 g/100 g × 15 g.
+    expect(result.totals.sugar).toBeCloseTo(2.2, 1);
+    expect(result.totals.sodium).toBeCloseTo(690, 0);
+    // Fiber was unknown on the plate and stays unknown -- adding mayonnaise
+    // does not turn "we never knew" into a confident number (0017).
+    expect(result.totals.fiber).toBeNull();
+  });
+
+  it("ignores a pick whose food no longer resolves", () => {
+    const result = applyAddMore(
+      plate,
+      { extras: [{ foodId: "food-gone", units: 3 }] },
+      [mayo]
+    );
+
+    expect(result.isEmpty).toBe(true);
+    expect(result.addedKcal).toBe(0);
+    // Nothing was added, so the breakdown is left exactly as it was.
+    expect(result.components).toHaveLength(3);
+  });
+
+  it("adds seconds and an extra in the same save", () => {
+    const result = applyAddMore(
+      plate,
+      {
+        components: [{ index: 0, units: 2 }],
+        extras: [{ foodId: "food-mayo", units: 1 }],
+      },
+      [mayo]
+    );
+
+    // Two more eggs (180 kcal) plus a spoon of mayonnaise (103 kcal).
+    expect(result.addedKcal).toBe(283);
+    expect(result.components?.[0].grami).toBe(240);
+    expect(result.components?.[3]?.naziv).toBe("Majonez");
   });
 });

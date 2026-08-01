@@ -8,6 +8,7 @@ import { dodajMessages } from "@/lib/i18n/messages-parts/dodaj";
 import { foodMessages } from "@/lib/i18n/messages-parts/food";
 import { homeExtraMessages } from "@/lib/i18n/messages-parts/home";
 import { mediaMessages } from "@/lib/i18n/messages-parts/media";
+import { merenjeMessages } from "@/lib/i18n/messages-parts/merenje";
 import { onboardingMessages } from "@/lib/i18n/messages-parts/onboarding";
 import { profilMessages } from "@/lib/i18n/messages-parts/profil";
 
@@ -42,6 +43,8 @@ const sr = {
   "settings.personal.desc": "Pol, godine, visina, težina, aktivnost",
   "settings.steps": "Cilj koraka",
   "settings.steps.desc": "Automatski po aktivnosti ili tvoj broj",
+  "settings.weighIn": "Dan merenja",
+  "settings.weighIn.desc": "Kad te pitamo za težinu i da li da javimo",
   "settings.habits": "Navike",
   "settings.habits.desc": "Čekiraj dnevne navike i prati niz",
   "settings.group.app": "Aplikacija",
@@ -99,6 +102,7 @@ const sr = {
   ...adminMessages.sr,
   ...appMessages.sr,
   ...dataMessages.sr,
+  ...merenjeMessages.sr,
 } as const;
 
 export type MessageKey = keyof typeof sr;
@@ -121,6 +125,8 @@ const en: Record<MessageKey, string> = {
   "settings.personal.desc": "Sex, age, height, weight, activity",
   "settings.steps": "Step goal",
   "settings.steps.desc": "Automatic by activity, or your own number",
+  "settings.weighIn": "Weigh-in day",
+  "settings.weighIn.desc": "When we ask for your weight, and whether we ping you",
   "settings.habits": "Habits",
   "settings.habits.desc": "Check off daily habits and keep your streak",
   "settings.group.app": "App",
@@ -174,6 +180,7 @@ const en: Record<MessageKey, string> = {
   ...adminMessages.en,
   ...appMessages.en,
   ...dataMessages.en,
+  ...merenjeMessages.en,
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { sr, en };

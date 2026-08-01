@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import {
+  belgradeWeekdayIndex,
   endOfBelgradeDayExclusive,
   startOfBelgradeDay,
   toBelgradeCalendarDay,
@@ -16,6 +17,7 @@ import {
   eveningPayload,
   morningPayload,
   sendToAll,
+  weighInPayload,
   type PushPayload,
   type StoredSubscription,
 } from "@/lib/push/send";
@@ -68,6 +70,7 @@ function belgradeMinutesOfDay(now: Date): number {
 const LAST_SENT_COLUMN: Record<ReminderKind, string> = {
   morning: "morning_last_sent",
   evening: "evening_last_sent",
+  weighin: "weighin_last_sent",
 };
 
 export async function POST(request: NextRequest) {
@@ -99,9 +102,11 @@ export async function POST(request: NextRequest) {
   const { data: settings, error: settingsError } = await supabase
     .from("reminder_settings")
     .select(
-      "user_id, morning_enabled, morning_time, morning_last_sent, evening_enabled, evening_time, evening_last_sent"
+      "user_id, morning_enabled, morning_time, morning_last_sent, evening_enabled, evening_time, evening_last_sent, weighin_enabled, weighin_day, weighin_time, weighin_last_sent"
     )
-    .or("morning_enabled.eq.true,evening_enabled.eq.true");
+    .or(
+      "morning_enabled.eq.true,evening_enabled.eq.true,weighin_enabled.eq.true"
+    );
 
   if (settingsError) {
     console.error("[podsetnici] settings read failed:", settingsError.message);
@@ -112,6 +117,8 @@ export async function POST(request: NextRequest) {
     settings: (settings ?? []) as ReminderSettingsRow[],
     todayKey,
     nowMinutes: belgradeMinutesOfDay(now),
+    // The weekly weigh-in reminder is the only one that cares which day it is.
+    todayWeekdayIndex: belgradeWeekdayIndex(now),
   });
 
   if (due.length === 0) {
@@ -155,7 +162,11 @@ export async function POST(request: NextRequest) {
 
   const deadSubscriptionIds: string[] = [];
   /** Per reminder kind, the users it actually reached. */
-  const delivered: Record<ReminderKind, string[]> = { morning: [], evening: [] };
+  const delivered: Record<ReminderKind, string[]> = {
+    morning: [],
+    evening: [],
+    weighin: [],
+  };
   let sentCount = 0;
 
   for (const { userId, kind } of due) {
@@ -168,7 +179,9 @@ export async function POST(request: NextRequest) {
     const payload: PushPayload =
       kind === "morning"
         ? morningPayload()
-        : eveningPayload(recaps.get(userId) ?? emptyRecap());
+        : kind === "weighin"
+          ? weighInPayload()
+          : eveningPayload(recaps.get(userId) ?? emptyRecap());
 
     const results = await sendToAll(devices, payload);
     for (const result of results) {
@@ -200,7 +213,7 @@ export async function POST(request: NextRequest) {
 
   // One update per kind, not per user: the two reminders stamp different
   // columns, so they cannot share a statement.
-  for (const kind of ["morning", "evening"] as const) {
+  for (const kind of ["morning", "evening", "weighin"] as const) {
     if (delivered[kind].length === 0) continue;
     await supabase
       .from("reminder_settings")
@@ -212,9 +225,13 @@ export async function POST(request: NextRequest) {
     ok: true,
     data: {
       sent: sentCount,
-      reminders: delivered.morning.length + delivered.evening.length,
+      reminders:
+        delivered.morning.length +
+        delivered.evening.length +
+        delivered.weighin.length,
       morning: delivered.morning.length,
       evening: delivered.evening.length,
+      weighin: delivered.weighin.length,
       removed: deadSubscriptionIds.length,
     },
   });

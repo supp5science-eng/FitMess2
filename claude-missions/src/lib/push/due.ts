@@ -31,10 +31,22 @@
 /** How long after the chosen time a missed reminder may still be sent. */
 export const MAX_LATE_MINUTES = 120;
 
-/** The two scheduled reminders. Each is independently switchable and timed. */
-export type ReminderKind = "morning" | "evening";
+/**
+ * The scheduled reminders. Each is independently switchable and timed.
+ *
+ * `weighin` (2026-08-01) is the odd one out: it fires on ONE WEEKDAY rather
+ * than every day, because the weekly weigh-in it asks for is only comparable
+ * week to week if it happens on the same day each time. Everything else about
+ * it -- the time, the lateness window, the once-a-day guard -- is identical to
+ * the other two.
+ */
+export type ReminderKind = "morning" | "evening" | "weighin";
 
-export const REMINDER_KINDS: readonly ReminderKind[] = ["morning", "evening"];
+export const REMINDER_KINDS: readonly ReminderKind[] = [
+  "morning",
+  "evening",
+  "weighin",
+];
 
 export interface ReminderSettingsRow {
   user_id: string;
@@ -46,6 +58,14 @@ export interface ReminderSettingsRow {
   evening_enabled: boolean;
   evening_time: string;
   evening_last_sent: string | null;
+  // 0024. Optional because a row written before that migration has none, and
+  // because an environment that has not applied it must degrade to "no weigh-in
+  // reminder", never to a failed run of the other two.
+  weighin_enabled?: boolean;
+  /** 0 = Monday .. 6 = Sunday (`belgradeWeekdayIndex`), NOT JS's order. */
+  weighin_day?: number;
+  weighin_time?: string;
+  weighin_last_sent?: string | null;
 }
 
 export interface DueInput {
@@ -54,6 +74,12 @@ export interface DueInput {
   todayKey: string;
   /** Minutes since Belgrade midnight, right now. */
   nowMinutes: number;
+  /**
+   * Today's Belgrade weekday, 0 = Monday .. 6 = Sunday. Only the weekly
+   * `weighin` reminder needs it; omit it and that reminder simply never comes
+   * due, which is the right behaviour for any caller that has no calendar.
+   */
+  todayWeekdayIndex?: number;
 }
 
 /** One reminder that should go out in this run. */
@@ -87,17 +113,25 @@ function fieldsFor(
   row: ReminderSettingsRow,
   kind: ReminderKind
 ): { enabled: boolean; time: string; lastSent: string | null } {
-  return kind === "morning"
-    ? {
-        enabled: row.morning_enabled,
-        time: row.morning_time,
-        lastSent: row.morning_last_sent,
-      }
-    : {
-        enabled: row.evening_enabled,
-        time: row.evening_time,
-        lastSent: row.evening_last_sent,
-      };
+  if (kind === "morning") {
+    return {
+      enabled: row.morning_enabled,
+      time: row.morning_time,
+      lastSent: row.morning_last_sent,
+    };
+  }
+  if (kind === "evening") {
+    return {
+      enabled: row.evening_enabled,
+      time: row.evening_time,
+      lastSent: row.evening_last_sent,
+    };
+  }
+  return {
+    enabled: row.weighin_enabled ?? false,
+    time: row.weighin_time ?? "09:00",
+    lastSent: row.weighin_last_sent ?? null,
+  };
 }
 
 /** Every reminder due in this run, as (user, kind) pairs. A single user can
@@ -107,6 +141,7 @@ export function remindersDue({
   settings,
   todayKey,
   nowMinutes,
+  todayWeekdayIndex,
 }: DueInput): DueReminder[] {
   const due: DueReminder[] = [];
 
@@ -115,6 +150,14 @@ export function remindersDue({
       const { enabled, time, lastSent } = fieldsFor(row, kind);
 
       if (!enabled) continue;
+
+      // The weekly one only exists on its own day. Without a weekday to check
+      // against, it never fires -- silence beats nagging on a Tuesday.
+      if (kind === "weighin") {
+        if (todayWeekdayIndex == null) continue;
+        if ((row.weighin_day ?? 6) !== todayWeekdayIndex) continue;
+      }
+
       // Already sent today: never nag twice, and this is what makes a re-run
       // of the cron a no-op.
       if (lastSent === todayKey) continue;

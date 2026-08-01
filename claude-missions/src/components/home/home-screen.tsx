@@ -15,6 +15,7 @@ import { StepsCard } from "@/components/home/steps-card";
 import { useT } from "@/components/i18n/locale-provider";
 import { GricButton } from "@/components/home/gric-button";
 import { WaterButton } from "@/components/home/water-button";
+import { WeighInBanner } from "@/components/home/weigh-in-banner";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import { computeDayTotals } from "@/lib/home/totals";
@@ -69,6 +70,7 @@ export function HomeScreen({
   stepsWeek = [],
   waterWeek = [],
   isToday = true,
+  weighInDaysWaiting = null,
 }: {
   initialLogs: LogWithFood[];
   target: Target | null;
@@ -112,6 +114,10 @@ export function HomeScreen({
   // Whether `dayKey` is the current Belgrade day. Gates "Gric", which always
   // writes at `now()` and so has no meaning on a past day.
   isToday?: boolean;
+  // Nedeljno merenje (2026-08-01): days the app has been waiting for this
+  // week's weigh-in, or null when it isn't waiting. Server-decided (the
+  // schedule lives in `reminder_settings`), so this component only renders it.
+  weighInDaysWaiting?: number | null;
 }) {
   const { t } = useT();
   const [logs, setLogs] = useState<LogWithFood[]>(initialLogs);
@@ -244,6 +250,14 @@ export function HomeScreen({
       {/* The brand lockup, streak pill and date wheel now live in the route's
           persistent `layout.tsx` (2026-07-30) so switching days never blanks
           them -- see that file. `HomeScreen` renders only the per-day content. */}
+
+      {/* Nedeljno merenje: above everything, because it is a request rather
+          than a report -- and gone the moment it is answered. Never on a past
+          day: a weigh-in is a reading taken now. */}
+      {isToday && weighInDaysWaiting !== null && !introActive ? (
+        <WeighInBanner daysWaiting={weighInDaysWaiting} />
+      ) : null}
+
       {target ? (
         <div className="flex flex-col gap-7">
           <h2

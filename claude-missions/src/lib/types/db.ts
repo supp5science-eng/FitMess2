@@ -362,6 +362,61 @@ export interface Database {
           },
         ];
       };
+      /**
+       * 0024 (nedeljno merenje): every plan-correction suggestion the weekly
+       * trend produced AND the user's answer. Written only when the user taps
+       * — the engine never changes a plan on its own.
+       */
+      plan_adjustments: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** Belgrade calendar day the user answered, `"YYYY-MM-DD"`. */
+          day: string;
+          old_kcal: number;
+          new_kcal: number;
+          /** The `TrendStatus` behind it: `"TOO_SLOW"` / `"STALLED"` / `"TOO_FAST"`. */
+          reason: string;
+          /** false = kept the current plan, which silences the card for 2 weeks. */
+          accepted: boolean;
+          measured_tdee_kcal: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day: string;
+          old_kcal: number;
+          new_kcal: number;
+          reason: string;
+          accepted: boolean;
+          measured_tdee_kcal?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          day?: string;
+          old_kcal?: number;
+          new_kcal?: number;
+          reason?: string;
+          accepted?: boolean;
+          measured_tdee_kcal?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "plan_adjustments_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       logs: {
         Row: {
           id: string;
@@ -579,6 +634,15 @@ export interface Database {
           evening_last_sent: string | null;
           /** The earned "pun dan" push, independent of the scheduled two. */
           award_enabled: boolean;
+          // 0024 (nedeljno merenje): the only WEEKLY reminder. Optional here
+          // for the same reason as `profiles.daily_step_goal` — a fixture (or
+          // an environment where 0024 has not been applied yet) must not fail
+          // to typecheck against a column that may not exist.
+          weighin_enabled?: boolean;
+          /** 0 = Monday .. 6 = Sunday (`belgradeWeekdayIndex`), NOT JS's order. */
+          weighin_day?: number;
+          weighin_time?: string;
+          weighin_last_sent?: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -591,6 +655,10 @@ export interface Database {
           evening_time?: string;
           evening_last_sent?: string | null;
           award_enabled?: boolean;
+          weighin_enabled?: boolean;
+          weighin_day?: number;
+          weighin_time?: string;
+          weighin_last_sent?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -603,6 +671,10 @@ export interface Database {
           evening_time?: string;
           evening_last_sent?: string | null;
           award_enabled?: boolean;
+          weighin_enabled?: boolean;
+          weighin_day?: number;
+          weighin_time?: string;
+          weighin_last_sent?: string | null;
           created_at?: string;
           updated_at?: string;
         };

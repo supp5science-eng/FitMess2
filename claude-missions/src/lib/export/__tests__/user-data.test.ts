@@ -131,6 +131,36 @@ const REMINDER_SETTINGS_ROWS = [
   },
 ];
 
+// 0022 (Nagrade) and 0024 (Nedeljno merenje). Both were live in
+// `USER_OWNED_TABLES` without a double here, which made the table stub throw
+// "unexpected table" for every case in this file rather than for the one
+// asserting on them -- the export is a generic loop, so ANY missing table
+// takes the whole suite down. A new entry in `USER_OWNED_TABLES` needs a line
+// here too.
+const AWARD_ROWS = [
+  {
+    user_id: "user-1",
+    day: "2026-07-24",
+    kind: "pun-dan",
+    created_at: "2026-07-24T21:00:00.000Z",
+  },
+];
+
+const PLAN_ADJUSTMENT_ROWS = [
+  {
+    id: "adj-1",
+    user_id: "user-1",
+    day: "2026-08-01",
+    old_kcal: 2600,
+    new_kcal: 2400,
+    reason: "STALLED",
+    accepted: true,
+    measured_tdee_kcal: 2600,
+    created_at: "2026-08-01T08:00:00.000Z",
+    updated_at: "2026-08-01T08:00:00.000Z",
+  },
+];
+
 const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
   targets: TARGET_ROWS,
   logs: LOG_ROWS,
@@ -139,6 +169,8 @@ const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
   step_counts: STEP_ROWS,
   habit_checks: HABIT_CHECK_ROWS,
   reminder_settings: REMINDER_SETTINGS_ROWS,
+  awards: AWARD_ROWS,
+  plan_adjustments: PLAN_ADJUSTMENT_ROWS,
   meal_photos: MEAL_PHOTO_ROWS,
 };
 

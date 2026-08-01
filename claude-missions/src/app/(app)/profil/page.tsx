@@ -8,6 +8,7 @@ import {
   LifeBuoy,
   LogOut,
   Phone,
+  Scale,
   ScrollText,
   Shield,
   SlidersHorizontal,
@@ -121,6 +122,12 @@ export default async function ProfilPage() {
           icon={Footprints}
           label={t("settings.steps")}
           description={t("settings.steps.desc")}
+        />
+        <SettingsLinkRow
+          href="/profil/merenje"
+          icon={Scale}
+          label={t("settings.weighIn")}
+          description={t("settings.weighIn.desc")}
         />
         <SettingsLinkRow
           href="/profil/pravila"

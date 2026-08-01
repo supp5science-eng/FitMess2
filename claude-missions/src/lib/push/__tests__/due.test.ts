@@ -129,3 +129,111 @@ describe("remindersDue", () => {
     ]);
   });
 });
+
+// Nedeljno merenje (0024): the third reminder, and the only weekly one. It
+// exists because a weigh-in is only comparable week to week if it happens on
+// the same weekday -- so "is it that day?" is part of being due.
+
+/** 2026-07-25 is a Saturday, i.e. weekday index 5 (Monday = 0). */
+const SATURDAY = 5;
+const SUNDAY = 6;
+
+function weighInRow(
+  overrides: Partial<ReminderSettingsRow> = {}
+): ReminderSettingsRow {
+  return row({
+    morning_enabled: false,
+    evening_enabled: false,
+    weighin_enabled: true,
+    weighin_day: SATURDAY,
+    weighin_time: "09:00:00",
+    weighin_last_sent: null,
+    ...overrides,
+  });
+}
+
+describe("weekly weigh-in reminder", () => {
+  it("test_it_fires_on_its_own_weekday_at_its_own_time", () => {
+    const result = remindersDue({
+      settings: [weighInRow()],
+      todayKey: TODAY,
+      nowMinutes: at("09:00"),
+      todayWeekdayIndex: SATURDAY,
+    });
+
+    expect(result).toEqual([{ userId: "user-1", kind: "weighin" }]);
+  });
+
+  it("test_it_stays_silent_on_every_other_day_of_the_week", () => {
+    const result = remindersDue({
+      settings: [weighInRow({ weighin_day: SUNDAY })],
+      todayKey: TODAY,
+      nowMinutes: at("09:00"),
+      todayWeekdayIndex: SATURDAY,
+    });
+
+    expect(result).toEqual([]);
+  });
+
+  it("test_a_caller_with_no_weekday_never_triggers_it", () => {
+    // Silence beats nagging on a Tuesday: without a calendar we don't guess.
+    const result = remindersDue({
+      settings: [weighInRow()],
+      todayKey: TODAY,
+      nowMinutes: at("09:00"),
+    });
+
+    expect(result).toEqual([]);
+  });
+
+  it("test_a_row_written_before_the_migration_simply_has_no_weigh_in", () => {
+    const result = remindersDue({
+      settings: [row({ morning_enabled: false, evening_enabled: false })],
+      todayKey: TODAY,
+      nowMinutes: at("09:00"),
+      todayWeekdayIndex: SATURDAY,
+    });
+
+    expect(result).toEqual([]);
+  });
+
+  it("test_it_obeys_the_same_late_window_as_the_daily_reminders", () => {
+    const inWindow = remindersDue({
+      settings: [weighInRow()],
+      todayKey: TODAY,
+      nowMinutes: at("09:00") + MAX_LATE_MINUTES,
+      todayWeekdayIndex: SATURDAY,
+    });
+    expect(inWindow).toHaveLength(1);
+
+    const tooLate = remindersDue({
+      settings: [weighInRow()],
+      todayKey: TODAY,
+      nowMinutes: at("09:00") + MAX_LATE_MINUTES + 1,
+      todayWeekdayIndex: SATURDAY,
+    });
+    expect(tooLate).toEqual([]);
+  });
+
+  it("test_it_cannot_go_out_twice_in_a_day", () => {
+    const result = remindersDue({
+      settings: [weighInRow({ weighin_last_sent: TODAY })],
+      todayKey: TODAY,
+      nowMinutes: at("09:30"),
+      todayWeekdayIndex: SATURDAY,
+    });
+
+    expect(result).toEqual([]);
+  });
+
+  it("test_switching_it_off_switches_it_off", () => {
+    const result = remindersDue({
+      settings: [weighInRow({ weighin_enabled: false })],
+      todayKey: TODAY,
+      nowMinutes: at("09:00"),
+      todayWeekdayIndex: SATURDAY,
+    });
+
+    expect(result).toEqual([]);
+  });
+});

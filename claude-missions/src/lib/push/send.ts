@@ -117,6 +117,24 @@ export function morningPayload(): PushPayload {
   };
 }
 
+/**
+ * The weekly weigh-in nudge (2026-08-01).
+ *
+ * Deliberately says WHY rather than just "weigh yourself": the ask only makes
+ * sense once you know the app is going to do something with the number, and
+ * "we'll check whether your plan still fits" is the whole bargain in one line.
+ * Deep-links straight to `/merenje`, not to `/danas` -- a reminder that lands
+ * you one tap short of the thing it asked for is a reminder people ignore.
+ */
+export function weighInPayload(): PushPayload {
+  return {
+    title: "Nedeljno merenje",
+    body: "Izmeri se pa da vidimo da li ti plan i dalje odgovara.",
+    url: "/merenje",
+    tag: "fitmess-merenje",
+  };
+}
+
 /** What the evening recap knows about the day it is reporting on. */
 export interface EveningRecap {
   /** Logs the user made today. */

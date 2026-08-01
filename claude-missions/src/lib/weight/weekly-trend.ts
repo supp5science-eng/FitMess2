@@ -300,7 +300,7 @@ function floorTo10(value: number): number {
  * whole verdict. With two points the fit degenerates to the endpoint difference,
  * which is exactly right -- and why two points only ever earn `low` confidence.
  */
-function fitSlopeKgPerDay(points: readonly { x: number; y: number }[]): number {
+export function fitSlopeKgPerDay(points: readonly { x: number; y: number }[]): number {
   const n = points.length;
   if (n < 2) return 0;
   const meanX = points.reduce((sum, p) => sum + p.x, 0) / n;
@@ -316,7 +316,7 @@ function fitSlopeKgPerDay(points: readonly { x: number; y: number }[]): number {
 }
 
 /** The fitted line's value at day index `x`. */
-function fitAt(points: readonly { x: number; y: number }[], x: number): number {
+export function fitAt(points: readonly { x: number; y: number }[], x: number): number {
   const n = points.length;
   if (n === 0) return 0;
   const meanX = points.reduce((sum, p) => sum + p.x, 0) / n;

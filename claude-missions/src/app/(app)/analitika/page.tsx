@@ -18,6 +18,11 @@ import { computeStepsWeek } from "@/lib/steps/steps-week";
 import { getLoggedDayKeys } from "@/lib/streak/read-streak";
 import { computeStreak } from "@/lib/streak/streak";
 import { createClient } from "@/lib/supabase/server";
+import { computeWeighInChart } from "@/lib/weight/weigh-in-chart";
+import {
+  CHART_WEIGH_IN_LIMIT,
+  getRecentWeighIns,
+} from "@/lib/weight/weigh-ins";
 import { getWaterWeek } from "@/lib/water/water";
 import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
 import { computeMacroWeeks } from "@/lib/week/macro-weeks";
@@ -63,6 +68,7 @@ export default async function NedeljaPage() {
     profileResult,
     customStepGoal,
     streakDays,
+    weighInsResult,
   ] = await Promise.all([
     getWeekData(supabase, userId, now),
     getMealHistory(supabase, userId, now),
@@ -88,6 +94,9 @@ export default async function NedeljaPage() {
     // Niz: the Belgrade days the user logged a meal on (trailing window), for
     // the streak card. Degrades to an empty set on a read error.
     getLoggedDayKeys(supabase, userId, now),
+    // Nedeljno merenje: the last few weigh-ins for the trend chart. Its own
+    // read, degrading to "no chart" rather than to a failed screen.
+    getRecentWeighIns(supabase, userId, CHART_WEIGH_IN_LIMIT),
   ]);
 
   if (result.error) {
@@ -202,6 +211,12 @@ export default async function NedeljaPage() {
 
   const currentWeightKg = profile?.weight_kg ?? null;
 
+  // Nedeljno merenje: the REAL weigh-ins, next to the card that estimates
+  // weight from calorie balance. Two different claims about the same body, and
+  // seeing them side by side is the point -- the estimate is what the plan
+  // predicts, the dots are what happened.
+  const weighInChart = computeWeighInChart(weighInsResult.points);
+
   const intakeTrend =
     tdeeKcal != null && currentWeightKg != null
       ? computeIntakeTrend(historyResult.data ?? [], now, {
@@ -261,6 +276,7 @@ export default async function NedeljaPage() {
       macroWeeks={macroWeeks}
       microWeek={microWeek}
       intakeTrend={intakeTrend}
+      weighInChart={weighInChart}
       waterWeek={waterWeek}
       stepsWeek={stepsWeek}
       streak={streak}

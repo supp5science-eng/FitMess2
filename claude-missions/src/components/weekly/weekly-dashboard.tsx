@@ -6,6 +6,7 @@ import { MacroAverageCard } from "@/components/analytics/macro-average-card";
 import { MicroWeekCard } from "@/components/analytics/micro-week-card";
 import { StepsCard } from "@/components/analytics/steps-card";
 import { WaterCard } from "@/components/analytics/water-card";
+import { WeighInTrendCard } from "@/components/analytics/weigh-in-trend-card";
 import { StreakSummaryCard } from "@/components/streak/streak-summary-card";
 import type { MicroWeek } from "@/lib/nutrition/micro-week";
 import type { StepsWeek } from "@/lib/steps/steps-week";
@@ -13,6 +14,7 @@ import type { StreakSummary } from "@/lib/streak/streak";
 import type { IntakeTrend } from "@/lib/weight/intake-trend";
 import type { WaterWeek } from "@/lib/water/water-week";
 import type { MacroWeek } from "@/lib/week/macro-weeks";
+import type { WeighInChart } from "@/lib/weight/weigh-in-chart";
 
 // F041: the Analitika dashboard body. Presentational: the page owns every
 // server data read and hands down fully-derived props; this component only lays
@@ -22,6 +24,7 @@ export function WeeklyDashboard({
   macroWeeks,
   microWeek,
   intakeTrend,
+  weighInChart,
   waterWeek,
   stepsWeek,
   streak,
@@ -42,6 +45,10 @@ export function WeeklyDashboard({
    * `null` when TDEE or current weight can't be derived -- the card then shows
    * a calm "dopuni profil" state. */
   intakeTrend: IntakeTrend | null;
+  /** The real weigh-ins plus the fitted line (`computeWeighInChart`). `null`
+   * until there are at least two -- one dot is not a trend, and the card says
+   * so in words rather than drawing a point. */
+  weighInChart: WeighInChart | null;
   /** Today's hydration vs goal + a 7-day series (`computeWaterWeek`). `null`
    * when the read failed. */
   waterWeek: WaterWeek | null;
@@ -80,6 +87,11 @@ export function WeeklyDashboard({
 
       {/* Estimated weight trend from calorie intake (energy balance + macros). */}
       <IntakeTrendCard trend={intakeTrend} />
+
+      {/* …and directly beneath it, what the SCALE said. The estimate above is
+          what the plan predicts; these are the measurements it gets judged
+          against, so they belong next to each other. */}
+      <WeighInTrendCard chart={weighInChart} />
 
       {/* Hydration: today vs goal + a 7-day series. */}
       <WaterCard week={waterWeek} />

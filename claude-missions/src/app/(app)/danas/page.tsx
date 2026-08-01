@@ -31,6 +31,8 @@ import { computeStepsWeek } from "@/lib/steps/steps-week";
 import { getWaterWeek } from "@/lib/water/water";
 import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
 import { createClient } from "@/lib/supabase/server";
+import { weighInDueState } from "@/lib/weight/weigh-in-day";
+import { getLastWeighInDay, getWeighInDay } from "@/lib/weight/weigh-ins";
 
 const SR_MONTHS_SHORT = [
   "jan",
@@ -142,6 +144,8 @@ export default async function DanasPage({
     cookieStore,
     stepsWeekRows,
     waterWeekRows,
+    lastWeighInDay,
+    weighInDay,
   ] = await Promise.all([
     getTodayData(supabase, userId, range),
     // Shared with `layout.tsx` via React `cache()` -- the layout already reads
@@ -168,6 +172,14 @@ export default async function DanasPage({
     // day reads 0 and the button/card still work.
     getStepsWeek(supabase, userId, selectedNoon),
     getWaterWeek(supabase, userId, selectedNoon),
+    // Nedeljno merenje: two point lookups on indexed columns, both needing
+    // nothing but `userId`, so they cost no wall-clock here -- they finish
+    // inside the slowest read above. Each is deliberately its OWN query rather
+    // than a column bolted onto an existing select: `weighin_day` lives in a
+    // migration (0024) that an environment may not have applied yet, and a
+    // missing column must cost the banner, not the dashboard.
+    getLastWeighInDay(supabase, userId),
+    getWeighInDay(supabase, userId),
   ]);
 
   // The viewed day is the LAST day of each window above, so its own total comes
@@ -236,6 +248,15 @@ export default async function DanasPage({
           now
         )
       : null;
+
+  // Nedeljno merenje: is the app still waiting on this week's reading? `null`
+  // means "no, nothing to ask" -- the banner renders only for a real wait.
+  const weighIn = weighInDueState({
+    todayKey,
+    weighInDay,
+    lastWeighInDay,
+  });
+  const weighInDaysWaiting = weighIn.due ? weighIn.daysWaiting : null;
 
   const waterGoal = waterGoalMl(profile?.weight_kg ?? null);
   // Map the two week models onto the strip's tiny shape (label + share of goal
@@ -309,6 +330,7 @@ export default async function DanasPage({
       stepsWeek={stepsWeek}
       waterWeek={waterWeek}
       isToday={isToday}
+      weighInDaysWaiting={weighInDaysWaiting}
     />
   );
 }

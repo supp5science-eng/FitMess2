@@ -90,21 +90,39 @@ export interface WeighInDueState {
 /**
  * Whether the weekly weigh-in is outstanding.
  *
- * Outstanding means: the week's scheduled day has arrived, and nothing has been
- * weighed on or after it. The banner then stays up until the user records one
- * -- it is a nag, deliberately, because the whole feature is worthless without
- * the reading, but it never blocks anything.
+ * Outstanding means: the week's scheduled day has arrived, nothing has been
+ * weighed on or around it, and we are still close enough to that day for a
+ * reading to belong to it.
  *
- * One day of grace on the early side: someone who steps on the scale on
- * Saturday morning for a Sunday schedule has answered the question, and asking
- * them to weigh twice inside 24 hours is the kind of chore that gets a feature
- * switched off. A WEDNESDAY reading is a different matter -- body weight follows
- * a weekly rhythm, so comparing a Wednesday against a run of Sundays invents
- * change that never happened, and the Sunday slot is still asked for.
+ * That last clause is the important one, and it was missing until 2026-08-01.
+ * The ask used to stand until it was answered, so a Sunday schedule was still
+ * nagging on Saturday -- asking, six days late, for "last Sunday's weight".
+ * There is no such thing. Body weight follows a weekly rhythm (heavier after
+ * weekend eating, lighter mid-week), which is the entire reason this feature
+ * pins a weekday at all; a Saturday number dropped into Sunday's slot doesn't
+ * fill the gap, it poisons the trend with a kilogram of change that never
+ * happened. A missed week is missed. The engine already knows how to say
+ * INSUFFICIENT_DATA, and silence for a few days is cheaper than a wrong
+ * correction to someone's calories.
+ *
+ * So the window is symmetric and narrow: one day either side of the scheduled
+ * day. Saturday-for-Sunday counts because someone who stepped on the scale
+ * yesterday morning has answered the question, and asking them to weigh twice
+ * inside 24 hours is the kind of chore that gets a feature switched off.
+ * Monday-for-Sunday counts because sleeping in once should not cost a whole
+ * week when the trend needs three of them. Tuesday does not.
  */
 
 /** How many days BEFORE the scheduled day a weigh-in still settles the week. */
 export const EARLY_GRACE_DAYS = 1;
+
+/**
+ * How many days AFTER the scheduled day the app keeps asking.
+ *
+ * Not "how long the reading stays useful" -- how long the ASK stays honest.
+ * Past this the week is written off rather than filled in late.
+ */
+export const LATE_GRACE_DAYS = 1;
 export function weighInDueState({
   todayKey,
   weighInDay,
@@ -123,12 +141,16 @@ export function weighInDueState({
     (Date.UTC(ty!, tm! - 1, td!) - Date.UTC(y!, m! - 1, d!)) / 86_400_000
   );
 
+  // Answered, or too late to still be this week's reading. Either way the app
+  // stops asking and looks to the next scheduled day.
+  const due = !answered && daysWaiting <= LATE_GRACE_DAYS;
+
   return {
-    due: !answered,
-    scheduledDay: answered
-      ? nextScheduledWeighIn(todayKey, weighInDay)
-      : scheduledDay,
-    daysWaiting: answered ? 0 : Math.max(0, daysWaiting),
+    due,
+    scheduledDay: due
+      ? scheduledDay
+      : nextScheduledWeighIn(todayKey, weighInDay),
+    daysWaiting: due ? Math.max(0, daysWaiting) : 0,
     lastWeighInDay,
   };
 }

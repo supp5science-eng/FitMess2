@@ -82,16 +82,59 @@ describe("weighInDueState", () => {
     expect(state.due).toBe(true);
   });
 
-  it("test_the_nag_keeps_counting_and_never_gives_up", () => {
-    // Five days past a Sunday nobody weighed in on.
+  it("test_the_day_after_still_asks", () => {
+    // Monday, for a Sunday nobody weighed in on. Sleeping in once should not
+    // cost the week.
+    const state = weighInDueState({
+      todayKey: "2026-08-03",
+      weighInDay: 6,
+      lastWeighInDay: "2026-07-26",
+    });
+
+    expect(state.due).toBe(true);
+    expect(state.daysWaiting).toBe(1);
+  });
+
+  it("test_a_missed_week_is_written_off_rather_than_filled_in_late", () => {
+    // Five days past a Sunday nobody weighed in on. A Friday number is not
+    // last Sunday's weight, so the app stops asking and waits for the next
+    // slot instead of collecting a reading that would poison the trend.
     const state = weighInDueState({
       todayKey: "2026-08-07",
       weighInDay: 6,
       lastWeighInDay: "2026-07-26",
     });
 
+    expect(state.due).toBe(false);
+    expect(state.daysWaiting).toBe(0);
+    expect(state.scheduledDay).toBe("2026-08-09");
+  });
+
+  it("test_the_ask_returns_on_the_next_scheduled_day", () => {
+    // Having gone quiet mid-week, the banner must come back on Sunday -- the
+    // write-off is one week, not a permanent opt-out.
+    const state = weighInDueState({
+      todayKey: "2026-08-09",
+      weighInDay: 6,
+      lastWeighInDay: "2026-07-26",
+    });
+
     expect(state.due).toBe(true);
-    expect(state.daysWaiting).toBe(5);
+    expect(state.daysWaiting).toBe(0);
+    expect(state.scheduledDay).toBe("2026-08-09");
+  });
+
+  it("test_saturday_is_quiet_when_the_schedule_is_sunday", () => {
+    // The bug this rule was written for: a Saturday screen asking, six days
+    // late, for "last Sunday's weight".
+    const state = weighInDueState({
+      todayKey: "2026-08-01",
+      weighInDay: 6,
+      lastWeighInDay: "2026-07-22",
+    });
+
+    expect(state.due).toBe(false);
+    expect(state.scheduledDay).toBe("2026-08-02");
   });
 
   it("test_weighing_in_early_still_counts_once_the_day_arrives", () => {
@@ -124,14 +167,28 @@ describe("weighInDueState", () => {
   });
 
   it("test_a_monday_schedule_works_the_same_way", () => {
+    // Tuesday, schedule = Monday: inside the window, so still asked.
     const state = weighInDueState({
-      todayKey: "2026-08-05",
+      todayKey: "2026-08-04",
       weighInDay: 0,
       lastWeighInDay: null,
     });
 
     expect(state.scheduledDay).toBe("2026-08-03");
     expect(state.due).toBe(true);
-    expect(state.daysWaiting).toBe(2);
+    expect(state.daysWaiting).toBe(1);
+  });
+
+  it("test_the_window_follows_the_chosen_day_not_sunday", () => {
+    // Wednesday, schedule = Monday: two days late, so quiet -- and the next
+    // ask is the following Monday, not a Sunday.
+    const state = weighInDueState({
+      todayKey: "2026-08-05",
+      weighInDay: 0,
+      lastWeighInDay: null,
+    });
+
+    expect(state.due).toBe(false);
+    expect(state.scheduledDay).toBe("2026-08-10");
   });
 });

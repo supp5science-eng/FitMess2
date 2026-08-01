@@ -74,6 +74,7 @@ export default async function DanMerenjaPage() {
         initialDay={weighInDay}
         initialTime={weighInTime}
         initialPushEnabled={pushEnabled}
+        vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
       />
     </main>
   );

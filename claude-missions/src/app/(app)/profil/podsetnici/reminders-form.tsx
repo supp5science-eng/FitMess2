@@ -1,6 +1,16 @@
 "use client";
 
-import { Check, Moon, Send, Smartphone, Sun, Trophy } from "lucide-react";
+import Link from "next/link";
+import {
+  Check,
+  ChevronRight,
+  Moon,
+  Scale,
+  Send,
+  Smartphone,
+  Sun,
+  Trophy,
+} from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 
 import { useT } from "@/components/i18n/locale-provider";
@@ -12,8 +22,13 @@ import {
   pushEnvironment,
 } from "@/lib/push/client";
 import { cn } from "@/lib/utils";
+import { WEIGH_IN_DAY_LABELS_SR } from "@/lib/weight/weigh-in-day";
 
-import { saveRemindersAction, type ReminderPreferences } from "./actions";
+import {
+  saveRemindersAction,
+  saveWeighInEnabledAction,
+  type ReminderPreferences,
+} from "./actions";
 
 // The Podsetnici screen's interactive half.
 //
@@ -61,11 +76,23 @@ function fallbackTime(value: string, fallback: string): string {
   return TIME_OPTIONS.includes(value) ? value : fallback;
 }
 
+/** The weekly weigh-in reminder as this screen knows it: a switch it owns, and
+ * a schedule it only reports (that lives on `/profil/merenje`). */
+export interface WeighInReminder {
+  enabled: boolean;
+  /** 0 = Monday .. 6 = Sunday. */
+  day: number;
+  /** `"HH:MM"`. */
+  time: string;
+}
+
 export function RemindersForm({
   initial,
+  weighIn,
   vapidPublicKey,
 }: {
   initial: ReminderPreferences;
+  weighIn: WeighInReminder;
   vapidPublicKey: string;
 }) {
   const { t } = useT();
@@ -74,6 +101,7 @@ export function RemindersForm({
     morningTime: fallbackTime(initial.morningTime, "10:00"),
     eveningTime: fallbackTime(initial.eveningTime, "20:00"),
   });
+  const [weighInEnabled, setWeighInEnabled] = useState(weighIn.enabled);
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [testStatus, setTestStatus] = useState<Status>({ kind: "idle" });
 
@@ -103,10 +131,15 @@ export function RemindersForm({
   const blocked = permission === "denied";
   const canArm = environment === "ready" && !missingKey && !blocked;
 
+  // The weigh-in counts (2026-08-01). It shares the one device subscription
+  // with the rest, so leaving it out meant switching the three daily reminders
+  // off tore down the subscription the weekly weigh-in was still relying on —
+  // and the user who wanted ONLY the weigh-in got nothing at all.
   const anyOn =
     preferences.morningEnabled ||
     preferences.eveningEnabled ||
-    preferences.awardEnabled;
+    preferences.awardEnabled ||
+    weighInEnabled;
   const busy = status.kind === "working";
 
   // Exactly one explanation, most-blocking first: an iPhone in a Safari tab
@@ -137,23 +170,13 @@ export function RemindersForm({
    * never deliver.
    */
   async function apply(next: ReminderPreferences) {
-    const wasOn = anyOn;
     const willBeOn =
-      next.morningEnabled || next.eveningEnabled || next.awardEnabled;
+      next.morningEnabled ||
+      next.eveningEnabled ||
+      next.awardEnabled ||
+      weighInEnabled;
 
-    setStatus({ kind: "working" });
-    setTestStatus({ kind: "idle" });
-
-    if (willBeOn && !wasOn) {
-      const subscribed = await enablePush(vapidPublicKey);
-      setGrantedNow(notificationPermission());
-      if (!subscribed.ok) {
-        setStatus({ kind: "error", message: subscribed.message });
-        return;
-      }
-    } else if (!willBeOn && wasOn) {
-      await disablePush();
-    }
+    if (!(await syncSubscription(willBeOn))) return;
 
     const saved = await saveRemindersAction(next);
     if (!saved.ok) {
@@ -166,6 +189,58 @@ export function RemindersForm({
 
     setPreferences(next);
     setStatus({ kind: "saved" });
+  }
+
+  /** The weekly weigh-in switch. Its day and time are not editable here — the
+   * row links to `/profil/merenje`, which owns them. */
+  async function applyWeighIn(next: boolean) {
+    const willBeOn =
+      preferences.morningEnabled ||
+      preferences.eveningEnabled ||
+      preferences.awardEnabled ||
+      next;
+
+    if (!(await syncSubscription(willBeOn))) return;
+
+    const saved = await saveWeighInEnabledAction(next);
+    if (!saved.ok) {
+      setStatus({
+        kind: "error",
+        message: saved.error_sr ?? t("profil.reminders.errorGeneric"),
+      });
+      return;
+    }
+
+    setWeighInEnabled(next);
+    setStatus({ kind: "saved" });
+  }
+
+  /**
+   * Arms or releases this device's subscription to match "is anything on?",
+   * and reports whether it is safe to write the setting.
+   *
+   * Subscribing FIRST and saving second matters: if the permission prompt is
+   * dismissed there must be no saved row claiming a reminder the device can
+   * never deliver.
+   */
+  async function syncSubscription(willBeOn: boolean): Promise<boolean> {
+    const wasOn = anyOn;
+
+    setStatus({ kind: "working" });
+    setTestStatus({ kind: "idle" });
+
+    if (willBeOn && !wasOn) {
+      const subscribed = await enablePush(vapidPublicKey);
+      setGrantedNow(notificationPermission());
+      if (!subscribed.ok) {
+        setStatus({ kind: "error", message: subscribed.message });
+        return false;
+      }
+    } else if (!willBeOn && wasOn) {
+      await disablePush();
+    }
+
+    return true;
   }
 
   async function sendTest() {
@@ -226,6 +301,32 @@ export function RemindersForm({
           }
           timeDisabled={busy}
         />
+
+        {/* The weekly one. No time picker here on purpose: the day and the time
+            belong to `/profil/merenje`, because the same weekday also drives
+            the `/danas` banner and the weekly trend — it is not merely a
+            notification schedule. This row shows it and links there. */}
+        <ReminderRow
+          className="border-t border-border pt-3"
+          icon={<Scale className="size-5" aria-hidden="true" />}
+          title={t("profil.reminders.weighInTitle")}
+          description={`${WEIGH_IN_DAY_LABELS_SR[weighIn.day] ?? WEIGH_IN_DAY_LABELS_SR[6]} u ${weighIn.time}`}
+          testId="reminder-weighin"
+          enabled={weighInEnabled}
+          disabled={busy || (!weighInEnabled && !canArm)}
+          onToggle={(value) => applyWeighIn(value)}
+        >
+          {weighInEnabled ? (
+            <Link
+              href="/profil/merenje"
+              data-testid="reminder-weighin-link"
+              className="flex min-h-11 items-center justify-between gap-2 pl-13 text-sm font-medium text-muted-foreground"
+            >
+              {t("profil.reminders.weighInChange")}
+              <ChevronRight className="size-4" aria-hidden="true" />
+            </Link>
+          ) : null}
+        </ReminderRow>
 
         {/* No time picker: this one is earned, not scheduled. */}
         <ReminderRow
@@ -340,7 +441,8 @@ export function RemindersForm({
 
 /** One reminder: icon, name, switch, and — for the scheduled ones — a time.
  * The time picker is a native `<select>`, which is the iOS wheel: the same
- * choice the onboarding wizard settled on. */
+ * choice the onboarding wizard settled on. `children` is for a row whose
+ * schedule is set elsewhere and which therefore needs a link instead. */
 function ReminderRow({
   icon,
   title,
@@ -353,6 +455,7 @@ function ReminderRow({
   onTimeChange,
   timeDisabled,
   className,
+  children,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -365,6 +468,7 @@ function ReminderRow({
   onTimeChange?: (value: string) => void;
   timeDisabled?: boolean;
   className?: string;
+  children?: React.ReactNode;
 }) {
   const { t } = useT();
   return (
@@ -433,6 +537,8 @@ function ReminderRow({
           </select>
         </label>
       ) : null}
+
+      {children}
     </div>
   );
 }

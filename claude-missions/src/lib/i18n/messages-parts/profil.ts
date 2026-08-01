@@ -100,7 +100,7 @@ export const profilMessages = {
 
     // Podsetnici (/profil/podsetnici)
     "profil.reminders.subtitle":
-      "Dva puta dnevno: ujutru da upišeš doručak, uveče koliko ti je ostalo. I jednom kad zaslužiš — kad upišeš treći obrok.",
+      "Najvažniji je nedeljno merenje — bez njega plan nema po čemu da se pomeri. Ostale uključi koliko ti treba.",
     "profil.reminders.errorGeneric": "Nešto je pošlo naopako.",
     "profil.reminders.testError": "Nismo uspeli da pošaljemo probnu notifikaciju.",
     "profil.reminders.morningTitle": "Jutarnji podsetnik",
@@ -109,6 +109,8 @@ export const profilMessages = {
     "profil.reminders.eveningDesc": "Koliko ti je kalorija ostalo i šta si upisao.",
     "profil.reminders.awardTitle": "Nagrada za pun dan",
     "profil.reminders.awardDesc": "Javi mi kad upišem treći obrok.",
+    "profil.reminders.weighInTitle": "Nedeljno merenje",
+    "profil.reminders.weighInChange": "Promeni dan i vreme",
     "profil.reminders.unsupported": "Ovaj pregledač ne podržava notifikacije.",
     "profil.reminders.needsInstall":
       "Na iPhone-u notifikacije rade samo kad je FitMess dodat na početni ekran. Otvori Podeli → „Dodaj na početni ekran”, pa uključi podsetnike iz instalirane aplikacije.",
@@ -242,7 +244,7 @@ export const profilMessages = {
     "profil.data.choose": "Choose",
 
     "profil.reminders.subtitle":
-      "Twice a day: in the morning to log breakfast, in the evening how much you have left. And once when you've earned it — when you log your third meal.",
+      "The weekly weigh-in matters most — without it your plan has nothing to adjust to. Turn the rest on as you need them.",
     "profil.reminders.errorGeneric": "Something went wrong.",
     "profil.reminders.testError": "We couldn't send the test notification.",
     "profil.reminders.morningTitle": "Morning reminder",
@@ -251,6 +253,8 @@ export const profilMessages = {
     "profil.reminders.eveningDesc": "How many calories you have left and what you logged.",
     "profil.reminders.awardTitle": "Full-day reward",
     "profil.reminders.awardDesc": "Let me know when I log my third meal.",
+    "profil.reminders.weighInTitle": "Weekly weigh-in",
+    "profil.reminders.weighInChange": "Change day and time",
     "profil.reminders.unsupported": "This browser doesn't support notifications.",
     "profil.reminders.needsInstall":
       "On iPhone, notifications only work when FitMess is added to your home screen. Open Share → “Add to Home Screen,” then turn on reminders from the installed app.",

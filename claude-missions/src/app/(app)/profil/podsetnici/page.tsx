@@ -4,6 +4,11 @@ import { ChevronLeft } from "lucide-react";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
+import {
+  DEFAULT_WEIGH_IN_DAY,
+  DEFAULT_WEIGH_IN_TIME,
+  normalizeWeighInDay,
+} from "@/lib/weight/weigh-in-day";
 
 import type { ReminderPreferences } from "./actions";
 import { RemindersForm } from "./reminders-form";
@@ -37,6 +42,11 @@ export default async function PodsetniciPage() {
   const userId = await getCurrentUserId(supabase);
 
   let preferences = DEFAULTS;
+  let weighIn = {
+    enabled: true,
+    day: DEFAULT_WEIGH_IN_DAY,
+    time: DEFAULT_WEIGH_IN_TIME,
+  };
 
   if (userId) {
     const { data } = await supabase
@@ -55,6 +65,25 @@ export default async function PodsetniciPage() {
         eveningEnabled: data.evening_enabled,
         eveningTime: data.evening_time.slice(0, 5),
         awardEnabled: data.award_enabled,
+      };
+    }
+
+    // The 0024 columns in their own read, the same way `/profil/merenje` does
+    // it: a deployment without that migration must lose the weigh-in row, not
+    // the whole screen.
+    const { data: weighInRow, error: weighInError } = await supabase
+      .from("reminder_settings")
+      .select("weighin_enabled, weighin_day, weighin_time")
+      .eq("user_id", userId)
+      .maybeSingle();
+
+    if (weighInError) {
+      console.error("[podsetnici] weigh-in read failed:", weighInError.message);
+    } else if (weighInRow) {
+      weighIn = {
+        enabled: weighInRow.weighin_enabled ?? true,
+        day: normalizeWeighInDay(weighInRow.weighin_day ?? null),
+        time: (weighInRow.weighin_time ?? DEFAULT_WEIGH_IN_TIME).slice(0, 5),
       };
     }
   }
@@ -80,6 +109,7 @@ export default async function PodsetniciPage() {
 
       <RemindersForm
         initial={preferences}
+        weighIn={weighIn}
         vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""}
       />
     </main>

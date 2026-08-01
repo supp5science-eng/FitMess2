@@ -26,7 +26,12 @@ export interface SaveReminderResult {
 
 /** Everything the screen can change, in one write — the two scheduled
  * reminders plus the earned award push. Sent whole rather than per-field so a
- * half-applied screen is not representable. */
+ * half-applied screen is not representable.
+ *
+ * The weekly weigh-in reminder is DISPLAYED on this screen but its day and time
+ * live on `/profil/merenje` (they are not just a notification schedule — the
+ * same weekday drives the `/danas` banner and the trend). Only its on/off
+ * travels through here, via `saveWeighInEnabledAction`. */
 export interface ReminderPreferences {
   morningEnabled: boolean;
   morningTime: string;
@@ -75,6 +80,42 @@ export async function saveRemindersAction(
 
   if (error) {
     console.error("[podsetnici] save settings failed:", error.message);
+    return { ok: false, error_sr: SAVE_FAILED_ERROR_SR };
+  }
+
+  return { ok: true };
+}
+
+/**
+ * The weekly weigh-in switch, on its own.
+ *
+ * Separate from `saveRemindersAction` because it writes different columns and,
+ * more importantly, because an environment without migration 0024 must fail
+ * only THIS switch rather than take the two daily reminders down with it.
+ */
+export async function saveWeighInEnabledAction(
+  enabled: boolean
+): Promise<SaveReminderResult> {
+  const supabase = await createClient();
+  const userId = await getCurrentUserId(supabase);
+
+  if (!userId) {
+    return { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR };
+  }
+
+  const { error } = await supabase.from("reminder_settings").upsert(
+    {
+      user_id: userId,
+      weighin_enabled: enabled,
+      // Same rule as everywhere else: switching a reminder on clears the guard,
+      // so turning it on 10 minutes before its time still gets you today's.
+      weighin_last_sent: null,
+    },
+    { onConflict: "user_id" }
+  );
+
+  if (error) {
+    console.error("[podsetnici] save weigh-in switch failed:", error.message);
     return { ok: false, error_sr: SAVE_FAILED_ERROR_SR };
   }
 

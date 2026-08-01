@@ -117,6 +117,9 @@ export const merenjeMessages = {
     "merenje.settings.time": "U koliko sati",
     "merenje.settings.save": "Sačuvaj",
     "merenje.settings.saved": "Sačuvano.",
+    "merenje.settings.pushNotOnThisPhone":
+      "Podsetnik je uključen, ali ovaj telefon još ne prima notifikacije.",
+    "merenje.settings.pushArmThisPhone": "Uključi na ovom telefonu",
   },
   en: {
     "merenje.banner.title": "Weekly weigh-in",
@@ -216,5 +219,8 @@ export const merenjeMessages = {
     "merenje.settings.time": "At",
     "merenje.settings.save": "Save",
     "merenje.settings.saved": "Saved.",
+    "merenje.settings.pushNotOnThisPhone":
+      "The reminder is on, but this phone isn't receiving notifications yet.",
+    "merenje.settings.pushArmThisPhone": "Turn on for this phone",
   },
 } as const;

@@ -500,6 +500,49 @@ describe("why the plan moved: the cause, the spill, and whether it deserves a sc
     expect(plan.isMaterial).toBe(true);
   });
 
+  it("says the week is ahead when there is a cushion worth mentioning", () => {
+    // Mon+Tue at 1400 against a 2000 base: 1200 kcal banked, far past the
+    // quarter-day bar. Nothing was trimmed, so this is the ONLY thing to say.
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 1400), log(TUE, 1400)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1300,
+      now: WED,
+    });
+    expect(plan.isAdjusted).toBe(false);
+    expect(plan.weekRoomKcal).toBe(1200);
+    expect(plan.isOnTrackNotice).toBe(true);
+    expect(plan.hasNotice).toBe(true);
+  });
+
+  it("keeps quiet about a cushion too small to be worth printing", () => {
+    // 200 kcal ahead on a 2000 base is a tenth of a day -- below the bar, so
+    // the card stays away rather than congratulating someone daily.
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 1900), log(TUE, 1900)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1300,
+      now: WED,
+    });
+    expect(plan.weekRoomKcal).toBe(200);
+    expect(plan.isOnTrackNotice).toBe(false);
+    expect(plan.hasNotice).toBe(false);
+  });
+
+  it("never mixes good news with a trim -- a cushion and a cut are one story", () => {
+    const plan = computeAdaptivePlan({
+      weekLogs: [log(MON, 3000), log(TUE, 3000)],
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: 1600,
+      now: WED,
+    });
+    expect(plan.isAdjusted).toBe(true);
+    expect(plan.isOnTrackNotice).toBe(false);
+  });
+
   it("is never material when nothing moved", () => {
     const plan = computeAdaptivePlan({
       weekLogs: [log(MON, 2000), log(TUE, 2000)],

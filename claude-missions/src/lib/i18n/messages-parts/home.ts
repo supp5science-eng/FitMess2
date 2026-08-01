@@ -33,6 +33,26 @@ export const homeExtraMessages = {
     "home.adaptive.answerComplete": "Da, bio je lagan dan",
     "home.adaptive.answerPartial": "Nisam sve upisao",
 
+    // Zašto se plan pomerio — imenovan uzrok, ispod rešenja a ne iznad njega.
+    // „Juče" ima svoje rečenice: kao prilog ne može da stoji na mestu naziva
+    // dana („četvrtak je bio veći" ✓, „juče je bio veći" ✗). Bezlično „uneto"
+    // je i rodno neutralno, pa ne mora da bira između „uneo" i „unela".
+    "home.adaptive.causeOver": "Razlog: {day} je bio {kcal} kcal veći od plana.",
+    "home.adaptive.causeUnder": "Razlog: {day} je bio {kcal} kcal manji od plana.",
+    "home.adaptive.causeOverYesterday":
+      "Razlog: juče je uneto {kcal} kcal više od plana.",
+    "home.adaptive.causeUnderYesterday":
+      "Razlog: juče je uneto {kcal} kcal manje od plana.",
+    // „Višak", ne „ostatak": red ispod već počinje sa „Ostatak pokrij
+    // kretanjem", a to je druga stvar — ovo je deo koji nedelja ne može da
+    // proguta, ono je deo koji treba prehodati. Dva „Ostatka" jedan ispod
+    // drugog čitaju se kao isti broj rečen dvaput.
+    "home.adaptive.spill":
+      "Višak od {kcal} kcal ne staje u ovu nedelju — prelazi u sledeću.",
+    "home.adaptive.onTrack": "Nedelja ti je u planu",
+    "home.adaptive.onTrackRoom":
+      "Do kraja nedelje imaš {kcal} kcal više nego što plan traži.",
+
     // Add sheet
     "home.addSheet.title": "Dodaj unos",
     "home.addSheet.prizmaDesc": "92% tačnost procene kalorija",
@@ -139,6 +159,18 @@ export const homeExtraMessages = {
     "home.adaptive.askDay": "Was {day} really a {kcal} kcal day?",
     "home.adaptive.answerComplete": "Yes, it was a light day",
     "home.adaptive.answerPartial": "I didn't log it all",
+
+    "home.adaptive.causeOver": "Why: {day} came in {kcal} kcal over plan.",
+    "home.adaptive.causeUnder": "Why: {day} came in {kcal} kcal under plan.",
+    "home.adaptive.causeOverYesterday":
+      "Why: yesterday came in {kcal} kcal over plan.",
+    "home.adaptive.causeUnderYesterday":
+      "Why: yesterday came in {kcal} kcal under plan.",
+    "home.adaptive.spill":
+      "The remaining {kcal} kcal doesn't fit in this week — it rolls into next.",
+    "home.adaptive.onTrack": "Your week is on plan",
+    "home.adaptive.onTrackRoom":
+      "You have {kcal} kcal more than the plan asks for over the rest of the week.",
 
     // Add sheet
     "home.addSheet.title": "Add entry",

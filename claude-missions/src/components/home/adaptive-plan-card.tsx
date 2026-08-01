@@ -91,6 +91,14 @@ function weekdayIndexOf(dayKey: string): number {
   return (utcDay + 6) % 7;
 }
 
+/** The calendar day before `dayKey`. "juče" beats "četvrtak" when they are the
+ * same day -- nobody counts backwards to work out which weekday yesterday was. */
+function previousDay(dayKey: string): string {
+  const date = new Date(`${dayKey}T12:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() - 1);
+  return date.toISOString().slice(0, 10);
+}
+
 function prefersReducedMotion(): boolean {
   return (
     typeof window !== "undefined" &&
@@ -181,6 +189,23 @@ export function AdaptivePlanCard({
   const dayName = (key: string) =>
     weekdayNames[weekdayIndexOf(key)] ?? key;
 
+  // The single day most responsible for the change -- the plan names one
+  // reason, not a list. `causeDays` is already sorted by deviation.
+  const cause = plan.causeDays[0] ?? null;
+  const yesterdayKey = dayKey ? previousDay(dayKey) : null;
+  // "juče" is an adverb, so it cannot stand where a weekday NAME stands:
+  // "četvrtak je bio 500 kcal veći" is fine, "juče je bio" is not Serbian.
+  // Hence a whole separate sentence rather than a swapped-in word.
+  const causeMessageKey = !cause
+    ? null
+    : cause.dayKey === yesterdayKey
+      ? cause.deltaKcal > 0
+        ? "home.adaptive.causeOverYesterday"
+        : "home.adaptive.causeUnderYesterday"
+      : cause.deltaKcal > 0
+        ? "home.adaptive.causeOver"
+        : "home.adaptive.causeUnder";
+
   // Week bar geometry: how much of the weekly budget is already gone, and the
   // slice today is allowed to take out of what remains.
   const budget = Math.max(1, plan.weeklyBudget);
@@ -206,7 +231,11 @@ export function AdaptivePlanCard({
         style={nextDelay()}
       >
         <Sparkles className="size-4 text-primary" aria-hidden="true" />
-        {adjusted ? t("home.adaptive.adjusted") : t("home.adaptive.unchanged")}
+        {adjusted
+          ? t("home.adaptive.adjusted")
+          : plan.isOnTrackNotice
+            ? t("home.adaptive.onTrack")
+            : t("home.adaptive.unchanged")}
       </p>
 
       <p className="apc-line mt-1.5 flex items-baseline gap-2" style={nextDelay()}>
@@ -278,9 +307,40 @@ export function AdaptivePlanCard({
         </p>
       ) : null}
 
+      {/* The good-news branch: nothing moved AND the week is comfortably
+          ahead. Without it this card only ever shows up bearing bad news, and
+          a notice that is always bad news gets dismissed unread. */}
+      {plan.isOnTrackNotice ? (
+        <p
+          data-testid="adaptive-note-room"
+          className="apc-line mt-2 text-muted-foreground"
+          style={nextDelay()}
+        >
+          {t("home.adaptive.onTrackRoom", {
+            kcal: formatNumber(plan.weekRoomKcal),
+          })}
+        </p>
+      ) : null}
+
+      {/* WHY, placed under the solution rather than over it. Leading with
+          "Thursday was 500 kcal over" opens the day with an accusation -- the
+          same reason an overshoot is never shown in red. When a specific day
+          can be named the generic sentence is redundant, so it is replaced,
+          not stacked on top of. */}
       {adjusted ? (
-        <p className="apc-line mt-2 text-muted-foreground" style={nextDelay()}>
-          {lifted ? t("home.adaptive.lifted") : t("home.adaptive.lowered")}
+        <p
+          data-testid="adaptive-note-cause"
+          className="apc-line mt-2 text-muted-foreground"
+          style={nextDelay()}
+        >
+          {cause && causeMessageKey
+            ? t(causeMessageKey, {
+                day: dayName(cause.dayKey),
+                kcal: formatNumber(Math.abs(cause.deltaKcal)),
+              })
+            : lifted
+              ? t("home.adaptive.lifted")
+              : t("home.adaptive.lowered")}
           {plan.carryInKcal > 0 ? (
             <>
               {" "}
@@ -289,6 +349,20 @@ export function AdaptivePlanCard({
               })}
             </>
           ) : null}
+        </p>
+      ) : null}
+
+      {/* The part this week genuinely cannot absorb. It used to vanish from
+          the story even though it comes back as next week's carry-in. */}
+      {adjusted && plan.spillToNextWeekKcal > 0 ? (
+        <p
+          data-testid="adaptive-note-spill"
+          className="apc-line mt-2 text-xs text-muted-foreground"
+          style={nextDelay()}
+        >
+          {t("home.adaptive.spill", {
+            kcal: formatNumber(plan.spillToNextWeekKcal),
+          })}
         </p>
       ) : null}
 

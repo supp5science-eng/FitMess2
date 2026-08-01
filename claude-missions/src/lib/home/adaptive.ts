@@ -108,6 +108,17 @@ export const MATERIAL_CHANGE_PCT = 0.05;
 /** A day's deviation is only worth naming as a CAUSE above this many kcal. */
 const CAUSE_MIN_DELTA_KCAL = 50;
 
+/**
+ * How much cushion the rest of the week needs before the card says so.
+ *
+ * A quarter of a day's target. Without a bar like this the card only ever
+ * appears to deliver bad news, and a notice that is always bad news is one
+ * people learn to dismiss before reading -- including the week it matters.
+ * With it, "you're ahead" is a fact worth printing rather than a pat on the
+ * back handed out every single day.
+ */
+const ON_TRACK_ROOM_PCT = 0.25;
+
 /** Round a kcal amount to the nearest 50 for a friendly, non-fake-precise hint. */
 function roundTo50(value: number): number {
   return Math.round(value / 50) * 50;
@@ -182,6 +193,16 @@ export interface AdaptivePlan {
    * always qualify -- being asked to walk is an ask, not a footnote.
    */
   isMaterial: boolean;
+  /**
+   * kcal the rest of the week holds ABOVE plan pace (signed; positive = the
+   * user is ahead). The number behind the "you're on track" line.
+   */
+  weekRoomKcal: number;
+  /**
+   * True when nothing moved AND the week is comfortably ahead -- the one case
+   * worth printing good news for (see `ON_TRACK_ROOM_PCT`).
+   */
+  isOnTrackNotice: boolean;
 }
 
 export interface CauseDay {
@@ -333,6 +354,13 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
     trainingSuggestionKcal > 0 ||
     (base > 0 && changeKcal >= base * MATERIAL_CHANGE_PCT);
 
+  // How far ahead of plan pace the rest of the week is. Only meaningful when
+  // nothing had to be trimmed -- a cushion and a cut are the same arithmetic
+  // seen from opposite sides, and printing both would be one message too many.
+  const weekRoomKcal = Math.round(remainingAllowance - base * daysLeft);
+  const isOnTrackNotice =
+    !isAdjusted && base > 0 && weekRoomKcal >= base * ON_TRACK_ROOM_PCT;
+
   return {
     baseDailyTarget: base,
     adaptiveDailyTarget: adaptive,
@@ -349,10 +377,15 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
     extraSteps,
     daysAfterToday: daysLeft - 1,
     untrustedDays,
-    hasNotice: isAdjusted || untrustedDays.some((day) => day.needsAnswer),
+    hasNotice:
+      isAdjusted ||
+      isOnTrackNotice ||
+      untrustedDays.some((day) => day.needsAnswer),
     causeDays,
     spillToNextWeekKcal,
     isMaterial,
+    weekRoomKcal,
+    isOnTrackNotice,
   };
 }
 

@@ -268,9 +268,13 @@ export default async function DanasPage({
   // "Plan za danas je prilagođen" plays ONCE per day. The cookie holds the day
   // key it last played for, so a new day re-arms it without any expiry games;
   // the card itself writes the cookie the moment it starts.
+  // `isMaterial`, not `isAdjusted` (2026-08-01): the same 500 kcal overshoot is
+  // 83 kcal/day if it happened on Monday and 167 if it happened on Thursday.
+  // Animating the first one teaches people to tap past the second. Below the
+  // bar the card still appears -- it just appears quietly.
   const planIntro =
     isToday &&
-    (adaptivePlan?.isAdjusted ?? false) &&
+    (adaptivePlan?.isMaterial ?? false) &&
     cookieStore.get(PLAN_INTRO_COOKIE)?.value !== todayKey;
 
   return (

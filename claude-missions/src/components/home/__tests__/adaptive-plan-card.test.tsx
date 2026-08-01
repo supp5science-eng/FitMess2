@@ -34,6 +34,8 @@ function makePlan(overrides: Partial<AdaptivePlan> = {}): AdaptivePlan {
     causeDays: [],
     spillToNextWeekKcal: 0,
     isMaterial: false,
+    weekRoomKcal: 0,
+    isOnTrackNotice: false,
     ...overrides,
   };
 }
@@ -231,6 +233,142 @@ describe("the plan is announced FORWARD, not just for today", () => {
     expect(
       screen.queryByTestId("adaptive-note-forward")
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("WHY the plan moved", () => {
+  const thursdayCause = {
+    dayKey: "2026-01-08",
+    kcal: 3500,
+    deltaKcal: 500,
+  };
+
+  it("names the day and the amount, instead of a vague 'earlier overshoot'", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({ causeDays: [thursdayCause] })}
+        dayKey="2026-01-10"
+      />
+    );
+    expect(screen.getByTestId("adaptive-note-cause")).toHaveTextContent(
+      "Razlog: četvrtak je bio 500 kcal veći od plana."
+    );
+  });
+
+  // "juče" is an adverb, so it gets its own sentence rather than being dropped
+  // into the weekday one: "juče je bio veći" is not Serbian, and the bug is
+  // invisible to a test that only asserts the word "juče" appears.
+  it("says 'juče' when the cause was yesterday -- nobody counts weekdays back", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({ causeDays: [thursdayCause] })}
+        dayKey="2026-01-09"
+      />
+    );
+    expect(screen.getByTestId("adaptive-note-cause")).toHaveTextContent(
+      "Razlog: juče je uneto 500 kcal više od plana."
+    );
+  });
+
+  it("keeps the yesterday sentence grammatical when the day was UNDER plan", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({
+          causeDays: [{ ...thursdayCause, kcal: 1500, deltaKcal: -500 }],
+        })}
+        dayKey="2026-01-09"
+      />
+    );
+    expect(screen.getByTestId("adaptive-note-cause")).toHaveTextContent(
+      "Razlog: juče je uneto 500 kcal manje od plana."
+    );
+  });
+
+  it("phrases an under-eaten cause as under, not over", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({
+          liftedKcal: 400,
+          trimmedKcal: 0,
+          adaptiveDailyTarget: 2400,
+          causeDays: [{ dayKey: "2026-01-08", kcal: 1200, deltaKcal: -800 }],
+        })}
+        dayKey="2026-01-10"
+      />
+    );
+    expect(screen.getByTestId("adaptive-note-cause")).toHaveTextContent(
+      "800 kcal manji od plana"
+    );
+  });
+
+  it("falls back to the generic sentence when no single day is to blame", () => {
+    render(<AdaptivePlanCard plan={makePlan({ causeDays: [] })} />);
+    expect(screen.getByTestId("adaptive-note-cause")).toHaveTextContent(
+      /prekoračenja/i
+    );
+  });
+
+  it("leads with the solution: the target renders before the reason", () => {
+    render(
+      <AdaptivePlanCard
+        plan={makePlan({ causeDays: [thursdayCause] })}
+        dayKey="2026-01-10"
+      />
+    );
+    const card = screen.getByTestId("adaptive-note");
+    const target = screen.getByTestId("adaptive-note-target");
+    const reason = screen.getByTestId("adaptive-note-cause");
+    // Node order inside the card decides what the eye reaches first.
+    expect(
+      card.compareDocumentPosition(target) & Node.DOCUMENT_POSITION_PRECEDING
+    ).toBe(0);
+    expect(
+      target.compareDocumentPosition(reason) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeGreaterThan(0);
+  });
+});
+
+describe("what this week cannot absorb", () => {
+  it("says the leftover rolls into next week instead of letting it vanish", () => {
+    render(<AdaptivePlanCard plan={makePlan({ spillToNextWeekKcal: 450 })} />);
+    expect(screen.getByTestId("adaptive-note-spill")).toHaveTextContent(
+      "450 kcal"
+    );
+  });
+
+  it("stays silent when the week absorbs everything", () => {
+    render(<AdaptivePlanCard plan={makePlan()} />);
+    expect(screen.queryByTestId("adaptive-note-spill")).not.toBeInTheDocument();
+  });
+});
+
+describe("good news, so the card is not only ever bad news", () => {
+  const ahead = makePlan({
+    isAdjusted: false,
+    trimmedKcal: 0,
+    adaptiveDailyTarget: 2000,
+    weekRoomKcal: 1200,
+    isOnTrackNotice: true,
+  });
+
+  it("leads with 'the week is on plan' rather than 'nothing changed'", () => {
+    render(<AdaptivePlanCard plan={ahead} />);
+    expect(screen.getByTestId("adaptive-note")).toHaveTextContent(
+      "Nedelja ti je u planu"
+    );
+  });
+
+  it("states the actual cushion, not just a compliment", () => {
+    render(<AdaptivePlanCard plan={ahead} />);
+    expect(screen.getByTestId("adaptive-note-room")).toHaveTextContent(
+      "1.200 kcal"
+    );
+  });
+
+  it("does not appear alongside a trim -- one story at a time", () => {
+    render(<AdaptivePlanCard plan={makePlan()} />);
+    expect(screen.queryByTestId("adaptive-note-room")).not.toBeInTheDocument();
   });
 });
 

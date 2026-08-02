@@ -289,3 +289,45 @@ describe("Back navigation preserves previously entered data", () => {
     ).not.toBeInTheDocument();
   });
 });
+
+/**
+ * The step-reached callback (0028).
+ *
+ * Why it is worth a test: of 27 verified accounts, only 13 finished this
+ * questionnaire, and nobody could say at WHICH question the other 14 stopped —
+ * the wizard keeps its answers in component state and writes them only at the
+ * end. This callback is the only record of a step being reached, and a silent
+ * regression here would restore exactly the blindness it was added to remove.
+ */
+describe("OnboardingWizard: step reporting", () => {
+  it("reports the FIRST step without the user pressing anything", () => {
+    // The most important row in the funnel is someone who opens the
+    // questionnaire and leaves immediately -- they never press Dalje.
+    const onStepShown = vi.fn();
+    render(
+      <OnboardingWizard onComplete={completeMock} onStepShown={onStepShown} />
+    );
+
+    expect(onStepShown).toHaveBeenCalledWith("pol");
+  });
+
+  it("reports each step as it is reached", () => {
+    const onStepShown = vi.fn();
+    render(
+      <OnboardingWizard onComplete={completeMock} onStepShown={onStepShown} />
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: /Žensko/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Dalje/ }));
+
+    expect(onStepShown).toHaveBeenNthCalledWith(1, "pol");
+    expect(onStepShown).toHaveBeenNthCalledWith(2, "godine");
+  });
+
+  it("works without the callback -- the public questionnaire passes none", () => {
+    expect(() => renderWizard()).not.toThrow();
+    expect(
+      screen.getByRole("heading", { name: /Koji je tvoj pol\?/ })
+    ).toBeInTheDocument();
+  });
+});

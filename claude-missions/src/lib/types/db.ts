@@ -371,6 +371,44 @@ export interface Database {
         ];
       };
       /**
+       * 0028: the first time each user reached a named point in a flow — a
+       * questionnaire step being shown, an outcome of the notification-
+       * permission offer. Bounded (one row per named point per user) and
+       * write-once: the primary key discards every arrival after the first.
+       */
+      funnel_events: {
+        Row: {
+          user_id: string;
+          /** `onboarding_step` | `push_prompt` — see `@/lib/funnel/events`. */
+          event: string;
+          /** Step id, or prompt outcome. Same allow-list. */
+          value: string;
+          /** When the point was FIRST reached; never moves. */
+          at: string;
+        };
+        Insert: {
+          user_id: string;
+          event: string;
+          value: string;
+          at?: string;
+        };
+        Update: {
+          user_id?: string;
+          event?: string;
+          value?: string;
+          at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "funnel_events_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      /**
        * 0024 (nedeljno merenje): every plan-correction suggestion the weekly
        * trend produced AND the user's answer. Written only when the user taps
        * — the engine never changes a plan on its own.

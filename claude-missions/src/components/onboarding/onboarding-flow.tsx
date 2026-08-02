@@ -8,6 +8,7 @@ import { NameScreen } from "@/components/onboarding/name-screen";
 import { ThemeChoiceScreen } from "@/components/onboarding/theme-choice-screen";
 import { FinishAndRedirect } from "@/components/onboarding/finish-and-redirect";
 import { PlanReveal } from "@/components/onboarding/plan-reveal";
+import { recordOnboardingStep } from "@/lib/funnel/record";
 import { isOnboardingDataComplete } from "@/lib/onboarding/summary";
 import type { CompleteOnboardingData } from "@/lib/onboarding/summary";
 import type { OnboardingData } from "@/lib/onboarding/types";
@@ -158,5 +159,14 @@ export function OnboardingFlow() {
     );
   }
 
-  return <OnboardingWizard onComplete={handleWizardComplete} />;
+  // Only the signed-in flow measures: this is the wizard where 14 of 27
+  // verified accounts were lost without us being able to say at which
+  // question (see 0028). The public copy on `/upitnik` has no account to
+  // attribute a step to and passes nothing.
+  return (
+    <OnboardingWizard
+      onComplete={handleWizardComplete}
+      onStepShown={recordOnboardingStep}
+    />
+  );
 }

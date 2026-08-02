@@ -101,6 +101,8 @@ export const appMessages = {
     "app.pwi.title.a": "Tvoj plan te čeka",
     "app.pwi.title.hi": "na jedan tap",
     "app.pwi.sub": "Dodaj FitMess na početni ekran — otvara se kao prava aplikacija, bez kucanja adrese.",
+    "app.pwi.iosPush":
+      "Podsetnik za nedeljno merenje stiže samo iz instalirane aplikacije.",
     "app.pwi.note.a": "Ne vidiš „Dodaj na početni ekran”? Skroluj listu ili tapni",
     "app.pwi.note.b": "Prikaži još",
     "app.pwi.note.c": ".",
@@ -263,6 +265,8 @@ export const appMessages = {
     "app.pwi.title.a": "Your plan is",
     "app.pwi.title.hi": "one tap away",
     "app.pwi.sub": "Add FitMess to your home screen — it opens like a real app, no typing the address.",
+    "app.pwi.iosPush":
+      "The weekly weigh-in reminder only arrives from the installed app.",
     "app.pwi.note.a": "Don't see “Add to Home Screen”? Scroll the list or tap",
     "app.pwi.note.b": "Show more",
     "app.pwi.note.c": ".",

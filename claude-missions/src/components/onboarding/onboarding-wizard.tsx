@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { useT } from "@/components/i18n/locale-provider";
@@ -89,8 +89,18 @@ function validateStep(
  */
 export function OnboardingWizard({
   onComplete,
+  onStepShown,
 }: {
   onComplete: (data: OnboardingData) => void;
+  /**
+   * Called with each step id as it becomes visible.
+   *
+   * Optional, and passed only by the SIGNED-IN flow: the wizard itself knows
+   * nothing about accounts or measurement, and the public (pre-signup) copy of
+   * it has no user to attribute anything to. Whatever this does, it must not
+   * be able to fail a step — see `src/lib/funnel/record.ts`.
+   */
+  onStepShown?: (stepId: OnboardingStepId) => void;
 }) {
   const { t } = useT();
   const [stepIndex, setStepIndex] = useState(0);
@@ -108,6 +118,14 @@ export function OnboardingWizard({
   const currentIndex = Math.min(stepIndex, totalSteps - 1);
   const stepId = stepIds[currentIndex];
   const isLastStep = currentIndex === totalSteps - 1;
+
+  // Records the step the user is looking at. In an effect rather than in
+  // `handleNext` so the FIRST step counts too -- someone who opens the
+  // questionnaire and immediately leaves is the most important row in the
+  // funnel, and they never press anything.
+  useEffect(() => {
+    if (stepId) onStepShown?.(stepId);
+  }, [stepId, onStepShown]);
 
   function update<K extends keyof OnboardingData>(
     key: K,

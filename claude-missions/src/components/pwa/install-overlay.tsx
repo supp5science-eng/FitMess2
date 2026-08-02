@@ -349,6 +349,16 @@ export function InstallOverlay({
             {t("app.pwi.sub")}
           </p>
 
+          {/* iPhone only, and the one reason to install that is not about
+              convenience: Apple lets a site send notifications ONLY from an
+              installed Home Screen app. Someone weighing up "is this worth a
+              tap" deserves to know that staying in the tab costs them the
+              weekly weigh-in reminder outright. Stated as a fact about their
+              situation, not as an instruction. */}
+          {platform === "ios" ? (
+            <p className="pwi-sub pwi-in pwi-d2">{t("app.pwi.iosPush")}</p>
+          ) : null}
+
           <div className="pwi-demo pwi-in pwi-d3">
             <MiniPhone platform={platform} step={step} t={t} />
 

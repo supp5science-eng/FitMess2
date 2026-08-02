@@ -1,10 +1,11 @@
 "use client";
 
 import { Bell, X } from "lucide-react";
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 import { useT } from "@/components/i18n/locale-provider";
 import { saveWeighInEnabledAction } from "@/app/(app)/profil/podsetnici/actions";
+import { recordPushPrompt } from "@/lib/funnel/record";
 import {
   enablePush,
   notificationPermission,
@@ -86,6 +87,27 @@ function canOfferPush(): boolean {
  * uses to read browser state without a state write during render. */
 const noopSubscribe = () => () => {};
 
+/**
+ * Why nothing is being offered, when nothing is.
+ *
+ * Returns a STRING, not `pushEnvironment()`'s object: `useSyncExternalStore`
+ * compares snapshots by identity, and a fresh object every render is an
+ * infinite loop.
+ *
+ * The case worth naming is `needs-install`. On iPhone, Apple only lets a site
+ * subscribe from an installed Home Screen app, so for a user in a Safari tab
+ * this row renders nothing at all — and until now that silence was invisible
+ * in the numbers, indistinguishable from people seeing the offer and saying
+ * no. It is not a bug to fix in this row (the app-wide install overlay already
+ * asks these users to install, and a second voice about the same thing is
+ * noise); it is a fact worth counting, so we learn whether the notification
+ * feature is unreachable for most of the audience.
+ */
+function environmentState(): "server" | "ready" | "needs-install" | "unsupported" {
+  if (typeof window === "undefined") return "server";
+  return pushEnvironment().state;
+}
+
 export function PushNudge() {
   const { t } = useT();
   const [state, setState] = useState<State>("offer");
@@ -94,6 +116,23 @@ export function PushNudge() {
   // `false` on the server render: nothing is offered until the browser itself
   // has been consulted.
   const offerable = useSyncExternalStore(noopSubscribe, canOfferPush, () => false);
+  const environment = useSyncExternalStore(
+    noopSubscribe,
+    environmentState,
+    () => "server" as const
+  );
+
+  // What this user's device actually made possible. Written once per arrival
+  // (the row is keyed on the outcome, so repeats are discarded server-side),
+  // and never in a way that can fail the screen.
+  useEffect(() => {
+    if (offerable) {
+      recordPushPrompt("shown");
+      return;
+    }
+    // A phone that CANNOT be asked, on a screen where we would have asked.
+    if (environment === "needs-install") recordPushPrompt("needs_install");
+  }, [offerable, environment]);
 
   async function accept() {
     setState("working");
@@ -101,6 +140,10 @@ export function PushNudge() {
 
     const subscribed = await enablePush(VAPID_PUBLIC_KEY);
     if (!subscribed.ok) {
+      // "denied" is terminal in a way the others are not: the browser gives no
+      // second prompt, so this user can only ever come back through the phone's
+      // own settings. Worth telling apart from a network failure.
+      if (subscribed.reason === "denied") recordPushPrompt("denied");
       setMessage(subscribed.message);
       setState("failed");
       return;
@@ -115,10 +158,12 @@ export function PushNudge() {
       return;
     }
 
+    recordPushPrompt("accepted");
     setState("done");
   }
 
   function decline() {
+    recordPushPrompt("declined");
     rememberDismissed();
     setState("dismissed");
   }

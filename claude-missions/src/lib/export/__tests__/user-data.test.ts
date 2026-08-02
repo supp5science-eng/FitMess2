@@ -175,6 +175,15 @@ const WORKOUT_ROWS = [
   },
 ];
 
+const FUNNEL_EVENT_ROWS = [
+  {
+    user_id: "user-1",
+    event: "onboarding_step",
+    value: "pol",
+    at: "2026-08-01T08:00:00.000Z",
+  },
+];
+
 const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
   targets: TARGET_ROWS,
   logs: LOG_ROWS,
@@ -186,6 +195,7 @@ const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
   awards: AWARD_ROWS,
   plan_adjustments: PLAN_ADJUSTMENT_ROWS,
   workouts: WORKOUT_ROWS,
+  funnel_events: FUNNEL_EVENT_ROWS,
   meal_photos: MEAL_PHOTO_ROWS,
 };
 

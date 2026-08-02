@@ -1,8 +1,10 @@
 "use client";
 
 import {
+  ADD_FLOW_EVENT,
   ONBOARDING_STEP_EVENT,
   PUSH_PROMPT_EVENT,
+  type AddFlowValue,
   type PushPromptValue,
 } from "@/lib/funnel/events";
 
@@ -35,4 +37,15 @@ export function recordOnboardingStep(stepId: string): void {
 /** What became of the notification-permission offer. */
 export function recordPushPrompt(value: PushPromptValue): void {
   record(PUSH_PROMPT_EVENT, value);
+}
+
+/**
+ * The way into logging: the "+" menu opening, and which entry was chosen.
+ *
+ * Paired with `logs`, this separates "never even opened the menu" from
+ * "opened it, picked a way in, and did not come out with a meal" — the two
+ * halves of the only gap that currently matters.
+ */
+export function recordAddFlow(value: AddFlowValue): void {
+  record(ADD_FLOW_EVENT, value);
 }

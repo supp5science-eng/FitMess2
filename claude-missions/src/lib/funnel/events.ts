@@ -38,10 +38,40 @@ export const PUSH_PROMPT_VALUES = [
 
 export type PushPromptValue = (typeof PUSH_PROMPT_VALUES)[number];
 
+/**
+ * The gap between "got a plan" and "wrote down a meal".
+ *
+ * This is where the users actually go (measured 2026-08-03, after stripping
+ * the `@example.com` integration-test fixtures that had been inflating every
+ * earlier count): of 14 real accounts, 12 confirmed their email and 9 finished
+ * the questionnaire — that part converts fine — but only 2 ever logged a
+ * single meal, and NOBODY came back a second day.
+ *
+ * `logs` already tells us who finished. What it cannot tell us is whether the
+ * other seven never opened the "+" menu at all, or opened it, chose a way in,
+ * and gave up inside the flow — a camera permission, an AI call, a screen that
+ * asks for more than they had. Those two failures have nothing in common and
+ * no shared fix, which is why guessing here is expensive.
+ */
+export const ADD_FLOW_EVENT = "add_flow";
+
+/** `menu_open`, plus `start_<option>` for each way into logging. */
+export const ADD_FLOW_VALUES = [
+  "menu_open",
+  "start_najtacnije",
+  "start_obrok",
+  "start_gric",
+  "start_deklaracija",
+  "start_trening",
+] as const;
+
+export type AddFlowValue = (typeof ADD_FLOW_VALUES)[number];
+
 /** Every (event, value) pair the API will store. Anything else is a 400. */
 export const FUNNEL_EVENTS: Readonly<Record<string, readonly string[]>> = {
   [ONBOARDING_STEP_EVENT]: ONBOARDING_STEP_IDS,
   [PUSH_PROMPT_EVENT]: PUSH_PROMPT_VALUES,
+  [ADD_FLOW_EVENT]: ADD_FLOW_VALUES,
 };
 
 export function isKnownFunnelEvent(event: string, value: string): boolean {

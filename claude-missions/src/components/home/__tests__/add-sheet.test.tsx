@@ -1,5 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
+
+const recordAddFlowMock = vi.fn();
+vi.mock("@/lib/funnel/record", () => ({
+  recordAddFlow: (value: string) => recordAddFlowMock(value),
+}));
 
 // F028 / AS-051: "From the home screen, starting any of the logging methods
 // takes at most 2 taps." Tap 1 = the floating "+" button opens the sheet.
@@ -7,6 +12,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 // method's flow -- these tests prove both taps and the sheet's structure.
 
 import { AddSheet } from "@/components/home/add-sheet";
+import { ADD_FLOW_EVENT, isKnownFunnelEvent } from "@/lib/funnel/events";
 
 describe("AS-051: the '+' button is closed by default and opens the sheet on tap 1", () => {
   it("test_AS_051_the_sheet_is_not_rendered_until_the_plus_button_is_tapped", () => {
@@ -247,5 +253,56 @@ describe("AS-128: the '+' trigger and sheet controls are labeled and keyboard-re
     fireEvent.click(screen.getByTestId("add-sheet-open-button"));
     const images = screen.getByTestId("add-sheet").querySelectorAll("img");
     expect(images.length).toBe(0);
+  });
+});
+
+/**
+ * The "+" menu is instrumented (0028) because of the only gap that currently
+ * matters: 9 real users finished the questionnaire and 2 ever logged a meal.
+ * `logs` says who finished; these events say whether the other seven never
+ * opened the menu, or opened it, picked a way in, and did not come out with a
+ * meal. Those two failures share no fix.
+ */
+describe("the '+' menu reports the way into logging", () => {
+  beforeEach(() => {
+    recordAddFlowMock.mockClear();
+  });
+
+  it("records the menu opening", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    expect(recordAddFlowMock).toHaveBeenCalledWith("menu_open");
+  });
+
+  it("records a known value for EVERY option -- no option may fall outside the allow-list", () => {
+    // Guards the `start_${key}` cast in the component: an option added to the
+    // menu without its value added to ADD_FLOW_VALUES would be rejected by the
+    // API as an unknown event and measure nothing, silently.
+    //
+    // Asserted off the rendered option keys rather than by clicking each one:
+    // a click is a real navigation, which jsdom refuses and which unmounts the
+    // sheet -- so only the first option in a loop would ever report anything.
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+
+    const keys = screen
+      .getAllByTestId(/^add-sheet-option-/)
+      .map((el) => el.getAttribute("data-testid")!.replace("add-sheet-option-", ""));
+
+    expect(keys.length).toBeGreaterThan(0);
+    for (const key of keys) {
+      expect(isKnownFunnelEvent(ADD_FLOW_EVENT, `start_${key}`)).toBe(true);
+    }
+  });
+
+  it("records the chosen way in when an option is tapped", () => {
+    render(<AddSheet />);
+    fireEvent.click(screen.getByTestId("add-sheet-open-button"));
+    recordAddFlowMock.mockClear();
+
+    fireEvent.click(screen.getByTestId("add-sheet-option-obrok"));
+
+    expect(recordAddFlowMock).toHaveBeenCalledWith("start_obrok");
   });
 });

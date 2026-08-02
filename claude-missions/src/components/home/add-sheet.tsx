@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 
 import { useT } from "@/components/i18n/locale-provider";
+import type { AddFlowValue } from "@/lib/funnel/events";
+import { recordAddFlow } from "@/lib/funnel/record";
 import type { TFunction } from "@/lib/i18n/translate";
 import { cn } from "@/lib/utils";
 
@@ -139,6 +141,9 @@ export function AddSheet() {
   const [isOpen, setIsOpen] = useState(false);
 
   function open() {
+    // The first half of the "got a plan but never logged a meal" question:
+    // did they even get this far? See `@/lib/funnel/events`.
+    recordAddFlow("menu_open");
     setIsOpen(true);
   }
 
@@ -217,7 +222,13 @@ export function AddSheet() {
                         <Link
                           key={key}
                           href={href}
-                          onClick={close}
+                          onClick={() => {
+                            // The second half: which way in they chose. A meal
+                            // that never lands in `logs` after this is a flow
+                            // that lost them, not a menu they ignored.
+                            recordAddFlow(`start_${key}` as AddFlowValue);
+                            close();
+                          }}
                           data-testid={`add-sheet-option-${key}`}
                           className={cn(
                             "flex items-center gap-3 rounded-xl border border-border px-4 py-3.5 text-left text-sm font-medium text-foreground transition-colors",

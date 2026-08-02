@@ -5,9 +5,10 @@ import { z } from "zod";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { toBelgradeCalendarDay } from "@/lib/dates";
 import type { Database } from "@/lib/types/db";
-import { saveWeighIn } from "@/lib/weight/weigh-ins";
+import { deleteWeighIn, saveWeighIn } from "@/lib/weight/weigh-ins";
 
 // Nedeljno merenje: `POST /api/merenje` — records one weigh-in.
+// `DELETE /api/merenje` — takes one back out.
 //
 // Same request-building shape as `POST /api/voda`: the Supabase client is built
 // directly from `request.cookies` with a no-op `setAll`, so this handler is
@@ -26,6 +27,8 @@ const SESSION_EXPIRED_ERROR_SR =
 const INVALID_REQUEST_ERROR_SR = "Neispravan zahtev.";
 const OUT_OF_RANGE_ERROR_SR = "Unesi težinu između 30 i 300 kg.";
 const SAVE_FAILED_ERROR_SR = "Nismo uspeli da sačuvamo merenje. Pokušaj ponovo.";
+const DELETE_FAILED_ERROR_SR =
+  "Nismo uspeli da obrišemo merenje. Pokušaj ponovo.";
 
 // Mirrors the `weigh_ins` check constraint (0012) exactly, so a value the DB
 // would reject is refused here with a sentence instead of a 500.
@@ -40,8 +43,10 @@ const bodySchema = z.object({
     .max(MAX_WEIGHT_KG, OUT_OF_RANGE_ERROR_SR),
 });
 
-export async function POST(request: NextRequest) {
-  const supabase = createServerClient<Database>(
+/** The session-scoped client both handlers write through, so `weigh_ins_*_own`
+ * RLS -- not this file -- is what enforces "own rows only". */
+function clientFor(request: NextRequest) {
+  return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_PUBLISHABLE_KEY!,
     {
@@ -53,6 +58,10 @@ export async function POST(request: NextRequest) {
       },
     }
   );
+}
+
+export async function POST(request: NextRequest) {
+  const supabase = clientFor(request);
 
   const userId = await getCurrentUserId(supabase);
 
@@ -114,4 +123,61 @@ export async function POST(request: NextRequest) {
     { ok: true, data: { day, weightKg: rounded } },
     { status: 200 }
   );
+}
+
+const deleteSchema = z.object({
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, INVALID_REQUEST_ERROR_SR),
+});
+
+/**
+ * Removes one day's weigh-in.
+ *
+ * ANY of the caller's own days, not just today -- unlike POST, which refuses to
+ * write a past day so a client cannot shape the trend the plan is corrected
+ * against. Deleting carries no such risk: it can only take a number the user
+ * put there back out, and the reading most often worth removing (a test value,
+ * a weight taken in the evening) is by then already yesterday's.
+ */
+export async function DELETE(request: NextRequest) {
+  const supabase = clientFor(request);
+
+  const userId = await getCurrentUserId(supabase);
+
+  if (!userId) {
+    return NextResponse.json(
+      { ok: false, error_sr: SESSION_EXPIRED_ERROR_SR },
+      { status: 401 }
+    );
+  }
+
+  let rawBody: unknown;
+  try {
+    rawBody = await request.json();
+  } catch {
+    return NextResponse.json(
+      { ok: false, error_sr: INVALID_REQUEST_ERROR_SR },
+      { status: 400 }
+    );
+  }
+
+  const parsed = deleteSchema.safeParse(rawBody);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { ok: false, error_sr: INVALID_REQUEST_ERROR_SR },
+      { status: 400 }
+    );
+  }
+
+  const { day } = parsed.data;
+  const { error } = await deleteWeighIn(supabase, userId, day);
+
+  if (error) {
+    console.error("[merenje] delete failed:", error.message);
+    return NextResponse.json(
+      { ok: false, error_sr: DELETE_FAILED_ERROR_SR },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ ok: true, data: { day } }, { status: 200 });
 }

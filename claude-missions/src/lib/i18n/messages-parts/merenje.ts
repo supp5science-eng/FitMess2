@@ -36,6 +36,17 @@ export const merenjeMessages = {
     "merenje.lastWeighIn": "Poslednje merenje: {weight} kg ({date})",
     "merenje.backToToday": "Nazad na Danas",
 
+    // /merenje — the history list and taking a reading back out
+    "merenje.history.title": "Poslednja merenja",
+    "merenje.history.empty": "Ovde se skupljaju tvoja merenja.",
+    "merenje.history.today": "Danas",
+    "merenje.history.yesterday": "Juče",
+    "merenje.history.delete": "Obriši merenje od {date}",
+    "merenje.history.deleted": "Merenje obrisano.",
+    "merenje.history.undo": "Poništi",
+    "merenje.history.deleteError":
+      "Nismo uspeli da obrišemo merenje. Pokušaj ponovo.",
+
     // The weekly result card
     "merenje.result.title": "Šta kaže vaga",
     "merenje.result.trend": "Trend",
@@ -145,6 +156,16 @@ export const merenjeMessages = {
     "merenje.error.generic": "We couldn't save the weigh-in. Please try again.",
     "merenje.lastWeighIn": "Last weigh-in: {weight} kg ({date})",
     "merenje.backToToday": "Back to Today",
+
+    "merenje.history.title": "Recent weigh-ins",
+    "merenje.history.empty": "Your weigh-ins collect here.",
+    "merenje.history.today": "Today",
+    "merenje.history.yesterday": "Yesterday",
+    "merenje.history.delete": "Delete the weigh-in from {date}",
+    "merenje.history.deleted": "Weigh-in deleted.",
+    "merenje.history.undo": "Undo",
+    "merenje.history.deleteError":
+      "We couldn't delete the weigh-in. Please try again.",
 
     "merenje.result.title": "What the scale says",
     "merenje.result.trend": "Trend",

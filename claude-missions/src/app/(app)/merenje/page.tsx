@@ -4,13 +4,15 @@ import { ChevronLeft } from "lucide-react";
 
 import { WeeklyResultCard } from "@/components/merenje/weekly-result-card";
 import { getCurrentUserId } from "@/lib/auth/current-user";
-import { toBelgradeCalendarDay } from "@/lib/dates";
+import { startOfBelgradeDay, toBelgradeCalendarDay } from "@/lib/dates";
 import { DAY_ANSWER_COOKIE, parseDayAnswers } from "@/lib/home/day-trust";
 import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { loadWeeklyReview } from "@/lib/weight/weekly-review";
+import { getWeighInHistory } from "@/lib/weight/weigh-ins";
 
 import { WeighInForm } from "./weigh-in-form";
+import { WeighInHistory } from "./weigh-in-history";
 
 /**
  * `/merenje` -- the weekly weigh-in and what it means.
@@ -56,7 +58,7 @@ export default async function MerenjePage() {
     cookieStore.get(DAY_ANSWER_COOKIE)?.value ?? null
   );
 
-  const [review, todayWeighIn, profile] = await Promise.all([
+  const [review, todayWeighIn, profile, history] = await Promise.all([
     loadWeeklyReview(supabase, userId, { dayAnswers, now }),
     supabase
       .from("weigh_ins")
@@ -69,6 +71,9 @@ export default async function MerenjePage() {
       .select("weight_kg")
       .eq("user_id", userId)
       .maybeSingle(),
+    // The list a wrong reading gets deleted from. A failed read costs the list
+    // and nothing else -- the weigh-in itself must stay usable.
+    getWeighInHistory(supabase, userId),
   ]);
 
   // Prefill: today's reading if it exists, otherwise the weight on file. Not an
@@ -110,6 +115,21 @@ export default async function MerenjePage() {
           trend={review.trend}
           currentDailyKcal={review.currentTarget.dailyKcal}
           silenced={review.silenced}
+        />
+      ) : null}
+
+      {/* Below the verdict on purpose: the point of this screen is the reading
+          and what it means, and the history is the correction path you go
+          looking for. Hidden entirely until there is something in it. */}
+      {history.rows.length > 0 ? (
+        <WeighInHistory
+          rows={history.rows}
+          todayKey={todayKey}
+          // One second before today's Belgrade midnight lands in yesterday --
+          // robust across DST and month boundaries.
+          yesterdayKey={toBelgradeCalendarDay(
+            new Date(startOfBelgradeDay(now).getTime() - 1000)
+          )}
         />
       ) : null}
 

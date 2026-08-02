@@ -229,6 +229,52 @@ describe("remindersDue — the weekly weigh-in", () => {
   it("is silent when the caller has no calendar to check against", () => {
     expect(due([weighInRow], at("09:00"))).toEqual([]);
   });
+
+  // The push and the `/danas` banner have to agree about whether the week is
+  // still open. Until 2026-08-02 they did not: the sender never looked at
+  // `weigh_ins`, so weighing in on Saturday under a Sunday schedule bought a
+  // Sunday notification for a week the banner had already gone quiet on.
+  describe("once the week has been answered", () => {
+    function weighInDue(lastWeighIn?: Map<string, string | null>) {
+      return remindersDue({
+        settings: [weighInRow],
+        facts: new Map([[USER, facts()]]),
+        lastWeighIn,
+        // A real Sunday, so the day key and the weekday agree.
+        todayKey: "2026-08-02",
+        nowMinutes: at("09:00"),
+        todayWeekdayIndex: 6,
+      });
+    }
+
+    it("says nothing when today's reading is already in", () => {
+      expect(weighInDue(new Map([[USER, "2026-08-02"]]))).toEqual([]);
+    });
+
+    it("says nothing when yesterday's reading settled it", () => {
+      // Saturday counts for a Sunday schedule (EARLY_GRACE_DAYS) -- the same
+      // rule the banner applies, so both surfaces stay quiet together.
+      expect(weighInDue(new Map([[USER, "2026-08-01"]]))).toEqual([]);
+    });
+
+    it("still asks when the newest reading is from a past week", () => {
+      expect(weighInDue(new Map([[USER, "2026-07-26"]]))).toEqual([
+        { userId: USER, kind: "weighin" },
+      ]);
+    });
+
+    it("still asks someone who has never weighed in", () => {
+      expect(weighInDue(new Map())).toEqual([
+        { userId: USER, kind: "weighin" },
+      ]);
+    });
+
+    it("still asks when the caller supplies no weigh-in data at all", () => {
+      // The safe direction when the read failed: an unnecessary nudge costs a
+      // tap, a skipped week costs the plan its only real measurement.
+      expect(weighInDue()).toEqual([{ userId: USER, kind: "weighin" }]);
+    });
+  });
 });
 
 describe("remindersDue — the daily ceiling", () => {

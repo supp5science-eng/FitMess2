@@ -24,6 +24,7 @@ import {
   type StoredSubscription,
 } from "@/lib/push/send";
 import { createAdminClient } from "@/lib/supabase/server";
+import { DEFAULT_WEIGH_IN_DAY } from "@/lib/weight/weigh-in-day";
 
 // Podsetnici: `POST /api/podsetnici/posalji` — the scheduled sender.
 //
@@ -134,18 +135,38 @@ export async function POST(request: NextRequest) {
     )
     .map((row) => row.user_id);
 
-  const facts =
+  // Whose weekly weigh-in reminder could go out in THIS run. On six days out
+  // of seven this is empty and the read below never happens.
+  const todayWeekday = belgradeWeekdayIndex(now);
+  const weighInCandidateIds = rows
+    .filter(
+      (row) =>
+        (row.weighin_enabled ?? false) &&
+        (row.weighin_day ?? DEFAULT_WEIGH_IN_DAY) === todayWeekday &&
+        (row.weighin_last_sent ?? null) !== todayKey
+    )
+    .map((row) => row.user_id);
+
+  const [facts, lastWeighIn] = await Promise.all([
     candidateIds.length > 0
-      ? await readDayFacts(supabase, candidateIds, now)
-      : new Map<string, UserDayFacts>();
+      ? readDayFacts(supabase, candidateIds, now)
+      : new Map<string, UserDayFacts>(),
+    weighInCandidateIds.length > 0
+      ? readLastWeighIns(supabase, weighInCandidateIds, now)
+      : new Map<string, string | null>(),
+  ]);
 
   const due = remindersDue({
     settings: rows,
     facts,
+    // Only meaningful for the users read above; everyone else is absent from
+    // the map, which reads as "never weighed in" -- and their weigh-in
+    // reminder was already ruled out by day/enabled/last-sent anyway.
+    lastWeighIn,
     todayKey,
     nowMinutes: belgradeMinutesOfDay(now),
     // The weekly weigh-in reminder is the only one that cares which day it is.
-    todayWeekdayIndex: belgradeWeekdayIndex(now),
+    todayWeekdayIndex: todayWeekday,
   });
 
   if (due.length === 0) {
@@ -279,6 +300,48 @@ export async function POST(request: NextRequest) {
       removed: deadSubscriptionIds.length,
     },
   });
+}
+
+/** How far back a weigh-in can still have settled the week being asked about.
+ * The grace window is a day either side of the scheduled day, so a week is all
+ * the history this question needs -- anything older cannot answer it. */
+const WEIGH_IN_LOOKBACK_DAYS = 8;
+
+/**
+ * Each user's newest weigh-in day — one query for the whole run.
+ *
+ * A failed read yields an empty map, which reads as "nobody has weighed in"
+ * and therefore sends every reminder. That is the safe direction: an
+ * unnecessary nudge costs a tap, a silently skipped week costs the plan the
+ * only real measurement it gets.
+ */
+async function readLastWeighIns(
+  supabase: ReturnType<typeof createAdminClient>,
+  userIds: readonly string[],
+  now: Date
+): Promise<Map<string, string | null>> {
+  const since = toBelgradeCalendarDay(
+    new Date(startOfBelgradeDay(now).getTime() - WEIGH_IN_LOOKBACK_DAYS * 86_400_000)
+  );
+
+  const { data, error } = await supabase
+    .from("weigh_ins")
+    .select("user_id, day")
+    .in("user_id", userIds as string[])
+    .gte("day", since);
+
+  if (error) {
+    console.error("[podsetnici] weigh-ins read failed:", error.message);
+    return new Map();
+  }
+
+  const newest = new Map<string, string | null>();
+  for (const row of data ?? []) {
+    const current = newest.get(row.user_id);
+    // Plain string compare works: `"YYYY-MM-DD"` sorts chronologically.
+    if (current == null || row.day > current) newest.set(row.user_id, row.day);
+  }
+  return newest;
 }
 
 /** A day we know nothing about — used when a fact read fails, so reminders

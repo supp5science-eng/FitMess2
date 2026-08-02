@@ -30,6 +30,16 @@ export const TREND_WEIGH_IN_LIMIT = 4;
  */
 export const CHART_WEIGH_IN_LIMIT = 8;
 
+/**
+ * How many rows the `/merenje` history list shows.
+ *
+ * Deliberately the same window the chart draws, and deliberately not "all of
+ * them": this list exists so a wrong reading can be taken back out, and a
+ * reading old enough to have scrolled off it is already outside the four the
+ * trend engine listens to -- deleting it would change a picture, not a plan.
+ */
+export const HISTORY_WEIGH_IN_LIMIT = 8;
+
 export interface WeighInsResult {
   /** Oldest first -- the order `computeWeeklyTrend` reads most naturally. */
   points: WeighInPoint[];
@@ -107,6 +117,73 @@ export async function saveWeighIn(
       { user_id: userId, day, weight_kg: weightKg },
       { onConflict: "user_id,day" }
     );
+
+  return { error: error ? { message: error.message } : null };
+}
+
+/** One row of the `/merenje` history list. */
+export interface WeighInRow {
+  day: string;
+  weightKg: number;
+}
+
+/**
+ * The newest weigh-ins, NEWEST FIRST -- the `/merenje` history list.
+ *
+ * Separate from `getRecentWeighIns` (which reverses into oldest-first for the
+ * trend engine) rather than a slice of it: this is a list a person reads and
+ * deletes rows from, and the two orders exist for different readers.
+ */
+export async function getWeighInHistory(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  limit: number = HISTORY_WEIGH_IN_LIMIT
+): Promise<{ rows: WeighInRow[]; error: { message: string } | null }> {
+  const { data, error } = await supabase
+    .from("weigh_ins")
+    .select("day, weight_kg")
+    .eq("user_id", userId)
+    .order("day", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[merenje] history read failed:", error.message);
+    return { rows: [], error: { message: error.message } };
+  }
+
+  return {
+    rows: (data ?? []).map((row) => ({
+      day: row.day,
+      weightKg: Number(row.weight_kg),
+    })),
+    error: null,
+  };
+}
+
+/**
+ * Removes one day's weigh-in.
+ *
+ * This exists because a reading can be WRONG in a way re-weighing cannot fix:
+ * a number typed while testing, or a reading taken on the wrong day (in the
+ * evening, dressed, after dinner). Overwriting only helps on the day itself --
+ * the upsert is keyed on `(user_id, day)` -- so without a delete a bad point
+ * sits in the trend for a month, quietly arguing for a plan correction nobody
+ * needs. `weigh_ins_delete_own` (0012) restricts this to the caller's own rows;
+ * this function does not filter on trust, it filters so the query is narrow.
+ *
+ * Deleting nothing is not an error: a row already gone is the state the caller
+ * asked for.
+ */
+export async function deleteWeighIn(
+  supabase: SupabaseClient<Database>,
+  userId: string,
+  day: string
+): Promise<{ error: { message: string } | null }> {
+  const { error } = await supabase
+    .from("weigh_ins")
+    .delete()
+    .eq("user_id", userId)
+    .eq("day", day);
 
   return { error: error ? { message: error.message } : null };
 }

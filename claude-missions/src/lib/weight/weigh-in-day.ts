@@ -123,6 +123,26 @@ export const EARLY_GRACE_DAYS = 1;
  * Past this the week is written off rather than filled in late.
  */
 export const LATE_GRACE_DAYS = 1;
+
+/**
+ * Whether a weigh-in settles the week scheduled for `scheduledDay`.
+ *
+ * The ONE place this question is answered. The `/danas` banner asks it through
+ * `weighInDueState` below; the weekly push asks it directly (it already knows
+ * today is the scheduled day, so it has no weekday to work out). Before
+ * 2026-08-02 the push did not ask it at all, and a Saturday reading under a
+ * Sunday schedule produced a notification calling someone to the scale for a
+ * week the home screen had already stopped asking about.
+ */
+export function weighInAnswered(
+  scheduledDay: string,
+  lastWeighInDay: string | null
+): boolean {
+  if (lastWeighInDay == null) return false;
+  // Plain string compare: `"YYYY-MM-DD"` sorts chronologically.
+  return lastWeighInDay >= shiftDay(scheduledDay, -EARLY_GRACE_DAYS);
+}
+
 export function weighInDueState({
   todayKey,
   weighInDay,
@@ -133,8 +153,7 @@ export function weighInDueState({
   lastWeighInDay: string | null;
 }): WeighInDueState {
   const scheduledDay = lastScheduledWeighIn(todayKey, weighInDay);
-  const settlesFrom = shiftDay(scheduledDay, -EARLY_GRACE_DAYS);
-  const answered = lastWeighInDay != null && lastWeighInDay >= settlesFrom;
+  const answered = weighInAnswered(scheduledDay, lastWeighInDay);
   const [y, m, d] = scheduledDay.split("-").map(Number);
   const [ty, tm, td] = todayKey.split("-").map(Number);
   const daysWaiting = Math.round(

@@ -34,6 +34,8 @@
  * twice in the same quarter-hour and the second run sends nothing.
  */
 
+import { weighInAnswered } from "@/lib/weight/weigh-in-day";
+
 import { mealNudgeDue, type MealHistory, type MealNudgeReason } from "./meal-rhythm";
 
 /** How long after the chosen time a missed reminder may still be sent. */
@@ -129,6 +131,16 @@ export interface DueInput {
   /** Per user, today's facts. A user missing from this map gets only the
    * reminders that need no facts (the weekly weigh-in). */
   facts?: ReadonlyMap<string, UserDayFacts>;
+  /**
+   * Per user, the day of their newest weigh-in — what makes the weekly
+   * reminder shut up once the week has been answered.
+   *
+   * OMIT IT and every weigh-in reminder fires on schedule, which is the old
+   * behaviour and the safe direction when the caller has no data: a reminder
+   * nobody needed costs a tap, a skipped week costs the plan its only
+   * measurement. A user absent from a supplied map means "never weighed in".
+   */
+  lastWeighIn?: ReadonlyMap<string, string | null>;
   /** Belgrade calendar day the run is happening on, `"YYYY-MM-DD"`. */
   todayKey: string;
   /** Minutes since Belgrade midnight, right now. */
@@ -222,6 +234,7 @@ function scheduledDue({
 export function remindersDue({
   settings,
   facts,
+  lastWeighIn,
   todayKey,
   nowMinutes,
   todayWeekdayIndex,
@@ -253,6 +266,22 @@ export function remindersDue({
             todayKey,
             nowMinutes,
           })
+        ) {
+          continue;
+        }
+        // The same question the `/danas` banner asks, answered by the same
+        // function -- so the notification can never call someone to the scale
+        // on a week the screen itself has already stopped asking about. That
+        // was live until 2026-08-02: someone who weighed in on Saturday under
+        // a Sunday schedule got a Sunday push for a week the app considered
+        // settled, then found no banner when they opened it.
+        //
+        // `todayKey` IS the scheduled day here -- the weekday check above just
+        // established that -- so it is passed straight in rather than derived
+        // a second time.
+        if (
+          lastWeighIn !== undefined &&
+          weighInAnswered(todayKey, lastWeighIn.get(row.user_id) ?? null)
         ) {
           continue;
         }

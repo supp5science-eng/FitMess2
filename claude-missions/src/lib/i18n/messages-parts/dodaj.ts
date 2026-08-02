@@ -95,7 +95,7 @@ export const dodajMessages = {
     "dodaj.gric.title": "Gric",
     "dodaj.gric.noFood": "Nismo čuli hranu u snimku. Probaj ponovo — reci npr. „pojeo sam krastavac i šaku semenki”.",
     "dodaj.gric.prompt": "Reci šta si gricnuo",
-    "dodaj.gric.hint": "Možeš nabrojati više stvari odjednom — „krastavac, šaka semenki i dve kajsije”.",
+    "dodaj.gric.hint": "Možeš nabrojati više stvari odjednom — „jaja, slanina i hleb”. Ako je bilo u različito vreme, reci „pa sam posle…”.",
     "dodaj.gric.again": "Opet isto",
     "dodaj.gric.oneTapHint": "Jedan dodir doda stavku u dan — bez snimanja.",
     "dodaj.gric.listening": "Slušam… dodirni da zaustaviš",
@@ -110,6 +110,8 @@ export const dodajMessages = {
     "dodaj.gric.restore": "Vrati {name}",
     "dodaj.gric.remove": "Ukloni {name}",
     "dodaj.gric.portionQuestion": "Kolika je bila porcija?",
+    "dodaj.gric.split": "Nije bio isti obrok — razdvoji",
+    "dodaj.gric.mergeAll": "Sve je bio jedan obrok",
 
     // Listening + calculating (gric + voice)
     "dodaj.listenCalc.title": "Slušam i računam…",
@@ -319,7 +321,7 @@ export const dodajMessages = {
     "dodaj.gric.title": "Gric",
     "dodaj.gric.noFood": "We didn't hear any food in the recording. Try again — say e.g. “I ate a cucumber and a handful of seeds”.",
     "dodaj.gric.prompt": "Say what you snacked on",
-    "dodaj.gric.hint": "You can list several things at once — “a cucumber, a handful of seeds and two apricots”.",
+    "dodaj.gric.hint": "You can list several things at once — “eggs, bacon and bread”. If they were at different times, say “and then later…”.",
     "dodaj.gric.again": "Same again",
     "dodaj.gric.oneTapHint": "One tap adds the item to your day — no recording.",
     "dodaj.gric.listening": "Listening… tap to stop",
@@ -334,6 +336,8 @@ export const dodajMessages = {
     "dodaj.gric.restore": "Restore {name}",
     "dodaj.gric.remove": "Remove {name}",
     "dodaj.gric.portionQuestion": "How big was the portion?",
+    "dodaj.gric.split": "Not the same meal — split",
+    "dodaj.gric.mergeAll": "It was all one meal",
 
     // Listening + calculating (gric + voice)
     "dodaj.listenCalc.title": "Listening and calculating…",

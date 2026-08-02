@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   MEAL_SIZED_KCAL,
-  gricEstimateSchema,
   needsConfirmation,
+  parseGricResponse,
   scaleGricItem,
   totalKcal,
   type GricItem,
@@ -21,44 +21,80 @@ const item = (overrides: Partial<GricItem> = {}): GricItem => ({
   ...overrides,
 });
 
-describe("gricEstimateSchema", () => {
-  it("keeps several spoken snacks as separate items", () => {
-    const parsed = gricEstimateSchema.parse({
-      stavke: [
-        { naziv: "Krastavac", kolicina: "1 komad", grami: 150, kcal: 24, protein_g: 1, uh_g: 5.4, mast_g: 0.2, varijansa: "niska" },
-        { naziv: "Suncokretove semenke", kolicina: "šaka", grami: 25, kcal: 145, protein_g: 5, uh_g: 5, mast_g: 12.6, varijansa: "srednja" },
-        { naziv: "Kajsije", kolicina: "2 komada", grami: 80, kcal: 38, protein_g: 1.1, uh_g: 8.8, mast_g: 0.3, varijansa: "niska" },
-      ],
+const raw = (naziv: string, overrides: Record<string, unknown> = {}) => ({
+  naziv,
+  kolicina: "1 komad",
+  grami: 100,
+  kcal: 150,
+  protein_g: 5,
+  uh_g: 10,
+  mast_g: 8,
+  varijansa: "niska",
+  ...overrides,
+});
+
+describe("parseGricResponse", () => {
+  it("keeps everything eaten together in one occasion", () => {
+    const parsed = parseGricResponse({
+      obroci: [{ stavke: [raw("Jaja"), raw("Slanina"), raw("Hleb")] }],
     });
 
-    expect(parsed.stavke).toHaveLength(3);
-    expect(parsed.stavke.map((s) => s.naziv)).toEqual([
-      "Krastavac",
-      "Suncokretove semenke",
-      "Kajsije",
-    ]);
+    expect(parsed?.stavke).toHaveLength(3);
+    // One plate: three items, one occasion — this is what becomes ONE log row.
+    expect(new Set(parsed?.stavke.map((s) => s.grupa)).size).toBe(1);
+  });
+
+  it("keeps separate sittings apart", () => {
+    const parsed = parseGricResponse({
+      obroci: [{ stavke: [raw("Čokolada")] }, { stavke: [raw("Sladoled")] }],
+    });
+
+    expect(parsed?.stavke.map((s) => s.naziv)).toEqual(["Čokolada", "Sladoled"]);
+    expect(parsed?.stavke[0].grupa).not.toBe(parsed?.stavke[1].grupa);
+  });
+
+  it("reads the older flat answer as one occasion per item", () => {
+    const parsed = parseGricResponse({
+      stavke: [raw("Krastavac"), raw("Kajsije")],
+    });
+
+    expect(parsed?.stavke).toHaveLength(2);
+    expect(parsed?.stavke[0].grupa).not.toBe(parsed?.stavke[1].grupa);
   });
 
   it("falls back to an empty list when nothing edible was understood", () => {
-    expect(gricEstimateSchema.parse({ stavke: [] }).stavke).toEqual([]);
-    expect(gricEstimateSchema.parse({}).stavke).toEqual([]);
+    expect(parseGricResponse({ obroci: [] })?.stavke).toEqual([]);
+    expect(parseGricResponse({})?.stavke).toEqual([]);
+  });
+
+  it("drops items past the per-clip ceiling instead of failing", () => {
+    const many = Array.from({ length: 7 }, (_, i) => raw(`Stavka ${i}`));
+    const parsed = parseGricResponse({
+      obroci: [{ stavke: many }, { stavke: many }],
+    });
+
+    expect(parsed?.stavke).toHaveLength(8);
   });
 
   it("clamps nonsense values instead of throwing", () => {
-    const parsed = gricEstimateSchema.parse({
-      stavke: [
+    const parsed = parseGricResponse({
+      obroci: [
         {
-          naziv: "Kolač",
-          kolicina: "parče",
-          grami: -5,
-          kcal: "350",
-          protein_g: 4,
-          uh_g: 48,
-          mast_g: 16,
-          varijansa: "ogromna",
+          stavke: [
+            {
+              naziv: "Kolač",
+              kolicina: "parče",
+              grami: -5,
+              kcal: "350",
+              protein_g: 4,
+              uh_g: 48,
+              mast_g: 16,
+              varijansa: "ogromna",
+            },
+          ],
         },
       ],
-    });
+    })!;
 
     // A bad weight becomes the 1 g floor, a numeric string coerces, and an
     // unknown variance degrades to the middle rather than breaking the flow.

@@ -14,7 +14,7 @@ import {
 import {
   GRIC_PROMPT,
   GRIC_RESPONSE_SCHEMA,
-  gricEstimateSchema,
+  parseGricResponse,
   type GricEstimate,
 } from "@/lib/ai/gric-estimate";
 import {
@@ -636,10 +636,11 @@ export async function estimateMealFromAudio(
 }
 
 /**
- * "Gric" — one spoken clip -> a LIST of small items (see `gric-estimate.ts`).
- * Separate from `estimateMealFromAudio` because the shapes differ: that one
- * collapses a recording into a single meal, this one deliberately keeps the
- * items apart so three snacks become three log rows.
+ * "Gric" — one spoken clip -> small items GROUPED BY EATING OCCASION (see
+ * `gric-estimate.ts`). Separate from `estimateMealFromAudio` because the shapes
+ * differ: that one collapses a whole recording into a single meal, this one
+ * keeps the occasions apart — "jaja, slaninu i hleb" is one plate of three
+ * parts, "čokolada pa sladoled" is two separate entries.
  */
 export async function estimateGricFromAudio(
   base64Audio: string,
@@ -655,11 +656,11 @@ export async function estimateGricFromAudio(
     // Gric is also the one path where speed IS the feature.
     "low"
   );
-  const parsed = gricEstimateSchema.safeParse(parseJson(text));
-  if (!parsed.success) {
+  const parsed = parseGricResponse(parseJson(text));
+  if (!parsed) {
     throw new GeminiError("Gemini output did not match the expected shape");
   }
-  return parsed.data;
+  return parsed;
 }
 
 /** Nutrition-label photo -> validated per-100g product values. */

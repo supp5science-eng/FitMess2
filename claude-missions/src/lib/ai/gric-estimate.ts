@@ -9,8 +9,10 @@ import { z } from "zod";
 //
 // How this differs from "Reci obrok" (`voice-estimate.ts`), which also takes
 // audio:
-//   - Gric returns MANY items from ONE recording. "pojeo sam krastavac, malo
-//     semenki i dve kajsije" is three log rows, not one averaged "meal".
+//   - Gric returns MANY items from ONE recording, GROUPED BY EATING OCCASION.
+//     "jaja, slanina i hleb" is one plate (one log row with three parts);
+//     "jutros dva reda čokolade, pa sladoled" is two separate occasions, so two
+//     rows. "Reci obrok" always collapses the whole clip into a single meal.
 //   - Every item carries a `varijansa` (how much a portion of THIS food can
 //     realistically differ). A cucumber is ~15 kcal ± 5; a slice of cake is
 //     ~350 ± 250. Same relative error, completely different consequence — so
@@ -59,69 +61,152 @@ export const gricItemSchema = z.object({
 
 export type GricItem = z.infer<typeof gricItemSchema>;
 
-export const gricEstimateSchema = z.object({
-  // Empty = nothing edible was understood in the clip. The UI says so plainly
-  // rather than inventing a "Nejasan unos" row with zeroes in it.
-  stavke: z.array(gricItemSchema).max(8).catch([]).default([]),
+/** Ceiling on how much one clip may produce, applied after flattening. */
+const MAX_ITEMS = 8;
+/** One sentence can describe a morning, not a week. */
+const MAX_MEALS = 6;
+
+/**
+ * One eating occasion: everything the user ate TOGETHER, as one plate.
+ *
+ * The model groups rather than the client, because grouping is a language
+ * judgement ("pa onda", "jutros", "uz kafu") plus a food one (eggs and bacon go
+ * on one plate; chocolate and ice cream an hour apart do not) — both of which
+ * live in the clip, and neither of which survives being reduced to numbers.
+ */
+export const gricMealSchema = z.object({
+  stavke: z.array(gricItemSchema).max(MAX_ITEMS).catch([]).default([]),
 });
 
-export type GricEstimate = z.infer<typeof gricEstimateSchema>;
+/** The raw model answer, before flattening. */
+export const gricResponseSchema = z.object({
+  // Empty = nothing edible was understood in the clip. The UI says so plainly
+  // rather than inventing a "Nejasan unos" row with zeroes in it.
+  obroci: z.array(gricMealSchema).max(MAX_MEALS).catch([]).default([]),
+});
+
+/** An item plus which occasion it belongs to. `grupa` is an opaque id: equal
+ * values mean "eaten together", nothing more — never an index into anything. */
+export interface GricListItem extends GricItem {
+  grupa: number;
+}
+
+/**
+ * What the flow works with: a FLAT list, each item tagged with its occasion.
+ *
+ * Flat because every downstream step (chips, removal, portion scaling, the
+ * "Opet isto" shortcut) is per-item; the grouping is one number the review
+ * screen and the save path read, and that the user can change with one tap
+ * without the list itself being restructured.
+ */
+export interface GricEstimate {
+  stavke: GricListItem[];
+}
+
+/**
+ * Parses the model's nested answer into the flat tagged list.
+ *
+ * Also accepts the older flat `{ stavke: [...] }` shape: a response that
+ * predates the grouping (or a model that ignored the nesting) then reads as
+ * "one item, one occasion" — which is exactly the behaviour Gric had before,
+ * rather than an error screen.
+ */
+export function parseGricResponse(raw: unknown): GricEstimate | null {
+  const nested = gricResponseSchema.safeParse(raw);
+  if (nested.success && nested.data.obroci.length > 0) {
+    const stavke: GricListItem[] = [];
+    nested.data.obroci.forEach((meal, index) => {
+      for (const item of meal.stavke) {
+        if (stavke.length >= MAX_ITEMS) return;
+        stavke.push({ ...item, grupa: index });
+      }
+    });
+    return { stavke };
+  }
+
+  const flat = z
+    .object({ stavke: z.array(gricItemSchema).max(MAX_ITEMS).catch([]).default([]) })
+    .safeParse(raw);
+  if (!flat.success) return null;
+  return {
+    stavke: flat.data.stavke.map((item, index) => ({ ...item, grupa: index })),
+  };
+}
 
 // Gemini REST `responseSchema` (OpenAPI subset: uppercase types,
 // `propertyOrdering`). `grami` is ordered before the macros so the model
 // commits to a portion size first and then derives the numbers from it,
 // instead of picking a round calorie count and back-filling the weight.
+//
+// Occasions are NESTED rather than a "grupa: 3" field on each item: nesting
+// makes the model decide how many plates there were BEFORE it writes any item,
+// so the grouping is one structural choice instead of a number it has to keep
+// consistent across eight independent objects.
+const GRIC_ITEM_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    naziv: { type: "STRING" },
+    kolicina: { type: "STRING" },
+    grami: { type: "NUMBER" },
+    kcal: { type: "NUMBER" },
+    protein_g: { type: "NUMBER" },
+    uh_g: { type: "NUMBER" },
+    mast_g: { type: "NUMBER" },
+    varijansa: { type: "STRING", enum: [...VARIANCE_VALUES] },
+  },
+  required: [
+    "naziv",
+    "kolicina",
+    "grami",
+    "kcal",
+    "protein_g",
+    "uh_g",
+    "mast_g",
+    "varijansa",
+  ],
+  propertyOrdering: [
+    "naziv",
+    "kolicina",
+    "grami",
+    "kcal",
+    "protein_g",
+    "uh_g",
+    "mast_g",
+    "varijansa",
+  ],
+} as const;
+
 export const GRIC_RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
-    stavke: {
+    obroci: {
       type: "ARRAY",
       items: {
         type: "OBJECT",
         properties: {
-          naziv: { type: "STRING" },
-          kolicina: { type: "STRING" },
-          grami: { type: "NUMBER" },
-          kcal: { type: "NUMBER" },
-          protein_g: { type: "NUMBER" },
-          uh_g: { type: "NUMBER" },
-          mast_g: { type: "NUMBER" },
-          varijansa: { type: "STRING", enum: [...VARIANCE_VALUES] },
+          stavke: { type: "ARRAY", items: GRIC_ITEM_SCHEMA },
         },
-        required: [
-          "naziv",
-          "kolicina",
-          "grami",
-          "kcal",
-          "protein_g",
-          "uh_g",
-          "mast_g",
-          "varijansa",
-        ],
-        propertyOrdering: [
-          "naziv",
-          "kolicina",
-          "grami",
-          "kcal",
-          "protein_g",
-          "uh_g",
-          "mast_g",
-          "varijansa",
-        ],
+        required: ["stavke"],
+        propertyOrdering: ["stavke"],
       },
     },
   },
-  required: ["stavke"],
-  propertyOrdering: ["stavke"],
+  required: ["obroci"],
+  propertyOrdering: ["obroci"],
 } as const;
 
 export const GRIC_PROMPT = `U audio snimku korisnik na srpskom govori šta je pojeo ili popio — obično SITNICE koje nije merio ni slikao (krastavac, šaka semenki, par kajsija, keks uz kafu).
 
-Zadatak: razdvoj snimak na POJEDINAČNE stavke i za svaku daj nutritivne vrednosti ZA POJEDENU KOLIČINU (ne na 100 g).
+Zadatak: razdvoj snimak na POJEDINAČNE stavke, pa ih rasporedi po OBROCIMA (prilikama jedenja), i za svaku stavku daj nutritivne vrednosti ZA POJEDENU KOLIČINU (ne na 100 g).
 
-Pravila:
-- JEDAN snimak može sadržati VIŠE stavki. "pojeo sam krastavac, malo semenki i dve kajsije" = TRI stavke. Nikad ih ne spajaj u jedan obrok.
-- Korisnik može pomenuti i nešto od ranije ("pre toga sam jeo…") — to je i dalje zasebna stavka, uvrsti je.
+Šta je jedan obrok:
+- Jedan "obrok" = jedna prilika jedenja: sve što je pojedeno ZAJEDNO, u istom trenutku, kao jedan tanjir ili jedna pauza.
+- Namirnice koje čine isto jelo IDU ZAJEDNO u jedan obrok: "jaja, slanina i hleb" = JEDAN obrok sa tri stavke. Isto i "hleb sa paštetom", "pirinač i piletina", "kafa i dva keksa", "jogurt sa musli".
+- NOV obrok počinje kad korisnik naznači drugo vreme ili drugu priliku: "jutros…", "za ručak…", "uveče…", "pre toga…", "posle toga…", "kasnije…", "pa sam onda…", "a onda…". Primer: "jutros sam pojeo dva reda čokolade, pa sladoled" = DVA obroka (čokolada, pa sladoled).
+- Nabrajanje bez naznake vremena ("krastavac, šaka semenki i dve kajsije") = JEDAN obrok — to je jedna pauza za grickanje.
+- Ako nisi siguran: ako se te namirnice prirodno jedu zajedno, stavi ih u isti obrok; ako je jedna očigledno posle druge, razdvoji ih.
+- Redosled obroka: onim redom kojim ih korisnik pominje.
+- Svaka stavka mora biti u tačno jednom obroku. Nikad ne spajaj dve različite namirnice u jednu stavku — hleb i slanina su DVE stavke istog obroka.
 - "naziv": kratko, na srpskom (latinica), jednina ili množina kako je prirodno (npr. "Krastavac", "Suncokretove semenke", "Kajsije").
 - "kolicina": kratak opis količine ONAKO KAKO JE KORISNIK REKAO ili kako je prirodno reći (npr. "1 komad", "šaka", "2 komada", "par kašika"). Bez grama u ovom polju.
 - "grami": procenjena jestiva masa te stavke u gramima (tečnost: 1 ml ≈ 1 g). Kućne mere: šaka semenki/koštunjavog ≈ 20–30 g, prstohvat ≈ 5 g, kašika ≈ 15 g, srednji krastavac ≈ 150 g, kajsija ≈ 40 g, jabuka ≈ 180 g, parče kolača ≈ 90 g, kriška hleba ≈ 35 g.
@@ -131,8 +216,13 @@ Pravila:
   - "srednja": kućna mera bez pakovanja (šaka semenki, par kašika, kriška hleba).
   - "visoka": porcija koja ozbiljno varira i nosi puno kalorija (kolač, torta, pica, burek, sendvič, pljeskavica, „domaći ručak", „nešto iz pekare", hrana u restoranu, alkohol u nepoznatoj meri).
 - Ako korisnik NAVEDE tačne vrednosti sa deklaracije, koristi tačno te brojeve i stavi "varijansa": "niska".
-- Ako u snimku nema hrane ni pića, ili je nerazumljiv, vrati prazan niz: {"stavke": []}.
-- Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;
+- Ako u snimku nema hrane ni pića, ili je nerazumljiv, vrati prazan niz: {"obroci": []}.
+- Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.
+
+Primeri grupisanja:
+- "pojeo sam jaja, slaninu i hleb" → jedan obrok: [jaja, slanina, hleb].
+- "jutros sam pojeo dva reda čokolade, pa sladoled" → dva obroka: [čokolada] i [sladoled].
+- "popio sam kafu sa mlekom i pojeo dva keksa, a pre toga sam pojeo jabuku" → dva obroka: [kafa sa mlekom, keks] i [jabuka].`;
 
 /**
  * Portion sizes offered as chips on high-variance items. Multipliers, not

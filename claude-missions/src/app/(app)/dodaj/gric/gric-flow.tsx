@@ -14,10 +14,12 @@ import {
   scaleGricItem,
   totalKcal,
   type GricItem,
+  type GricListItem,
   type PortionSizeId,
 } from "@/lib/ai/gric-estimate";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import type { FrequentSnack } from "@/lib/gric/frequent";
+import { groupByOccasion, occasionName } from "@/lib/gric/rows";
 import { cn } from "@/lib/utils";
 import { estimateGricAction, logGricAction } from "./actions";
 
@@ -32,6 +34,13 @@ import { estimateGricAction, logGricAction } from "./actions";
 // cancels the countdown and asks for exactly one tap. Nothing is ever
 // rejected for being "too big to be a snack" — an oversized gric still saves,
 // and only THEN offers a photo as an upgrade.
+//
+// Items are shown BY EATING OCCASION, because that is how they will be saved:
+// eggs, bacon and bread spoken in one breath are one card and will be one entry
+// in "Obroci danas". The model does the grouping; the screen only has to make
+// it visible and correctable — "Razdvoji" when it joined too much, "Sve je bio
+// jedan obrok" when it split too much. Both are one tap, and neither is needed
+// on the common path.
 
 type Phase =
   | "idle"
@@ -50,14 +59,33 @@ const MAX_RECORDING_MS = 30_000;
 
 /** One item as it sits on the review screen: the untouched model output plus
  * the size the user picked (if any). Keeping `base` lets size changes rescale
- * from the original every time instead of compounding. */
+ * from the original every time instead of compounding.
+ *
+ * `group` starts as the model's occasion and is the only thing "Razdvoji" /
+ * "Sve je bio jedan obrok" ever change — the items themselves are never
+ * rewritten, so regrouping cannot lose an estimate. */
 interface ReviewItem {
-  base: GricItem;
+  base: GricListItem;
   size: PortionSizeId;
   removed: boolean;
+  group: number;
 }
 
 const current = (item: ReviewItem): GricItem => scaleGricItem(item.base, item.size);
+
+/** One occasion as rendered: its items, each carrying the index it occupies in
+ * the flat state array (which is what the edit handlers address). */
+type Occasion = { item: ReviewItem; index: number; group: number }[];
+
+function toOccasions(items: ReviewItem[]): Occasion[] {
+  return groupByOccasion(
+    items.map((item, index) => ({ item, index, group: item.group }))
+  );
+}
+
+/** Items of an occasion that are still going to be saved. */
+const keptOf = (occasion: Occasion) =>
+  occasion.filter((entry) => !entry.item.removed);
 
 export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
   const { t } = useT();
@@ -74,6 +102,12 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
   const [savedKcal, setSavedKcal] = useState(0);
 
   const kept = items.filter((item) => !item.removed);
+  // Every occasion is rendered, including one whose only item was removed —
+  // otherwise the card would vanish and take its "vrati" button with it.
+  const occasions = toOccasions(items);
+  const activeOccasions = occasions.filter(
+    (occasion) => keptOf(occasion).length > 0
+  );
 
   // Elapsed-time ticker while recording.
   useEffect(() => {
@@ -165,6 +199,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
       base,
       size: "normalno",
       removed: false,
+      group: base.grupa,
     }));
     setItems(review);
     setPhase("review");
@@ -174,17 +209,33 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
   }
 
   async function save(source: ReviewItem[]) {
+    // Occasion ids are renumbered from zero on the way out: splitting invents
+    // ids to keep them unique on screen, and the wire format only has to say
+    // WHICH items belong together, not what they were called while editing.
+    const groupIds = new Map<number, number>();
+    const occasionId = (group: number) => {
+      const existing = groupIds.get(group);
+      if (existing !== undefined) return existing;
+      const next = groupIds.size;
+      groupIds.set(group, next);
+      return next;
+    };
+
     const payload = source
       .filter((item) => !item.removed)
       .map((item) => {
         const scaled = current(item);
         return {
           name: scaled.naziv,
+          // The spoken amount travels along so the server can work out the
+          // natural unit of this part ("2 komada" of 100 g = one 50 g piece).
+          amount: scaled.kolicina || undefined,
           grams: scaled.grami,
           kcal: scaled.kcal,
           protein: scaled.protein_g,
           carbs: scaled.uh_g,
           fat: scaled.mast_g,
+          group: occasionId(item.group),
         };
       });
 
@@ -250,6 +301,25 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
         i === index ? { ...item, removed: !item.removed } : item
       )
     );
+  }
+
+  /** "Razdvoji": the model put these on one plate, the user says they weren't.
+   * Each item becomes its own occasion, so each becomes its own entry. */
+  function splitOccasion(group: number) {
+    stopCountdown();
+    setItems((prev) => {
+      let next = Math.max(...prev.map((item) => item.group)) + 1;
+      return prev.map((item) =>
+        item.group === group ? { ...item, group: next++ } : item
+      );
+    });
+  }
+
+  /** "Sve je bio jedan obrok": the opposite correction — everything spoken in
+   * this clip was in fact one sitting, so it becomes one entry. */
+  function mergeAll() {
+    stopCountdown();
+    setItems((prev) => prev.map((item) => ({ ...item, group: 0 })));
   }
 
   function resetToIdle() {
@@ -369,16 +439,28 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
       {(phase === "review" || phase === "saving") && items.length > 0 ? (
         <div className="flex flex-col gap-5">
           <div className="flex flex-col gap-3">
-            {items.map((item, index) => (
-              <GricItemCard
-                key={`${item.base.naziv}-${index}`}
-                item={item}
+            {occasions.map((occasion) => (
+              <OccasionCard
+                key={`obrok-${occasion[0].group}`}
+                occasion={occasion}
                 disabled={phase === "saving"}
-                onSize={(size) => setSize(index, size)}
-                onToggle={() => toggleRemoved(index)}
+                onSize={setSize}
+                onToggle={toggleRemoved}
+                onSplit={() => splitOccasion(occasion[0].group)}
               />
             ))}
           </div>
+
+          {activeOccasions.length > 1 ? (
+            <button
+              type="button"
+              onClick={mergeAll}
+              disabled={phase === "saving"}
+              className="self-center text-sm font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-60"
+            >
+              {t("dodaj.gric.mergeAll")}
+            </button>
+          ) : null}
 
           <div className="flex items-baseline justify-between border-t border-border pt-4">
             <span className="text-sm text-muted-foreground">{t("dodaj.total")}</span>
@@ -460,18 +542,94 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
 }
 
 /**
- * One spoken item. High-variance items (cake, burek, a sandwich) show the size
- * chips inline and pulse their border — that single tap is the only thing Gric
- * ever asks of the user, and only when the answer actually moves the day's
- * total. Low-variance items stay quiet unless tapped.
+ * One eating occasion — one card, and one future entry in "Obroci danas".
+ *
+ * A single-item occasion looks exactly as it always did (the common case must
+ * not get heavier). Several items get a header with the joined name and the
+ * occasion's kcal, so what the user reads here is what the day will show, plus
+ * one quiet "Razdvoji" for when the model joined things that were not one meal.
  */
-function GricItemCard({
+function OccasionCard({
+  occasion,
+  disabled,
+  onSize,
+  onToggle,
+  onSplit,
+}: {
+  occasion: Occasion;
+  disabled: boolean;
+  onSize: (index: number, size: PortionSizeId) => void;
+  onToggle: (index: number) => void;
+  onSplit: () => void;
+}) {
+  const { t } = useT();
+  const remaining = keptOf(occasion);
+  const joined = remaining.length > 1;
+  const asks = occasion.some(
+    (entry) => !entry.item.removed && entry.item.base.varijansa === "visoka"
+  );
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-3 rounded-2xl border bg-card px-4 py-3.5 transition-opacity",
+        asks ? "border-primary/50" : "border-border",
+        remaining.length === 0 && "opacity-40"
+      )}
+    >
+      {joined ? (
+        <div className="flex items-baseline justify-between gap-3 border-b border-border/60 pb-2.5">
+          <span className="min-w-0 truncate text-base font-semibold text-foreground">
+            {occasionName(remaining.map((entry) => current(entry.item).naziv))}
+          </span>
+          <span className="shrink-0 text-sm tabular-nums text-muted-foreground">
+            ≈ {totalKcal(remaining.map((entry) => current(entry.item)))} kcal
+          </span>
+        </div>
+      ) : null}
+
+      {occasion.map((entry) => (
+        <GricItemRow
+          key={`${entry.item.base.naziv}-${entry.index}`}
+          item={entry.item}
+          compact={joined}
+          disabled={disabled}
+          onSize={(size) => onSize(entry.index, size)}
+          onToggle={() => onToggle(entry.index)}
+        />
+      ))}
+
+      {joined ? (
+        <button
+          type="button"
+          onClick={onSplit}
+          disabled={disabled}
+          className="self-start text-xs font-medium text-muted-foreground underline underline-offset-4 hover:text-foreground disabled:opacity-60"
+        >
+          {t("dodaj.gric.split")}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * One spoken item. High-variance items (cake, burek, a sandwich) show the size
+ * chips inline — that single tap is the only thing Gric ever asks of the user,
+ * and only when the answer actually moves the day's total. Low-variance items
+ * stay quiet unless tapped.
+ */
+function GricItemRow({
   item,
+  compact,
   disabled,
   onSize,
   onToggle,
 }: {
   item: ReviewItem;
+  /** Inside a joined occasion the item is a part of a meal, not the meal —
+   * so it steps down a size and the header above carries the name. */
+  compact: boolean;
   disabled: boolean;
   onSize: (size: PortionSizeId) => void;
   onToggle: () => void;
@@ -481,18 +639,15 @@ function GricItemCard({
   const asks = item.base.varijansa === "visoka";
 
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-3 rounded-2xl border bg-card px-4 py-3.5 transition-opacity",
-        asks ? "border-primary/50" : "border-border",
-        item.removed && "opacity-40"
-      )}
-    >
+    // No opacity of its own: a lone removed item already fades with its card,
+    // and inside a joined one the strike-through is the signal.
+    <div className="flex flex-col gap-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-0.5">
           <span
             className={cn(
-              "truncate text-base font-medium text-foreground",
+              "truncate font-medium text-foreground",
+              compact ? "text-sm" : "text-base",
               item.removed && "line-through"
             )}
           >

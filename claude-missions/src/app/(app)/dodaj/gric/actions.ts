@@ -5,6 +5,7 @@ import { z } from "zod";
 import { aiErrorSr, estimateGricFromAudio } from "@/lib/ai/gemini";
 import type { GricEstimate } from "@/lib/ai/gric-estimate";
 import { getCurrentUserId } from "@/lib/auth/current-user";
+import { buildGricRows } from "@/lib/gric/rows";
 import { createClient } from "@/lib/supabase/server";
 
 // Server actions for "Gric" (quick spoken logging of small stuff). The clip is
@@ -13,6 +14,12 @@ import { createClient } from "@/lib/supabase/server";
 // method 'meal') — the same shape the photo and voice flows produce, so the
 // home screen, Analitika and the retention job all handle them with no changes
 // and no migration.
+//
+// Items are written per EATING OCCASION, not per item: what was eaten together
+// becomes one row with its parts in `logs.components` (see
+// `src/lib/gric/rows.ts`). The client sends the items with their occasion tag
+// and the grouping is redone here — the row totals must be the sum of the parts
+// the server itself computed, never numbers a client asserted.
 
 const MAX_AUDIO_BYTES = 8 * 1024 * 1024; // 8 MB (16 kHz mono WAV clips are tiny)
 
@@ -58,11 +65,16 @@ export async function estimateGricAction(
 
 const gricLogItemSchema = z.object({
   name: z.string().trim().min(1).max(120),
+  /** Spoken amount ("2 komada", "šaka"); only used to derive the natural unit
+   * of a breakdown line, never to compute a macro. */
+  amount: z.string().trim().max(40).optional(),
   grams: z.coerce.number().min(1).max(5000),
   kcal: z.coerce.number().min(0).max(6000),
   protein: z.coerce.number().min(0).max(800),
   carbs: z.coerce.number().min(0).max(800),
   fat: z.coerce.number().min(0).max(800),
+  /** Which eating occasion this item belongs to. Absent = its own occasion. */
+  group: z.coerce.number().int().min(0).max(31).optional(),
 });
 
 // One spoken sentence can hold several snacks, but not a shopping list; the
@@ -76,10 +88,10 @@ export type LogGricResult =
   | { ok: false; error_sr: string };
 
 /**
- * Writes every confirmed item as its own `logs` row, in ONE insert — the items
- * were spoken together, so they must land together: a partial save would leave
- * the user unsure what was recorded, which is exactly the doubt this feature
- * exists to remove.
+ * Writes one `logs` row per eating occasion, in ONE insert — the items were
+ * spoken together, so they must land together: a partial save would leave the
+ * user unsure what was recorded, which is exactly the doubt this feature exists
+ * to remove.
  */
 export async function logGricAction(
   input: LogGricInput
@@ -98,16 +110,18 @@ export async function logGricAction(
     };
   }
 
-  const round1 = (n: number) => Math.round(n * 10) / 10;
-  const rows = parsed.data.map((item) => ({
+  const rows = buildGricRows(parsed.data).map((row) => ({
     user_id: userId,
     food_id: null,
-    name: item.name,
-    grams: round1(item.grams),
-    kcal: Math.round(item.kcal),
-    protein: round1(item.protein),
-    carbs: round1(item.carbs),
-    fat: round1(item.fat),
+    name: row.name,
+    grams: row.grams,
+    kcal: row.kcal,
+    protein: row.protein,
+    carbs: row.carbs,
+    fat: row.fat,
+    // The breakdown is what keeps a joined occasion editable: "Dodaj još" and
+    // "Nisam sve pojeo" both work off these lines.
+    components: row.components,
     method: "meal" as const,
   }));
 

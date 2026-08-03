@@ -821,19 +821,17 @@ export function NajtacnijeFlow() {
 
       {/* --- The app's own viewfinder ------------------------------------
           Full-screen and z-50, so it covers whatever asked for it and the
-          flow underneath keeps its state. `hint` carries the one instruction
-          from the guide that still matters while you are aiming -- the guide
-          screen itself is gone the moment the camera opens. */}
+          flow underneath keeps its state.
+
+          Deliberately WITHOUT a hint: the guide right before this one has
+          just said the same sentence, in full, with three bullets. Repeating
+          it over the live frame only covers the plate you are trying to
+          line up. */}
       {phase === "viewfinder" ? (
         <CameraCapture
           onCapture={(file) => void acceptPhotos([file])}
           onCancel={() => setPhase(returnPhaseRef.current)}
           onPickFromLibrary={() => galleryInputRef.current?.click()}
-          hint={
-            returnPhaseRef.current === "guide2"
-              ? t("dodaj.prizma.guide2.subtitle")
-              : t("dodaj.prizma.guide1.subtitle")
-          }
           notice={error}
           // No stream (permission denied, no camera, insecure context): the
           // OS camera still works, so a refusal is a detour rather than a dead

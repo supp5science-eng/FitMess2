@@ -9,6 +9,7 @@ import { LogEatenShareSheet } from "@/components/food/log-eaten-share-sheet";
 import { LogEditSheet } from "@/components/food/log-edit-sheet";
 import { useT } from "@/components/i18n/locale-provider";
 import { ShareMealSheet } from "@/components/share/share-meal-sheet";
+import { useScanCardImage } from "@/components/share/use-scan-card";
 import { sheetPortal } from "@/components/ui/sheet-portal";
 import { findMatchingCommonUnit } from "@/lib/food/portions";
 import type { Food, Log } from "@/lib/types/db";
@@ -26,11 +27,28 @@ import { cn } from "@/lib/utils";
 // (`food_id` -> null, see `src/lib/home/attach-food.ts`) can still be
 // deleted (delete never needs the food), just not portion-edited.
 //
-// A "Slikaj obrok" log leads with its stored photo. The photo is FULL-BLEED
-// to the card edges (a media card, not a picture floating inside padding) so
-// it reads as polished as the rest of the app, and it is TAPPABLE: tapping it
-// opens the shot full-screen in a lightbox, since the card thumbnail is too
-// small to actually look at the meal you logged.
+// A "Slikaj obrok" log leads with its picture, FULL-BLEED to the card edges (a
+// media card, not a photo floating inside padding), and TAPPABLE: tapping it
+// opens it full-screen in a lightbox, since the thumbnail is too small to
+// actually look at the meal you logged.
+//
+// That picture is the DESIGNED SHARE CARD, not the bare shot. The card is the
+// same 9:16 PNG "Podeli" hands to Instagram (`/api/card/scan` -- the photo
+// full-bleed under the dish name, the big kcal, the P/UH/M row, the tier frame
+// and the FitMess signature), so the meal you see in the app is byte-for-byte
+// the meal you share. The add-flows already build it the moment a photo meal is
+// saved, so it is normally finished before `/danas` renders.
+//
+// The bare photo is still LAYER ONE underneath, for two reasons: it arrives
+// instantly while the card is still rendering, and it is cropped by exactly the
+// same 9:16 `object-cover` the card crops it with -- so the card fading in on
+// top only adds the design, without the picture moving. It is also the
+// permanent fallback: a card can fail (the photo is pruned server-side after
+// ~1 day, a render can time out, the phone can be offline) and the tile then
+// simply stays what it always was.
+//
+// While the card is showing, the app's own overlay (name, portion, kcal pill,
+// scrim) steps aside -- the card already says all of it, larger.
 //
 // The thumbnail starts gently VEILED (dimmed + blurred) and un-veils the first
 // time you open it -- so the list is a calm wall of soft tiles you reveal on
@@ -104,6 +122,15 @@ export function MealCard({
   // Full-screen view of the stored shot. Opened by tapping the card photo.
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
+  // The designed share card for this meal, once it exists. `null` until then
+  // (and for good if it can't be built) -- the raw photo covers both cases.
+  const cardUrl = useScanCardImage(log.id, hasPhoto);
+  // Built is not the same as painted: the swap only happens once the browser has
+  // actually decoded the PNG, so the card never flashes in half-drawn and the
+  // overlay it replaces never disappears before it has something to replace it.
+  const [cardPainted, setCardPainted] = useState(false);
+  const cardShowing = cardUrl != null && cardPainted;
+
   // Whether this meal's photo has been opened before. Read from localStorage
   // through useSyncExternalStore so it stays correct across hydration (server
   // snapshot is always "not yet seen" -> veiled) without an effect-setState.
@@ -112,6 +139,18 @@ export function MealCard({
     () => hasPhoto && readViewedSet().has(log.id),
     () => false
   );
+
+  /**
+   * The card is up AND readable — so it is already saying the name, the kcal
+   * and the three macros, in its own type. Everything the app would otherwise
+   * print around it is a second copy of the same four numbers a centimetre
+   * apart, so all of it steps aside on this one condition.
+   *
+   * Deliberately gated on `viewed` too: a VEILED card is blurred past reading,
+   * and dropping the kcal pill and the macro row there would leave a tile that
+   * says nothing at all until you tap it.
+   */
+  const cardSpeaksForItself = cardShowing && viewed;
 
   // Escape closes the lightbox (subscribe pattern: setState fires from the key
   // callback, never synchronously in the effect body).
@@ -163,6 +202,9 @@ export function MealCard({
           data-testid={`meal-card-photo-button-${log.id}`}
           className="group/photo relative block w-full text-left active:opacity-95"
         >
+          {/* Layer 1 -- the bare photo. The 9:16 box is the CARD's aspect, held
+              from the first paint so the card arriving later swaps in without
+              moving anything. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={photoSrc}
@@ -170,7 +212,7 @@ export function MealCard({
             data-testid={`meal-card-photo-${log.id}`}
             loading="lazy"
             className={cn(
-              "h-60 w-full object-cover transition-all duration-500 ease-out",
+              "aspect-[9/16] w-full object-cover transition-all duration-500 ease-out",
               // A slow, subtle zoom on hover/press gives the tile life.
               "group-hover/card:scale-[1.03]",
               // Veiled until first opened: a gentle blur + dim. The slight
@@ -178,10 +220,32 @@ export function MealCard({
               viewed ? "" : "scale-105 blur-[6px] opacity-70"
             )}
           />
+
+          {/* Layer 2 -- the designed card, over its own background photo. Both
+              are `object-cover` on the same 9:16 box, so the picture underneath
+              lines up exactly and the fade reads as the design appearing rather
+              than as one image replacing another. */}
+          {cardUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={cardUrl}
+              alt={log.name}
+              data-testid={`meal-card-scan-card-${log.id}`}
+              onLoad={() => setCardPainted(true)}
+              className={cn(
+                "absolute inset-0 size-full object-cover transition-all duration-500 ease-out",
+                "group-hover/card:scale-[1.03]",
+                cardPainted ? "opacity-100" : "opacity-0",
+                viewed ? "" : "scale-105 blur-[6px] opacity-70"
+              )}
+            />
+          ) : null}
+
           {/* Bottom scrim so the overlaid name/portion stay legible on any
               photo. Kept off while veiled (the blur already darkens it) so the
-              reveal hint reads cleanly against a calm, even tile. */}
-          {viewed ? (
+              reveal hint reads cleanly against a calm, even tile -- and off once
+              the card is up, since the card brings its own. */}
+          {viewed && !cardShowing ? (
             <span
               aria-hidden="true"
               className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/80 via-black/25 to-transparent"
@@ -189,17 +253,28 @@ export function MealCard({
           ) : null}
 
           {/* Calorie chip: a frosted-glass pill floating top-right over the
-              photo. Reads as a badge on the shot, the way food apps mark it. */}
+              photo. Reads as a badge on the shot, the way food apps mark it.
+              It steps aside for the card -- which prints the same number as its
+              hero -- but stays while the tile is veiled, since a blurred card
+              can't be read and the kcal is the one figure worth seeing before
+              you reveal anything. Never removed, only unstyled to
+              screen-reader-only, so the figure keeps its place in the DOM. */}
           <span
             data-testid={`meal-card-kcal-${log.id}`}
-            className="absolute right-3 top-3 rounded-full bg-black/40 px-3 py-1 text-sm font-bold tabular-nums text-white shadow-sm ring-1 ring-white/20 backdrop-blur-md"
+            className={
+              cardSpeaksForItself
+                ? "sr-only"
+                : "absolute right-3 top-3 rounded-full bg-black/40 px-3 py-1 text-sm font-bold tabular-nums text-white shadow-sm ring-1 ring-white/20 backdrop-blur-md"
+            }
           >
             {Math.round(log.kcal)} kcal
           </span>
 
           {/* Name + portion seated on the scrim, bottom-left. Hidden while
-              veiled so the tile stays a calm, anonymous surface until revealed. */}
-          {viewed ? (
+              veiled so the tile stays a calm, anonymous surface until revealed,
+              and hidden again once the card is up (which sets the name in its
+              own hero type). */}
+          {viewed && !cardShowing ? (
             <span className="absolute inset-x-0 bottom-0 flex flex-col gap-0.5 p-4">
               <span
                 data-testid={`meal-card-name-${log.id}`}
@@ -215,9 +290,9 @@ export function MealCard({
               </span>
             </span>
           ) : (
-            // While veiled: name/portion still exist (kept off-scrim, visually
-            // hidden) so the layout is stable and screen readers/tests can read
-            // them, and a single plain invitation to reveal the shot is centered.
+            // Overlay off -- either the tile is still veiled, or the card is up
+            // and says it all itself. Name/portion still exist (visually hidden)
+            // so the layout is stable and screen readers/tests can read them.
             <>
               <span className="sr-only" data-testid={`meal-card-name-${log.id}`}>
                 {log.name}
@@ -228,11 +303,14 @@ export function MealCard({
               >
                 {portionLabel}
               </span>
-              <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                <span className="rounded-full bg-black/45 px-3.5 py-1.5 text-xs font-medium text-white ring-1 ring-white/15 backdrop-blur-sm">
-                  Dodirni da vidiš
+              {/* The invitation to reveal belongs to the veil alone. */}
+              {viewed ? null : (
+                <span className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                  <span className="rounded-full bg-black/45 px-3.5 py-1.5 text-xs font-medium text-white ring-1 ring-white/15 backdrop-blur-sm">
+                    Dodirni da vidiš
+                  </span>
                 </span>
-              </span>
+              )}
             </>
           )}
         </button>
@@ -277,7 +355,10 @@ export function MealCard({
             </span>
           </div>
         ) : null}
-        {hasPhoto ? (
+        {/* The macro breakdown, for photo meals the card isn't currently
+            speaking for. Once it is, this row is the same "42 g / 61 g / 31 g"
+            the card prints a centimetre above it, so it goes. */}
+        {hasPhoto && !cardSpeaksForItself ? (
           <div
             data-testid={`meal-card-macros-${log.id}`}
             className="flex flex-wrap gap-2"
@@ -360,19 +441,31 @@ export function MealCard({
               >
                 <X className="size-5" aria-hidden="true" />
               </button>
+              {/* The card if there is one, the bare photo otherwise -- the same
+                  substitution the tile makes, so enlarging shows more of what
+                  you were already looking at rather than something else. 9:16
+                  fills a phone screen exactly, so nothing is letterboxed. */}
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={photoSrc}
+                src={cardUrl ?? photoSrc}
                 alt={log.name}
+                data-testid={`meal-card-photo-full-${log.id}`}
                 onClick={(event) => event.stopPropagation()}
                 className="max-h-[85vh] max-w-full rounded-2xl object-contain shadow-2xl"
               />
-              <span
-                className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center px-4 text-sm font-medium text-white/90"
-                style={{ paddingBottom: "max(env(safe-area-inset-bottom), 1rem)" }}
-              >
-                {log.name}
-              </span>
+              {/* The caption is what the bare photo lacks; the card has the name
+                  set in its own hero type, so repeating it underneath would
+                  only be the same word twice. */}
+              {cardUrl ? null : (
+                <span
+                  className="pointer-events-none absolute inset-x-0 bottom-0 flex justify-center px-4 text-sm font-medium text-white/90"
+                  style={{
+                    paddingBottom: "max(env(safe-area-inset-bottom), 1rem)",
+                  }}
+                >
+                  {log.name}
+                </span>
+              )}
             </div>
           )
         : null}

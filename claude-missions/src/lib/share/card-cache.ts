@@ -256,6 +256,43 @@ export function prewarmCard(
   return drain();
 }
 
+/**
+ * Get a card THROUGH the serial queue, resolving with the file.
+ *
+ * `getCard` is the right call for a card the user is waiting on (a "Podeli"
+ * tap): it starts immediately. `prewarmCard` is the right call for a card
+ * nobody asked for. This is the third case the meal tile introduced — a card
+ * that is VISIBLE CONTENT, so it must actually arrive, but of which several can
+ * be on screen at once. Firing those in parallel is exactly what the queue
+ * exists to prevent (N concurrent 1080x1920 renders, N x ~2.5 MB over a phone
+ * connection), so the build waits its turn — while a cached card, the common
+ * case once the add-flow has prewarmed it, still resolves without queueing.
+ */
+export function queueCard(
+  logId: string,
+  format: CardFormat,
+  build: CardBuilder
+): Promise<File> {
+  const key = entryKey(logId, format);
+
+  const warm = memory.get(key);
+  if (warm) return Promise.resolve(warm);
+
+  const flying = inFlight.get(key);
+  if (flying) return flying;
+
+  return new Promise<File>((resolve, reject) => {
+    queue.push(async () => {
+      try {
+        resolve(await getCard(logId, format, build));
+      } catch (error) {
+        reject(error);
+      }
+    });
+    void drain();
+  });
+}
+
 /** Wait for every pending persistence write. Test-only. */
 export async function __flushPersistForTests(): Promise<void> {
   while (persisting.size > 0) {

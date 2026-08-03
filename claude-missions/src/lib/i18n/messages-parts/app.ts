@@ -6,6 +6,21 @@ export const appMessages = {
     "app.landing.hero.haveAccount": "Već imaš nalog?",
     "app.landing.hero.signIn": "Prijavi se",
     "app.landing.hero.peek": "Zaviri",
+    "app.landing.hero.badge": "Prelaunch · web verzija",
+
+    // Landing "where you can get it" status. Deliberately makes NO promise
+    // about a date -- "u pripremi" is the honest state, and a missed date on a
+    // landing page costs more trust than the wait itself.
+    "app.landing.stores.heading": "Za sad web, uskoro i u prodavnicama",
+    "app.landing.stores.body":
+      "FitMess je ceo tu — samo još nije u prodavnicama aplikacija. Pustili smo ga kao web aplikaciju da ne moraš da čekaš: otvoriš na telefonu, dodaš na početni ekran i dobiješ svoju ikonicu, podsetnike i pun ekran, bez pretraživača okolo.",
+    "app.landing.stores.web": "Web aplikacija",
+    "app.landing.stores.webNote": "Dostupno sada",
+    "app.landing.stores.appStore": "App Store",
+    "app.landing.stores.play": "Google Play",
+    "app.landing.stores.soonNote": "U pripremi",
+    "app.landing.stores.foot":
+      "Isti nalog, isti podaci. Ništa što uneseš sada se ne gubi kad aplikacija stigne u prodavnicu.",
 
     // Landing feature showcase
     "app.landing.features.heading": "Šta te čeka unutra",
@@ -170,6 +185,19 @@ export const appMessages = {
     "app.landing.hero.haveAccount": "Already have an account?",
     "app.landing.hero.signIn": "Sign in",
     "app.landing.hero.peek": "Take a peek",
+    "app.landing.hero.badge": "Prelaunch · web version",
+
+    // Landing "where you can get it" status
+    "app.landing.stores.heading": "Web for now, the stores are coming",
+    "app.landing.stores.body":
+      "FitMess is all here — it just isn't in the app stores yet. We released it as a web app so you don't have to wait: open it on your phone, add it to your home screen, and you get your own icon, reminders and a full screen, with no browser around it.",
+    "app.landing.stores.web": "Web app",
+    "app.landing.stores.webNote": "Available now",
+    "app.landing.stores.appStore": "App Store",
+    "app.landing.stores.play": "Google Play",
+    "app.landing.stores.soonNote": "In progress",
+    "app.landing.stores.foot":
+      "Same account, same data. Nothing you log now is lost when the app lands in the stores.",
 
     // Landing feature showcase
     "app.landing.features.heading": "What's waiting inside",

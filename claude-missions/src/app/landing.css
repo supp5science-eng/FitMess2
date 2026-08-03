@@ -82,8 +82,13 @@
    * identically in every engine: height first, width = height × 9/18.6,
    * clamped so it never exceeds the old 300px/84vw nor squeezes below what
    * the demo's content can compress to (234px).
+   *
+   * The subtracted constant is the headline + CTA block. It went 330 -> 368
+   * when the prelaunch badge joined the stack above the headline (~25px tall,
+   * plus the hero gap less its own -14px pull) — otherwise the hero would
+   * overflow 100dvh by exactly that much on short phones.
    */
-  --lp-phone-h: clamp(430px, calc(100dvh - 330px), 640px);
+  --lp-phone-h: clamp(430px, calc(100dvh - 368px), 640px);
   height: var(--lp-phone-h);
   width: clamp(234px, calc(var(--lp-phone-h) * 0.484), min(300px, 84vw));
   border-radius: 46px;
@@ -130,6 +135,44 @@
   border-radius: 35px;
   overflow: hidden;
   background: #0a0f0d;
+}
+
+/* ---------- Prelaunch badge ----------
+   Sits above the headline. Deliberately small and quiet: it states a fact
+   about where the product is, it does not sell anything, so it must not
+   compete with the title or the CTA for attention. The negative margin pulls
+   it toward the headline so the two read as one block instead of as two
+   separate stack items with the hero's full 26px gap between them. */
+.lp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: -14px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(23, 209, 168, 0.28);
+  background: rgba(23, 209, 168, 0.09);
+  color: var(--teal-bright);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  animation: lp-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.35s both;
+}
+/* A slow live dot — "this is running right now", which is exactly the claim
+   the badge makes. Slow enough (2.6s) to register as calm, not as a spinner. */
+.lp-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--teal-bright);
+  animation: lp-badge-pulse 2.6s ease-out infinite;
+}
+@keyframes lp-badge-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(42, 227, 190, 0.5); }
+  70% { opacity: 0.75; box-shadow: 0 0 0 5px rgba(42, 227, 190, 0); }
 }
 
 /* ---------- Title ---------- */

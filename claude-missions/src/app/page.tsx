@@ -111,6 +111,65 @@ function IconWeek() {
   );
 }
 
+function IconCheck() {
+  // Shipped — the one thing on the availability list you can use today.
+  return (
+    <svg {...iconProps} strokeWidth={2.6}>
+      <path d="M5 12.5l4.5 4.5L19 7.5" />
+    </svg>
+  );
+}
+
+function IconBuilding() {
+  // Still in the works. A calm clock, not a spinner: nothing is loading, we
+  // just haven't shipped it yet.
+  return (
+    <svg {...iconProps}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 1.8" />
+    </svg>
+  );
+}
+
+/**
+ * One line of the availability list: what it is, and where it stands.
+ *
+ * `live` is what separates a fact from a plan, and it is the only thing that
+ * changes the row's colour — the teal is reserved for the thing you can
+ * actually open right now, so the two pending rows can never read as shipped.
+ */
+function StoreRow({
+  label,
+  note,
+  live = false,
+}: {
+  label: string;
+  note: string;
+  live?: boolean;
+}) {
+  return (
+    <li className="flex items-center gap-3">
+      <span
+        className={`grid size-7 shrink-0 place-items-center rounded-full [&_svg]:size-[15px] ${
+          live ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground"
+        }`}
+      >
+        {live ? <IconCheck /> : <IconBuilding />}
+      </span>
+      <span className="min-w-0 flex-1 text-[14.5px] font-semibold text-foreground">
+        {label}
+      </span>
+      <span
+        className={`shrink-0 text-[12.5px] font-semibold ${
+          live ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        {note}
+      </span>
+    </li>
+  );
+}
+
 /** The showcase features. `tint` uses the app's own accent + macro palette
  * (globals.css dark tokens) so the row doubles as a peek at the product's
  * visual language: primary teal, carbs green, protein coral, fat amber. */
@@ -166,6 +225,14 @@ export default async function LandingPage() {
               </div>
             </div>
           </div>
+
+          {/* Prelaunch status, stated up front. The hero is otherwise
+              deliberately minimal, so this earns its place by answering the
+              question a store-less product raises before the CTA does ("is
+              this real / where do I get it?") — quietly, above the headline,
+              rather than as an apology below it. The full story is the
+              availability section further down. */}
+          <span className="lp-badge">{t("app.landing.hero.badge")}</span>
 
           <h1 className="lp-title">{t("app.landing.hero.title")}</h1>
 
@@ -228,6 +295,53 @@ export default async function LandingPage() {
               </li>
             ))}
           </ul>
+        </section>
+
+        {/* ---------- Availability: web now, stores in progress ----------
+            Sits between the features and the closing CTA on purpose: by here
+            the visitor wants the product, and "where do I get it" is the last
+            thing standing between them and "Kreni besplatno". Framed as a
+            deliberate prelaunch rather than a missing feature — the web app is
+            a shipped row on the list, not a stand-in for one.
+
+            No date is promised anywhere in this block. A missed launch date on
+            a landing page costs more trust than the wait itself, so the copy
+            says "u pripremi" and stops. */}
+        <section
+          className="mx-auto w-full max-w-[460px] px-[22px] pb-14"
+          aria-labelledby="lp-stores-h"
+        >
+          <div className="lp-reveal rounded-2xl border border-border bg-card p-5">
+            <h2
+              id="lp-stores-h"
+              className="text-[17px] font-bold tracking-tight text-foreground"
+            >
+              {t("app.landing.stores.heading")}
+            </h2>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-muted-foreground">
+              {t("app.landing.stores.body")}
+            </p>
+
+            <ul className="mt-4 grid gap-2.5 border-t border-border/60 pt-4">
+              <StoreRow
+                label={t("app.landing.stores.web")}
+                note={t("app.landing.stores.webNote")}
+                live
+              />
+              <StoreRow
+                label={t("app.landing.stores.appStore")}
+                note={t("app.landing.stores.soonNote")}
+              />
+              <StoreRow
+                label={t("app.landing.stores.play")}
+                note={t("app.landing.stores.soonNote")}
+              />
+            </ul>
+
+            <p className="mt-4 text-[12.5px] leading-snug text-muted-foreground">
+              {t("app.landing.stores.foot")}
+            </p>
+          </div>
         </section>
 
         {/* ---------- Closing CTA (carries the zero-shame line) ---------- */}

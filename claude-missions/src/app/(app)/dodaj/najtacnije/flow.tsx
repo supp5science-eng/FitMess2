@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
+import { CameraCapture } from "@/components/camera/camera-capture";
 import { useT } from "@/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import type { TFunction } from "@/lib/i18n/translate";
@@ -74,6 +75,7 @@ type Phase =
   | "guide1"
   | "review1"
   | "guide2" // optional extra angle, only when it would change the answer
+  | "viewfinder" // the in-app camera, over whatever asked for it
   | "capture" // label mode only: plain multi-shot capture
   | "analyzing"
   | "estimate" // the dial + the AI's questions, on one screen
@@ -170,6 +172,8 @@ export function NajtacnijeFlow() {
   const retakeIndexRef = useRef<number | null>(null);
   // Where to go once a photo comes back from the camera.
   const nextPhaseRef = useRef<Phase | null>(null);
+  // Where the viewfinder goes back to when it is closed without a shot.
+  const returnPhaseRef = useRef<Phase>("mode");
 
   // Voice: one recording that can answer all the AI's questions at once.
   const recordingRef = useRef<WavRecording | null>(null);
@@ -237,11 +241,28 @@ export function NajtacnijeFlow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /** Open the camera for a specific slot, and remember where to land after. */
+  /**
+   * Open the camera for a specific slot, and remember where to land after.
+   *
+   * This is the app's OWN viewfinder (`CameraCapture`), not the OS camera the
+   * `capture="environment"` input hands off to. Prizma is a guided flow -- it
+   * has just finished telling you to shoot from straight above with a fork
+   * beside the plate -- and the system camera drops all of that: a full-screen
+   * app the flow can't annotate, followed by the OS "Use Photo?" confirmation.
+   * The in-app viewfinder keeps the guidance on screen and makes it one tap of
+   * the shutter, exactly as "Slikaj obrok" already works. The OS camera stays
+   * as the fallback when the browser won't give us a stream at all.
+   */
   function openCamera(next: Phase, replaceIndex: number | null = null) {
     retakeIndexRef.current = replaceIndex;
     nextPhaseRef.current = next;
     setError(null);
+    returnPhaseRef.current = phase;
+    setPhase("viewfinder");
+  }
+
+  /** The system camera, kept for the fallback path inside `CameraCapture`. */
+  function openSystemCamera() {
     cameraInputRef.current?.click();
   }
 
@@ -255,9 +276,19 @@ export function NajtacnijeFlow() {
     galleryInputRef.current?.click();
   }
 
-  async function handleAddPhotos(event: ChangeEvent<HTMLInputElement>) {
+  function handleAddPhotos(event: ChangeEvent<HTMLInputElement>) {
     const picked = Array.from(event.target.files ?? []);
     event.target.value = "";
+    void acceptPhotos(picked);
+  }
+
+  /**
+   * Take one or more photos into the flow, whatever produced them -- the
+   * in-app viewfinder, the system camera, or the library. All three land here
+   * so a shot is indistinguishable from a pick: same previews, same blur
+   * check, same next phase.
+   */
+  async function acceptPhotos(picked: File[]) {
     if (picked.length === 0) return;
 
     const replaceAt = retakeIndexRef.current;
@@ -786,6 +817,53 @@ export function NajtacnijeFlow() {
             </span>
           </button>
         </div>
+      ) : null}
+
+      {/* --- The app's own viewfinder ------------------------------------
+          Full-screen and z-50, so it covers whatever asked for it and the
+          flow underneath keeps its state. `hint` carries the one instruction
+          from the guide that still matters while you are aiming -- the guide
+          screen itself is gone the moment the camera opens. */}
+      {phase === "viewfinder" ? (
+        <CameraCapture
+          onCapture={(file) => void acceptPhotos([file])}
+          onCancel={() => setPhase(returnPhaseRef.current)}
+          onPickFromLibrary={() => galleryInputRef.current?.click()}
+          hint={
+            returnPhaseRef.current === "guide2"
+              ? t("dodaj.prizma.guide2.subtitle")
+              : t("dodaj.prizma.guide1.subtitle")
+          }
+          notice={error}
+          // No stream (permission denied, no camera, insecure context): the
+          // OS camera still works, so a refusal is a detour rather than a dead
+          // end. Rendered as plain UI -- this runs inside `CameraCapture`'s
+          // render, so it must not touch state.
+          fallback={(reason) => (
+            <div className="flex flex-col gap-3 px-1 py-4">
+              <p className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+                {reason}
+              </p>
+              <button
+                type="button"
+                onClick={openSystemCamera}
+                className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-background px-6 py-12 text-center transition-colors hover:bg-muted"
+              >
+                <Camera className="size-9 text-primary" aria-hidden="true" />
+                <span className="text-base font-medium text-foreground">
+                  {t("dodaj.openCamera")}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => galleryInputRef.current?.click()}
+                className="text-sm font-medium text-muted-foreground underline-offset-4 hover:underline"
+              >
+                {t("dodaj.uploadExisting")}
+              </button>
+            </div>
+          )}
+        />
       ) : null}
 
       {/* --- Guide: straight down ---------------------------------------- */}

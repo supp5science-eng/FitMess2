@@ -202,44 +202,63 @@ export function MealCard({
           data-testid={`meal-card-photo-button-${log.id}`}
           className="group/photo relative block w-full text-left active:opacity-95"
         >
-          {/* Layer 1 -- the bare photo. The 9:16 box is the CARD's aspect, held
-              from the first paint so the card arriving later swaps in without
-              moving anything. */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={photoSrc}
-            alt={log.name}
-            data-testid={`meal-card-photo-${log.id}`}
-            loading="lazy"
-            className={cn(
-              "aspect-[9/16] w-full object-cover transition-all duration-500 ease-out",
-              // A slow, subtle zoom on hover/press gives the tile life.
-              "group-hover/card:scale-[1.03]",
-              // Veiled until first opened: a gentle blur + dim. The slight
-              // scale hides the soft transparent edge blur leaves behind.
-              viewed ? "" : "scale-105 blur-[6px] opacity-70"
-            )}
-          />
+          {/* The WINDOW onto the card. A whole 9:16 card standing in the list is
+              a screenful per meal -- too long to scroll past, and the list is a
+              list. So the tile is back to a compact landscape strip and shows
+              the card's BOTTOM BAND: the dish name, the kcal, the macros, the
+              signature, over the lower part of the plate. The whole 9:16 card is
+              one tap away.
 
-          {/* Layer 2 -- the designed card, over its own background photo. Both
-              are `object-cover` on the same 9:16 box, so the picture underneath
-              lines up exactly and the fade reads as the design appearing rather
-              than as one image replacing another. */}
-          {cardUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
+              An ASPECT ratio, not a fixed height, is what makes that crop
+              trustworthy: the window and the card inside it both scale with the
+              phone's width, so the slice of card on screen is the same 771 of
+              1920 pixels on every device -- comfortably more than the content
+              block needs. A fixed `h-60` would have clipped the dish name on a
+              wide phone and not on a narrow one.
+
+              `object-position` at 92% rather than flush bottom: the card's
+              bottom 128px are deliberate empty margin, so giving a tenth of the
+              crop back to the top trades dead space for the plate above the
+              name -- at no cost to anything that is actually drawn. */}
+          <span className="relative block aspect-[7/5] w-full overflow-hidden">
+            {/* Layer 1 -- the bare photo, cropped by exactly the frame the card
+                crops it with, so the card fading in on top adds the design
+                without the picture moving. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={cardUrl}
+              src={photoSrc}
               alt={log.name}
-              data-testid={`meal-card-scan-card-${log.id}`}
-              onLoad={() => setCardPainted(true)}
+              data-testid={`meal-card-photo-${log.id}`}
+              loading="lazy"
               className={cn(
-                "absolute inset-0 size-full object-cover transition-all duration-500 ease-out",
+                "absolute inset-0 size-full object-cover object-[center_92%]",
+                "transition-all duration-500 ease-out",
+                // A slow, subtle zoom on hover/press gives the tile life.
                 "group-hover/card:scale-[1.03]",
-                cardPainted ? "opacity-100" : "opacity-0",
+                // Veiled until first opened: a gentle blur + dim. The slight
+                // scale hides the soft transparent edge blur leaves behind.
                 viewed ? "" : "scale-105 blur-[6px] opacity-70"
               )}
             />
-          ) : null}
+
+            {/* Layer 2 -- the designed card, over its own background photo. */}
+            {cardUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={cardUrl}
+                alt={log.name}
+                data-testid={`meal-card-scan-card-${log.id}`}
+                onLoad={() => setCardPainted(true)}
+                className={cn(
+                  "absolute inset-0 size-full object-cover object-[center_92%]",
+                  "transition-all duration-500 ease-out",
+                  "group-hover/card:scale-[1.03]",
+                  cardPainted ? "opacity-100" : "opacity-0",
+                  viewed ? "" : "scale-105 blur-[6px] opacity-70"
+                )}
+              />
+            ) : null}
+          </span>
 
           {/* Bottom scrim so the overlaid name/portion stay legible on any
               photo. Kept off while veiled (the blur already darkens it) so the
@@ -252,8 +271,11 @@ export function MealCard({
             />
           ) : null}
 
-          {/* Calorie chip: a frosted-glass pill floating top-right over the
+          {/* Calorie chip: a frosted-glass pill floating top-LEFT over the
               photo. Reads as a badge on the shot, the way food apps mark it.
+              Left, not right, because the tile now frames the card's content
+              band and "Podeli" has to sit clear of the dish name -- which
+              starts bottom-left. The two swapped corners rather than stack.
               It steps aside for the card -- which prints the same number as its
               hero -- but stays while the tile is veiled, since a blurred card
               can't be read and the kcal is the one figure worth seeing before
@@ -264,7 +286,7 @@ export function MealCard({
             className={
               cardSpeaksForItself
                 ? "sr-only"
-                : "absolute right-3 top-3 rounded-full bg-black/40 px-3 py-1 text-sm font-bold tabular-nums text-white shadow-sm ring-1 ring-white/20 backdrop-blur-md"
+                : "absolute left-3 top-3 rounded-full bg-black/40 px-3 py-1 text-sm font-bold tabular-nums text-white shadow-sm ring-1 ring-white/20 backdrop-blur-md"
             }
           >
             {Math.round(log.kcal)} kcal
@@ -316,17 +338,19 @@ export function MealCard({
         </button>
       ) : null}
 
-      {/* "Podeli" floats on the photo, top-left — the mirror of the kcal pill
-          top-right, so the one shareable action reads as part of the shot rather
-          than as a fourth neutral button under it. Rendered as a SIBLING of the
-          photo button (which is itself a <button> opening the lightbox) because
-          nesting buttons is invalid HTML; the card is `relative`, so absolute
-          positioning here lands over the media header. */}
+      {/* "Podeli" floats on the photo, top-right — the mirror of the kcal pill
+          top-left, so the one shareable action reads as part of the shot rather
+          than as a fourth neutral button under it. It sits diagonally opposite
+          the dish name, which the card sets bottom-left: on the left it landed
+          straight on top of it. Rendered as a SIBLING of the photo button (which
+          is itself a <button> opening the lightbox) because nesting buttons is
+          invalid HTML; the card is `relative`, so absolute positioning here
+          lands over the media header. */}
       {hasPhoto ? (
         <ShareMealSheet
           logId={log.id}
           mealName={log.name}
-          className="absolute left-3 top-3 z-10"
+          className="absolute right-3 top-3 z-10"
         />
       ) : null}
 

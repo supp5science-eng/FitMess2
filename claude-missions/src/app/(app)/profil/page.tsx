@@ -21,6 +21,7 @@ import {
 
 import { signOutAction } from "../actions";
 import { DeleteAccountDialog } from "@/components/profil/delete-account-dialog";
+import { MedicalDisclaimer } from "@/components/settings/medical-disclaimer";
 import { RefreshAppButton } from "@/components/settings/refresh-app-button";
 import { SettingsGroup } from "@/components/settings/settings-group";
 import {
@@ -233,6 +234,8 @@ export default async function ProfilPage() {
           }
         />
       </SettingsGroup>
+
+      <MedicalDisclaimer />
     </main>
   );
 }

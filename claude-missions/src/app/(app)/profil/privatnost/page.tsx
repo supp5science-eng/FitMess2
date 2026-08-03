@@ -30,6 +30,13 @@ export default async function PrivatnostPage() {
         <p className="rounded-xl border border-border bg-card px-4 py-3 text-foreground">
           {t("profil.privacy.p3")}
         </p>
+        <p>{t("profil.privacy.notMedical")}</p>
+        <Link
+          href="/profil/uslovi"
+          className="font-medium text-foreground underline underline-offset-4"
+        >
+          {t("profil.privacy.termsLink")}
+        </Link>
       </div>
     </main>
   );

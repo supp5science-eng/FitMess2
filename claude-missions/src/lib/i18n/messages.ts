@@ -66,6 +66,12 @@ const sr = {
   "settings.signout": "Odjavi se",
   "settings.delete": "Obriši nalog",
 
+  // Napomena na dnu Podešavanja (poslednje što se vidi kad se doskroluje)
+  "settings.disclaimer.title": "FitMess nije medicinski savet",
+  "settings.disclaimer.body":
+    "Ovo je alat za praćenje ishrane. Kalorije, makronutrijenti i AI procene su informativni i mogu da odstupe od stvarnih vrednosti. Ne postavljamo dijagnozu i ne zamenjujemo lekara ni nutricionistu — pre veće promene ishrane, a obavezno ako imaš zdravstveno stanje, pitaj svog lekara.",
+  "settings.disclaimer.more": "Pročitaj uslove korišćenja",
+
   // Theme toggle (Appearance)
   "theme.light": "Svetla",
   "theme.dark": "Tamna",
@@ -148,6 +154,11 @@ const en: Record<MessageKey, string> = {
   "settings.version": "App version",
   "settings.signout": "Sign out",
   "settings.delete": "Delete account",
+
+  "settings.disclaimer.title": "FitMess is not medical advice",
+  "settings.disclaimer.body":
+    "This is a food-tracking tool. Calories, macronutrients and AI estimates are informational and can differ from the real values. We do not diagnose and we do not replace a doctor or a dietitian — before any major change to your diet, and always if you have a medical condition, ask your doctor.",
+  "settings.disclaimer.more": "Read the terms of use",
 
   "theme.light": "Light",
   "theme.dark": "Dark",

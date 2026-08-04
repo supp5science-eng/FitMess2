@@ -1,32 +1,41 @@
 /*
  * FitMess marketing landing — scoped styles (minimal redesign).
  *
- * Cal-AI-style single screen: one animated phone (food-scanning motion), one
- * bold line, one primary CTA + a sign-in link. Everything is namespaced under
- * `.lp` so it never leaks generic class names into the rest of the app. No
- * install CTA — the whole onboarding runs on the web and the PWA install
- * prompt only shows at the very end.
+ * Cal-AI-style single screen: the motion-graphics film, one bold line, one
+ * primary CTA + a sign-in link. Everything is namespaced under `.lp` so it
+ * never leaks generic class names into the rest of the app. No install CTA —
+ * the whole onboarding runs on the web and the PWA install prompt only shows
+ * at the very end.
+ *
+ * WHITE, like the app itself (`DEFAULT_THEME` is light) and like the hero
+ * film, which was rendered on a white/pastel ground. Those two facts are one
+ * decision: the video carries its own phone mockup floating on white, so the
+ * page around it has to be the same white or the film sits in a visible box.
  *
  * Below the hero the page scrolls into a short, app-styled feature showcase +
  * a closing CTA. Those sections use the app's own design tokens (bg-card,
  * text-foreground, --primary, macro colours) via Tailwind utilities — the
- * `.lp` root carries `.dark` so the app's dark theme resolves — rather than
- * the bespoke marketing variables below, so the landing reads as the same
- * product as the app.
+ * `.lp` root carries `.light` so the app's light theme resolves even for a
+ * visitor whose device theme is dark — rather than the bespoke marketing
+ * variables below, so the landing reads as the same product as the app.
  */
 
 .lp {
-  --ground: #0a0c0b;
+  --ground: #ffffff;
   --ink: #0a0c0b;
-  --paper: #f4f7f6;
-  --ink-soft: #8a938e;
+  --paper: #ffffff;
+  --ink-soft: #646b6f;
   --teal: #17d1a8;
-  --teal-bright: #2ae3be;
+  --teal-bright: #12a886;
   --font: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   font-family: var(--font);
   background: var(--ground);
-  color: var(--paper);
+  color: var(--ink);
+  /* The landing pins light regardless of the `fm_theme` cookie on <html>, so
+     it must pin the UA colour scheme too — otherwise scrollbars and form
+     chrome stay dark around a white page. */
+  color-scheme: light;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -44,7 +53,7 @@
   border-radius: 6px;
 }
 
-/* ---------- Layout: phone (top, grows) · title · CTA (bottom) ---------- */
+/* ---------- Layout: video (top, grows) · title · CTA (bottom) ---------- */
 .lp-hero {
   position: relative;
   min-height: 100dvh;
@@ -59,7 +68,7 @@
     22px
     calc(24px + env(safe-area-inset-bottom));
 }
-.lp-phone-wrap {
+.lp-video-wrap {
   flex: 1;
   width: 100%;
   min-height: 0;
@@ -69,72 +78,63 @@
   padding-top: 8px;
 }
 
-/* ---------- Phone frame ---------- */
-.lp .phone {
-  position: relative;
-  display: flex;
+/* ---------- Hero film ----------
+   NO frame, no shadow, no rounded card: the film already carries its own
+   phone mockup on the same white this page uses, so any chrome around it
+   would draw a box where the design intends none. `contain` guarantees the
+   9:16 master is never cropped (its intro text cards run edge to edge) — and
+   because the letterbox is the page's own white, it is invisible. */
+.lp-video {
+  display: block;
   /*
-   * A real PHONE silhouette (~9:18.6), not a tablet. BOTH dimensions are
-   * computed explicitly from the viewport height (≈ what's left of 100dvh
-   * after the headline + CTA block), instead of flex-stretch + aspect-ratio
-   * transfer — iOS Safari doesn't reliably derive width from a stretched
-   * height, which left the frame squat there. Pure `calc`/`clamp` math works
-   * identically in every engine: height first, width = height × 9/18.6,
-   * clamped so it never exceeds the old 300px/84vw nor squeezes below what
-   * the demo's content can compress to (234px).
+   * BOTH dimensions computed explicitly from the viewport height (≈ what is
+   * left of 100dvh after the headline + CTA block), rather than flex-stretch
+   * + aspect-ratio transfer — iOS Safari doesn't reliably derive width from a
+   * stretched height. Pure `calc`/`clamp` works identically in every engine.
    *
-   * The subtracted constant is the headline + CTA block. It went 330 -> 368
-   * when the prelaunch badge joined the stack above the headline (~25px tall,
-   * plus the hero gap less its own -14px pull) — otherwise the hero would
-   * overflow 100dvh by exactly that much on short phones.
+   * The subtracted constant is the headline + CTA block (badge included).
    */
-  --lp-phone-h: clamp(430px, calc(100dvh - 368px), 640px);
-  height: var(--lp-phone-h);
-  width: clamp(234px, calc(var(--lp-phone-h) * 0.484), min(300px, 84vw));
-  border-radius: 46px;
-  padding: 11px;
-  background: linear-gradient(160deg, #2a3a35, #05100d);
-  box-shadow:
-    0 40px 80px -28px rgba(0, 0, 0, 0.28),
-    0 16px 32px -14px rgba(0, 0, 0, 0.16);
+  --lp-video-h: clamp(400px, calc(100dvh - 368px), 640px);
+  height: var(--lp-video-h);
+  width: min(calc(var(--lp-video-h) * 0.5625), 100%);
+  object-fit: contain;
+  background: transparent;
+  /*
+   * Feathered edges. The film's ground is white but carries soft pastel
+   * washes (mint / periwinkle / peach) that run into its corners — against
+   * the page's pure white those washes end in a straight line, drawing the
+   * video's bounding box exactly where the full-bleed treatment is trying not
+   * to have one. Two gradients intersected fade all four sides out.
+   *
+   * The insets are deliberately asymmetric: the device mockup sits around
+   * 34–74% horizontally but starts ~6% from the top, so the sides can fade
+   * generously while top and bottom must stop well short of the phone.
+   */
+  --lp-video-mask:
+    linear-gradient(to right, transparent 0, #000 8%, #000 92%, transparent 100%),
+    linear-gradient(to bottom, transparent 0, #000 3%, #000 97%, transparent 100%);
+  -webkit-mask-image: var(--lp-video-mask);
+  -webkit-mask-composite: source-in;
+  mask-image: var(--lp-video-mask);
+  mask-composite: intersect;
   transform-origin: center 70%;
   /*
-   * Entrance only, `backwards` fill: the phone holds the `from` state before
-   * it starts, then reverts to its normal (transform-free) style once done.
+   * Entrance only, `backwards` fill: the film holds the `from` state before it
+   * starts, then reverts to its normal (transform-free) style once done.
    */
-  animation: lp-phone-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s backwards;
+  animation: lp-hero-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.05s backwards;
 }
 
 /* Entrance: rise into frame with a soft settle */
-@keyframes lp-phone-in {
+@keyframes lp-hero-in {
   from {
     opacity: 0;
-    transform: translateY(64px) scale(0.92) rotate(-2deg);
+    transform: translateY(64px) scale(0.92);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1) rotate(0);
+    transform: translateY(0) scale(1);
   }
-}
-.lp .phone::after {
-  content: "";
-  position: absolute;
-  top: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 92px;
-  height: 6px;
-  border-radius: 100px;
-  background: rgba(255, 255, 255, 0.16);
-  z-index: 2;
-}
-.lp .screen {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  border-radius: 35px;
-  overflow: hidden;
-  background: #0a0f0d;
 }
 
 /* ---------- Prelaunch badge ----------
@@ -150,8 +150,8 @@
   margin-bottom: -14px;
   padding: 6px 13px;
   border-radius: 999px;
-  border: 1px solid rgba(23, 209, 168, 0.28);
-  background: rgba(23, 209, 168, 0.09);
+  border: 1px solid rgba(18, 168, 134, 0.3);
+  background: rgba(18, 168, 134, 0.08);
   color: var(--teal-bright);
   font-size: 11px;
   font-weight: 700;
@@ -171,8 +171,8 @@
   animation: lp-badge-pulse 2.6s ease-out infinite;
 }
 @keyframes lp-badge-pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(42, 227, 190, 0.5); }
-  70% { opacity: 0.75; box-shadow: 0 0 0 5px rgba(42, 227, 190, 0); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(18, 168, 134, 0.45); }
+  70% { opacity: 0.75; box-shadow: 0 0 0 5px rgba(18, 168, 134, 0); }
 }
 
 /* ---------- Title ---------- */
@@ -184,7 +184,7 @@
   letter-spacing: -0.032em;
   line-height: 1.05;
   text-wrap: balance;
-  color: var(--paper);
+  color: var(--ink);
   padding: 0 4px;
   animation: lp-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.45s both;
 }
@@ -207,18 +207,21 @@
   width: 100%;
   height: 64px;
   border-radius: 999px;
-  background: var(--paper);
-  color: var(--ink);
+  /* Near-black on white — the same inversion the app's light theme makes
+     (`--primary` is black in light, teal in dark), so the landing's primary
+     action and the app's primary buttons are the same button. */
+  background: var(--ink);
+  color: var(--paper);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.01em;
   text-decoration: none;
-  box-shadow: 0 12px 26px -12px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 12px 26px -14px rgba(10, 12, 11, 0.55);
   transition: transform 0.12s ease, box-shadow 0.2s ease;
 }
 .lp-start:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 32px -12px rgba(0, 0, 0, 0.65);
+  box-shadow: 0 16px 32px -14px rgba(10, 12, 11, 0.6);
 }
 .lp-start:active {
   transform: scale(0.99);
@@ -230,7 +233,7 @@
   color: var(--ink-soft);
 }
 .lp-signin a {
-  color: var(--paper);
+  color: var(--ink);
   font-weight: 750;
   text-decoration: none;
 }

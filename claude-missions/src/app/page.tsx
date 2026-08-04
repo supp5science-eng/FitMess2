@@ -1,28 +1,29 @@
 import Link from "next/link";
 
-import { HeroDemo } from "@/components/landing/hero-demo";
+import { HeroVideo } from "@/components/landing/hero-video";
 import { getT } from "@/lib/i18n/server";
 import type { MessageKey } from "@/lib/i18n/messages";
 
 import "./landing.css";
-import "./landing-demo.css";
 
 /**
  * The public marketing landing page at `/`.
  *
- * The first screen stays deliberately minimal (Cal-AI-style): a single phone
- * frame playing the hero demo — a pure-CSS motion graphic of the app's
- * signature journey (početna → slikaj obrok → AI procena → ring se popuni),
- * see `components/landing/hero-demo.tsx` — one bold line, and a single primary
+ * The first screen stays deliberately minimal (Cal-AI-style): the FitMess
+ * motion-graphics film playing full-bleed (see
+ * `components/landing/hero-video.tsx`) — one bold line, and a single primary
  * action ("Započni" → `/upitnik`; "Prijavi se" → sign in). Below the fold a
  * short, app-styled feature showcase hints at what's inside, then a closing
  * CTA. Kept intentionally brief.
  *
- * The below-fold sections adopt the app's own look — the `.lp` root carries
- * `.dark`, so `bg-card` / `text-foreground` / `--primary` / the macro colours
- * resolve to the real app tokens (globals.css), and the cards reuse the same
+ * The page is LIGHT, like the app itself (`DEFAULT_THEME` in
+ * `lib/theme/theme.ts` is `"light"`): the `.lp` root carries `.light`, so
+ * `bg-card` / `text-foreground` / `--primary` / the macro colours resolve to
+ * the real app tokens (globals.css), and the cards reuse the same
  * `rounded-2xl border-border bg-card` surface the authenticated screens use.
- * So the landing reads as the same product, not a separate marketing skin.
+ * So the landing reads as the same product, not a separate marketing skin —
+ * and its white ground is the same white the hero film was rendered on, so the
+ * video has no visible edges.
  *
  * There is NO "install the app" CTA here — the whole onboarding
  * (questionnaire → plan) runs on the web first, and the PWA install prompt
@@ -33,9 +34,10 @@ import "./landing-demo.css";
  * (`src/components/shell/app-shell.tsx`) drops its mobile column and bottom
  * navigation here. It's only ever served on a phone: the middleware bounces
  * non-mobile visitors to `/samo-za-telefon`, so the layout is single-column
- * mobile-first. Server Component; every animation is CSS only (the below-fold
- * blocks reveal via scroll-driven `animation-timeline`, a progressive
- * enhancement that no-ops to plain-visible where unsupported).
+ * mobile-first. Server Component; apart from the hero video every animation is
+ * CSS only (the below-fold blocks reveal via scroll-driven
+ * `animation-timeline`, a progressive enhancement that no-ops to plain-visible
+ * where unsupported).
  */
 // Structured data (schema.org) so Google can render a rich result for the
 // brand: a health/fitness web application, in Serbian, free to use. Emitted as
@@ -208,7 +210,7 @@ const FEATURES: {
 export default async function LandingPage() {
   const { t } = await getT();
   return (
-    <div className="lp dark">
+    <div className="lp light">
       <script
         type="application/ld+json"
         // JSON.stringify output is safe to inline; no user data is interpolated.
@@ -217,13 +219,10 @@ export default async function LandingPage() {
       <main>
         {/* ---------- Hero (first screen) ---------- */}
         <section className="lp-hero">
-          {/* Phone playing the in-app journey demo */}
-          <div className="lp-phone-wrap">
-            <div className="phone" aria-hidden="true">
-              <div className="screen">
-                <HeroDemo />
-              </div>
-            </div>
+          {/* The motion-graphics film — full-bleed, no phone frame: it brings
+              its own device mockup and its own white ground. */}
+          <div className="lp-video-wrap">
+            <HeroVideo />
           </div>
 
           {/* Prelaunch status, stated up front. The hero is otherwise

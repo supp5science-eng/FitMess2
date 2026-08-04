@@ -52,9 +52,19 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/*
+ * The `.light` selector rides along with `:root` so light can also be pinned
+ * on a SUBTREE, whatever the device-wide theme on `<html>` is. The marketing
+ * landing (`.lp light`) is the one place that does it: its hero film is
+ * rendered on white, so the page must stay light even for a visitor whose
+ * `fm_theme` cookie says dark. An own declaration always beats an inherited
+ * one, so `.light` on the subtree root wins over `.dark` on `<html>`.
+ */
+.light,
 :root {
   /*
-   * LIGHT THEME (selectable in Settings; `.dark` below is the default).
+   * LIGHT THEME (the app default -- `DEFAULT_THEME` in `lib/theme/theme.ts`;
+   * `.dark` below is the opt-in).
    * The accent here is BLACK, not the dark theme's teal: primary buttons,
    * the calorie gauge, active nav, focus ring -- every `--primary` touchpoint
    * -- render near-black on white (per product decision: "in the white theme
@@ -159,11 +169,10 @@
 }
 
 /*
- * FitMess dark theme — the app's default and only theme (the whole
- * authenticated app runs dark). Palette matches the marketing landing and
- * auth screens (`landing.css` / `auth.css`): a near-black ground with a
- * single teal/mint accent (MacroFactor-inspired), so the product feels like
- * one continuous world from landing → sign-in → app.
+ * FitMess dark theme — the opt-in look (light is the default; see
+ * `DEFAULT_THEME`). A near-black ground with a single teal/mint accent
+ * (MacroFactor-inspired), matching the auth screens (`auth.css`), so the
+ * product feels like one continuous world from sign-in → app.
  */
 .dark {
   --background: #0a0c0b;

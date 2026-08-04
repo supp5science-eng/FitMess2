@@ -36,7 +36,7 @@ phone — desktop shows a QR to hand off)
   soon.
 
 Everything is in Serbian (sr‑Latn), informal *"ti"*, mobile‑first at 375px, and
-dark‑first with a teal accent.
+light by default (dark is a one‑tap switch in Settings).
 
 ---
 

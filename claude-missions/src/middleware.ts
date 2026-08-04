@@ -178,7 +178,10 @@ export const config = {
   // spec's "keep the middleware matcher efficient" instruction. Pattern
   // follows Supabase's own Next.js SSR guide
   // (https://supabase.com/docs/guides/auth/server-side/nextjs).
+  // `mp4|webm` are load-bearing for the landing hero film: without them the
+  // middleware answers `/landing/hero.mp4` with a redirect, the <video> never
+  // gets any bytes, and the hero silently degrades to its poster.
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|webm)$).*)",
   ],
 };

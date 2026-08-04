@@ -75,4 +75,32 @@ describe("root landing page (F001 scaffold smoke test + FitMess landing)", () =>
       /\b(20\d\d|januar|februar|mart|april|maj|jun|jul|avgust|septembar|oktobar|novembar|decembar|Q[1-4])\b/i
     );
   });
+
+  // The hero is the motion-graphics film. Every attribute asserted below is
+  // load-bearing rather than decorative: drop `muted` or `playsInline` and iOS
+  // Safari refuses to autoplay at all, leaving the first screen a still image.
+  it("test_landing_hero_plays_the_motion_graphics_film_muted_and_looping", async () => {
+    const { container } = render(await Home());
+
+    const video = container.querySelector("video");
+    expect(video).not.toBeNull();
+    expect(video).toHaveAttribute("autoplay");
+    expect(video).toHaveAttribute("loop");
+    expect(video).toHaveAttribute("playsinline");
+    expect(video?.muted).toBe(true);
+    // Decorative — the headline and CTA carry the meaning.
+    expect(video).toHaveAttribute("aria-hidden", "true");
+
+    // A poster, so the hero is never an empty box while the film loads (and is
+    // the whole hero for anyone who asked for reduced motion).
+    expect(video).toHaveAttribute("poster", "/landing/hero-poster.jpg");
+
+    // WebM first, MP4 second: Safari takes the MP4, everyone else the smaller
+    // WebM. Losing the MP4 would leave iOS — the only platform this app is
+    // served on — with no playable source.
+    const sources = [...container.querySelectorAll("video source")].map((s) =>
+      s.getAttribute("src")
+    );
+    expect(sources).toEqual(["/landing/hero.webm", "/landing/hero.mp4"]);
+  });
 });

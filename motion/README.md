@@ -14,11 +14,17 @@ fajl koji se renderuje frejm-po-frejm u Chromium-u i pakuje u mp4.
 smršati"), a ostatak rečenice odigra vaga — desni tas (potrošnja) pretegne levi
 (unos) — pa pilula deficita.
 
-**`dve-nepoznate-9x16`** — silueta pod natpisom „CILJ ↓"; iz nje izleću ikonice
-potrošnje (hodanje, bučica, srce, san) i skupljaju se u zeleni krug sa **?**,
+**`dve-nepoznate-9x16`** — silueta pod natpisom „CILJ ↓" **igra ono što se
+objašnjava**: hoda, diže tegove, diše, jede, pa na kraju slegne ramenima nad
+vagom. Iz nje izleću ikonice potrošnje (hodanje, bučica, srce, san) i skupljaju
+se u zeleni krug sa **?**,
 pa isto to desno sa hranom u crveni krug. Na kraju oba kruga sednu na krajeve
 vage koja se prigušeno ljulja — **jednačina sa dve nepoznate**, freeze kadar kao
 uvod u deo videa gde daješ odgovor.
+
+Silueta u `dve-nepoznate-9x16` je na malom rigu (rame→lakat→šaka,
+kuk→koleno→stopalo) — poze se računaju iz uglova u `render(t)` i preklapaju se
+kroz `ACTS`, pa se nove radnje dodaju kao još jedna poza, ne kao novi crtež.
 
 Tekst je u oba klipa sveden na minimum da ne trči ispred voice-overa.
 

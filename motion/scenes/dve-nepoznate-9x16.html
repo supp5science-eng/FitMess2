@@ -42,15 +42,13 @@
     </g>
 
     <!-- ================= SILUETA ================= -->
-    <!-- linijski pictogram: udovi su blago savijeni (lakat/koleno) da figura ne
-         izgleda kao krut stap -->
+    <!-- Linijski pictogram na malom rigu: svaki ud je rame->lakat->saka odn.
+         kuk->koleno->stopalo, pa figura moze da hoda, dize tegove, jede i
+         slegne ramenima -- poze se racunaju u render(t). -->
     <g id="person" stroke="#0a0c0b" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="270" cy="276" r="18" fill="#0a0c0b" stroke="none" />
-      <path d="M270 300 L270 382" />
-      <path d="M270 318 L243 338 L236 366" />
-      <path d="M270 318 L297 338 L304 366" />
-      <path d="M270 382 L251 412 L246 448" />
-      <path d="M270 382 L289 412 L294 448" />
+      <circle id="pHead" cx="270" cy="276" r="18" fill="#0a0c0b" stroke="none" />
+      <path id="pTorso" /><path id="pArmL" /><path id="pArmR" />
+      <path id="pLegL" /><path id="pLegR" />
     </g>
 
     <!-- ================= IKONICE: POTROSNJA (levo) ================= -->
@@ -161,6 +159,75 @@
     ['icCup',   -70,  56],
   ];
 
+  /* ---------- rig siluete ----------
+     Uglovi su APSOLUTNI, u stepenima, mereni od "pravo nadole":
+     0 = nadole, +90 = udesno, 180 = nagore, -90 = ulevo.
+     Poza = {armL:[nadlakt, podlakt], armR, legL:[butina, potkolenica], legR,
+             bob (pomeraj tela po y), head (nagib glave po x)}. */
+  const SHO = { x: 270, y: 318 }, HIP = { x: 270, y: 382 };
+  const L_UPARM = 34, L_FOREARM = 32, L_THIGH = 36, L_SHIN = 38, HEAD_DY = -42;
+
+  const rad = (d) => (d * Math.PI) / 180;
+  const limbPath = (jx, jy, a1, l1, a2, l2) => {
+    const ex = jx + l1 * Math.sin(rad(a1)), ey = jy + l1 * Math.cos(rad(a1));
+    const hx = ex + l2 * Math.sin(rad(a2)), hy = ey + l2 * Math.cos(rad(a2));
+    return `M${jx.toFixed(1)} ${jy.toFixed(1)} L${ex.toFixed(1)} ${ey.toFixed(1)} L${hx.toFixed(1)} ${hy.toFixed(1)}`;
+  };
+
+  // mirna poza -- identicna crtezu iz storyboarda
+  const IDLE = { armL: [-50, -14], armR: [50, 14], legL: [-32, -8], legR: [32, 8], bob: 0, head: 0 };
+  const poseMix = (a, b, k) => ({
+    armL: [mix(a.armL[0], b.armL[0], k), mix(a.armL[1], b.armL[1], k)],
+    armR: [mix(a.armR[0], b.armR[0], k), mix(a.armR[1], b.armR[1], k)],
+    legL: [mix(a.legL[0], b.legL[0], k), mix(a.legL[1], b.legL[1], k)],
+    legR: [mix(a.legR[0], b.legR[0], k), mix(a.legR[1], b.legR[1], k)],
+    bob: mix(a.bob, b.bob, k), head: mix(a.head, b.head, k),
+  });
+
+  /* --- poze po bitovima --- */
+  const poseIdle = (t) => ({ ...IDLE, bob: Math.sin(t * 2.1) * 1.4 });
+
+  // hodanje u mestu: dve krajnje faze koraka koje se sinusno smenjuju
+  const WALK_A = { armL: [-24, -34], armR: [34, 46], legL: [-30, -16], legR: [28, 36], bob: 0, head: 0 };
+  const WALK_B = { armL: [-34, -46], armR: [24, 34], legL: [28, 36], legR: [-30, -16], bob: 0, head: 0 };
+  const poseWalk = (t) => {
+    const s = 0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 2.3);
+    const q = poseMix(WALK_A, WALK_B, s);
+    q.bob = -2.2 * Math.abs(Math.sin(t * 2 * Math.PI * 2.3));
+    return q;
+  };
+
+  // trening: pregib sa tegovima (podlaktice gore-dole)
+  const poseCurl = (t) => {
+    const u = 0.5 + 0.5 * Math.sin(t * 2 * Math.PI * 1.5 - Math.PI / 2);
+    return {
+      armL: [-42, mix(-16, -158, u)], armR: [42, mix(16, 158, u)],
+      legL: [-26, -8], legR: [26, 8],
+      bob: 2 * u, head: 0,
+    };
+  };
+
+  // srce / san: telo miruje, samo dise
+  const poseBreathe = (t) => ({
+    armL: [-46, -12], armR: [46, 12], legL: [-30, -8], legR: [30, 8],
+    bob: Math.sin(t * 2.6) * 3, head: Math.sin(t * 2.6) * 1.2,
+  });
+
+  // jelo: desna saka ide do usta, pa nazad
+  const poseEat = (t) => {
+    const c = (t * 1.35) % 1;                       // ciklus zalogaja
+    const u = c < 0.45 ? outCubic(c / 0.45) : c < 0.62 ? 1 : 1 - outCubic((c - 0.62) / 0.38);
+    return {
+      armL: [-46, -14], armR: [mix(48, 72, u), mix(14, -172, u)],
+      legL: [-30, -8], legR: [30, 8],
+      bob: -1.5 * u, head: 0,
+    };
+  };
+
+  // sleganje ramenima: "ne znam" -- lakti u stranu, podlaktice gore
+  const SHRUG = { armL: [-56, -118], armR: [56, 118], legL: [-30, -8], legR: [30, 8], bob: -4, head: 0 };
+  const poseShrug = (t) => ({ ...SHRUG, bob: -4 + Math.sin(t * 1.7) * 1.2, head: Math.sin(t * 1.7) * 1.5 });
+
   /* ---------- tajmlajna ---------- */
   const T = {
     person: [0.10, 0.70],
@@ -178,6 +245,55 @@
     settle: 6.45,
   };
   const DURATION = 8.0;
+
+  /* ---------- sta figura radi kad ----------
+     Poze prate ono sto se u tom trenutku objasnjava: dok izlecu ikonice
+     potrosnje ona hoda pa dize tegove pa samo dise; dok izlecu ikonice unosa
+     ona jede; kad se pojavi vaga -- slegne ramenima. */
+  const ACTS = [
+    [-1.0,  1.30, poseIdle],
+    [ 1.30, 2.05, poseWalk],     // hodanje
+    [ 2.05, 2.66, poseCurl],     // trening
+    [ 2.66, 3.40, poseBreathe],  // srce / san
+    [ 3.40, 3.90, poseIdle],
+    [ 3.90, 5.66, poseEat],      // unos
+    [ 5.66, 6.42, poseIdle],
+    [ 6.42, 99.0, poseShrug],    // "ne znam" nad vagom
+  ];
+  const BLEND = 0.26;            // preklapanje izmedju poza
+
+  function drawPerson(now) {
+    let wSum = 0;
+    let acc = { armL: [0, 0], armR: [0, 0], legL: [0, 0], legR: [0, 0], bob: 0, head: 0 };
+    for (const [a, b, fn] of ACTS) {
+      const w = clamp01((now - a) / BLEND) * clamp01((b - now) / BLEND);
+      if (w <= 0) continue;
+      const q = fn(now);
+      wSum += w;
+      acc = {
+        armL: [acc.armL[0] + q.armL[0] * w, acc.armL[1] + q.armL[1] * w],
+        armR: [acc.armR[0] + q.armR[0] * w, acc.armR[1] + q.armR[1] * w],
+        legL: [acc.legL[0] + q.legL[0] * w, acc.legL[1] + q.legL[1] * w],
+        legR: [acc.legR[0] + q.legR[0] * w, acc.legR[1] + q.legR[1] * w],
+        bob: acc.bob + q.bob * w, head: acc.head + q.head * w,
+      };
+    }
+    if (wSum === 0) return;
+    const q = {
+      armL: [acc.armL[0] / wSum, acc.armL[1] / wSum], armR: [acc.armR[0] / wSum, acc.armR[1] / wSum],
+      legL: [acc.legL[0] / wSum, acc.legL[1] / wSum], legR: [acc.legR[0] / wSum, acc.legR[1] / wSum],
+      bob: acc.bob / wSum, head: acc.head / wSum,
+    };
+
+    const sy = SHO.y + q.bob, hy = HIP.y + q.bob;
+    el('pTorso').setAttribute('d', `M${SHO.x} ${sy - 18} L${HIP.x} ${hy}`);
+    el('pHead').setAttribute('cx', String(SHO.x + q.head));
+    el('pHead').setAttribute('cy', String(sy + HEAD_DY));
+    el('pArmL').setAttribute('d', limbPath(SHO.x, sy, q.armL[0], L_UPARM, q.armL[1], L_FOREARM));
+    el('pArmR').setAttribute('d', limbPath(SHO.x, sy, q.armR[0], L_UPARM, q.armR[1], L_FOREARM));
+    el('pLegL').setAttribute('d', limbPath(HIP.x, hy, q.legL[0], L_THIGH, q.legL[1], L_SHIN));
+    el('pLegR').setAttribute('d', limbPath(HIP.x, hy, q.legR[0], L_THIGH, q.legR[1], L_SHIN));
+  }
 
   /* ---------- ikonice ---------- */
   function renderIcons(list, cx, t0, step, merge) {
@@ -205,6 +321,7 @@
     t.now = now;
 
     /* 1. Silueta */
+    drawPerson(now);
     const pIn = outCubic(p(now, T.person[0], T.person[1]));
     el('person').style.opacity = String(pIn);
     el('person').style.transformOrigin = '270px 448px';

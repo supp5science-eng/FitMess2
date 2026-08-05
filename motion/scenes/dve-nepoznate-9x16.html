@@ -23,8 +23,8 @@
     font-size: 23px; font-weight: 800; letter-spacing: 0.22em; color: #0a0c0b;
   }
   .lab {
-    position: absolute; top: 484px; width: 200px; text-align: center;
-    font-size: 21px; font-weight: 800; letter-spacing: 0.15em;
+    position: absolute; top: 446px; width: 200px; text-align: center;
+    font-size: 22px; font-weight: 800; letter-spacing: 0.15em;
   }
   #labL { left: 40px; color: #16a34a; }
   #labR { left: 300px; color: #d95540; }
@@ -149,16 +149,16 @@
   // Ikonice: gde se rasporede pre nego sto se skupe u krug.
   // [id, dx, dy] u odnosu na centar svog kruga.
   const ICONS_L = [
-    ['icWalk',  -76, -58],
-    ['icDumb',   62, -74],
-    ['icHeart', -88,  36],
-    ['icSleep',  56,  44],
+    ['icWalk',  -86, -66],
+    ['icDumb',   74, -80],
+    ['icHeart', -98,  46],
+    ['icSleep',  66,  54],
   ];
   const ICONS_R = [
-    ['icPlate',  74, -60],
-    ['icFork',  -66, -76],
-    ['icApple',  84,  38],
-    ['icCup',   -60,  46],
+    ['icPlate',  86, -68],
+    ['icFork',  -76, -84],
+    ['icApple',  96,  48],
+    ['icCup',   -70,  56],
   ];
 
   /* ---------- tajmlajna ---------- */
@@ -192,7 +192,7 @@
       const sy = mix(330 - Q.y, dy, pop);
       const x = cx + mix(sx, 0, m);
       const y = Q.y + mix(sy, 0, m);
-      const s = mix(0.65, 1.15, pop) * mix(1, 0.25, m);
+      const s = mix(0.65, 1.25, pop) * mix(1, 0.25, m);
       g.setAttribute('transform', `translate(${x} ${y}) scale(${s})`);
       g.style.opacity = String(appear * (1 - m));
     });

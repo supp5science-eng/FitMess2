@@ -82,7 +82,7 @@
     </g>
   </svg>
 
-  <div id="pill"><span id="pillTx">−550 kcal dnevno</span></div>
+  <div id="pill"><span id="pillTx">−646 kcal dnevno</span></div>
 </div>
 
 <script>
@@ -183,7 +183,7 @@
     /* 3. Brojači + nagib grede: potrošnja raste prva, pa unos */
     const kR = outCubic(p(t, 0.6, 1.25));
     const kL = outCubic(p(t, 0.95, 1.6));
-    const potrosnja = 2650 * kR, unos = 2100 * kL;
+    const potrosnja = 2800 * kR, unos = 2154 * kL;
 
     // Greda: mirna nula -> preteže potrošnja (desno dole) -> mali korektiv kad
     // se ubaci unos, ali ostaje u minusu.
@@ -205,7 +205,7 @@
     const pop = outBack(p(t, 1.68, 2.12));
     el('pill').style.opacity = String(outCubic(p(t, 1.68, 1.95)));
     el('pill').style.transform = `translateX(-50%) translateY(${mix(16, 0, pop)}px) scale(${mix(0.86, 1, pop)})`;
-    el('pillTx').textContent = `−${fmt(550 * outCubic(p(t, 1.72, 2.16)))} kcal dnevno`;
+    el('pillTx').textContent = `−${fmt(646 * outCubic(p(t, 1.72, 2.16)))} kcal dnevno`;
 
     /* 5. Izlaz: sve blago odlazi u belo */
     const out = outCubic(p(t, 2.74, 3.0));

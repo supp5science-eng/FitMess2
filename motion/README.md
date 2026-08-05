@@ -40,8 +40,9 @@ vremena, inače screenshot-ovi klize i render nije ponovljiv.
 ## Vizuelni jezik
 
 Isti tokeni kao app (`src/app/globals.css`), samo hard-kodirani jer scena stoji
-sama: bela pozadina, mastilo `#0a0c0b`, muted `#646b6f`, potrošnja/plava
-`#0ea5e9`, unos/amber `#c98a1b`, brend teal `#17d1a8` za deficit. Tipografija je
+sama: bela pozadina, mastilo `#0a0c0b`, muted `#646b6f`, unos `#d95540`
+(`--macro-fat`), potrošnja `#1f9e69` (`--macro-protein`), brend teal `#17d1a8`
+za pilulu deficita. Tipografija je
 Inter (900/700), sr-Latn, zero-shame ton — bez kaznene crvene.
 
 Sadržaj stoji između ~170 px i ~770 px (od 960 CSS px visine), tako da gornji i

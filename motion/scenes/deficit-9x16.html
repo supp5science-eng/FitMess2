@@ -87,8 +87,8 @@
 
 <script>
 (() => {
-  const SKY = '#0ea5e9';      // potrošnja
-  const AMBER = '#c98a1b';    // unos
+  const SPEND = '#1f9e69';    // potrošnja (zelena -- strana koja radi za tebe)
+  const INTAKE = '#d95540';   // unos (crvena)
 
   /* ---------- easing ---------- */
   const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
@@ -198,8 +198,8 @@
 
     const lx = cx - R * Math.cos(rad), ly = cy - R * Math.sin(rad);
     const rx = cx + R * Math.cos(rad), ry = cy + R * Math.sin(rad);
-    drawPan(PAN_L, lx, ly, AMBER, 'UNOS', kL > 0.01 ? `${fmt(unos)} kcal` : '', inScale);
-    drawPan(PAN_R, rx, ry, SKY, 'POTROŠNJA', kR > 0.01 ? `${fmt(potrosnja)} kcal` : '', inScale);
+    drawPan(PAN_L, lx, ly, INTAKE, 'UNOS', kL > 0.01 ? `${fmt(unos)} kcal` : '', inScale);
+    drawPan(PAN_R, rx, ry, SPEND, 'POTROŠNJA', kR > 0.01 ? `${fmt(potrosnja)} kcal` : '', inScale);
 
     /* 4. Pilula deficita */
     const pop = outBack(p(t, 1.68, 2.12));

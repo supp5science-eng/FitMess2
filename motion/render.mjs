@@ -8,6 +8,10 @@
  *
  *   node motion/render.mjs deficit-9x16
  *   node motion/render.mjs deficit-9x16 --fps 60 --scale 2
+ *   node motion/render.mjs tokovi-9x16 --mblur 4      # pravi motion blur
+ *
+ * --mblur N renderuje N pod-frejmova po izlaznom frejmu i stapa ih (ffmpeg
+ * tmix), pa brzi elementi dobiju stvarno razmazivanje umesto laznog smera.
  */
 import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
@@ -41,7 +45,9 @@ await page.evaluate(() => document.fonts.ready);
 const S = await page.evaluate(() => window.SCENE);
 const fps = flag('fps', S.fps);
 const scale = flag('scale', 2);
-const total = Math.round(S.duration * fps);
+const mblur = Math.max(1, Math.round(flag('mblur', S.mblur ?? 1)));
+const total = Math.round(S.duration * fps) * mblur;   // pod-frejmovi kad je mblur > 1
+const shotFps = fps * mblur;
 
 await page.setViewportSize({ width: S.width, height: S.height });
 await page.emulateMedia({ reducedMotion: 'reduce' });
@@ -57,9 +63,12 @@ const p2 = await context.newPage();
 await p2.goto(pathToFileURL(scene).href);
 await p2.evaluate(() => document.fonts.ready);
 
-process.stdout.write(`render ${name}: ${total} frejmova @ ${fps}fps, ${S.width * scale}x${S.height * scale}\n`);
+process.stdout.write(
+  `render ${name}: ${total} frejmova @ ${fps}fps` +
+  (mblur > 1 ? ` (x${mblur} pod-frejmova, motion blur)` : '') +
+  `, ${S.width * scale}x${S.height * scale}\n`);
 for (let i = 0; i < total; i++) {
-  const t = i / fps;
+  const t = i / shotFps;
   await p2.evaluate((tt) => window.render(tt), t);
   await p2.screenshot({
     path: path.join(framesDir, `f${String(i).padStart(5, '0')}.png`),
@@ -75,8 +84,9 @@ if (files !== total) throw new Error(`ocekivano ${total} frejmova, ima ${files}`
 await new Promise((resolve, reject) => {
   const ff = spawn('ffmpeg', [
     '-y',
-    '-framerate', String(fps),
+    '-framerate', String(shotFps),
     '-i', path.join(framesDir, 'f%05d.png'),
+    ...(mblur > 1 ? ['-vf', `tmix=frames=${mblur}:weights='${Array(mblur).fill(1).join(' ')}',fps=${fps}`] : []),
     '-c:v', 'libx264',
     '-profile:v', 'high',
     '-preset', 'slow',

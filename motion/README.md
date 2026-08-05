@@ -9,6 +9,7 @@ fajl koji se renderuje frejm-po-frejm u Chromium-u i pakuje u mp4.
 |---|---|---|---|
 | `deficit-9x16` | 1080×1920, 30 fps | 3,0 s | „naravno da ću smršati jer logično više sam trošo nego što sam unosio" |
 | `mesec-dana-9x16` | 1080×1920, 30 fps | 4,6 s | „i recimo da tako živim mesec dana… da li ću posle tih mesec dana smršati ili se ugojiti" |
+| `tokovi-9x16` | 1080×1920, **60 fps** | 6,0 s | „aplikaciju koja na osnovu baze podataka naučnih studija i tvojih podataka radi sve ovo" |
 | `dve-nepoznate-9x16` | 1080×1920, 30 fps | 8,0 s | „…glavno pitanje je kako da znam koliko trošim kalorija i koliko treba da unesem na dnevnom nivou" |
 
 **`deficit-9x16`** — kratak rez: na ekranu stoji samo zaključak („naravno da ću
@@ -34,6 +35,13 @@ siluetom koja se širi, desna zelena „SMRŠATI?" sa siluetom koja se sužava.
 Siluete su pictogrami u punoj beloj (glava se kontra-skalira da se ne razvuče),
 a iznad rascepa visi crni bedž sa upitnikom koji se ljulja kao klatno.
 
+**`tokovi-9x16`** — dva toka podataka konvergiraju u telefon: sleva plave
+ikonice naučnih studija, zdesna teal ikonice tvojih podataka, obe struje lete u
+luku i ubrzavaju ka centru (pravi motion blur, ne lažni smear). Telefon primi
+podatke, kratko odskoči uz glow puls, i iz njega iskoči dnevni unos. Sve što se
+najčešće menja — broj, natpisi, boje, debljina linija — stoji u `CFG` na vrhu
+fajla.
+
 Tekst je u klipovima sveden na minimum da ne trči ispred voice-overa.
 
 Gotovi fajlovi su u [`out/`](./out).
@@ -44,7 +52,12 @@ Gotovi fajlovi su u [`out/`](./out).
 npm i -D playwright && npx playwright install chromium   # jednom
 node motion/render.mjs deficit-9x16                       # -> motion/out/deficit-9x16.mp4
 node motion/render.mjs deficit-9x16 --fps 60 --scale 2    # gušći frejmovi
+node motion/render.mjs tokovi-9x16 --mblur 4              # pravi motion blur
 ```
+
+`--mblur N` renderuje N pod-frejmova po izlaznom frejmu i stapa ih (ffmpeg
+`tmix`), pa brzi elementi dobiju **stvarno** razmazivanje umesto lažnog smera.
+Scena može da ga traži i sama, preko `window.SCENE.mblur`.
 
 Potreban je i `ffmpeg` sa `libx264` u PATH-u. Render pravi frejmove u
 `motion/.frames/` (ignorisano u gitu) i briše ih posle enkodovanja.

@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8" />
+<title>FitMess motion — dva toka u telefon 9:16</title>
+<style>
+  /* Scena se crta u 540x960 CSS px i snima na 2x (1080x1920) @ 60fps.
+     Nista se ne animira preko CSS/Web animacija -- svaki frejm je cista
+     funkcija vremena (window.render(t)), da bi render bio deterministican i
+     da bi motion blur mogao da se dobije temporalnim uzorkovanjem. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 540px; height: 960px; overflow: hidden; background: #fff; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    color: #0a0c0b;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+  #stage { position: relative; width: 540px; height: 960px; background: #fff; }
+  #art { position: absolute; left: 0; top: 0; width: 540px; height: 960px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="art" viewBox="0 0 540 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="glow">
+        <stop offset="0%" stop-color="#17d1a8" stop-opacity="0.55" />
+        <stop offset="60%" stop-color="#17d1a8" stop-opacity="0.12" />
+        <stop offset="100%" stop-color="#17d1a8" stop-opacity="0" />
+      </radialGradient>
+    </defs>
+
+    <circle id="glowC" cx="270" cy="470" r="230" fill="url(#glow)" opacity="0" />
+
+    <!-- telefon: bleda kontura od pocetka, tokovi se ulivaju u nju -->
+    <g id="phone">
+      <rect id="phoneBody" x="177" y="298" width="186" height="344" rx="28"
+            stroke="#c9ced2" stroke-width="2.6" fill="#fff" />
+      <rect x="191" y="312" width="158" height="316" rx="18" stroke="#e6e9eb" stroke-width="1.6" />
+      <rect x="250" y="322" width="40" height="5" rx="2.5" fill="#dfe3e6" />
+      <rect x="242" y="614" width="56" height="4" rx="2" fill="#e6e9eb" />
+    </g>
+
+    <!-- tokovi (elementi se dodaju iz JS-a) -->
+    <g id="streamL"></g>
+    <g id="streamR"></g>
+
+    <!-- natpisi iznad tokova -->
+    <text id="labL" x="118" y="242" text-anchor="middle" font-family="Inter"
+          font-size="19" font-weight="800" letter-spacing="2.6">1000+ STUDIJA</text>
+    <text id="labR" x="422" y="242" text-anchor="middle" font-family="Inter"
+          font-size="19" font-weight="800" letter-spacing="2.6">TVOJI PODACI</text>
+
+    <!-- rezultat -->
+    <g id="result">
+      <text id="resNum" x="270" y="452" text-anchor="middle" dominant-baseline="central"
+            font-family="Inter" font-size="82" font-weight="900" letter-spacing="-3"
+            fill="#0a0c0b">2.154</text>
+      <text id="resUnit" x="270" y="516" text-anchor="middle" dominant-baseline="central"
+            font-family="Inter" font-size="25" font-weight="800" letter-spacing="1.2"
+            fill="#646b6f">kcal / dan</text>
+    </g>
+  </svg>
+</div>
+
+<script>
+(() => {
+  /* ============================================================
+     PODESIVO -- sve sto se najcesce menja stoji ovde
+     ============================================================ */
+  const CFG = {
+    duration: 6.0,
+    fps: 60,
+    mblur: 4,                       // pod-frejmova po frejmu (motion blur)
+
+    resultNumber: '2.154',          // broj koji iskace iz telefona
+    resultUnit: 'kcal / dan',
+    labelLeft: '1000+ STUDIJA',
+    labelRight: 'TVOJI PODACI',
+
+    // levi tok: naucne studije
+    blue: '#2563eb',
+    // desni tok: tvoji podaci -- linije u dubljem tealu (citljivost na beloj),
+    // cist FitMess brend (--brand iz globals.css) ostaje za akcente/glow
+    brand: '#17d1a8',
+    brandDeep: '#0f9e80',
+
+    ink: '#0a0c0b',
+    muted: '#646b6f',
+
+    stroke: 1.5,                    // 3px na 1080 (scena se snima na 2x)
+    iconSize: 1.5,                  // globalni faktor velicine ikonica
+    trail: 0.16,                    // koliko sekundi putanje se vuce iza elementa
+  };
+
+  /* ---------- easing ---------- */
+  const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+  const p = (t, a, b) => clamp01((t - a) / (b - a));
+  const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const inQuad = (x) => x * x;
+  const outBack = (x, c = 2.4) => 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2);
+  // prigusena opruga: 0 -> 1 sa prebacajem (za udar telefona i broj)
+  const spring = (x, f = 8.5, d = 5.5) =>
+    x >= 1 ? 1 : 1 - Math.exp(-d * x) * Math.cos(f * x);
+  const mix = (a, b, x) => a + (b - a) * x;
+  const el = (id) => document.getElementById(id);
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  const PHONE = { x: 270, y: 470 };
+
+  /* ============================================================
+     IKONICE -- sve u kutiji 48x48 oko koordinatnog pocetka
+     ============================================================ */
+  const ICONS = {
+    // --- levi tok: nauka ---
+    paper: '<rect x="-15" y="-20" width="30" height="40" rx="3"/>' +
+           '<path d="M-8 -11H8M-8 -4H8M-8 3H8M-8 10H2"/>',
+    bars:  '<path d="M-16 16H16"/><rect x="-12" y="-2" width="7" height="14"/>' +
+           '<rect x="-2" y="-12" width="7" height="24"/><rect x="8" y="-7" width="7" height="19"/>',
+    line:  '<path d="M-16 -16V16H16"/><path d="M-11 8L-3 -2L4 4L12 -10"/>' +
+           '<circle cx="12" cy="-10" r="2.6"/>',
+    mol:   '<circle cx="0" cy="-12" r="4.5"/><circle cx="-12" cy="8" r="4.5"/>' +
+           '<circle cx="12" cy="8" r="4.5"/><path d="M-2.5 -8L-10 4M2.5 -8L10 4M-7.5 8H7.5"/>',
+    flask: '<path d="M-6 -18V-6L-15 12a4 4 0 003.5 6h23a4 4 0 003.5-6L6 -6V-18"/>' +
+           '<path d="M-9 -18H9"/><path d="M-11.5 4h23"/>',
+    check: '<circle cx="0" cy="0" r="16"/><path d="M-7 0.5L-1.5 6L8 -5.5"/>',
+    // --- desni tok: tvoji podaci ---
+    person:'<circle cx="0" cy="-11" r="6"/><path d="M-11 18v-6a11 11 0 0122 0v6"/>',
+    scale: '<rect x="-17" y="-15" width="34" height="30" rx="6"/>' +
+           '<path d="M-8 -6a8 8 0 0116 0"/><path d="M0 -6l5-4"/>' +
+           '<path d="M-9 9H9"/>',
+    cal:   '<rect x="-16" y="-14" width="32" height="30" rx="4"/><path d="M-16 -5H16"/>' +
+           '<path d="M-8 -14v-6M8 -14v-6"/><circle cx="-7" cy="4" r="1.8"/>' +
+           '<circle cx="0" cy="4" r="1.8"/><circle cx="7" cy="4" r="1.8"/>',
+    ruler: '<rect x="-19" y="-8" width="38" height="16" rx="3"/>' +
+           '<path d="M-11 -8v6M-3 -8v9M5 -8v6M13 -8v9"/>',
+    shoe:  '<path d="M-18 8h29a6 6 0 006-6c0-4-5-5-9-7l-9-5-4 4-5-2v16z"/>' +
+           '<path d="M-18 8v-8h5"/><path d="M-2 -6l3 4M4 -3l3 4"/>',
+    heart: '<path d="M0 15C-13 5-17 -3-11 -9c4-4 9-2 11 2 2-4 7-6 11-2 6 6 2 14-11 24z"/>' +
+           '<path d="M-13 -2h6l2-4 3 8 2-4h6"/>',
+  };
+
+  /* ============================================================
+     TOKOVI -- putanja je kubna Bezijeova kriva: element ude sa
+     ivice, spusti se u blagom luku i ubrza ka telefonu
+     ============================================================ */
+  const bez = (a, b, c, d, u) => {
+    const m = 1 - u;
+    return m * m * m * a + 3 * m * m * u * b + 3 * m * u * u * c + u * u * u * d;
+  };
+  // deterministicki "sum" po indeksu (nema Math.random -- render mora da bude ponovljiv)
+  const noise = (i, s) => {
+    const h = Math.sin((i + 1) * 12.9898 + s * 78.233) * 43758.5453;
+    return h - Math.floor(h);
+  };
+
+  const STREAM = {
+    L: { t0: 0.12, step: 0.115, travel: 1.16, from: -70, color: CFG.blue,
+         icons: ['paper', 'bars', 'mol', 'line', 'paper', 'flask', 'bars', 'check', 'line'] },
+    R: { t0: 1.78, step: 0.115, travel: 1.16, from: 610, color: CFG.brandDeep,
+         icons: ['person', 'scale', 'cal', 'ruler', 'shoe', 'person', 'heart', 'scale', 'cal'] },
+  };
+
+  const items = [];
+  ['L', 'R'].forEach((side) => {
+    const S = STREAM[side];
+    const host = el(side === 'L' ? 'streamL' : 'streamR');
+    S.icons.forEach((key, i) => {
+      const trail = document.createElementNS(SVG, 'path');
+      trail.setAttribute('stroke', S.color);
+      trail.setAttribute('stroke-width', String(CFG.stroke * 1.6));
+      trail.setAttribute('stroke-linecap', 'round');
+      trail.setAttribute('fill', 'none');
+      host.appendChild(trail);
+
+      const g = document.createElementNS(SVG, 'g');
+      g.setAttribute('stroke', S.color);
+      g.setAttribute('stroke-width', String(CFG.stroke / CFG.iconSize));
+      g.setAttribute('stroke-linecap', 'round');
+      g.setAttribute('stroke-linejoin', 'round');
+      g.setAttribute('fill', 'none');
+      g.innerHTML = ICONS[key];
+      host.appendChild(g);
+
+      // svaka putanja ima svoj ulaz i svoj propad -- tok ne izgleda kao sina
+      const y0 = 205 + noise(i, side === 'L' ? 1 : 2) * 415;
+      const dip = 560 + noise(i, side === 'L' ? 3 : 4) * 130;
+      items.push({
+        g, trail, side,
+        start: S.t0 + i * S.step,
+        travel: S.travel,
+        p0: [S.from, y0],
+        p1: [side === 'L' ? 90 : 450, dip],
+        p2: [side === 'L' ? 210 : 330, dip - 30],
+        p3: [PHONE.x, PHONE.y],
+        spin: (noise(i, 5) - 0.5) * 26,
+      });
+    });
+  });
+
+  /* ============================================================
+     TAJMLAJNA
+     ============================================================ */
+  const T = {
+    phoneIn:  [0.00, 0.35],
+    labL:     [0.35, 0.72],
+    labR:     [2.00, 2.36],
+    impact:   3.78,                 // udar + glow kad ude poslednji element
+    result:   [3.96, 4.60],
+    clear:    [4.05, 4.55],         // natpisi se gase
+    settle:   5.50,                 // od ovde je kadar miran (freeze do kraja)
+  };
+
+  el('resNum').textContent = CFG.resultNumber;
+  el('resUnit').textContent = CFG.resultUnit;
+  el('labL').textContent = CFG.labelLeft;
+  el('labR').textContent = CFG.labelRight;
+  el('labL').setAttribute('fill', CFG.blue);
+  el('labR').setAttribute('fill', CFG.brandDeep);
+  el('resNum').setAttribute('fill', CFG.ink);
+  el('resUnit').setAttribute('fill', CFG.muted);
+
+  function render(t) {
+    /* ---------- telefon ---------- */
+    const phIn = outCubic(p(t, T.phoneIn[0], T.phoneIn[1]));
+    // udar: kratko naraste pa se opruzno vrati
+    const hit = t > T.impact ? (1 - spring(p(t, T.impact, T.impact + 0.6))) * 0.06 : 0;
+    const ph = mix(0.94, 1, phIn) + hit;
+    el('phone').style.opacity = String(phIn);
+    el('phone').style.transformOrigin = `${PHONE.x}px ${PHONE.y}px`;
+    el('phone').style.transform = `scale(${ph.toFixed(4)})`;
+    // kontura potamni kad telefon "primi" podatke
+    el('phoneBody').setAttribute('stroke',
+      t > T.impact ? '#8a9095' : '#c9ced2');
+
+    /* ---------- glow puls ---------- */
+    const gk = p(t, T.impact, T.impact + 0.75);
+    el('glowC').setAttribute('opacity',
+      (gk > 0 ? Math.sin(Math.PI * gk) * 0.9 : 0).toFixed(3));
+    el('glowC').style.transformOrigin = `${PHONE.x}px ${PHONE.y}px`;
+    el('glowC').style.transform = `scale(${mix(0.72, 1.08, outCubic(gk)).toFixed(3)})`;
+
+    /* ---------- tokovi ---------- */
+    items.forEach((it) => {
+      const at = (kk) => {
+        const uu = inQuad(clamp01(kk));
+        return [bez(it.p0[0], it.p1[0], it.p2[0], it.p3[0], uu),
+                bez(it.p0[1], it.p1[1], it.p2[1], it.p3[1], uu)];
+      };
+      const k = p(t, it.start, it.start + it.travel);
+      if (k <= 0 || k >= 1) { it.g.style.opacity = '0'; it.trail.style.opacity = '0'; return; }
+      const u = inQuad(k);                        // ubrzava ka centru
+      const x = bez(it.p0[0], it.p1[0], it.p2[0], it.p3[0], u);
+      const y = bez(it.p0[1], it.p1[1], it.p2[1], it.p3[1], u);
+      const s = mix(1, 0.24, Math.pow(u, 1.6)) * CFG.iconSize;
+      const fade = outCubic(clamp01(k / 0.1)) * (1 - clamp01((k - 0.76) / 0.24));
+      it.g.setAttribute('transform',
+        `translate(${x.toFixed(2)} ${y.toFixed(2)}) rotate(${(it.spin * u).toFixed(2)}) scale(${s.toFixed(3)})`);
+      it.g.style.opacity = fade.toFixed(3);
+
+      // trag: par tacaka putanje iza elementa, sve blede ka repu
+      const back = CFG.trail / it.travel;
+      const pts = [];
+      for (let q = 0; q <= 4; q++) {
+        const kk = k - back * (q / 4);
+        if (kk <= 0) break;
+        pts.push(at(kk));
+      }
+      if (pts.length > 1) {
+        it.trail.setAttribute('d',
+          pts.map((q, qi) => `${qi ? 'L' : 'M'}${q[0].toFixed(1)} ${q[1].toFixed(1)}`).join(' '));
+        // rep je jaci kad element juri (pri kraju putanje)
+        it.trail.style.opacity = (fade * 0.42 * (0.25 + 0.75 * k)).toFixed(3);
+      } else {
+        it.trail.style.opacity = '0';
+      }
+    });
+
+    /* ---------- natpisi ---------- */
+    const clear = 1 - outCubic(p(t, T.clear[0], T.clear[1]));
+    const lIn = outCubic(p(t, T.labL[0], T.labL[1]));
+    const rIn = outCubic(p(t, T.labR[0], T.labR[1]));
+    el('labL').setAttribute('opacity', (lIn * clear).toFixed(3));
+    el('labR').setAttribute('opacity', (rIn * clear).toFixed(3));
+    el('labL').setAttribute('transform', `translate(0 ${mix(-8, 0, lIn).toFixed(1)})`);
+    el('labR').setAttribute('transform', `translate(0 ${mix(-8, 0, rIn).toFixed(1)})`);
+
+    /* ---------- rezultat: broj iskace iz telefona ---------- */
+    const rk = p(t, T.result[0], T.result[1]);
+    const rs = rk <= 0 ? 0 : mix(0.35, 1, spring(rk, 7.5, 6));
+    el('result').setAttribute('opacity', outCubic(p(t, T.result[0], T.result[0] + 0.16)).toFixed(3));
+    el('result').style.transformOrigin = `${PHONE.x}px ${PHONE.y}px`;
+    el('result').style.transform = `scale(${rs.toFixed(4)})`;
+  }
+
+  window.SCENE = { width: 540, height: 960, fps: CFG.fps, duration: CFG.duration, mblur: CFG.mblur };
+  window.render = render;
+  render(0);
+})();
+</script>
+</body>
+</html>

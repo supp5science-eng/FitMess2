@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8" />
+<title>FitMess motion — zbir obroka 9:16</title>
+<style>
+  /* Scena se crta u 540x960 CSS px i snima na 2x (1080x1920).
+     Nista se ne animira preko CSS/Web animacija -- svaki frejm je cista
+     funkcija vremena (window.render(t)), da bi render bio deterministican i
+     da bi motion blur mogao da se dobije temporalnim uzorkovanjem. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 540px; height: 960px; overflow: hidden; background: #fff; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    color: #0a0c0b;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+  #stage { position: relative; width: 540px; height: 960px; background: #fff; }
+  #art { position: absolute; left: 0; top: 0; width: 540px; height: 960px; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <svg id="art" viewBox="0 0 540 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g id="cakes"></g>
+    <g id="labels"></g>
+    <g id="crumbs"></g>
+    <g id="plus"></g>
+
+    <!-- zbir -->
+    <g id="total" opacity="0">
+      <text x="270" y="600" text-anchor="middle" dominant-baseline="central" font-family="Inter">
+        <tspan id="totalNum" font-size="70" font-weight="900" letter-spacing="-3"
+               fill="#0a0c0b">0</tspan><tspan id="totalUnit" dx="10" font-size="25"
+               font-weight="800" letter-spacing="0.4" fill="#646b6f">kcal</tspan>
+      </text>
+      <path id="underline" d="M168 646 H372" stroke="#0a0c0b" stroke-width="5"
+            stroke-linecap="round" />
+    </g>
+  </svg>
+</div>
+
+<script>
+(() => {
+  /* ============================================================
+     PODESIVO
+     ============================================================ */
+  const CFG = {
+    duration: 3.5,
+    fps: 30,
+    mblur: 3,                       // pod-frejmova po frejmu (pravi motion blur)
+
+    total: 2154,
+    unit: 'kcal',
+    meals: [
+      { label: 'DORUČAK', kcal: 718 },
+      { label: 'RUČAK', kcal: 718 },
+      { label: 'VEČERA', kcal: 718 },
+    ],
+
+    ink: '#0a0c0b',
+    muted: '#646b6f',
+    accent: '#c98a1b',              // "+718" -- amber, ista boja kao kolac u kalendaru
+
+    stroke: 2,                      // 4px na 1080 (scena se snima na 2x)
+    cakeScale: 1.55,                // osnovna velicina kolaca
+    mergedScale: 1.6,               // veliki kolac je toliko puta veci od pojedinacnog
+  };
+
+  /* ---------- easing ---------- */
+  const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+  const p = (t, a, b) => clamp01((t - a) / (b - a));
+  const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const outQuint = (x) => 1 - Math.pow(1 - x, 5);
+  const inQuad = (x) => x * x;
+  const outBack = (x, c = 2.6) => 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2);
+  const mix = (a, b, x) => a + (b - a) * x;
+  const el = (id) => document.getElementById(id);
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  const CAKE_Y = 398, MERGE = { x: 270, y: 398 };
+  const XS = [128, 270, 412];
+
+  /* ---------- linijski kolac (crn, bez ispune) ---------- */
+  const CAKE =
+    '<path d="M-16 5 L-11 23 H11 L16 5 Z"/>' +
+    '<path d="M-7 7 V23M0 7 V23M7 7 V23"/>' +
+    '<path d="M-19 5 C-19 -8, -11 -16, 0 -16 C11 -16, 19 -8, 19 5 Z"/>' +
+    '<path d="M-10 -1 C-6 -8, 6 -8, 10 -1"/>' +
+    '<circle cx="0" cy="-22" r="4.5"/>' +
+    '<path d="M0 -26 q3 -5 7 -4"/>';
+
+  const mk = (tag, attrs, text) => {
+    const n = document.createElementNS(SVG, tag);
+    Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, String(v)));
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+
+  // tri mala + jedan spojeni
+  const cakes = [];
+  const cakeHost = el('cakes');
+  for (let i = 0; i < 4; i++) {
+    const g = mk('g', {
+      stroke: CFG.ink, fill: 'none',
+      'stroke-linecap': 'round', 'stroke-linejoin': 'round',
+    });
+    g.innerHTML = CAKE;
+    cakeHost.appendChild(g);
+    cakes.push(g);
+  }
+  const merged = cakes[3];
+
+  // natpisi ispod svakog kolaca
+  const labels = CFG.meals.map((m, i) => {
+    const g = mk('g', {});
+    const txt = mk('text', {
+      x: XS[i], y: 486, 'text-anchor': 'middle', 'font-family': 'Inter',
+      'font-size': 13.5, 'font-weight': 800, 'letter-spacing': 1.1,
+    });
+    txt.appendChild(mk('tspan', { fill: CFG.muted }, `${m.label} · `));
+    txt.appendChild(mk('tspan', { fill: CFG.ink }, String(m.kcal)));
+    g.appendChild(txt);
+    el('labels').appendChild(g);
+    return g;
+  });
+
+  // mrvice koje odlete pri sudaru
+  const crumbs = [];
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + 0.4;
+    const c = mk('circle', { cx: 0, cy: 0, r: 2.6, fill: CFG.ink });
+    el('crumbs').appendChild(c);
+    crumbs.push({ c, dx: Math.cos(a), dy: Math.sin(a) * 0.75 - 0.35, d: 62 + (i % 3) * 20 });
+  }
+
+  // "+718" koji proleti kroz brojac
+  const pluses = CFG.meals.map((m, i) => {
+    const t2 = mk('text', {
+      x: 0, y: 0, 'text-anchor': 'middle', 'font-family': 'Inter',
+      'font-size': 26, 'font-weight': 900, 'letter-spacing': -0.5, fill: CFG.accent,
+    }, `+${m.kcal}`);
+    el('plus').appendChild(t2);
+    return t2;
+  });
+
+  el('totalUnit').textContent = CFG.unit;
+  const fmt = (n) => Math.round(n).toLocaleString('sr-RS').replace(/ /g, '.');
+
+  /* ---------- tajmlajna ---------- */
+  const T = {
+    pop: [0.06, 0.26, 0.46],       // ulazak kolaca (stagger 200ms)
+    lab: [0.30, 0.50, 0.70],
+    pull: [1.20, 1.95],            // magnetno privlacenje ka centru
+    impact: 1.95,
+    count: [2.20, 2.86],           // brojac 0 -> 2154
+    plus: [2.22, 2.40, 2.58],
+    bump: 2.88,
+    underline: [2.92, 3.14],
+  };
+  const DURATION = CFG.duration;
+
+  // debljina linije se deli skalom -> potez ostaje isti bez obzira na velicinu
+  const place = (g, x, y, sx, sy, op) => {
+    g.setAttribute('transform', `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${sx.toFixed(4)} ${sy.toFixed(4)})`);
+    g.setAttribute('stroke-width', (CFG.stroke / Math.max(0.001, (sx + sy) / 2)).toFixed(3));
+    g.setAttribute('opacity', op.toFixed(3));
+  };
+
+  function render(t) {
+    const OUT_FPS = window.RENDER_FPS || CFG.fps;
+    const afterImpact = t >= T.impact;
+
+    /* ---------- tri kolaca: pop, pa privlacenje u centar ---------- */
+    for (let i = 0; i < 3; i++) {
+      if (afterImpact) { cakes[i].setAttribute('opacity', '0'); continue; }
+      const pk = p(t, T.pop[i], T.pop[i] + 0.42);
+      const s = pk <= 0 ? 0 : outBack(pk);
+      // privlacenje: ubrzava kako se priblizava centru
+      const m = inQuad(p(t, T.pull[0], T.pull[1]));
+      const x = mix(XS[i], MERGE.x, m);
+      const grow = mix(1, 1.18, m);          // malo naraste dok se skupljaju
+      place(cakes[i], x, CAKE_Y, s * grow * CFG.cakeScale, s * grow * CFG.cakeScale, 1);
+    }
+
+    /* ---------- natpisi: nestanu u trenutku sudara, usisani ka centru ---------- */
+    labels.forEach((g, i) => {
+      const inK = outCubic(p(t, T.lab[i], T.lab[i] + 0.3));
+      const suck = p(t, T.impact - 0.16, T.impact + 0.02);
+      const x = mix(0, (MERGE.x - XS[i]) * 0.55, inQuad(suck));
+      g.setAttribute('transform', `translate(${x.toFixed(1)} ${mix(6, 0, inK).toFixed(1)})`);
+      g.setAttribute('opacity', (inK * (1 - suck)).toFixed(3));
+    });
+
+    /* ---------- spojeni kolac: squash & stretch pa opruga u oblik ---------- */
+    if (afterImpact) {
+      const dt = t - T.impact;
+      const q = Math.exp(-7 * dt) * Math.cos(13 * dt);      // prigusena deformacija
+      const base = CFG.cakeScale * CFG.mergedScale * (1 + 0.06 * Math.exp(-6 * dt));
+      const bump = 1 + 0.08 * Math.exp(-9 * Math.max(0, t - T.bump)) *
+                   Math.cos(11 * Math.max(0, t - T.bump)) * (t > T.bump ? 1 : 0);
+      place(merged, MERGE.x, MERGE.y,
+        base * (1 + 0.3 * q) * bump, base * (1 - 0.36 * q) * bump, 1);
+    } else {
+      merged.setAttribute('opacity', '0');
+    }
+
+    /* ---------- mrvice iz sudara ---------- */
+    crumbs.forEach((c, i) => {
+      const k = p(t, T.impact, T.impact + 0.5);
+      if (k <= 0 || k >= 1) { c.c.setAttribute('opacity', '0'); return; }
+      const e = outCubic(k);
+      c.c.setAttribute('cx', (MERGE.x + c.dx * c.d * e).toFixed(1));
+      c.c.setAttribute('cy', (MERGE.y + (c.dy * c.d * e + 34 * k * k)).toFixed(1));
+      c.c.setAttribute('r', (2.6 * (1 - k * 0.7)).toFixed(2));
+      c.c.setAttribute('opacity', ((1 - k) * 0.85).toFixed(3));
+    });
+
+    /* ---------- zbir: brojac juri pa uspori ---------- */
+    const tq = Math.floor(t * OUT_FPS + 1e-6) / OUT_FPS;   // cifre da ne razmaze blur
+    const ck = outQuint(p(tq, T.count[0], T.count[1]));
+    el('total').setAttribute('opacity', outCubic(p(t, T.count[0], T.count[0] + 0.14)).toFixed(3));
+    el('totalNum').textContent = fmt(CFG.total * ck);
+
+    // skok kad stane + podvlacenje sleva nadesno
+    const bk = t > T.bump ? Math.exp(-9 * (t - T.bump)) * Math.cos(11 * (t - T.bump)) : 0;
+    el('total').style.transformOrigin = '270px 600px';
+    el('total').style.transform = `scale(${(1 + 0.08 * bk).toFixed(4)})`;
+    const uk = outCubic(p(t, T.underline[0], T.underline[1]));
+    el('underline').setAttribute('d', `M168 646 H${mix(168, 372, uk).toFixed(1)}`);
+    el('underline').setAttribute('opacity', uk > 0 ? '1' : '0');
+
+    /* ---------- "+718" proleti kroz brojac ---------- */
+    pluses.forEach((g, i) => {
+      const k = p(t, T.plus[i], T.plus[i] + 0.6);
+      if (k <= 0 || k >= 1) { g.setAttribute('opacity', '0'); return; }
+      const side = i % 2 === 0 ? -1 : 1;
+      const x = mix(270 + side * 148, 270 - side * 18, outCubic(k));
+      const y = mix(612 + (i - 1) * 46, 574 + (i - 1) * 34, outCubic(k));
+      g.setAttribute('transform',
+        `translate(${x.toFixed(1)} ${y.toFixed(1)}) scale(${mix(0.8, 1.1, k).toFixed(3)})`);
+      g.setAttribute('opacity', (Math.sin(Math.PI * k) * 0.95).toFixed(3));
+    });
+  }
+
+  window.SCENE = { width: 540, height: 960, fps: CFG.fps, duration: DURATION, mblur: CFG.mblur };
+  window.render = render;
+  render(0);
+})();
+</script>
+</body>
+</html>

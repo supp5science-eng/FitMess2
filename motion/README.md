@@ -10,6 +10,7 @@ fajl koji se renderuje frejm-po-frejm u Chromium-u i pakuje u mp4.
 | `deficit-9x16` | 1080×1920, 30 fps | 3,0 s | „naravno da ću smršati jer logično više sam trošo nego što sam unosio" |
 | `mesec-dana-9x16` | 1080×1920, 30 fps | 4,6 s | „i recimo da tako živim mesec dana… da li ću posle tih mesec dana smršati ili se ugojiti" |
 | `tokovi-9x16` | 1080×1920, 30 fps | 6,0 s | „aplikaciju koja na osnovu baze podataka naučnih studija i tvojih podataka radi sve ovo" |
+| `zbir-9x16` | 1080×1920, 30 fps | 3,5 s | „to sve ukupno nosi 2154 kcal" |
 | `dve-nepoznate-9x16` | 1080×1920, 30 fps | 8,0 s | „…glavno pitanje je kako da znam koliko trošim kalorija i koliko treba da unesem na dnevnom nivou" |
 
 **`deficit-9x16`** — kratak rez: na ekranu stoji samo zaključak („naravno da ću
@@ -45,6 +46,12 @@ Proteini/UH/Masti, donja navigacija Početna/Analitika/Profil), a broj u prstenu
 otkuca do dnevnog cilja. Sve što se
 najčešće menja — broj, natpisi, boje, debljina linija, broj krugova vrtloga —
 stoji u `CFG` na vrhu fajla.
+
+**`zbir-9x16`** — tri linijska kolača (doručak · ručak · večera, svaki 718)
+uleću sa spring pop-om, pa se magnetno privuku u centar, sudare se uz
+squash-and-stretch i mrvice, i sklope u jedan veći. Natpisi ih usisa sudar.
+Ispod, brojač juri do **2.154 kcal** (poslednje cifre vidno uspore), tri „+718"
+prolete kroz njega, pa skok i podvlačenje.
 
 Tekst je u klipovima sveden na minimum da ne trči ispred voice-overa.
 

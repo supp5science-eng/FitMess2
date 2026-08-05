@@ -8,10 +8,18 @@ fajl koji se renderuje frejm-po-frejm u Chromium-u i pakuje u mp4.
 | Scena | Format | Trajanje | Copy |
 |---|---|---|---|
 | `deficit-9x16` | 1080×1920, 30 fps | 3,0 s | „naravno da ću smršati jer logično više sam trošo nego što sam unosio" |
+| `pitanje-9x16` | 1080×1920, 30 fps | 7,0 s | „…glavno pitanje je kako da znam koliko trošim kalorija i koliko treba da unesem na dnevnom nivou" |
 
-Kratak rez: na ekranu stoji samo zaključak („naravno da ću smršati"), a ostatak
-rečenice odigra vaga — desni tas (potrošnja) pretegne levi (unos) — pa pilula
-deficita. Tekst je namerno kratak da ne trči ispred voice-overa.
+**`deficit-9x16`** — kratak rez: na ekranu stoji samo zaključak („naravno da ću
+smršati"), a ostatak rečenice odigra vaga — desni tas (potrošnja) pretegne levi
+(unos) — pa pilula deficita.
+
+**`pitanje-9x16`** — vizuelni explainer, ne tekst: prsten dnevne potrošnje se
+sklapa iz tri sloja (mirovanje → kretanje → trening), brojač u sredini juri da
+izračuna zbir, ubrza i **preda se u upitnik**; ista stvar se ponovi na tanjiru
+ispod. Klip namerno **ostaje na pitanju** — odgovor dolazi u tvom delu videa.
+
+Tekst je u oba klipa sveden na minimum da ne trči ispred voice-overa.
 
 Gotovi fajlovi su u [`out/`](./out).
 

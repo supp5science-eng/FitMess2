@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8" />
+<title>FitMess motion — pitanje 9:16</title>
+<style>
+  /* Scena se crta u 540x960 CSS px i snima na 2x (1080x1920).
+     Nista se ne animira preko CSS/Web animacija -- svaki frejm je cista
+     funkcija vremena (window.render(t)), da bi render bio deterministican. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 540px; height: 960px; overflow: hidden; background: #fff; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    color: #0a0c0b;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  #stage { position: relative; width: 540px; height: 960px; background: #fff; }
+
+  /* --- Nadnaslov --- */
+  #kicker {
+    position: absolute; left: 0; top: 116px; width: 540px;
+    text-align: center;
+    font-size: 19px; font-weight: 700;
+    letter-spacing: 0.16em; text-transform: uppercase;
+    color: #8a9095;
+  }
+
+  /* --- Grafika (prsten potrosnje + tanjir) --- */
+  #art { position: absolute; left: 0; top: 0; width: 540px; height: 960px; }
+
+  /* --- Cipovi: od cega se potrosnja sastoji --- */
+  /* Cipovi se pozicioniraju apsolutno (leve koordinate se izracunaju jednom, po
+     izmerenim sirinama) -- da red ne bi poskakivao dok ulaze jedan po jedan. */
+  #chips {
+    position: absolute; left: 0; top: 404px; width: 540px; height: 44px;
+  }
+  #chips .chip {
+    position: absolute; top: 0;
+    display: inline-flex; align-items: center; gap: 9px;
+    padding: 9px 15px 10px;
+    border-radius: 999px;
+    background: #f4f5f5;
+    font-size: 20px; font-weight: 700; letter-spacing: -0.01em;
+    white-space: nowrap;
+    will-change: transform, opacity;
+  }
+  #chips .dot { width: 11px; height: 11px; border-radius: 50%; }
+
+  /* --- Dva pitanja --- */
+  .cap {
+    position: absolute; left: 0; width: 540px;
+    text-align: center;
+    font-size: 37px; font-weight: 800; letter-spacing: -0.03em;
+    white-space: nowrap;
+    will-change: transform, opacity;
+  }
+  #capA { top: 478px; }
+  #capB { top: 754px; }
+  .cap .q { font-weight: 900; }
+
+  .num { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="kicker">da dođem do cilja</div>
+
+  <svg id="art" viewBox="0 0 540 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- PRSTEN POTROSNJE -->
+    <g id="ring">
+      <circle id="track" cx="270" cy="286" r="92" stroke="#eef0f1" stroke-width="24" />
+      <circle class="seg" id="seg0" cx="270" cy="286" r="92" stroke-width="24" stroke-linecap="butt" />
+      <circle class="seg" id="seg1" cx="270" cy="286" r="92" stroke-width="24" stroke-linecap="butt" />
+      <circle class="seg" id="seg2" cx="270" cy="286" r="92" stroke-width="24" stroke-linecap="butt" />
+      <!-- centar: cifre koje se vrte, pa upitnik -->
+      <text id="ringNum" class="num" x="270" y="286" text-anchor="middle" dominant-baseline="central"
+            font-family="Inter" font-size="44" font-weight="800" fill="#8a9095" letter-spacing="-1">0</text>
+      <text id="ringQ" x="270" y="292" text-anchor="middle" dominant-baseline="central"
+            font-family="Inter" font-size="92" font-weight="900" fill="#16a34a">?</text>
+    </g>
+
+    <!-- SPONA: iz potrosnje sledi unos (kratka, centrirana, ne dira tekst) -->
+    <path id="link" stroke="#cdd2d6" stroke-width="3.5" stroke-linecap="round" fill="none" />
+    <path id="linkArrow" fill="#cdd2d6" />
+
+    <!-- TANJIR (unos) -->
+    <g id="plate">
+      <circle id="plateOuter" cx="270" cy="638" r="74" stroke="#cfd4d8" stroke-width="7" />
+      <circle id="plateInner" cx="270" cy="638" r="56" stroke="#e5e7e9" stroke-width="3" />
+      <g id="cutlery" stroke="#bcc2c7" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round">
+        <!-- viljuska: tri zupca -> vrat -> drska -->
+        <path d="M147 590 L147 614" /><path d="M158 590 L158 614" /><path d="M169 590 L169 614" />
+        <path d="M147 614 q11 13 22 0" />
+        <path d="M158 624 L158 686" />
+        <!-- noz: sečivo (zatvoreno) -> drska -->
+        <path d="M382 588 C403 606, 403 626, 382 640 Z" />
+        <path d="M382 640 L382 686" />
+      </g>
+      <text id="plateNum" class="num" x="270" y="638" text-anchor="middle" dominant-baseline="central"
+            font-family="Inter" font-size="38" font-weight="800" fill="#8a9095" letter-spacing="-1">0</text>
+      <text id="plateQ" x="270" y="644" text-anchor="middle" dominant-baseline="central"
+            font-family="Inter" font-size="78" font-weight="900" fill="#d95540">?</text>
+    </g>
+  </svg>
+
+  <div id="chips">
+    <span class="chip"><i class="dot"></i><span class="tx">mirovanje</span></span>
+    <span class="chip"><i class="dot"></i><span class="tx">kretanje</span></span>
+    <span class="chip"><i class="dot"></i><span class="tx">trening</span></span>
+  </div>
+
+  <div class="cap" id="capA">koliko trošim<span class="q">?</span></div>
+  <div class="cap" id="capB">koliko da unesem<span class="q">?</span></div>
+</div>
+
+<script>
+(() => {
+  const SPEND = ['#16a34a', '#22c55e', '#5fd18a'];  // mirovanje / kretanje / trening
+  const INTAKE = '#d95540';                          // unos
+
+  /* ---------- easing ---------- */
+  const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+  const p = (t, a, b) => clamp01((t - a) / (b - a));
+  const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const outQuint = (x) => 1 - Math.pow(1 - x, 5);
+  const outBack = (x) => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  const mix = (a, b, x) => a + (b - a) * x;
+  const el = (id) => document.getElementById(id);
+
+  /* ---------- prsten ---------- */
+  const CX = 270, CY = 286, R = 92, C = 2 * Math.PI * R;
+  // Udeli u dnevnoj potrosnji: mirovanje nosi najvise, pa kretanje, pa trening.
+  const SEG = [
+    { frac: 0.56, from: 0 },
+    { frac: 0.27, from: 0.56 },
+    { frac: 0.17, from: 0.83 },
+  ];
+  const GAP_DEG = 5;
+
+  const segEls = [el('seg0'), el('seg1'), el('seg2')];
+  segEls.forEach((s, i) => {
+    s.setAttribute('stroke', SPEND[i]);
+    // krug krece u 3h i ide u smeru kazaljke -> rotacija za -90 pomera start na vrh
+    s.setAttribute('transform', `rotate(${SEG[i].from * 360 - 90} ${CX} ${CY})`);
+  });
+
+  document.querySelectorAll('#chips .dot').forEach((d, i) => { d.style.background = SPEND[i]; });
+  const chips = [...document.querySelectorAll('#chips .chip')];
+
+  // Fiksiraj konacne pozicije reda cipova (izmereno jednom, pre animacije).
+  (() => {
+    const GAP = 10;
+    const w = chips.map((c) => c.getBoundingClientRect().width);
+    const total = w.reduce((a, b) => a + b, 0) + GAP * (w.length - 1);
+    let x = (540 - total) / 2;
+    chips.forEach((c, i) => { c.style.left = `${x}px`; x += w[i] + GAP; });
+  })();
+
+  /* ---------- spona prsten -> tanjir ---------- */
+  el('link').setAttribute('d', 'M270 518 L270 540');
+  const LINK_LEN = el('link').getTotalLength();
+  el('linkArrow').setAttribute('d', 'M270 552 l-9 -13 l18 0 z');
+
+  /* ---------- cifre koje se vrte ---------- */
+  // Deterministicki "sum": izgleda kao brojac koji juri, a isti je u svakom renderu.
+  const fmt = (n) => Math.round(n).toLocaleString('sr-RS').replace(/ /g, '.');
+  function spin(t, lo, hi, rate) {
+    const tick = Math.floor(t * rate);
+    const h = Math.sin(tick * 12.9898) * 43758.5453;
+    return fmt(lo + (h - Math.floor(h)) * (hi - lo));
+  }
+
+  /* ---------- glavni render ---------- */
+  const DURATION = 7.0;
+
+  function render(t) {
+    /* 1. Nadnaslov */
+    const kIn = outCubic(p(t, 0.06, 0.5));
+    el('kicker').style.opacity = String(kIn);
+    el('kicker').style.transform = `translateY(${mix(-8, 0, kIn)}px)`;
+
+    /* 2. Prsten: traka, pa tri segmenta jedan za drugim */
+    const trackIn = outCubic(p(t, 0.3, 0.75));
+    el('track').style.opacity = String(trackIn);
+
+    const SEG_T = [[0.55, 1.15], [1.12, 1.62], [1.6, 2.08]];
+    segEls.forEach((s, i) => {
+      const deg = SEG[i].frac * 360 - GAP_DEG;
+      const len = (C * deg) / 360 * outCubic(p(t, SEG_T[i][0], SEG_T[i][1]));
+      s.setAttribute('stroke-dasharray', `${len} ${C - len}`);
+    });
+
+    /* 3. Čipovi: šta ulazi u potrošnju */
+    chips.forEach((c, i) => {
+      const a = SEG_T[i][0] + 0.12;
+      const e = outBack(p(t, a, a + 0.36));
+      c.style.opacity = String(outCubic(p(t, a, a + 0.24)));
+      c.style.transform = `translateY(${mix(12, 0, e)}px) scale(${mix(0.92, 1, e)})`;
+    });
+
+    /* 4. Centar prstena: brojač juri, pa se preda i postane upitnik */
+    const numLive = p(t, 0.62, 2.35) > 0 && t < 2.55;
+    const numOut = outCubic(p(t, 2.3, 2.55));
+    el('ringNum').textContent = spin(t, 1450, 3300, 11 + 13 * p(t, 1.5, 2.3));
+    el('ringNum').style.opacity = String(outCubic(p(t, 0.62, 0.9)) * (1 - numOut) * (numLive ? 1 : 0));
+    el('ringNum').style.transformOrigin = `${CX}px ${CY}px`;
+    el('ringNum').style.transform = `scale(${mix(1, 0.7, numOut)})`;
+
+    const qA = outBack(p(t, 2.42, 2.86));
+    const pulseA = t > 5.0 ? 1 + 0.045 * Math.sin((t - 5.0) * 3.4) : 1;
+    el('ringQ').style.opacity = String(outCubic(p(t, 2.42, 2.66)));
+    el('ringQ').style.transformOrigin = `${CX}px ${CY}px`;
+    el('ringQ').style.transform = `scale(${mix(0.5, 1, qA) * pulseA})`;
+
+    /* 5. Prvo pitanje */
+    const cA = outBack(p(t, 2.72, 3.16));
+    el('capA').style.opacity = String(outCubic(p(t, 2.72, 2.98)));
+    el('capA').style.transform = `translateY(${mix(14, 0, cA)}px)`;
+    el('capA').querySelector('.q').style.color = SPEND[0];
+
+    /* 6. Spona ka tanjiru */
+    const kLink = outQuint(p(t, 3.2, 3.6));
+    el('link').setAttribute('stroke-dasharray', `${kLink * LINK_LEN} ${LINK_LEN}`);
+    el('linkArrow').style.opacity = String(outCubic(p(t, 3.5, 3.7)));
+
+    /* 7. Tanjir */
+    const inPlate = outCubic(p(t, 3.5, 4.1));
+    el('plate').style.opacity = String(inPlate);
+    el('plate').style.transformOrigin = '270px 638px';
+    el('plate').style.transform = `scale(${mix(0.9, 1, outBack(p(t, 3.5, 4.05)))})`;
+    el('cutlery').style.opacity = String(outCubic(p(t, 3.85, 4.35)));
+
+    const pNumOut = outCubic(p(t, 4.5, 4.75));
+    el('plateNum').textContent = spin(t, 1200, 2900, 11 + 13 * p(t, 4.0, 4.5));
+    el('plateNum').style.opacity = String(outCubic(p(t, 3.95, 4.15)) * (1 - pNumOut));
+    el('plateNum').style.transformOrigin = '270px 638px';
+    el('plateNum').style.transform = `scale(${mix(1, 0.7, pNumOut)})`;
+
+    const qB = outBack(p(t, 4.62, 5.06));
+    const pulseB = t > 5.0 ? 1 + 0.045 * Math.sin((t - 5.0) * 3.4) : 1;
+    el('plateQ').style.opacity = String(outCubic(p(t, 4.62, 4.86)));
+    el('plateQ').style.transformOrigin = '270px 638px';
+    el('plateQ').style.transform = `scale(${mix(0.5, 1, qB) * pulseB})`;
+
+    /* 8. Drugo pitanje */
+    const cB = outBack(p(t, 4.92, 5.36));
+    el('capB').style.opacity = String(outCubic(p(t, 4.92, 5.18)));
+    el('capB').style.transform = `translateY(${mix(14, 0, cB)}px)`;
+    el('capB').querySelector('.q').style.color = INTAKE;
+
+    /* 9. Izlaz */
+    el('stage').style.opacity = String(1 - outCubic(p(t, 6.7, 7.0)));
+  }
+
+  window.SCENE = { width: 540, height: 960, fps: 30, duration: DURATION };
+  window.render = render;
+  render(0);
+})();
+</script>
+</body>
+</html>

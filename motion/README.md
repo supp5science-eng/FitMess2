@@ -35,12 +35,13 @@ siluetom koja se širi, desna zelena „SMRŠATI?" sa siluetom koja se sužava.
 Siluete su pictogrami u punoj beloj (glava se kontra-skalira da se ne razvuče),
 a iznad rascepa visi crni bedž sa upitnikom koji se ljulja kao klatno.
 
-**`tokovi-9x16`** — dva toka podataka konvergiraju u telefon: sleva plave
-ikonice naučnih studija, zdesna teal ikonice tvojih podataka, obe struje lete u
-luku i ubrzavaju ka centru (pravi motion blur, ne lažni smear). Telefon primi
-podatke, kratko odskoči uz glow puls, i iz njega iskoči dnevni unos. Sve što se
-najčešće menja — broj, natpisi, boje, debljina linija — stoji u `CFG` na vrhu
-fajla.
+**`tokovi-9x16`** — gore levo se u vrtlogu vrte plave ikonice naučnih studija,
+gore desno ljubičaste ikonice tvojih podataka. Posle ~1 s jedna po jedna
+**poniru u portal** ispod njih (elipsa koja se zatalasa na svaki dolazak i
+postepeno pozeleni). Iz portala izlazi **jedan zeleni tok** koji ulazi u
+telefon, telefon odskoči uz glow puls, i iz njega iskoči dnevni unos. Sve što se
+najčešće menja — broj, natpisi, boje, debljina linija, broj krugova vrtloga —
+stoji u `CFG` na vrhu fajla.
 
 Tekst je u klipovima sveden na minimum da ne trči ispred voice-overa.
 

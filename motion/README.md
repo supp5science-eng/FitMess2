@@ -7,7 +7,11 @@ fajl koji se renderuje frejm-po-frejm u Chromium-u i pakuje u mp4.
 
 | Scena | Format | Trajanje | Copy |
 |---|---|---|---|
-| `deficit-9x16` | 1080×1920, 30 fps | 9,0 s | „naravno da ću smršati jer logično više sam trošo nego što sam unosio" |
+| `deficit-9x16` | 1080×1920, 30 fps | 3,0 s | „naravno da ću smršati jer logično više sam trošo nego što sam unosio" |
+
+Kratak rez: na ekranu stoji samo zaključak („naravno da ću smršati"), a ostatak
+rečenice odigra vaga — desni tas (potrošnja) pretegne levi (unos) — pa pilula
+deficita. Tekst je namerno kratak da ne trči ispred voice-overa.
 
 Gotovi fajlovi su u [`out/`](./out).
 
@@ -37,9 +41,8 @@ vremena, inače screenshot-ovi klize i render nije ponovljiv.
 
 Isti tokeni kao app (`src/app/globals.css`), samo hard-kodirani jer scena stoji
 sama: bela pozadina, mastilo `#0a0c0b`, muted `#646b6f`, potrošnja/plava
-`#0ea5e9`, unos/amber `#c98a1b`, brend teal `#17d1a8` za deficit, zeleni trend
-`#0f9e80`. Tipografija je Inter (900/800/600), sr-Latn, zero-shame ton — bez
-kaznene crvene.
+`#0ea5e9`, unos/amber `#c98a1b`, brend teal `#17d1a8` za deficit. Tipografija je
+Inter (900/700), sr-Latn, zero-shame ton — bez kaznene crvene.
 
-Sadržaj stoji između ~96 px i ~846 px (od 960 CSS px visine), tako da gornji i
+Sadržaj stoji između ~170 px i ~770 px (od 960 CSS px visine), tako da gornji i
 donji UI sloj Reels/TikTok-a ne prekriva ništa bitno.

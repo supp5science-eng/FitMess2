@@ -34,7 +34,7 @@ export function WeighInBanner({ daysWaiting }: { daysWaiting: number }) {
     <Link
       href="/merenje"
       data-testid="weigh-in-banner"
-      className="home-body flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3.5 text-sm backdrop-blur-xl transition-colors active:bg-muted/70"
+      className="home-body flex items-center gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3.5 text-sm transition-colors active:bg-muted/70"
     >
       <Scale className="size-5 shrink-0 text-primary" aria-hidden={true} />
       <span className="flex min-w-0 flex-1 flex-col">

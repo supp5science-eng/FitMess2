@@ -27,7 +27,7 @@ export function HealthScoreCard({ score }: { score: HealthScore }) {
   return (
     <div
       data-testid="health-score-card"
-      className="fm-glass flex flex-col gap-3 rounded-2xl px-4 py-4"
+      className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-4"
     >
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-base font-semibold tracking-tight text-foreground">

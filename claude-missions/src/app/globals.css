@@ -157,25 +157,7 @@
      surface, not a plain white box. Themed below for dark. */
   --cloud-top: rgba(224, 242, 254, 0.5);
   --cloud-bloom: rgba(14, 165, 233, 0.1);
-  /* Halved (2026-08-05) now that the cloud sits on `.fm-glass`: at 0.6 the
-     white top wash made the hero card read noticeably more OPAQUE than the
-     macro tiles beside it, which broke the illusion that they are all the same
-     material. */
-  --cloud-sheen: rgba(255, 255, 255, 0.3);
-  /* Clear liquid glass (2026-08-05), LIGHT — the app's DEFAULT theme, so these
-     are the values the design is tuned against. A card is no longer an opaque
-     panel but a WINDOW onto the aurora wallpaper behind it: half-transparent
-     white, a wide backdrop blur, and a saturation lift so the colour that
-     bleeds through stays vivid instead of turning milky-grey.
-     `--glass-edge` is the hairline rim, `--glass-sheen` the lit top edge that
-     sells the "pane of glass" read. Black body text over ~46% white on top of
-     a pastel wash still clears WCAG AA comfortably, so nothing below had to be
-     re-contrasted. */
-  --glass-bg: rgba(255, 255, 255, 0.46);
-  --glass-blur: 24px;
-  --glass-saturate: 1.8;
-  --glass-edge: rgba(16, 24, 40, 0.07);
-  --glass-sheen: rgba(255, 255, 255, 0.85);
+  --cloud-sheen: rgba(255, 255, 255, 0.6);
   --sidebar: #fafafa;
   --sidebar-foreground: #0a0c0b;
   --sidebar-primary: #0a0c0b;
@@ -259,18 +241,6 @@
   --cloud-top: rgba(40, 48, 52, 0.6);
   --cloud-bloom: rgba(23, 209, 168, 0.13);
   --cloud-sheen: rgba(255, 255, 255, 0.12);
-  /* Clear liquid glass, DARK. Same idea as light, inverted: the card is a
-     half-transparent slab of the near-black card colour. The saturation lift
-     matters MORE here — on a near-black ground the aurora that bleeds through
-     is dim, and without the boost the glass would read as plain dark grey (the
-     exact failure mode this whole change exists to fix). The sheen is a
-     white hairline rather than a broad highlight, because a bright top edge on
-     a dark card reads as a scratch, not as glass. */
-  --glass-bg: rgba(20, 24, 26, 0.5);
-  --glass-blur: 24px;
-  --glass-saturate: 1.9;
-  --glass-edge: rgba(255, 255, 255, 0.12);
-  --glass-sheen: rgba(255, 255, 255, 0.16);
   --sidebar: #0f1413;
   --sidebar-foreground: #f3f7f5;
   --sidebar-primary: #17d1a8;
@@ -673,59 +643,15 @@ a[aria-disabled="true"]:active,
 }
 
 /* ---------------------------------------------------------------------
-   Clear liquid glass (2026-08-05) — the home screen's card surface.
-
-   Replaces the opaque `bg-card` panel with a real pane: the aurora wallpaper
-   behind it is blurred and colour-boosted through the card, so the card takes
-   on the ground's tint instead of hiding it. Three things have to be present
-   together or it stops reading as glass and starts reading as "a slightly
-   see-through box": the translucent fill, the blur, and the LIT TOP EDGE — the
-   1px `--glass-sheen` inset is what your eye reads as the thickness of the
-   pane catching light.
-
-   Kept as one utility rather than baked into `bg-card` on purpose: the token
-   is a flat colour used in dozens of places (sheets, modals, PDFs) where a
-   backdrop-filter is wrong or simply unsupported.
-
-   `@supports` guard: where `backdrop-filter` is unavailable, the card falls
-   back to the OPAQUE `--card` colour rather than staying half-transparent —
-   otherwise text would sit directly on the wallpaper. Every browser the app
-   targets (iOS 16+ / Chrome / Firefox 103+) has it; this is the safety net.
-   --------------------------------------------------------------------- */
-.fm-glass {
-  background: var(--card);
-  border: 1px solid var(--glass-edge);
-  box-shadow: var(--fm-lift);
-}
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .fm-glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-    -webkit-backdrop-filter: blur(var(--glass-blur))
-      saturate(var(--glass-saturate));
-    box-shadow:
-      var(--fm-lift),
-      inset 0 1px 0 0 var(--glass-sheen);
-  }
-}
-
-/* A glass card whose content is in a warning state (a micronutrient LIMIT that
-   has been passed). Declared after `.fm-glass` and, like it, unlayered — the
-   only way to beat its edge, since an unlayered rule outranks any Tailwind
-   `border-*` utility no matter the source order. */
-.fm-glass-warn {
-  border-color: color-mix(in srgb, #f59e0b 45%, transparent);
-}
-
-/* ---------------------------------------------------------------------
-   Ring "oblak" — the calorie ring's own glass cloud (2026-07-29, rebuilt on
-   the glass layer 2026-08-05). It is the screen's centrepiece, so it keeps its
-   extra dressing on TOP of `.fm-glass`: a brand-tinted bloom behind the ring
-   (::before) and a soft top sheen (::after). The flat `--cloud-top`→`--card`
-   wash it used to paint is gone — that gradient was opaque, and an opaque
-   surface cannot show the wallpaper through it.
-   `overflow:hidden` keeps the bloom inside the rounded shape. -------- */
+   Ring "oblak" — the calorie ring's own glass cloud (2026-07-29). A soft
+   vertical wash (sky→card), a brand-tinted bloom behind the ring, and a top
+   sheen, so the centrepiece reads as an aesthetic glass surface rather than a
+   plain panel. All colours are themed tokens (`--cloud-*`), never inline hex.
+   `overflow:hidden` keeps the bloom/sheen inside the rounded shape. -------- */
 .fm-cloud {
+  background: linear-gradient(180deg, var(--cloud-top), var(--card) 46%);
+  border: 1px solid var(--border);
+  box-shadow: var(--fm-lift);
   overflow: hidden;
 }
 .fm-cloud::before {
@@ -835,61 +761,4 @@ a[aria-disabled="true"]:active,
     radial-gradient(52% 40% at 0% 98%, rgba(87, 168, 238, 0.14), transparent 72%),
     radial-gradient(54% 40% at 100% 100%, rgba(99, 217, 118, 0.14), transparent 72%),
     radial-gradient(64% 46% at 50% 44%, rgba(40, 217, 182, 0.07), transparent 70%);
-}
-
-/*
- * Aurora "wallpaper" (2026-08-05) — the richer ground the clear-glass cards
- * sit on. Applied ONLY on the home screen for this first pass (`AppShell`
- * adds the modifier on `/danas`); the rest of the app keeps the quiet wash
- * above until the glass treatment follows it there.
- *
- * Why it had to get stronger: glass is not a colour, it is a VIEW of what is
- * behind it. Over the previous near-empty ground a 55%-transparent card
- * resolved to the same flat panel it replaced — in dark mode especially,
- * where the ground is near-black and there was simply nothing to see through
- * to. So the wallpaper carries the effect and the cards only frame it.
- *
- * Seven blooms instead of five, with two deliberately placed in the MIDDLE
- * (26%/36% and 80%/72%): the corner-only version left a dead pale band across
- * the centre of the screen, which is exactly where the calorie card sits.
- * Same iridescent sedef stops as `--wordmark-grad`, so the ground is the logo's
- * own palette rather than a second, competing one.
- */
-.app-aurora--rich {
-  background-image:
-    radial-gradient(58% 40% at 6% -2%, rgba(14, 156, 130, 0.42), transparent 70%),
-    radial-gradient(54% 38% at 98% 4%, rgba(185, 134, 44, 0.38), transparent 70%),
-    radial-gradient(62% 44% at 100% 40%, rgba(44, 124, 190, 0.38), transparent 72%),
-    radial-gradient(66% 46% at -6% 66%, rgba(47, 154, 80, 0.38), transparent 72%),
-    radial-gradient(74% 48% at 52% 104%, rgba(23, 168, 150, 0.38), transparent 72%),
-    radial-gradient(52% 36% at 24% 34%, rgba(44, 124, 190, 0.3), transparent 70%),
-    radial-gradient(50% 34% at 82% 70%, rgba(185, 134, 44, 0.28), transparent 70%),
-    radial-gradient(56% 34% at 58% 16%, rgba(47, 154, 80, 0.22), transparent 72%);
-}
-
-.dark .app-aurora--rich {
-  background-image:
-    radial-gradient(58% 40% at 6% -2%, rgba(38, 221, 182, 0.26), transparent 70%),
-    radial-gradient(54% 38% at 98% 4%, rgba(236, 199, 102, 0.2), transparent 70%),
-    radial-gradient(62% 44% at 100% 40%, rgba(87, 168, 238, 0.24), transparent 72%),
-    radial-gradient(66% 46% at -6% 66%, rgba(99, 217, 118, 0.22), transparent 72%),
-    radial-gradient(74% 48% at 52% 104%, rgba(40, 217, 182, 0.24), transparent 72%),
-    radial-gradient(46% 32% at 26% 36%, rgba(87, 168, 238, 0.14), transparent 70%),
-    radial-gradient(42% 28% at 80% 72%, rgba(236, 199, 102, 0.12), transparent 70%);
-}
-
-/*
- * Grain over the wallpaper. Two jobs, both real: large soft radial gradients
- * band visibly on OLED phones (the thing that makes a gradient look "cheap"),
- * and grain is what gives the blur something to actually dissolve — under a
- * card the noise smooths out, beside it stays crisp, and that difference is
- * read as glass thickness. Static, single composited layer, inert to input.
- */
-.app-aurora--rich::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.045;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
 }

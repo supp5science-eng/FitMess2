@@ -23,7 +23,7 @@ export function GricButton() {
     <Link
       href="/dodaj/gric"
       data-testid="gric-open-button"
-      className="fm-glass flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left active:translate-y-px"
+      className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-left transition-colors hover:bg-muted/40 active:translate-y-px"
     >
       <span className="flex items-center gap-2.5">
         <span className="flex size-9 items-center justify-center rounded-full bg-primary/15 text-primary">

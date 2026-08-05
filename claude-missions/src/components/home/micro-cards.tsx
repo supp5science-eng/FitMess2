@@ -157,12 +157,8 @@ function MicroCard({ card, t }: { card: MicroCardState; t: TFunction }) {
       data-testid={`micro-card-${card.key}`}
       data-over={card.isOver ? "true" : undefined}
       className={cn(
-        "fm-glass flex flex-col gap-2 rounded-2xl px-3 py-2.5",
-        // The warning rim can't be a `border-amber-500/35` utility any more:
-        // `.fm-glass` is unlayered, so it outranks every Tailwind utility and
-        // would paint its own edge over it. `.fm-glass-warn` is unlayered too
-        // and declared after it, so the amber wins.
-        warn && "fm-glass-warn"
+        "flex flex-col gap-2 rounded-2xl border bg-card px-3 py-2.5",
+        warn ? "border-amber-500/35" : "border-border"
       )}
     >
       {/* Header: the nutrient's badge + name, on one line. */}

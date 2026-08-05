@@ -88,7 +88,7 @@ export function IntakeConfluence({
           right, on one raised `fm-cloud` glass surface. */}
       <div
         ref={ringRef}
-        className="home-ring-slot fm-glass fm-cloud relative rounded-[2rem] px-6 py-8"
+        className="home-ring-slot fm-cloud relative rounded-[2rem] px-6 py-8"
       >
         <div className="flex items-center justify-between gap-3">
           {/* Left: the big number + the Potrošeno/Preostalo switch. The column

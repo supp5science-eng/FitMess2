@@ -405,7 +405,10 @@ export function HomeScreen({
       ) : (
         <div
           data-testid="home-no-target"
-          className="home-body rounded-2xl border border-dashed border-border bg-background px-6 py-8 text-center text-sm text-muted-foreground"
+          // Keeps its DASHED border (the "nothing here yet" signal), so it uses
+          // plain utilities rather than `.fm-glass` — that class writes a
+          // `solid` border shorthand and, being unlayered, would win.
+          className="home-body rounded-2xl border border-dashed border-border bg-card/55 px-6 py-8 text-center text-sm text-muted-foreground backdrop-blur-xl"
         >
           {t("home.noTarget")}
         </div>

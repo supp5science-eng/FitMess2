@@ -62,7 +62,7 @@ export function WorkoutButton({
 
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-2.5 rounded-2xl border border-border bg-card px-4 py-3.5">
+      <div className="fm-glass flex flex-col gap-2.5 rounded-2xl px-4 py-3.5">
         <Link
           href="/dodaj/trening"
           data-testid="workout-open-button"

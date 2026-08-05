@@ -185,7 +185,9 @@ export function MealCard({
   return (
     <li
       data-testid={`meal-card-${log.id}`}
-      className="group/card relative flex flex-col overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+      // `shadow-sm`/`hover:shadow-md` are gone: `.fm-glass` carries the lift
+      // itself, and being unlayered it would override them anyway.
+      className="group/card fm-glass relative flex flex-col overflow-hidden rounded-3xl transition-transform duration-300 hover:-translate-y-0.5"
     >
       {hasPhoto ? (
         // Full-bleed, tappable media header. The picture is the hero -- this is

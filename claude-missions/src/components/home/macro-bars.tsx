@@ -101,7 +101,7 @@ function MacroCard({
   return (
     <div
       data-testid={testId}
-      className="fm-lift flex flex-1 flex-col gap-3 rounded-2xl border border-border bg-card px-3 py-4"
+      className="fm-glass flex flex-1 flex-col gap-3 rounded-2xl px-3 py-4"
     >
       <div className="flex flex-col gap-0.5">
         <span className="text-xl font-extrabold leading-none tabular-nums text-foreground">

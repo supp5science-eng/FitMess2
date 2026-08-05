@@ -24,7 +24,10 @@ export function MealList({
     return (
       <div
         data-testid="home-meals-empty"
-        className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-background px-6 py-10 text-center"
+        // Translucent rather than `.fm-glass`: the DASHED border is the "empty"
+        // signal and `.fm-glass` writes a solid one (and, being unlayered, wins
+        // over any utility that tries to restore it).
+        className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-card/50 px-6 py-10 text-center backdrop-blur-xl"
       >
         <p className="text-sm text-muted-foreground">{t("home.meals.empty")}</p>
         <Link

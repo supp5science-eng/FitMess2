@@ -16,7 +16,12 @@ import { BottomNav } from "@/components/shell/bottom-nav";
  */
 export function AppNavBar() {
   return (
-    <div className="shrink-0 border-t border-border/70 bg-background pt-2.5 pb-[calc(env(safe-area-inset-bottom)+10px)]">
+    // The bar's own strip is translucent (2026-08-05): the nav pill inside it
+    // was already frosted glass, but it sat on an OPAQUE `bg-background` band
+    // that cut a hard white line across the bottom of the wallpaper. Blurring
+    // the strip lets the ground run under the whole bar, so the pill reads as
+    // floating on the page instead of parked on a shelf.
+    <div className="shrink-0 border-t border-border/50 bg-background/55 pt-2.5 pb-[calc(env(safe-area-inset-bottom)+10px)] backdrop-blur-2xl">
       <div className="mx-auto flex w-full max-w-[430px] items-center gap-3 px-4">
         <BottomNav />
         <AddSheet />

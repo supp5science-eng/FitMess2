@@ -176,7 +176,7 @@ export function PushNudge() {
     return (
       <p
         data-testid="push-nudge-done"
-        className="home-body rounded-2xl border border-border bg-muted/40 px-4 py-3.5 text-sm text-muted-foreground"
+        className="home-body rounded-2xl border border-border bg-muted/40 px-4 py-3.5 text-sm text-muted-foreground backdrop-blur-xl"
       >
         {t("home.pushNudge.done")}
       </p>
@@ -186,7 +186,7 @@ export function PushNudge() {
   return (
     <div
       data-testid="push-nudge"
-      className="home-body flex flex-col gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3.5"
+      className="home-body flex flex-col gap-3 rounded-2xl border border-border bg-muted/40 px-4 py-3.5 backdrop-blur-xl"
     >
       <div className="flex items-start gap-3">
         <Bell className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden={true} />

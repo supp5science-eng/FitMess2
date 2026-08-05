@@ -90,14 +90,23 @@ export function AppShell({
           dismisses itself. Suppressed during the onboarding hand-off. */}
       {introActive ? null : <AppSplash />}
       <div className="relative isolate mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">
-        {/* App aurora: a barely-there iridescent wash in the corners, behind
-            all content. `isolate` on the column makes it a stacking context, so
-            this `-z-10` layer paints above the white/near-black background but
-            below every child — the colour only shows in the negative space
-            between cards. Decorative, so it's inert and hidden from a11y. */}
+        {/* App aurora: an iridescent wash behind all content. `isolate` on the
+            column makes it a stacking context, so this `-z-10` layer paints
+            above the white/near-black background but below every child.
+            Decorative, so it's inert and hidden from a11y.
+
+            On the HOME screen it switches to the richer "wallpaper" variant
+            (`--rich`): that screen's cards are clear glass, and glass only
+            reads if there is something behind it worth blurring. Everywhere
+            else the quiet corner wash stays, since those cards are still
+            opaque — a loud ground under solid panels would just look pasted
+            on. When the glass treatment follows to the rest of the app, this
+            conditional goes away and `--rich` becomes the only variant. */}
         <div
           aria-hidden="true"
-          className="app-aurora pointer-events-none absolute inset-0 -z-10"
+          className={`app-aurora pointer-events-none absolute inset-0 -z-10 ${
+            pathname === "/danas" ? "app-aurora--rich" : ""
+          }`}
         />
         {/* Content scrolls inside this region only; the nav below keeps its own
             space, so nothing ever hides behind it. */}

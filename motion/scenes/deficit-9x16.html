@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8" />
+<title>FitMess motion — deficit 9:16</title>
+<style>
+  /* Scena se crta u 540x960 CSS px i snima na 2x (1080x1920).
+     Nista se ne animira preko CSS/Web animacija -- svaki frejm je cista
+     funkcija vremena (window.render(t)), da bi render bio deterministican. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 540px; height: 960px; overflow: hidden; background: #fff; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    color: #0a0c0b;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+
+  #stage { position: relative; width: 540px; height: 960px; background: #fff; }
+
+  .block { position: absolute; left: 44px; width: 452px; }
+
+  /* --- Replika (kinetic typography) --- */
+  #quote { top: 96px; }
+  #quote .ln { display: block; height: 62px; line-height: 62px; white-space: nowrap; }
+  #quote .w {
+    display: inline-block;
+    font-size: 54px;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+    will-change: transform, opacity;
+  }
+
+  #aside { top: 232px; }
+  #aside .w {
+    display: inline-block;
+    font-size: 25px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #646b6f;
+  }
+
+  #logic { top: 286px; }
+  #logic .ln { display: block; height: 44px; line-height: 44px; white-space: nowrap; }
+  #logic .w {
+    position: relative;
+    display: inline-block;
+    font-size: 33px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  /* Marker-poteg ISPOD reci (ne preko glifova) -- rec ostaje citljiva. */
+  #logic .w .hl {
+    position: absolute;
+    left: -4px; right: -4px; bottom: -1px;
+    height: 8px;
+    border-radius: 4px;
+    transform-origin: left center;
+  }
+  #logic .w .tx { position: relative; z-index: 1; }
+
+  /* --- Vaga + trend (SVG) --- */
+  #art { position: absolute; left: 0; top: 386px; width: 540px; height: 296px; }
+
+  /* --- Pilula deficita --- */
+  #pill {
+    position: absolute;
+    left: 50%; top: 694px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 28px 16px;
+    border-radius: 999px;
+    background: #17d1a8;
+    color: #04231c;
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    white-space: nowrap;
+    will-change: transform, opacity;
+  }
+
+  #trend { position: absolute; left: 0; top: 770px; width: 540px; height: 96px; }
+
+  .num { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="block" id="quote"></div>
+  <div class="block" id="aside"></div>
+  <div class="block" id="logic"></div>
+
+  <svg id="art" viewBox="0 0 540 296" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- stub + postolje -->
+    <g id="base">
+      <path id="baseTri" d="M270 96 L294 150 L246 150 Z" fill="#0a0c0b" />
+      <rect id="baseBar" x="208" y="150" width="124" height="11" rx="5.5" fill="#0a0c0b" />
+    </g>
+    <!-- greda + tasovi -->
+    <g id="scale">
+      <line id="beam" x1="120" y1="96" x2="420" y2="96" stroke="#0a0c0b" stroke-width="9" stroke-linecap="round" />
+      <circle id="pivot" cx="270" cy="96" r="11" fill="#0a0c0b" />
+      <g id="panL">
+        <line class="hang" stroke="#b0b5b9" stroke-width="3" stroke-linecap="round" />
+        <path class="bowl" stroke-width="8" stroke-linecap="round" fill="none" />
+        <text class="cap" text-anchor="middle" font-size="19" font-weight="700" letter-spacing="1.6">UNOS</text>
+        <text class="val num" text-anchor="middle" font-size="31" font-weight="900" letter-spacing="-0.5">0</text>
+      </g>
+      <g id="panR">
+        <line class="hang" stroke="#b0b5b9" stroke-width="3" stroke-linecap="round" />
+        <path class="bowl" stroke-width="8" stroke-linecap="round" fill="none" />
+        <text class="cap" text-anchor="middle" font-size="19" font-weight="700" letter-spacing="1.6">POTROŠNJA</text>
+        <text class="val num" text-anchor="middle" font-size="31" font-weight="900" letter-spacing="-0.5">0</text>
+      </g>
+    </g>
+  </svg>
+
+  <div id="pill"><span id="pillTx">−550 kcal svaki dan</span></div>
+
+  <svg id="trend" viewBox="0 0 540 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path id="trendTrack" stroke="#e5e7e9" stroke-width="4" stroke-linecap="round" fill="none" />
+    <path id="trendLine" stroke="#0f9e80" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+    <circle id="trendDot" r="9" fill="#0f9e80" />
+    <text id="trendCap" font-size="21" font-weight="800" fill="#0f9e80" letter-spacing="-0.2">težina ↓</text>
+  </svg>
+</div>
+
+<script>
+(() => {
+  const SKY = '#0ea5e9';      // potrošnja
+  const AMBER = '#c98a1b';    // unos
+  const INK = '#0a0c0b';
+  const MUTED = '#646b6f';
+
+  /* ---------- easing ---------- */
+  const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+  // normalizovano vreme unutar [a,b]
+  const p = (t, a, b) => clamp01((t - a) / (b - a));
+  const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const outQuint = (x) => 1 - Math.pow(1 - x, 5);
+  const outBack = (x) => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  // prigušena opruga: 0 -> 1 sa par oscilacija (za nagib grede)
+  const spring = (x) => (x >= 1 ? 1 : 1 - Math.exp(-6.5 * x) * Math.cos(9.5 * x));
+  const mix = (a, b, x) => a + (b - a) * x;
+
+  /* ---------- tekst ---------- */
+  // Replika je doslovno iz skripte; deli se u redove koji ne prelamaju.
+  const QUOTE = [['naravno', 'da', 'ću'], ['smršati']];
+  const ASIDE = [['jer', 'logično']];
+  const LOGIC = [
+    [{ t: 'više' }, { t: 'sam' }, { t: 'trošo', hl: SKY }],
+    [{ t: 'nego' }, { t: 'što' }, { t: 'sam' }, { t: 'unosio', hl: AMBER }],
+  ];
+
+  const quoteWords = [], asideWords = [], logicWords = [];
+
+  function buildPlain(host, lines, bag) {
+    lines.forEach((words) => {
+      const ln = document.createElement('span');
+      ln.className = 'ln';
+      words.forEach((w, i) => {
+        const s = document.createElement('span');
+        s.className = 'w';
+        s.textContent = w;
+        if (i < words.length - 1) s.style.marginRight = '0.28em';
+        ln.appendChild(s);
+        bag.push(s);
+      });
+      host.appendChild(ln);
+    });
+  }
+
+  buildPlain(document.getElementById('quote'), QUOTE, quoteWords);
+  buildPlain(document.getElementById('aside'), ASIDE, asideWords);
+
+  (() => {
+    const host = document.getElementById('logic');
+    LOGIC.forEach((words) => {
+      const ln = document.createElement('span');
+      ln.className = 'ln';
+      words.forEach((w, i) => {
+        const s = document.createElement('span');
+        s.className = 'w';
+        if (i < words.length - 1) s.style.marginRight = '0.26em';
+        if (w.hl) {
+          const hl = document.createElement('span');
+          hl.className = 'hl';
+          hl.style.background = w.hl;
+          hl.style.opacity = '0.22';
+          s.appendChild(hl);
+          s.dataset.hl = w.hl;
+        }
+        const tx = document.createElement('span');
+        tx.className = 'tx';
+        tx.textContent = w.t;
+        s.appendChild(tx);
+        ln.appendChild(s);
+        logicWords.push(s);
+      });
+      host.appendChild(ln);
+    });
+  })();
+
+  /* ---------- helperi ---------- */
+  // Pop reci: fade + podizanje + blagi "back" scale, sa kaskadom.
+  function popWords(bag, t, start, stagger, opts) {
+    const o = opts || {};
+    bag.forEach((el, i) => {
+      const k = p(t, start + i * stagger, start + i * stagger + 0.44);
+      const e = outBack(k);
+      el.style.opacity = String(outCubic(p(t, start + i * stagger, start + i * stagger + 0.3)));
+      el.style.transform = `translateY(${mix(20, 0, e)}px) scale(${mix(0.9, 1, e)})`;
+      if (o.color) el.style.color = o.color;
+    });
+  }
+
+  const el = (id) => document.getElementById(id);
+  const fmt = (n) => Math.round(n).toLocaleString('sr-RS').replace(/ /g, '.');
+
+  const pan = (g) => ({
+    hang: g.querySelector('.hang'),
+    bowl: g.querySelector('.bowl'),
+    cap: g.querySelector('.cap'),
+    val: g.querySelector('.val'),
+  });
+  const PAN_L = pan(el('panL')), PAN_R = pan(el('panR'));
+
+  // Tas visi vertikalno sa kraja rotirane grede.
+  function drawPan(ph, x, y, color, label, value, alpha) {
+    const drop = 42, w = 60;
+    ph.hang.setAttribute('x1', x); ph.hang.setAttribute('y1', y);
+    ph.hang.setAttribute('x2', x); ph.hang.setAttribute('y2', y + drop);
+    ph.bowl.setAttribute('d', `M${x - w} ${y + drop} Q${x} ${y + drop + 40} ${x + w} ${y + drop}`);
+    ph.bowl.setAttribute('stroke', color);
+    ph.cap.setAttribute('x', x); ph.cap.setAttribute('y', y - 18);
+    ph.cap.setAttribute('fill', color);
+    ph.val.setAttribute('x', x); ph.val.setAttribute('y', y + drop + 78);
+    ph.val.setAttribute('fill', color);
+    ph.val.textContent = value;
+    ph.hang.style.opacity = ph.bowl.style.opacity = ph.cap.style.opacity = String(alpha);
+    ph.val.style.opacity = String(alpha);
+  }
+
+  /* ---------- trend (dole) ---------- */
+  const TREND = [[24, 40], [96, 47], [168, 38], [240, 56], [312, 50], [384, 70], [456, 66], [516, 84]];
+  function trendPath(frac) {
+    // Catmull-rom-ish: dovoljno je glatko sa kvadratnim segmentima
+    const pts = TREND;
+    const total = pts.length - 1;
+    const upto = frac * total;
+    let d = `M${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const seg = clamp01(upto - (i - 1));
+      if (seg <= 0) break;
+      const a = pts[i - 1], b = pts[i];
+      const x = mix(a[0], b[0], seg), y = mix(a[1], b[1], seg);
+      d += ` L${x} ${y}`;
+    }
+    return d;
+  }
+  function trendPoint(frac) {
+    const pts = TREND, total = pts.length - 1, upto = clamp01(frac) * total;
+    const i = Math.min(Math.floor(upto), total - 1), seg = upto - i;
+    return [mix(pts[i][0], pts[i + 1][0], seg), mix(pts[i][1], pts[i + 1][1], seg)];
+  }
+  el('trendTrack').setAttribute('d', trendPath(1));
+
+  /* ---------- glavni render ---------- */
+  const DURATION = 9.0;
+
+  function render(t) {
+    /* 1. Replika */
+    popWords(quoteWords, t, 0.18, 0.1);
+    popWords(asideWords, t, 1.05, 0.09);
+
+    /* 2. Vaga se pojavljuje */
+    const inScale = outCubic(p(t, 1.5, 2.15));
+    el('scale').style.opacity = String(inScale);
+    el('base').style.opacity = String(inScale);
+    el('base').style.transform = `translateY(${mix(14, 0, inScale)}px)`;
+    el('base').style.transformOrigin = '270px 150px';
+
+    /* 3. Logika: "više sam trošo" pa "nego što sam unosio" */
+    popWords(logicWords.slice(0, 3), t, 2.3, 0.11);
+    popWords(logicWords.slice(3), t, 3.15, 0.1);
+    logicWords.forEach((w) => {
+      const hl = w.querySelector('.hl');
+      if (!hl) return;
+      const isSky = w.dataset.hl === SKY;
+      const k = outQuint(p(t, isSky ? 2.62 : 3.5, isSky ? 3.12 : 4.0));
+      hl.style.transform = `scaleX(${k})`;
+      // rec preuzima boju svoje strane vage tek kad marker prodje ispod nje
+      w.querySelector('.tx').style.color = k > 0.35 ? w.dataset.hl : INK;
+    });
+
+    /* 4. Brojači + nagib grede: potrošnja raste prva, pa unos */
+    const kR = outCubic(p(t, 2.55, 3.35));
+    const kL = outCubic(p(t, 3.4, 4.15));
+    const potrosnja = 2650 * kR, unos = 2100 * kL;
+
+    // Greda: mirna nula -> preteže potrošnja (desno dole) -> mali korektiv kad
+    // se ubaci unos, ali ostaje u minusu.
+    const tilt0 = 12.5 * spring(p(t, 2.6, 3.6));
+    const tiltBack = 3.6 * spring(p(t, 3.45, 4.3));
+    const breathe = t > 4.6 ? Math.sin((t - 4.6) * 1.5) * 0.5 : 0;
+    const ang = tilt0 - tiltBack + breathe * (t > 4.6 ? 1 : 0);
+    const rad = (ang * Math.PI) / 180, R = 150, cx = 270, cy = 96;
+
+    el('beam').setAttribute('transform', `rotate(${ang} ${cx} ${cy})`);
+    el('pivot').setAttribute('transform', `rotate(${ang} ${cx} ${cy})`);
+
+    const lx = cx - R * Math.cos(rad), ly = cy - R * Math.sin(rad);
+    const rx = cx + R * Math.cos(rad), ry = cy + R * Math.sin(rad);
+    drawPan(PAN_L, lx, ly, AMBER, 'UNOS', kL > 0.01 ? `${fmt(unos)} kcal` : '', inScale);
+    drawPan(PAN_R, rx, ry, SKY, 'POTROŠNJA', kR > 0.01 ? `${fmt(potrosnja)} kcal` : '', inScale);
+
+    /* 5. Pilula deficita */
+    const kPill = p(t, 4.45, 4.95);
+    const pop = outBack(kPill);
+    el('pill').style.opacity = String(outCubic(p(t, 4.45, 4.75)));
+    el('pill').style.transform = `translateX(-50%) translateY(${mix(16, 0, pop)}px) scale(${mix(0.86, 1, pop)})`;
+    el('pillTx').textContent = `−${fmt(550 * outCubic(p(t, 4.5, 5.1)))} kcal svaki dan`;
+
+    /* 6. Trend težine */
+    const kTrend = outCubic(p(t, 5.2, 7.0));
+    el('trend').style.opacity = String(outCubic(p(t, 5.0, 5.4)));
+    el('trendLine').setAttribute('d', trendPath(Math.max(kTrend, 0.001)));
+    el('trendTrack').style.opacity = String(0.9 * outCubic(p(t, 5.0, 5.5)));
+    const [dx, dy] = trendPoint(kTrend);
+    el('trendDot').setAttribute('cx', dx);
+    el('trendDot').setAttribute('cy', dy);
+    el('trendDot').style.opacity = String(outCubic(p(t, 5.25, 5.5)));
+    const capIn = outCubic(p(t, 6.6, 7.2));
+    el('trendCap').setAttribute('x', 24);
+    el('trendCap').setAttribute('y', 18);
+    el('trendCap').style.opacity = String(capIn);
+    el('trendCap').textContent = '−0,5 kg nedeljno';
+
+    /* 7. Izlaz: sve blago odlazi u belo */
+    const out = outCubic(p(t, 8.4, 9.0));
+    document.getElementById('stage').style.opacity = String(1 - out);
+  }
+
+  window.SCENE = { width: 540, height: 960, fps: 30, duration: DURATION };
+  window.render = render;
+  render(0);
+})();
+</script>
+</body>
+</html>

@@ -8,7 +8,7 @@ fajl koji se renderuje frejm-po-frejm u Chromium-u i pakuje u mp4.
 | Scena | Format | Trajanje | Copy |
 |---|---|---|---|
 | `deficit-9x16` | 1080×1920, 30 fps | 3,0 s | „naravno da ću smršati jer logično više sam trošo nego što sam unosio" |
-| `mesec-dana-9x16` | 1080×1920, 30 fps | 6,0 s | „i recimo da tako živim mesec dana… da li ću posle tih mesec dana smršati ili se ugojiti" |
+| `mesec-dana-9x16` | 1080×1920, 30 fps | 4,6 s | „i recimo da tako živim mesec dana… da li ću posle tih mesec dana smršati ili se ugojiti" |
 | `dve-nepoznate-9x16` | 1080×1920, 30 fps | 8,0 s | „…glavno pitanje je kako da znam koliko trošim kalorija i koliko treba da unesem na dnevnom nivou" |
 
 **`deficit-9x16`** — kratak rez: na ekranu stoji samo zaključak („naravno da ću
@@ -29,9 +29,10 @@ kroz `ACTS`, pa se nove radnje dodaju kao još jedna poza, ne kao novi crtež.
 
 **`mesec-dana-9x16`** — kalendar od 30 kockica se puni kolačima ubrzavajuće
 (razmaci se skraćuju, poslednjih desetak upada skoro instant), pa se ceo mesec
-usiše u jednu tačku iz koje se ekran cepa na dve zone: levo crvena „UGOJITI?"
-sa siluetom koja se širi, desno zelena „SMRŠATI?" sa siluetom koja se sužava.
-Između njih upitnik se ljulja kao klatno — kadar sam ne zna odgovor.
+usiše u jednu tačku iz koje izleću dve pune kartice: leva crvena „UGOJITI?" sa
+siluetom koja se širi, desna zelena „SMRŠATI?" sa siluetom koja se sužava.
+Siluete su pictogrami u punoj beloj (glava se kontra-skalira da se ne razvuče),
+a iznad rascepa visi crni bedž sa upitnikom koji se ljulja kao klatno.
 
 Tekst je u klipovima sveden na minimum da ne trči ispred voice-overa.
 

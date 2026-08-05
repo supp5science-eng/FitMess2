@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8" />
+<title>FitMess motion — 30 dana slatkog 9:16</title>
+<style>
+  /* Scena se crta u 540x960 CSS px i snima na 2x (1080x1920).
+     Nista se ne animira preko CSS/Web animacija -- svaki frejm je cista
+     funkcija vremena (window.render(t)), da bi render bio deterministican. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 540px; height: 960px; overflow: hidden; background: #fff; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    color: #0a0c0b;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+  #stage { position: relative; width: 540px; height: 960px; background: #fff; }
+  #art { position: absolute; left: 0; top: 0; width: 540px; height: 960px; }
+
+  /* --- Faza 1 --- */
+  #kicker {
+    position: absolute; left: 0; top: 232px; width: 540px; text-align: center;
+    font-size: 21px; font-weight: 800; letter-spacing: 0.22em; color: #8a9095;
+  }
+  #count {
+    position: absolute; left: 0; top: 688px; width: 540px; text-align: center;
+    font-size: 42px; font-weight: 900; letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums; color: #0a0c0b;
+  }
+  #count .of { color: #b0b5b9; font-size: 28px; font-weight: 800; }
+
+  /* --- Faza 2 --- */
+  .side {
+    position: absolute; top: 322px; width: 270px; text-align: center;
+    font-size: 33px; font-weight: 900; letter-spacing: -0.02em;
+  }
+  #sideL { left: 0; color: #d95540; }
+  #sideR { left: 270px; color: #16a34a; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="kicker">MESEC DANA</div>
+
+  <svg id="art" viewBox="0 0 540 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- ============ FAZA 2: dve zone (crtaju se ispod svega) ============ -->
+    <g id="split">
+      <rect id="zoneL" x="0" y="0" width="270" height="960" fill="#fbeeeb" />
+      <rect id="zoneR" x="270" y="0" width="270" height="960" fill="#e9f9ef" />
+      <line id="divider" x1="270" y1="120" x2="270" y2="840" stroke="#e0e3e5" stroke-width="3" />
+    </g>
+
+    <!-- strelice: gore (ugojiti) / dole (smrsati) -->
+    <g id="arrowU" stroke="#d95540" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M135 448 L135 386" /><path d="M117 404 L135 384 L153 404" />
+    </g>
+    <g id="arrowD" stroke="#16a34a" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <path d="M405 386 L405 448" /><path d="M387 430 L405 450 L423 430" />
+    </g>
+
+    <!-- dve siluete -->
+    <g id="figL" stroke="#0a0c0b" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle class="fh" r="18" fill="#0a0c0b" stroke="none" />
+      <path class="ft" /><path class="fal" /><path class="far" /><path class="fll" /><path class="flr" />
+    </g>
+    <g id="figR" stroke="#0a0c0b" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle class="fh" r="18" fill="#0a0c0b" stroke="none" />
+      <path class="ft" /><path class="fal" /><path class="far" /><path class="fll" /><path class="flr" />
+    </g>
+
+    <!-- klatno sa upitnikom -->
+    <g id="pendulum">
+      <text id="pq" x="270" y="542" text-anchor="middle" dominant-baseline="central"
+            font-family="Inter" font-size="116" font-weight="900" fill="#0a0c0b">?</text>
+    </g>
+
+    <!-- ============ FAZA 1: kalendar ============ -->
+    <g id="grid"></g>
+    <!-- tacka u koju se kalendar usisa i iz koje se ekran cepa -->
+    <circle id="dot" cx="269.5" cy="477" r="0" fill="#0a0c0b" />
+  </svg>
+
+  <div id="count"><span id="countN">0</span><span class="of">/30</span></div>
+  <div class="side" id="sideL">UGOJITI?</div>
+  <div class="side" id="sideR">SMRŠATI?</div>
+</div>
+
+<script>
+(() => {
+  const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+  const p = (t, a, b) => clamp01((t - a) / (b - a));
+  const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const inCubic = (x) => x * x * x;
+  const outBack = (x, c = 2.2) => 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2);
+  const mix = (a, b, x) => a + (b - a) * x;
+  const el = (id) => document.getElementById(id);
+  const SVG = 'http://www.w3.org/2000/svg';
+
+  /* ================= FAZA 1: kalendar 6x5 ================= */
+  const G = { cols: 6, rows: 5, cell: 62, gap: 11, x0: 56, y0: 300 };
+  const N = G.cols * G.rows;                       // 30 dana
+  const CENTER = {
+    x: G.x0 + (G.cols * G.cell + (G.cols - 1) * G.gap) / 2,
+    y: G.y0 + (G.rows * G.cell + (G.rows - 1) * G.gap) / 2,
+  };
+
+  const cells = [];
+  const grid = el('grid');
+  for (let i = 0; i < N; i++) {
+    const c = i % G.cols, r = (i / G.cols) | 0;
+    const x = G.x0 + c * (G.cell + G.gap), y = G.y0 + r * (G.cell + G.gap);
+    const g = document.createElementNS(SVG, 'g');
+
+    const box = document.createElementNS(SVG, 'rect');
+    box.setAttribute('x', x); box.setAttribute('y', y);
+    box.setAttribute('width', G.cell); box.setAttribute('height', G.cell);
+    box.setAttribute('rx', 14);
+    box.setAttribute('fill', '#fff');
+    box.setAttribute('stroke', '#e5e7e9');
+    box.setAttribute('stroke-width', 3);
+    g.appendChild(box);
+
+    // kolac: korpica + krema + visnja
+    const cake = document.createElementNS(SVG, 'g');
+    cake.innerHTML =
+      '<path d="M-12 3 L-8 16 H8 L12 3 Z" fill="#e5c07a" />' +
+      '<path d="M-14 3 C-14 -9, -8 -15, 0 -15 C8 -15, 14 -9, 14 3 Z" fill="#c98a1b" />' +
+      '<circle cx="0" cy="-19" r="4.6" fill="#d95540" />';
+    g.appendChild(cake);
+
+    grid.appendChild(g);
+    cells.push({ g, box, cake, x: x + G.cell / 2, y: y + G.cell / 2 });
+  }
+
+  // Kad se koja kockica puni: razmaci se skracuju -> stampedo ka kraju.
+  const FILL_T0 = 0.28, FILL_SPAN = 2.05, POP = 0.24;
+  const fillAt = (i) => FILL_T0 + FILL_SPAN * Math.pow((i + 1) / N, 1 / 1.75);
+  const COLLAPSE = [2.52, 2.90];
+
+  /* ================= FAZA 2: siluete ================= */
+  // isti rig kao u "dve nepoznate" -- mirna poza, samo staticno iscrtana
+  const SHO = { x: 270, y: 318 }, HIP = { x: 270, y: 382 };
+  const rad = (d) => (d * Math.PI) / 180;
+  const limb = (jx, jy, a1, l1, a2, l2) => {
+    const ex = jx + l1 * Math.sin(rad(a1)), ey = jy + l1 * Math.cos(rad(a1));
+    return `M${jx} ${jy} L${ex.toFixed(1)} ${ey.toFixed(1)} ` +
+           `L${(ex + l2 * Math.sin(rad(a2))).toFixed(1)} ${(ey + l2 * Math.cos(rad(a2))).toFixed(1)}`;
+  };
+  const FEET_Y = 448;
+  ['figL', 'figR'].forEach((id) => {
+    const g = el(id);
+    g.querySelector('.fh').setAttribute('cx', SHO.x);
+    g.querySelector('.fh').setAttribute('cy', 276);
+    g.querySelector('.ft').setAttribute('d', `M${SHO.x} ${SHO.y - 18} L${HIP.x} ${HIP.y}`);
+    g.querySelector('.fal').setAttribute('d', limb(SHO.x, SHO.y, -50, 34, -14, 32));
+    g.querySelector('.far').setAttribute('d', limb(SHO.x, SHO.y, 50, 34, 14, 32));
+    g.querySelector('.fll').setAttribute('d', limb(HIP.x, HIP.y, -32, 36, -8, 38));
+    g.querySelector('.flr').setAttribute('d', limb(HIP.x, HIP.y, 32, 36, 8, 38));
+  });
+
+  const FIG = { yFeet: 706, xL: 135, xR: 405 };
+  function placeFig(id, cx, sx) {
+    // 1) skaliraj po X oko stopala, 2) pomeri figuru na svoju polovinu
+    el(id).setAttribute('transform',
+      `translate(${cx - SHO.x} ${FIG.yFeet - FEET_Y}) ` +
+      `translate(${SHO.x} ${FEET_Y}) scale(${sx.toFixed(3)} 1) translate(${-SHO.x} ${-FEET_Y})`);
+    // glava ne sme da se razvuce koliko i telo -- kontra-skalira se nazad, pa
+    // ostaje samo blago sira/uza (sx^0.35)
+    const k = Math.pow(sx, 0.35) / sx;
+    el(id).querySelector('.fh').setAttribute('transform',
+      `translate(${SHO.x} 276) scale(${k.toFixed(3)} 1) translate(${-SHO.x} -276)`);
+  }
+
+  /* ================= tajmlajna ================= */
+  const T = {
+    split:  [2.92, 3.32],
+    figs:   [3.10, 3.55],
+    arrows: [3.35, 3.80],
+    labels: [3.45, 3.85],
+    pend:   [3.60, 4.05],
+  };
+  const DURATION = 6.0;
+
+  function render(t) {
+    const inPhase2 = t >= COLLAPSE[0];
+
+    /* ---------- kalendar ---------- */
+    let filled = 0;
+    const kCollapse = p(t, COLLAPSE[0], COLLAPSE[1]);
+    cells.forEach((c, i) => {
+      const ft = fillAt(i);
+      const k = p(t, ft, ft + POP);
+      const pop = outBack(k);
+      if (t >= ft) filled++;
+
+      // pop kockice: prebaci se na "pojedeno" stanje sa prebacajem preko 1
+      c.box.setAttribute('fill', k > 0 ? '#fdf6e8' : '#fff');
+      c.box.setAttribute('stroke', k > 0 ? '#f0e2c4' : '#e5e7e9');
+      c.cake.style.opacity = String(outCubic(p(t, ft, ft + 0.12)));
+      c.cake.setAttribute('transform', `translate(${c.x} ${c.y}) scale(${(k > 0 ? mix(0.4, 1, pop) : 0).toFixed(3)})`);
+
+      // skupljanje celog kalendara u tacku
+      const kc = clamp01((kCollapse - i * 0.004) / (1 - 0.004 * N));
+      const e = kc * kc * kc * kc;
+      const cx = mix(c.x, CENTER.x, e), cy = mix(c.y, CENTER.y, e);
+      const s = mix(1, 0.04, e);
+      c.g.style.transformOrigin = `${c.x}px ${c.y}px`;
+      c.g.style.transform = `translate(${(cx - c.x).toFixed(2)}px, ${(cy - c.y).toFixed(2)}px) scale(${s.toFixed(3)})`;
+      c.g.style.opacity = String(1 - clamp01(e * 1.35));
+    });
+
+    // mali udar kad se poslednje kockice sruce
+    const slam = 1 + 0.03 * Math.sin(Math.PI * p(t, 2.28, 2.5));
+    grid.style.transformOrigin = `${CENTER.x}px ${CENTER.y}px`;
+    grid.style.transform = `scale(${slam.toFixed(4)})`;
+    grid.style.opacity = String(outCubic(p(t, 0.05, 0.35)));
+
+    // tacka: skupi se u nju sve, pa pukne u rascep
+    const dotR = 17 * outCubic(p(t, 2.70, 2.90)) * (1 - outCubic(p(t, 2.92, 3.08)));
+    el('dot').setAttribute('r', dotR.toFixed(2));
+
+    el('kicker').style.opacity = String(outCubic(p(t, 0.05, 0.4)) * (1 - p(t, 2.4, 2.75)));
+    el('count').style.opacity = String(outCubic(p(t, 0.2, 0.5)) * (1 - p(t, 2.4, 2.7)));
+    el('countN').textContent = String(Math.min(filled, N));
+
+    /* ---------- rascep ekrana ---------- */
+    const kSplit = outCubic(p(t, T.split[0], T.split[1]));
+    el('zoneL').setAttribute('transform', `translate(270 0) scale(${kSplit.toFixed(3)} 1) translate(-270 0)`);
+    el('zoneR').setAttribute('transform', `translate(270 0) scale(${kSplit.toFixed(3)} 1) translate(-270 0)`);
+    el('split').style.opacity = String(inPhase2 ? 1 : 0);
+    el('divider').style.opacity = String(outCubic(p(t, T.split[0], T.split[1] + 0.2)));
+
+    /* ---------- siluete: leva se siri, desna suzava ---------- */
+    const kFig = outBack(p(t, T.figs[0], T.figs[1]), 1.4);
+    const pulse = Math.sin((t - T.figs[0]) * 3.2);
+    const sxL = mix(0.9, mix(1.30, 1.46, 0.5 + 0.5 * pulse), clamp01(kFig));
+    const sxR = mix(0.9, mix(0.80, 0.68, 0.5 + 0.5 * pulse), clamp01(kFig));
+    placeFig('figL', FIG.xL, t < T.figs[0] ? 1 : sxL);
+    placeFig('figR', FIG.xR, t < T.figs[0] ? 1 : sxR);
+    const figIn = outCubic(p(t, T.figs[0], T.figs[0] + 0.3));
+    el('figL').style.opacity = String(figIn);
+    el('figR').style.opacity = String(figIn);
+
+    /* ---------- strelice i natpisi ---------- */
+    const kArr = outCubic(p(t, T.arrows[0], T.arrows[1]));
+    const bob = Math.sin(t * 4.2) * 3;
+    el('arrowU').style.opacity = String(kArr);
+    el('arrowU').setAttribute('transform', `translate(0 ${(mix(16, 0, kArr) - bob).toFixed(1)})`);
+    el('arrowD').style.opacity = String(kArr);
+    el('arrowD').setAttribute('transform', `translate(0 ${(mix(-16, 0, kArr) + bob).toFixed(1)})`);
+
+    const kLab = outCubic(p(t, T.labels[0], T.labels[1]));
+    ['sideL', 'sideR'].forEach((id) => {
+      el(id).style.opacity = String(kLab);
+      el(id).style.transform = `translateY(${mix(10, 0, kLab)}px)`;
+    });
+
+    /* ---------- klatno: ekran sam ne zna odgovor ---------- */
+    const kPend = outBack(p(t, T.pend[0], T.pend[1]), 1.6);
+    const swing = 9.5 * Math.sin((t - T.pend[0]) * 2.9);
+    el('pendulum').style.opacity = String(outCubic(p(t, T.pend[0], T.pend[0] + 0.25)));
+    el('pendulum').setAttribute('transform',
+      `rotate(${(t < T.pend[0] ? 0 : swing).toFixed(2)} 270 372) ` +
+      `translate(270 542) scale(${clamp01(kPend).toFixed(3)}) translate(-270 -542)`);
+  }
+
+  window.SCENE = { width: 540, height: 960, fps: 30, duration: DURATION };
+  window.render = render;
+  render(0);
+})();
+</script>
+</body>
+</html>

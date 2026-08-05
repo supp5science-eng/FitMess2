@@ -9,7 +9,7 @@ fajl koji se renderuje frejm-po-frejm u Chromium-u i pakuje u mp4.
 |---|---|---|---|
 | `deficit-9x16` | 1080×1920, 30 fps | 3,0 s | „naravno da ću smršati jer logično više sam trošo nego što sam unosio" |
 | `mesec-dana-9x16` | 1080×1920, 30 fps | 4,6 s | „i recimo da tako živim mesec dana… da li ću posle tih mesec dana smršati ili se ugojiti" |
-| `tokovi-9x16` | 1080×1920, **60 fps** | 6,0 s | „aplikaciju koja na osnovu baze podataka naučnih studija i tvojih podataka radi sve ovo" |
+| `tokovi-9x16` | 1080×1920, 30 fps | 6,0 s | „aplikaciju koja na osnovu baze podataka naučnih studija i tvojih podataka radi sve ovo" |
 | `dve-nepoznate-9x16` | 1080×1920, 30 fps | 8,0 s | „…glavno pitanje je kako da znam koliko trošim kalorija i koliko treba da unesem na dnevnom nivou" |
 
 **`deficit-9x16`** — kratak rez: na ekranu stoji samo zaključak („naravno da ću
@@ -68,8 +68,21 @@ N-tog izlaza), pa svaki frejm nastaje tačno od svojih N pod-frejmova. Zbog toga
 tekst koji se menja (brojači) ostaje oštar ako se u sceni kvantuje na izlazni
 fps — vidi `tq` u `tokovi-9x16.html`.
 
+`--master` uz mp4 izbacuje i **ProRes 422 HQ** `.mov` (10-bitni 4:2:2,
+intra-frame) — master za desktop montažu. `.mov` fajlovi su ignorisani u gitu
+jer su desetine MB.
+
 Potreban je i `ffmpeg` sa `libx264` u PATH-u. Render pravi frejmove u
 `motion/.frames/` (ignorisano u gitu) i briše ih posle enkodovanja.
+
+## Zašto izvoz izgleda ovako
+
+Klipovi se izvoze **all-intra** (`-g 1`, svaki frejm ključni) na CRF 12, i boja
+se **eksplicitno taguje** (`bt709`, limited range). Razlog: bez tagova montaža
+pogađa opseg pa bela posivi; sa long-GOP-om se tanke linije „pumpaju" između
+ključnih frejmova, a montaža ne može tačno da seče. Fajl je zato ~10× veći nego
+ranije (2–6 MB umesto 200–600 kB) — što je ovde poželjno, ovo je izvor za
+montažu, ne finalni upload.
 
 ## Kako se piše nova scena
 

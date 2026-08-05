@@ -1,2 +1,3 @@
 .frames/
 node_modules
+out/*.mov

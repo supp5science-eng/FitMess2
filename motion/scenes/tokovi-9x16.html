@@ -462,7 +462,8 @@
     el('ringArc').setAttribute('stroke-dashoffset', (RING_LEN * (1 - ringK)).toFixed(2));
     // brojac se kvantuje na IZLAZNE frejmove: da motion blur ne razmaze cifre
     // (pod-frejmovi unutar istog frejma moraju da pokazu isti broj)
-    const tq = Math.floor(t * CFG.fps + 1e-6) / CFG.fps;
+    const OUT_FPS = window.RENDER_FPS || CFG.fps;
+    const tq = Math.floor(t * OUT_FPS + 1e-6) / OUT_FPS;
     el('uiNum').textContent = fmtNum(TARGET * outCubic(p(tq, T.ring[0] + 0.05, T.ring[1] + 0.1)));
 
     /* ---------- portal se povlaci kad app preuzme kadar ---------- */

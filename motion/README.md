@@ -41,7 +41,7 @@ vremena, inače screenshot-ovi klize i render nije ponovljiv.
 
 Isti tokeni kao app (`src/app/globals.css`), samo hard-kodirani jer scena stoji
 sama: bela pozadina, mastilo `#0a0c0b`, muted `#646b6f`, unos `#d95540`
-(`--macro-fat`), potrošnja `#1f9e69` (`--macro-protein`), brend teal `#17d1a8`
+(`--macro-fat`), potrošnja `#22c55e` (svetlo zelena), brend teal `#17d1a8`
 za pilulu deficita. Tipografija je
 Inter (900/700), sr-Latn, zero-shame ton — bez kaznene crvene.
 

@@ -148,6 +148,14 @@
   el('totalUnit').textContent = CFG.unit;
   const fmt = (n) => Math.round(n).toLocaleString('sr-RS').replace(/ /g, '.');
 
+  // Podvlacenje se meri po STVARNOJ sirini teksta u finalnom stanju -- fiksna
+  // linija ne bi pokrivala isto (broj i "kcal" imaju svoju sirinu).
+  const totalText = document.querySelector('#total text');
+  el('totalNum').textContent = fmt(CFG.total);
+  const bb = totalText.getBBox();
+  const UL = { x0: bb.x - 2, x1: bb.x + bb.width + 2, y: bb.y + bb.height + 16 };
+  el('totalNum').textContent = '0';
+
   /* ---------- tajmlajna ---------- */
   const T = {
     pop: [0.06, 0.26, 0.46],       // ulazak kolaca (stagger 200ms)
@@ -228,7 +236,8 @@
     el('total').style.transformOrigin = '270px 600px';
     el('total').style.transform = `scale(${(1 + 0.08 * bk).toFixed(4)})`;
     const uk = outCubic(p(t, T.underline[0], T.underline[1]));
-    el('underline').setAttribute('d', `M168 646 H${mix(168, 372, uk).toFixed(1)}`);
+    el('underline').setAttribute('d',
+      `M${UL.x0.toFixed(1)} ${UL.y.toFixed(1)} H${mix(UL.x0, UL.x1, uk).toFixed(1)}`);
     el('underline').setAttribute('opacity', uk > 0 ? '1' : '0');
 
     /* ---------- "+718" proleti kroz brojac ---------- */

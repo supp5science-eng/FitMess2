@@ -86,7 +86,13 @@ await new Promise((resolve, reject) => {
     '-y',
     '-framerate', String(shotFps),
     '-i', path.join(framesDir, 'f%05d.png'),
-    ...(mblur > 1 ? ['-vf', `tmix=frames=${mblur}:weights='${Array(mblur).fill(1).join(' ')}',fps=${fps}`] : []),
+    // tmix prosecuje KLIZNI prozor, pa se bira samo svaki mblur-ti izlaz --
+    // tako svaki frejm nastaje od svoja 4 pod-frejma i "zatvarac" je poravnat
+    // sa granicama frejma (inace se tekst koji se menja razmaze preko granice).
+    ...(mblur > 1
+      ? ['-vf', `tmix=frames=${mblur},select=eq(mod(n\\,${mblur})\\,${mblur - 1}),setpts=N/${fps}/TB`,
+         '-r', String(fps)]
+      : []),
     '-c:v', 'libx264',
     '-profile:v', 'high',
     '-preset', 'slow',

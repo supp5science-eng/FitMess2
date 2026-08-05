@@ -39,7 +39,10 @@ a iznad rascepa visi crni bedž sa upitnikom koji se ljulja kao klatno.
 gore desno ljubičaste ikonice tvojih podataka. Posle ~1 s jedna po jedna
 **poniru u portal** ispod njih (elipsa koja se zatalasa na svaki dolazak i
 postepeno pozeleni). Iz portala izlazi **jedan zeleni tok** koji ulazi u
-telefon, telefon odskoči uz glow puls, i iz njega iskoči dnevni unos. Sve što se
+telefon — i tek tada se u telefonu **upali pravi app UI** (ekran „Danas":
+traka datuma, kalorijski prsten u azure gradijentu `--gauge-grad-*`, makroi
+Proteini/UH/Masti, donja navigacija Početna/Analitika/Profil), a broj u prstenu
+otkuca do dnevnog cilja. Sve što se
 najčešće menja — broj, natpisi, boje, debljina linija, broj krugova vrtloga —
 stoji u `CFG` na vrhu fajla.
 
@@ -59,6 +62,11 @@ node motion/render.mjs tokovi-9x16 --mblur 4              # pravi motion blur
 `--mblur N` renderuje N pod-frejmova po izlaznom frejmu i stapa ih (ffmpeg
 `tmix`), pa brzi elementi dobiju **stvarno** razmazivanje umesto lažnog smera.
 Scena može da ga traži i sama, preko `window.SCENE.mblur`.
+
+Zatvarač je **poravnat sa granicama frejma** (`tmix` + `select` svakog
+N-tog izlaza), pa svaki frejm nastaje tačno od svojih N pod-frejmova. Zbog toga
+tekst koji se menja (brojači) ostaje oštar ako se u sceni kvantuje na izlazni
+fps — vidi `tq` u `tokovi-9x16.html`.
 
 Potreban je i `ffmpeg` sa `libx264` u PATH-u. Render pravi frejmove u
 `motion/.frames/` (ignorisano u gitu) i briše ih posle enkodovanja.

@@ -37,6 +37,12 @@
         <stop offset="0%" stop-color="#17d1a8" stop-opacity="0.45" />
         <stop offset="100%" stop-color="#17d1a8" stop-opacity="0" />
       </radialGradient>
+      <!-- prsten kalorija: azure gradijent iz app-a (--gauge-grad-1/2/3, light) -->
+      <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#4cc3f7" />
+        <stop offset="55%" stop-color="#0ea5e9" />
+        <stop offset="100%" stop-color="#0a6fae" />
+      </linearGradient>
     </defs>
 
     <!-- natpisi iznad vrtloga -->
@@ -54,31 +60,69 @@
     <g id="merged"></g>
 
     <!-- PORTAL -->
-    <ellipse id="portalHalo" cx="270" cy="424" rx="200" ry="86" fill="url(#portalGlow)" opacity="0" />
+    <ellipse id="portalHalo" cx="270" cy="400" rx="200" ry="86" fill="url(#portalGlow)" opacity="0" />
     <g id="portal">
-      <ellipse id="ring1" cx="270" cy="424" rx="134" ry="39" stroke="#c9ced2" stroke-width="2.4" />
-      <ellipse id="ring2" cx="270" cy="424" rx="103" ry="30" stroke="#d8dcdf" stroke-width="2" />
-      <ellipse id="ring3" cx="270" cy="424" rx="70" ry="20" stroke="#e4e7e9" stroke-width="1.8" />
+      <ellipse id="ring1" cx="270" cy="400" rx="134" ry="39" stroke="#c9ced2" stroke-width="2.4" />
+      <ellipse id="ring2" cx="270" cy="400" rx="103" ry="30" stroke="#d8dcdf" stroke-width="2" />
+      <ellipse id="ring3" cx="270" cy="400" rx="70" ry="20" stroke="#e4e7e9" stroke-width="1.8" />
     </g>
 
-    <!-- TELEFON -->
-    <circle id="phoneGlowC" cx="270" cy="722" r="190" fill="url(#phoneGlow)" opacity="0" />
+    <!-- TELEFON: prazna kontura dok ne stigne zeleni tok, pa se upali app UI -->
+    <circle id="phoneGlowC" cx="270" cy="712" r="200" fill="url(#phoneGlow)" opacity="0" />
     <g id="phone">
-      <rect id="phoneBody" x="182" y="562" width="176" height="326" rx="27"
+      <rect id="phoneBody" x="164" y="518" width="212" height="392" rx="31"
             stroke="#c9ced2" stroke-width="2.6" fill="#fff" />
-      <rect x="195" y="575" width="150" height="300" rx="18" stroke="#e6e9eb" stroke-width="1.6" />
-      <rect x="250" y="584" width="40" height="5" rx="2.5" fill="#dfe3e6" />
-      <rect x="245" y="862" width="50" height="4" rx="2" fill="#e6e9eb" />
-    </g>
+      <rect id="screen" x="175" y="530" width="190" height="368" rx="22"
+            stroke="#e6e9eb" stroke-width="1.6" fill="#fff" />
+      <rect x="252" y="539" width="36" height="4.5" rx="2.2" fill="#dfe3e6" />
 
-    <!-- rezultat -->
-    <g id="result">
-      <text id="resNum" x="270" y="706" text-anchor="middle" dominant-baseline="central"
-            font-family="Inter" font-size="76" font-weight="900" letter-spacing="-3"
-            fill="#0a0c0b">2.154</text>
-      <text id="resUnit" x="270" y="764" text-anchor="middle" dominant-baseline="central"
-            font-family="Inter" font-size="23" font-weight="800" letter-spacing="1.2"
-            fill="#646b6f">kcal / dan</text>
+      <!-- ================= APP UI (ekran /danas) ================= -->
+      <g id="ui" opacity="0">
+        <!-- statusna traka -->
+        <g class="uiPart" data-step="0">
+          <text x="189" y="556" font-family="Inter" font-size="9" font-weight="800" fill="#0a0c0b">9:41</text>
+          <g fill="#0a0c0b">
+            <rect x="330" y="550" width="2.5" height="4" rx="1" /><rect x="334.5" y="548" width="2.5" height="6" rx="1" />
+            <rect x="339" y="546" width="2.5" height="8" rx="1" />
+            <rect x="345" y="547.5" width="11" height="6.5" rx="2" opacity="0.35" />
+            <rect x="346.5" y="549" width="8" height="3.5" rx="1.2" />
+          </g>
+        </g>
+
+        <!-- zaglavlje -->
+        <g class="uiPart" data-step="1">
+          <text x="189" y="580" font-family="Inter" font-size="15" font-weight="900"
+                letter-spacing="-0.4" fill="#0a0c0b">Danas</text>
+          <text x="351" y="579" text-anchor="end" font-family="Inter" font-size="8.5"
+                font-weight="700" fill="#8a9095">sre, 5. avg</text>
+        </g>
+
+        <!-- traka datuma -->
+        <g class="uiPart" data-step="2" id="dateStrip"></g>
+
+        <!-- kalorijski prsten -->
+        <g class="uiPart" data-step="3">
+          <circle cx="270" cy="700" r="52" fill="none" stroke="#e2f2fb" stroke-width="12" />
+          <circle id="ringArc" cx="270" cy="700" r="52" fill="none" stroke="url(#gaugeGrad)"
+                  stroke-width="12" stroke-linecap="round" transform="rotate(-90 270 700)"
+                  stroke-dasharray="326.7" stroke-dashoffset="326.7" />
+          <text id="uiNum" x="270" y="697" text-anchor="middle" dominant-baseline="central"
+                font-family="Inter" font-size="27" font-weight="900" letter-spacing="-1.1"
+                fill="#0a0c0b">0</text>
+          <text x="270" y="718" text-anchor="middle" dominant-baseline="central"
+                font-family="Inter" font-size="9" font-weight="800" letter-spacing="0.5"
+                fill="#8a9095">kcal / dan</text>
+        </g>
+
+        <!-- makroi -->
+        <g class="uiPart" data-step="4" id="macros"></g>
+
+        <!-- donja navigacija -->
+        <g class="uiPart" data-step="5">
+          <line x1="181" y1="862" x2="359" y2="862" stroke="#eceef0" stroke-width="1.2" />
+          <g id="nav"></g>
+        </g>
+      </g>
     </g>
   </svg>
 </div>
@@ -121,8 +165,8 @@
   const el = (id) => document.getElementById(id);
   const SVG = 'http://www.w3.org/2000/svg';
 
-  const PORTAL = { x: 270, y: 424 };
-  const PHONE = { x: 270, y: 722, top: 562 };
+  const PORTAL = { x: 270, y: 400 };
+  const PHONE = { x: 270, y: 712, top: 518 };
 
   /* ============================================================
      IKONICE -- kutija ~40x40 oko koordinatnog pocetka
@@ -174,8 +218,9 @@
     portalIn: [0.45, 0.95],
     beam:    [1.80, 2.20],
     mergeT0: 1.86, mergeStep: 0.105, mergeTravel: 0.52, mergeCount: 13,
-    receive: 3.52,               // telefon prima
-    result:  [3.74, 4.40],
+    receive: 3.44,               // telefon prima tok
+    ui: 3.52,                    // app UI se pali
+    ring: [3.78, 4.55],          // prsten + broj
   };
 
   const items = [];
@@ -220,14 +265,99 @@
     merged.push({ g, start: T.mergeT0 + i * T.mergeStep, off: (i % 3 - 1) * 9 });
   }
 
+  /* ============================================================
+     APP UI u telefonu -- vokabular i boje su iz app-a:
+     "Danas" ekran, kalorijski prsten (azure --gauge-grad-*), makroi
+     (Proteini / UH / Masti) i donja navigacija (Početna / Analitika / Profil)
+     ============================================================ */
+  const svgEl = (tag, attrs, text) => {
+    const n = document.createElementNS(SVG, tag);
+    Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, String(v)));
+    if (text !== undefined) n.textContent = text;
+    return n;
+  };
+
+  // traka datuma: 7 dana, danas je istaknut
+  (() => {
+    const host = el('dateStrip');
+    const days = ['P', 'U', 'S', 'Č', 'P', 'S', 'N'];
+    const nums = ['31', '1', '2', '3', '4', '5', '6'];
+    const w = 22, gap = 5, x0 = 181;
+    days.forEach((d, i) => {
+      const x = x0 + i * (w + gap);
+      const active = i === 5;
+      host.appendChild(svgEl('rect', {
+        x, y: 592, width: w, height: 34, rx: 10,
+        fill: active ? '#0a0c0b' : '#f4f5f5',
+      }));
+      host.appendChild(svgEl('text', {
+        x: x + w / 2, y: 603, 'text-anchor': 'middle', 'font-family': 'Inter',
+        'font-size': 7, 'font-weight': 800, fill: active ? '#ffffff' : '#8a9095',
+      }, d));
+      host.appendChild(svgEl('text', {
+        x: x + w / 2, y: 617, 'text-anchor': 'middle', 'font-family': 'Inter',
+        'font-size': 9.5, 'font-weight': 900, fill: active ? '#ffffff' : '#0a0c0b',
+      }, nums[i]));
+    });
+  })();
+
+  // makroi: ciljne kolicine za 2.154 kcal (160g P + 220g UH + 70g M = 2.150)
+  (() => {
+    const host = el('macros');
+    const M = [
+      { label: 'Proteini', val: '160 g', color: '#1f9e69', x: 212 },
+      { label: 'UH', val: '220 g', color: '#c98a1b', x: 270 },
+      { label: 'Masti', val: '70 g', color: '#d95540', x: 328 },
+    ];
+    M.forEach((m) => {
+      host.appendChild(svgEl('rect', { x: m.x - 24, y: 778, width: 48, height: 6, rx: 3, fill: '#f1f2f3' }));
+      host.appendChild(svgEl('rect', { x: m.x - 24, y: 778, width: 48, height: 6, rx: 3, fill: m.color }));
+      host.appendChild(svgEl('text', {
+        x: m.x, y: 800, 'text-anchor': 'middle', 'font-family': 'Inter',
+        'font-size': 10, 'font-weight': 900, fill: '#0a0c0b',
+      }, m.val));
+      host.appendChild(svgEl('text', {
+        x: m.x, y: 813, 'text-anchor': 'middle', 'font-family': 'Inter',
+        'font-size': 7.5, 'font-weight': 700, fill: '#8a9095',
+      }, m.label));
+    });
+  })();
+
+  // donja navigacija
+  (() => {
+    const host = el('nav');
+    const N = [
+      { label: 'Početna', x: 212, active: true,
+        icon: '<path d="M-6 0.5L0 -5L6 0.5V6a1 1 0 01-1 1H-5a1 1 0 01-1-1z"/>' },
+      { label: 'Analitika', x: 270, active: false,
+        icon: '<path d="M-6 6V-1M0 6V-6M6 6V2"/>' },
+      { label: 'Profil', x: 328, active: false,
+        icon: '<circle cx="0" cy="-2.5" r="3"/><path d="M-5 7v-1.5a5 5 0 0110 0V7"/>' },
+    ];
+    N.forEach((n) => {
+      const g = svgEl('g', {
+        transform: `translate(${n.x} 878)`,
+        stroke: n.active ? '#0a0c0b' : '#b0b5b9',
+        'stroke-width': 1.7, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', fill: 'none',
+      });
+      g.innerHTML = n.icon;
+      host.appendChild(g);
+      host.appendChild(svgEl('text', {
+        x: n.x, y: 895, 'text-anchor': 'middle', 'font-family': 'Inter',
+        'font-size': 7, 'font-weight': 800, fill: n.active ? '#0a0c0b' : '#b0b5b9',
+      }, n.label));
+    });
+  })();
+
+  const uiParts = [...document.querySelectorAll('#ui .uiPart')];
+  const RING_LEN = 2 * Math.PI * 52;
+  const fmtNum = (n) => Math.round(n).toLocaleString('sr-RS').replace(/ /g, '.');
+  const TARGET = Number(CFG.resultNumber.replace(/\D/g, ''));
+
   el('labL').textContent = CFG.labelLeft;
   el('labR').textContent = CFG.labelRight;
   el('labL').setAttribute('fill', CFG.blue);
   el('labR').setAttribute('fill', CFG.violet);
-  el('resNum').textContent = CFG.resultNumber;
-  el('resUnit').textContent = CFG.resultUnit;
-  el('resNum').setAttribute('fill', CFG.ink);
-  el('resUnit').setAttribute('fill', CFG.muted);
   el('beam').setAttribute('d',
     `M${PORTAL.x - 30} ${PORTAL.y} L${PORTAL.x + 30} ${PORTAL.y} ` +
     `L${PORTAL.x + 22} ${PHONE.top + 26} L${PORTAL.x - 22} ${PHONE.top + 26} Z`);
@@ -304,21 +434,42 @@
       m2.g.setAttribute('opacity', (outCubic(clamp01(k / 0.12)) * (1 - clamp01((k - 0.74) / 0.26))).toFixed(3));
     });
 
-    /* ---------- telefon prima ---------- */
-    const hit = t > T.receive ? (1 - spring(p(t, T.receive, T.receive + 0.6))) * 0.055 : 0;
+    /* ---------- telefon prima tok ---------- */
+    const hit = t > T.receive ? (1 - spring(p(t, T.receive, T.receive + 0.6))) * 0.05 : 0;
+    const grow = mix(1, 1.06, outCubic(p(t, T.receive, T.receive + 0.7)));
+    // kad portal odradi svoje, telefon otplovi u centar kadra i preuzme scenu
+    const rise = mix(0, -132, outCubic(p(t, T.receive + 0.26, T.receive + 1.1)));
     el('phone').style.transformOrigin = `${PHONE.x}px ${PHONE.y}px`;
-    el('phone').style.transform = `scale(${(1 + hit).toFixed(4)})`;
+    el('phone').style.transform = `translateY(${rise.toFixed(1)}px) scale(${(grow + hit).toFixed(4)})`;
+    el('phoneGlowC').setAttribute('cy', (712 + rise).toFixed(1));
     el('phoneBody').setAttribute('stroke', t > T.receive ? '#8a9095' : '#c9ced2');
-    const gk = p(t, T.receive, T.receive + 0.8);
-    el('phoneGlowC').setAttribute('opacity', (gk > 0 ? Math.sin(Math.PI * gk) * 0.85 : 0).toFixed(3));
+    const gk = p(t, T.receive, T.receive + 0.9);
+    el('phoneGlowC').setAttribute('opacity', (gk > 0 ? Math.sin(Math.PI * gk) * 0.8 : 0).toFixed(3));
     el('phoneGlowC').style.transformOrigin = `${PHONE.x}px ${PHONE.y}px`;
-    el('phoneGlowC').style.transform = `scale(${mix(0.7, 1.1, outCubic(gk)).toFixed(3)})`;
+    el('phoneGlowC').style.transform = `scale(${mix(0.7, 1.12, outCubic(gk)).toFixed(3)})`;
 
-    /* ---------- rezultat ---------- */
-    const rk = p(t, T.result[0], T.result[1]);
-    el('result').setAttribute('opacity', outCubic(p(t, T.result[0], T.result[0] + 0.16)).toFixed(3));
-    el('result').style.transformOrigin = `${PHONE.x}px ${PHONE.y}px`;
-    el('result').style.transform = `scale(${(rk <= 0 ? 0 : mix(0.35, 1, spring(rk, 7.5, 6))).toFixed(4)})`;
+    /* ---------- app UI se pali deo po deo ---------- */
+    el('ui').setAttribute('opacity', outCubic(p(t, T.ui, T.ui + 0.18)).toFixed(3));
+    uiParts.forEach((g, i) => {
+      const a = T.ui + i * 0.075;
+      const k = outCubic(p(t, a, a + 0.3));
+      g.setAttribute('opacity', k.toFixed(3));
+      g.setAttribute('transform', `translate(0 ${mix(7, 0, k).toFixed(2)})`);
+    });
+
+    // prsten se ispisuje pa broj otkuca do cilja
+    const ringK = outCubic(p(t, T.ring[0], T.ring[1]));
+    el('ringArc').setAttribute('stroke-dashoffset', (RING_LEN * (1 - ringK)).toFixed(2));
+    // brojac se kvantuje na IZLAZNE frejmove: da motion blur ne razmaze cifre
+    // (pod-frejmovi unutar istog frejma moraju da pokazu isti broj)
+    const tq = Math.floor(t * CFG.fps + 1e-6) / CFG.fps;
+    el('uiNum').textContent = fmtNum(TARGET * outCubic(p(tq, T.ring[0] + 0.05, T.ring[1] + 0.1)));
+
+    /* ---------- portal se povlaci kad app preuzme kadar ---------- */
+    const handoff = 1 - outCubic(p(t, T.receive + 0.1, T.receive + 0.7));
+    el('portal').setAttribute('opacity', (pIn * handoff).toFixed(3));
+    el('portalHalo').setAttribute('opacity',
+      (Number(el('portalHalo').getAttribute('opacity')) * handoff).toFixed(3));
   }
 
   window.SCENE = { width: 540, height: 960, fps: CFG.fps, duration: CFG.duration, mblur: CFG.mblur };

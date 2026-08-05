@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8" />
+<title>FitMess motion — dve nepoznate 9:16</title>
+<style>
+  /* Scena se crta u 540x960 CSS px i snima na 2x (1080x1920).
+     Nista se ne animira preko CSS/Web animacija -- svaki frejm je cista
+     funkcija vremena (window.render(t)), da bi render bio deterministican. */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 540px; height: 960px; overflow: hidden; background: #fff; }
+  body {
+    font-family: Inter, system-ui, sans-serif;
+    color: #0a0c0b;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: geometricPrecision;
+  }
+  #stage { position: relative; width: 540px; height: 960px; background: #fff; }
+  #art { position: absolute; left: 0; top: 0; width: 540px; height: 960px; }
+
+  #cilj {
+    position: absolute; left: 0; top: 158px; width: 540px; text-align: center;
+    font-size: 23px; font-weight: 800; letter-spacing: 0.22em; color: #0a0c0b;
+  }
+  .lab {
+    position: absolute; top: 484px; width: 200px; text-align: center;
+    font-size: 21px; font-weight: 800; letter-spacing: 0.15em;
+  }
+  #labL { left: 40px; color: #16a34a; }
+  #labR { left: 300px; color: #d95540; }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="cilj">CILJ</div>
+
+  <svg id="art" viewBox="0 0 540 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <!-- strelica nadole ispod natpisa CILJ -->
+    <g id="arrow" stroke="#0a0c0b" stroke-width="5" stroke-linecap="round" fill="none">
+      <path d="M270 196 L270 232" />
+      <path d="M258 222 L270 234 L282 222" />
+    </g>
+
+    <!-- ================= SILUETA ================= -->
+    <!-- linijski pictogram: udovi su blago savijeni (lakat/koleno) da figura ne
+         izgleda kao krut stap -->
+    <g id="person" stroke="#0a0c0b" stroke-width="12.5" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="270" cy="276" r="18" fill="#0a0c0b" stroke="none" />
+      <path d="M270 300 L270 382" />
+      <path d="M270 318 L243 338 L236 366" />
+      <path d="M270 318 L297 338 L304 366" />
+      <path d="M270 382 L251 412 L246 448" />
+      <path d="M270 382 L289 412 L294 448" />
+    </g>
+
+    <!-- ================= IKONICE: POTROSNJA (levo) ================= -->
+    <g id="iconsL" stroke="#16a34a" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <!-- hodanje -->
+      <g class="ic" id="icWalk">
+        <circle cx="0" cy="-17" r="4.4" fill="#16a34a" stroke="none" />
+        <path d="M0 -11 L-2 4" />
+        <path d="M-1 -6 L9 -1" /><path d="M-1 -6 L-10 0" />
+        <path d="M-2 4 L8 12 L9 20" /><path d="M-2 4 L-11 13 L-13 20" />
+      </g>
+      <!-- trening (bucica) -->
+      <g class="ic" id="icDumb">
+        <path d="M-16 -8 L-16 8" /><path d="M-9 -13 L-9 13" />
+        <path d="M9 -13 L9 13" /><path d="M16 -8 L16 8" />
+        <path d="M-9 0 L9 0" />
+      </g>
+      <!-- otkucaji srca -->
+      <g class="ic" id="icHeart">
+        <path d="M0 15 C-16 4, -19 -6, -12 -12 C-6 -17, 0 -12, 0 -7 C0 -12, 6 -17, 12 -12 C19 -6, 16 4, 0 15 Z" />
+        <path d="M-11 -2 H-5 L-2 -8 L2 3 L5 -2 H11" stroke-width="3.4" />
+      </g>
+      <!-- san -->
+      <g class="ic" id="icSleep">
+        <path d="M6 -13 A14 14 0 1 0 13 4 A11 11 0 0 1 6 -13 Z" />
+        <path d="M11 -18 H21 L11 -8 H21" stroke-width="3.2" />
+      </g>
+    </g>
+
+    <!-- ================= IKONICE: UNOS (desno) ================= -->
+    <g id="iconsR" stroke="#d95540" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <!-- tanjir -->
+      <g class="ic" id="icPlate">
+        <circle cx="0" cy="0" r="16" /><circle cx="0" cy="0" r="8" stroke-width="3.2" />
+      </g>
+      <!-- pribor -->
+      <g class="ic" id="icFork">
+        <path d="M-11 -16 V-4" /><path d="M-4 -16 V-4" /><path d="M-11 -4 q3.5 6 7 0" /><path d="M-7.5 -1 V17" />
+        <path d="M8 -16 C15 -10, 15 -2, 8 3 Z" /><path d="M8 3 V17" />
+      </g>
+      <!-- jabuka -->
+      <g class="ic" id="icApple">
+        <path d="M0 -6 C-5 -13, -16 -10, -16 1 C-16 10, -8 17, 0 13 C8 17, 16 10, 16 1 C16 -10, 5 -13, 0 -6 Z" />
+        <path d="M0 -7 V-15" /><path d="M0 -14 C6 -20, 12 -18, 12 -18 C12 -13, 6 -11, 0 -14 Z" stroke-width="3.2" />
+      </g>
+      <!-- caša -->
+      <g class="ic" id="icCup">
+        <path d="M-11 -14 H11 L8 14 H-8 Z" />
+        <path d="M-10 -5 H10" stroke-width="3.2" />
+      </g>
+    </g>
+
+    <!-- ================= VAGA (klackalica) ================= -->
+    <g id="scale">
+      <g id="scaleBase">
+        <path d="M270 654 L296 712 L244 712 Z" fill="#0a0c0b" />
+        <rect x="206" y="712" width="128" height="11" rx="5.5" fill="#0a0c0b" />
+      </g>
+      <line id="beam" x1="138" y1="654" x2="402" y2="654"
+            stroke="#0a0c0b" stroke-width="9" stroke-linecap="round" />
+      <circle id="pivot" cx="270" cy="654" r="11" fill="#0a0c0b" />
+    </g>
+
+    <!-- ================= DVA KRUGA SA UPITNIKOM ================= -->
+    <g id="qL">
+      <circle cx="138" cy="578" r="70" stroke="#16a34a" stroke-width="7" fill="#fff" />
+      <text x="138" y="584" text-anchor="middle" dominant-baseline="central"
+            font-family="Inter" font-size="76" font-weight="900" fill="#16a34a">?</text>
+    </g>
+    <g id="qR">
+      <circle cx="402" cy="578" r="70" stroke="#d95540" stroke-width="7" fill="#fff" />
+      <text x="402" y="584" text-anchor="middle" dominant-baseline="central"
+            font-family="Inter" font-size="76" font-weight="900" fill="#d95540">?</text>
+    </g>
+  </svg>
+
+  <div class="lab" id="labL">POTROŠNJA</div>
+  <div class="lab" id="labR">UNOS</div>
+</div>
+
+<script>
+(() => {
+  const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
+  const p = (t, a, b) => clamp01((t - a) / (b - a));
+  const outCubic = (x) => 1 - Math.pow(1 - x, 3);
+  const inCubic = (x) => x * x * x;
+  const outBack = (x) => { const c = 1.7; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2); };
+  const mix = (a, b, x) => a + (b - a) * x;
+  const el = (id) => document.getElementById(id);
+
+  /* ---------- geometrija ---------- */
+  const PIVOT = { x: 270, y: 654 };
+  const ARM = 132;                    // poluduzina grede
+  const Q = { y: 578, r: 70 };        // krugovi sa upitnikom (miruju na gredi)
+
+  // Ikonice: gde se rasporede pre nego sto se skupe u krug.
+  // [id, dx, dy] u odnosu na centar svog kruga.
+  const ICONS_L = [
+    ['icWalk',  -76, -58],
+    ['icDumb',   62, -74],
+    ['icHeart', -88,  36],
+    ['icSleep',  56,  44],
+  ];
+  const ICONS_R = [
+    ['icPlate',  74, -60],
+    ['icFork',  -66, -76],
+    ['icApple',  84,  38],
+    ['icCup',   -60,  46],
+  ];
+
+  /* ---------- tajmlajna ---------- */
+  const T = {
+    person: [0.10, 0.70],
+    cilj:   [0.55, 1.05],
+    arrow:  [0.80, 1.25],
+    iconsL: 1.35, iconsLStep: 0.17,   // 4 ikonice
+    mergeL: [2.55, 3.05],
+    circleL:[2.85, 3.30],
+    labL:   [3.15, 3.50],
+    iconsR: 3.75, iconsRStep: 0.17,
+    mergeR: [4.95, 5.45],
+    circleR:[5.25, 5.70],
+    labR:   [5.55, 5.90],
+    scale:  [6.10, 6.65],
+    settle: 6.45,
+  };
+  const DURATION = 8.0;
+
+  /* ---------- ikonice ---------- */
+  function renderIcons(list, cx, t0, step, merge) {
+    list.forEach(([id, dx, dy], i) => {
+      const g = el(id);
+      const a = t0 + i * step;
+      const pop = outBack(p(t.now, a, a + 0.42));
+      const appear = outCubic(p(t.now, a, a + 0.26));
+      // od siluete ka svom mestu, pa skupljanje u centar kruga
+      const m = inCubic(p(t.now, merge[0] + i * 0.035, merge[1] + i * 0.035));
+      const sx = mix(270 - cx, dx, pop);     // krece od siluete (x=270)
+      const sy = mix(330 - Q.y, dy, pop);
+      const x = cx + mix(sx, 0, m);
+      const y = Q.y + mix(sy, 0, m);
+      const s = mix(0.65, 1.15, pop) * mix(1, 0.25, m);
+      g.setAttribute('transform', `translate(${x} ${y}) scale(${s})`);
+      g.style.opacity = String(appear * (1 - m));
+    });
+  }
+
+  /* ---------- glavni render ---------- */
+  const t = { now: 0 };
+
+  function render(now) {
+    t.now = now;
+
+    /* 1. Silueta */
+    const pIn = outCubic(p(now, T.person[0], T.person[1]));
+    el('person').style.opacity = String(pIn);
+    el('person').style.transformOrigin = '270px 448px';
+    el('person').style.transform = `scale(${mix(0.94, 1, outBack(p(now, T.person[0], T.person[1] + 0.12)))})`;
+
+    /* 2. CILJ + strelica nadole */
+    const cIn = outCubic(p(now, T.cilj[0], T.cilj[1]));
+    el('cilj').style.opacity = String(cIn);
+    el('cilj').style.transform = `translateY(${mix(-10, 0, cIn)}px)`;
+    const aIn = outCubic(p(now, T.arrow[0], T.arrow[1]));
+    const aNudge = now > T.arrow[1] ? 3 * Math.sin((now - T.arrow[1]) * 2.6) : 0;
+    el('arrow').style.opacity = String(aIn);
+    el('arrow').setAttribute('transform', `translate(0 ${mix(-14, 0, aIn) + aNudge})`);
+
+    /* 3. Ikonice potrošnje pa ikonice unosa */
+    renderIcons(ICONS_L, 138, T.iconsL, T.iconsLStep, T.mergeL);
+    renderIcons(ICONS_R, 402, T.iconsR, T.iconsRStep, T.mergeR);
+
+    /* 4. Vaga se pojavljuje ispod (greda se crta iz sredine) */
+    const sIn = outCubic(p(now, T.scale[0], T.scale[1]));
+    el('scaleBase').style.opacity = String(outCubic(p(now, T.scale[0], T.scale[0] + 0.35)));
+    el('scaleBase').style.transformOrigin = '270px 712px';
+    el('scaleBase').style.transform = `scaleY(${mix(0.7, 1, outBack(p(now, T.scale[0], T.scale[0] + 0.45)))})`;
+    el('beam').style.opacity = String(sIn > 0 ? 1 : 0);
+    el('pivot').style.opacity = String(sIn);
+
+    // ljuljanje: prigušeno, ali nikad sasvim ne stane -- jednačina je nerešena
+    const st = Math.max(0, now - T.settle);
+    const ang = sIn === 0 ? 0
+      : 7.2 * Math.exp(-0.55 * st) * Math.sin(st * 3.1 + 0.35) + 0.9 * Math.sin(st * 1.15);
+    const rad = (ang * Math.PI) / 180;
+
+    const halfDrawn = ARM * sIn;
+    el('beam').setAttribute('x1', String(PIVOT.x - halfDrawn * Math.cos(rad)));
+    el('beam').setAttribute('y1', String(PIVOT.y - halfDrawn * Math.sin(rad)));
+    el('beam').setAttribute('x2', String(PIVOT.x + halfDrawn * Math.cos(rad)));
+    el('beam').setAttribute('y2', String(PIVOT.y + halfDrawn * Math.sin(rad)));
+
+    /* 5. Krugovi sa upitnikom -- prvo lebde, pa sednu na krajeve grede */
+    const drop = outBack(p(now, T.settle, T.settle + 0.5));   // spuštanje na gredu
+    [['qL', -1, T.circleL], ['qR', 1, T.circleR]].forEach(([id, side, tin]) => {
+      const g = el(id);
+      const pop = outBack(p(now, tin[0], tin[1] + 0.1));
+      g.style.opacity = String(outCubic(p(now, tin[0], tin[0] + 0.26)));
+      const cx0 = PIVOT.x + side * ARM;
+      // pozicija na gredi (kad je vaga tu), inače mirno lebdi 18px više
+      const bx = PIVOT.x + side * ARM * Math.cos(rad);
+      const by = PIVOT.y + side * ARM * Math.sin(rad) - Q.r - 6;
+      const x = mix(cx0, bx, drop);
+      const y = mix(Q.y - 18, by, drop);
+      g.style.transformOrigin = `${cx0}px ${Q.y}px`;
+      g.style.transform = `translate(${x - cx0}px, ${y - Q.y}px) scale(${mix(0.7, 1, pop)})`;
+    });
+
+    /* 6. Natpisi ispod ikonica -> iznad krugova */
+    const lIn = outCubic(p(now, T.labL[0], T.labL[1]));
+    el('labL').style.opacity = String(lIn);
+    el('labL').style.transform = `translateY(${mix(8, 0, lIn)}px)`;
+    const rIn = outCubic(p(now, T.labR[0], T.labR[1]));
+    el('labR').style.opacity = String(rIn);
+    el('labR').style.transform = `translateY(${mix(8, 0, rIn)}px)`;
+  }
+
+  window.SCENE = { width: 540, height: 960, fps: 30, duration: DURATION };
+  window.render = render;
+  render(0);
+})();
+</script>
+</body>
+</html>

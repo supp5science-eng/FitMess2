@@ -32,6 +32,15 @@ export const homeExtraMessages = {
     "home.overNotice.spill":
       "Nedelja se završava — višak od {kcal} kcal prelazi u sledeću.",
 
+    // Pitanje o danu kome plan nije poverovao. Bezlično „uneto je" — ne mora
+    // da bira između „uneo si" i „unela si". Pitanje imenuje dan i iznos, jer
+    // „jedan raniji dan" ne bi značilo ništa nikome.
+    "home.dayQuestion.ask": "Je li {day} stvarno bio dan od {kcal} kcal?",
+    "home.dayQuestion.complete": "Da, bio je lagan dan",
+    "home.dayQuestion.partial": "Nije sve upisano",
+    "home.dayQuestion.why":
+      "Dok ne odgovoriš, taj dan se računa kao da je odrađen po planu.",
+
     // Adaptive plan — rečenice preživele iz kartice (commit f79787d), sad ih
     // koristi trenutak na otvaranju dana.
     "home.adaptive.day": "dan",
@@ -164,6 +173,12 @@ export const homeExtraMessages = {
     "home.overNotice.over": "Today came in {kcal} kcal over target.",
     "home.overNotice.spill":
       "The week ends today — {kcal} kcal carries into the next one.",
+
+    "home.dayQuestion.ask": "Was {day} really a {kcal} kcal day?",
+    "home.dayQuestion.complete": "Yes, it was a light day",
+    "home.dayQuestion.partial": "I didn't log it all",
+    "home.dayQuestion.why":
+      "Until you answer, that day counts as one done to plan.",
 
     // Adaptive plan
     "home.adaptive.day": "day",

@@ -676,3 +676,102 @@ describe("the plan moment must let go of the screen it took over", () => {
     }
   });
 });
+
+describe("the one input that can correct the plan's guess about a past day", () => {
+  // `day-trust.ts` counts a day it doesn't believe AS A DAY ON PLAN. That is
+  // the right default, but it IS a guess -- and between 2026-08-01 and
+  // 2026-08-06 nothing on the screen asked about it, so a genuinely light day
+  // could never be confirmed. The cookie and the trust pass kept working with
+  // nothing left to feed them.
+  const untrusted = [
+    {
+      dayKey: "2026-07-22",
+      kcal: 420,
+      logCount: 1,
+      trust: "ambiguous",
+      counts: false,
+      needsAnswer: true,
+      answer: null,
+    },
+    {
+      dayKey: "2026-07-21",
+      kcal: 300,
+      logCount: 1,
+      trust: "ambiguous",
+      counts: false,
+      needsAnswer: true,
+      answer: null,
+    },
+  ] as never;
+
+  it("test_it_names_the_day_and_the_number_it_refused_to_believe", () => {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        untrustedDays={untrusted}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+
+    // "jedan raniji dan" would mean nothing to anyone -- it has to say which.
+    expect(screen.getByTestId("day-question")).toHaveTextContent(
+      "Je li sreda stvarno bio dan od 420 kcal?"
+    );
+    expect(screen.getByTestId("day-answer-complete")).toBeInTheDocument();
+    expect(screen.getByTestId("day-answer-partial")).toBeInTheDocument();
+  });
+
+  it("test_it_asks_about_one_day_at_a_time", () => {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        untrustedDays={untrusted}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+
+    // Two questions stacked read as a form, and a form on the home screen is
+    // something people close rather than answer.
+    expect(screen.getAllByTestId("day-question")).toHaveLength(1);
+    expect(screen.queryByText(/300 kcal/)).not.toBeInTheDocument();
+  });
+
+  it("test_answering_hides_it_and_refreshes_the_plan", () => {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        untrustedDays={untrusted}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+
+    fireEvent.click(screen.getByTestId("day-answer-complete"));
+
+    // The answer beats the heuristic, so the plan has to be recomputed -- and
+    // the tapped question must not sit there looking unanswered meanwhile.
+    expect(refreshSpy).toHaveBeenCalled();
+    expect(screen.getByTestId("day-question")).toHaveTextContent(
+      "Je li utorak stvarno bio dan od 300 kcal?"
+    );
+  });
+
+  it("test_a_past_day_view_never_asks", () => {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        untrustedDays={untrusted}
+        dayKey="2026-07-20"
+        isToday={false}
+      />
+    );
+
+    expect(screen.queryByTestId("day-question")).not.toBeInTheDocument();
+  });
+});

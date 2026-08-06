@@ -305,14 +305,28 @@ export default async function DanasPage({
     isToday && todayTarget > 0 ? Math.round(todayKcal - todayTarget) : 0;
   // Never both at once: the day-open moment already explains the plan, and a
   // second recalculation notice under it would be the same subject twice.
+  //
+  // ⚠️ Requires a plan: without one there is nothing to recalculate, and the
+  // notice's `tomorrowKcal === null` branch means one specific thing -- "the
+  // week ends today" -- so it must never double as "we couldn't work it out".
+  // A missing plan has to cost the notice, not produce the wrong sentence.
   const overNotice =
     overKcal > 0 &&
+    adaptivePlan != null &&
     !planIntro &&
     cookieStore.get(OVER_NOTICE_COOKIE)?.value !== todayKey;
   const tomorrowKcal =
     overNotice && adaptivePlan
       ? projectDailyTarget(adaptivePlan, todayKcal)
       : null;
+
+  // The one input that can correct the plan's guess about a past day. Shown
+  // whenever a day is genuinely ambiguous -- independent of the two moments
+  // above, because a question keeps mattering on the fifth visit of the day.
+  const untrustedDays =
+    isToday && adaptivePlan
+      ? adaptivePlan.untrustedDays.filter((day) => day.needsAnswer)
+      : [];
 
   const intro = isToday && cookieStore.get("fm_intro") != null;
   // One-shot, set by the plan reveal alongside fm_intro: right after
@@ -345,6 +359,7 @@ export default async function DanasPage({
       planIntro={planIntro}
       overKcal={overNotice ? overKcal : null}
       tomorrowKcal={tomorrowKcal}
+      untrustedDays={untrustedDays}
       dayKey={selectedKey}
       initialWaterMl={waterMl}
       waterGoal={waterGoal}

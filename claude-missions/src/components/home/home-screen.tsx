@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
 import { HealthScoreCard } from "@/components/home/health-score-card";
 import { IntakePager } from "@/components/home/intake-pager";
+import { DayQuestion } from "@/components/home/day-question";
 import { IntroCover } from "@/components/home/intro-cover";
 import { OverNotice } from "@/components/home/over-notice";
 import { PlanIntro } from "@/components/home/plan-intro";
@@ -19,6 +20,7 @@ import { WaterButton } from "@/components/home/water-button";
 import { WeighInBanner } from "@/components/home/weigh-in-banner";
 import { WorkoutButton } from "@/components/home/workout-button";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
+import type { DayVerdict } from "@/lib/home/day-trust";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import { computeDayTotals } from "@/lib/home/totals";
 import { computeHealthScore } from "@/lib/nutrition/health-score";
@@ -65,6 +67,7 @@ export function HomeScreen({
   planIntro = false,
   overKcal = null,
   tomorrowKcal = null,
+  untrustedDays = [],
   dayKey,
   initialWaterMl = 0,
   waterGoal = waterGoalMl(null),
@@ -110,6 +113,10 @@ export function HomeScreen({
   // Null => nothing to say.
   overKcal?: number | null;
   tomorrowKcal?: number | null;
+  // Past days this week the plan refused to believe and wants asked about.
+  // The ONLY way a user can correct a wrong trust verdict -- see
+  // `day-question.tsx` for why it is a standalone row and not a card.
+  untrustedDays?: DayVerdict[];
   // Voda: the Belgrade day this screen shows + that day's already-logged water
   // (ml). When `dayKey` is provided the "Voda" and "Trening" cards render on
   // the pager's movement page. Omitted in unit tests that don't exercise them.
@@ -278,6 +285,13 @@ export function HomeScreen({
           day: a weigh-in is a reading taken now. */}
       {isToday && weighInDaysWaiting !== null && !introActive ? (
         <WeighInBanner daysWaiting={weighInDaysWaiting} />
+      ) : null}
+
+      {/* The one question that can correct a wrong trust verdict. Above the
+          ring with the weigh-in banner, because it is a REQUEST rather than a
+          report -- and gone the moment it is answered. */}
+      {isToday && untrustedDays.length > 0 && dayKey && !introActive ? (
+        <DayQuestion days={untrustedDays} dayKey={dayKey} />
       ) : null}
 
       {/* "Sutrašnji plan je preračunat" -- the consequence of going over, said

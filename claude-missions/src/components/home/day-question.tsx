@@ -80,6 +80,12 @@ export function DayQuestion({
     // Hide the row immediately: the server refresh below is the authority, but
     // the tap has to feel instant.
     setAnswered((previous) => [...previous, untrustedDayKey]);
+
+    // ⚠️ Order matters. The cookie write and the refresh happen FIRST and
+    // unconditionally, because they are what makes the answer take effect on
+    // this device. The network call is an addition, not a prerequisite -- it
+    // must never be able to swallow an answer the user already gave, whether it
+    // fails, hangs, or (offline) never resolves at all.
     try {
       writeCookie(
         DAY_ANSWER_COOKIE,
@@ -95,6 +101,24 @@ export function DayQuestion({
       // A blocked cookie costs the answer, never the screen.
     }
     router.refresh();
+
+    // The durable copy (migration 0029), so the answer survives a new phone.
+    // Deliberately silent on failure: someone who just answered a question
+    // correctly must not be shown an error about our storage. `/danas` merges
+    // the stored row over the cookie, so this only ever adds.
+    try {
+      void Promise.resolve(
+        fetch("/api/dani", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ dayKey: untrustedDayKey, answer: value }),
+        })
+      ).catch(() => {
+        // Offline, or 0029 not applied in this environment yet.
+      });
+    } catch {
+      // `fetch` missing entirely (older webview, test environment).
+    }
   }
 
   const weekdayNames = t("home.adaptive.weekdays").split(" ");

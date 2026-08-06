@@ -775,3 +775,101 @@ describe("the one input that can correct the plan's guess about a past day", () 
     expect(screen.queryByTestId("day-question")).not.toBeInTheDocument();
   });
 });
+
+describe("the quiet line that covers what the once-a-day moment cannot", () => {
+  // Two gaps the moment leaves, both the original complaint in miniature:
+  // after it has played the day has no explanation left, and below the 5%
+  // threshold it never plays at all -- so a smaller trim moves the ring's
+  // number in complete silence.
+  const trimmed = {
+    baseDailyTarget: 2300,
+    adaptiveDailyTarget: 2140,
+    isAdjusted: true,
+    weeklyBudget: 16100,
+    spentBeforeToday: 7460,
+    daysLeftIncludingToday: 4,
+    carryInKcal: 0,
+    trimmedKcal: 160,
+    liftedKcal: 0,
+    trainingSuggestionKcal: 0,
+    trainingWalkMinutes: 0,
+    adaptiveStepGoal: 10000,
+    extraSteps: 0,
+    daysAfterToday: 3,
+    untrustedDays: [],
+    hasNotice: true,
+    causeDays: [{ dayKey: "2026-07-23", kcal: 2800, deltaKcal: 500 }],
+    spillToNextWeekKcal: 0,
+    // Deliberately BELOW the animation threshold: this is the case that used
+    // to move the number with nothing said about it.
+    isMaterial: false,
+    weekRoomKcal: 0,
+    isOnTrackNotice: false,
+    lowerBound: 1725,
+    upperBound: 2300,
+  };
+
+  function renderNote(plan = trimmed) {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2300 })}
+        adaptivePlan={plan}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+  }
+
+  it("test_it_counts_down_the_days_the_change_still_applies_to", () => {
+    renderNote();
+    expect(screen.getByTestId("plan-note")).toHaveTextContent(
+      "Unos je smanjen još 3 dana"
+    );
+  });
+
+  it("test_it_speaks_even_when_the_change_is_below_the_animation_threshold", () => {
+    renderNote();
+    // The moment stays silent here (isMaterial false, and no planIntro prop);
+    // the line is what stops that silence from being total.
+    expect(screen.queryByTestId("plan-intro")).not.toBeInTheDocument();
+    expect(screen.getByTestId("plan-note")).toBeInTheDocument();
+  });
+
+  it("test_tapping_it_opens_the_same_explanation_the_moment_gives", () => {
+    renderNote();
+    fireEvent.click(screen.getByTestId("plan-note"));
+
+    // Same named cause, from the same derivation -- two screens must never
+    // word one week differently.
+    expect(screen.getByTestId("plan-note-cause")).toHaveTextContent(
+      "četvrtak je bio 500 kcal veći od plana"
+    );
+    expect(screen.getByTestId("plan-note-target")).toHaveTextContent("2.140");
+  });
+
+  it("test_it_says_nothing_when_the_plan_has_not_moved", () => {
+    renderNote({
+      ...trimmed,
+      isAdjusted: false,
+      trimmedKcal: 0,
+      adaptiveDailyTarget: 2300,
+    });
+    // Silence stays the default -- this is the whole reason the old card was
+    // deleted, and the line must not reintroduce it.
+    expect(screen.queryByTestId("plan-note")).not.toBeInTheDocument();
+  });
+
+  it("test_a_past_day_never_shows_it", () => {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2300 })}
+        adaptivePlan={trimmed}
+        dayKey="2026-07-20"
+        isToday={false}
+      />
+    );
+    expect(screen.queryByTestId("plan-note")).not.toBeInTheDocument();
+  });
+});

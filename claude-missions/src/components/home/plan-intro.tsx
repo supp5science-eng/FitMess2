@@ -4,6 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { Footprints, TrendingDown, TrendingUp } from "lucide-react";
 
 import { useCountUp } from "@/components/home/animated-number";
+import { formatPlanNumber, planLines } from "@/components/home/plan-lines";
 import { useT } from "@/components/i18n/locale-provider";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
 
@@ -46,29 +47,11 @@ const AUTO_DISMISS_MS = 4600;
 /** Fade-out length; must match `.pi[data-stage="out"]` in the CSS. */
 const FADE_OUT_MS = 420;
 
-function formatNumber(value: number): string {
-  return String(Math.round(value)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-}
-
 /** Module scope on purpose: writing `document.cookie` from a component body
  * trips `react-hooks/immutability`, and the write is not React state anyway. */
 function writeCookie(name: string, value: string, maxAgeSeconds: number): void {
   if (typeof document === "undefined") return;
   document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; samesite=lax`;
-}
-
-/** `"2026-01-06"` -> 0 = Monday .. 6 = Sunday. */
-function weekdayIndexOf(dayKey: string): number {
-  const utcDay = new Date(`${dayKey}T12:00:00.000Z`).getUTCDay();
-  return (utcDay + 6) % 7;
-}
-
-/** The calendar day before `dayKey`. "juče" beats "četvrtak" when they are the
- * same day -- nobody counts backwards to work out which weekday yesterday was. */
-function previousDay(dayKey: string): string {
-  const date = new Date(`${dayKey}T12:00:00.000Z`);
-  date.setUTCDate(date.getUTCDate() - 1);
-  return date.toISOString().slice(0, 10);
 }
 
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
@@ -191,29 +174,8 @@ export function PlanIntro({
     window.setTimeout(() => setStage("gone"), FADE_OUT_MS);
   }
 
-  const lifted = plan.liftedKcal > 0;
-  const Icon = lifted ? TrendingUp : TrendingDown;
-  /** Did the NUMBER move, as opposed to only the activity suggestion? */
-  const moved = plan.trimmedKcal > 0 || plan.liftedKcal > 0;
-
-  const weekdayNames = t("home.adaptive.weekdays").split(" ");
-  const dayName = (key: string) => weekdayNames[weekdayIndexOf(key)] ?? key;
-
-  // ONE reason, not a list -- `causeDays` is already sorted by deviation.
-  const cause = plan.causeDays[0] ?? null;
-  const yesterdayKey = previousDay(dayKey);
-  // "juče" is an adverb and cannot stand where a weekday NAME stands:
-  // "četvrtak je bio 500 kcal veći" is Serbian, "juče je bio veći" is not.
-  // Hence a whole separate sentence rather than a swapped-in word.
-  const causeMessageKey = !cause
-    ? null
-    : cause.dayKey === yesterdayKey
-      ? cause.deltaKcal > 0
-        ? "home.adaptive.causeOverYesterday"
-        : "home.adaptive.causeUnderYesterday"
-      : cause.deltaKcal > 0
-        ? "home.adaptive.causeOver"
-        : "home.adaptive.causeUnder";
+  const lines = planLines(plan, dayKey, t);
+  const Icon = lines.lifted ? TrendingUp : TrendingDown;
 
   // Ordered entrance; each line declares its own beat.
   let beat = 0;
@@ -240,7 +202,7 @@ export function PlanIntro({
 
         <p className="pi-line pi-number" style={nextDelay()}>
           <span data-testid="plan-intro-target" className="pi-kcal">
-            {formatNumber(shownTarget)}
+            {formatPlanNumber(shownTarget)}
           </span>
           <span className="pi-unit">kcal</span>
         </p>
@@ -249,11 +211,11 @@ export function PlanIntro({
             the sex floor can be left at base while still needing activity
             (`trainingSuggestionKcal > 0` with nothing trimmed) -- and "2.000 ↓
             sa 2.000" is a line that makes the screen look broken. */}
-        {moved ? (
+        {lines.moved ? (
           <p className="pi-line pi-from" style={nextDelay()}>
             <Icon className="size-4" aria-hidden="true" />
             {t("home.planIntro.from", {
-              kcal: formatNumber(plan.baseDailyTarget),
+              kcal: formatPlanNumber(plan.baseDailyTarget),
             })}
           </p>
         ) : null}
@@ -266,28 +228,13 @@ export function PlanIntro({
           className="pi-line pi-cause"
           style={nextDelay()}
         >
-          {cause && causeMessageKey
-            ? t(causeMessageKey, {
-                day: dayName(cause.dayKey),
-                kcal: formatNumber(Math.abs(cause.deltaKcal)),
-              })
-            : lifted
-              ? t("home.adaptive.lifted")
-              : t("home.adaptive.lowered")}
-          {plan.carryInKcal > 0 ? (
-            <>
-              {" "}
-              {t("home.adaptive.carry", {
-                kcal: formatNumber(plan.carryInKcal),
-              })}
-            </>
-          ) : null}
+          {lines.cause}
         </p>
 
         {/* The only advice this screen gives. Never sets or training volume:
             the app knows neither what the user trains nor whether they are
             injured, and a set is 15-30 kcal -- not a lever. */}
-        {plan.trainingSuggestionKcal > 0 ? (
+        {lines.walk ? (
           <p
             data-testid="plan-intro-walk"
             className="pi-line pi-walk"
@@ -295,7 +242,7 @@ export function PlanIntro({
           >
             <Footprints className="size-4 shrink-0" aria-hidden="true" />
             <span>
-              {t("home.planIntro.walk", { min: plan.trainingWalkMinutes })}
+              {lines.walk}
             </span>
           </p>
         ) : null}
@@ -303,37 +250,25 @@ export function PlanIntro({
         {/* What the change means going FORWARD: the redistribution spreads
             evenly over every remaining day, so saying only "today is 2.140"
             hides the fact that a plan was actually made. */}
-        {moved && plan.daysAfterToday > 0 ? (
+        {lines.forward ? (
           <p
             data-testid="plan-intro-forward"
             className="pi-line pi-forward"
             style={nextDelay()}
           >
-            {t("home.adaptive.forward", {
-              days: plan.daysAfterToday,
-              unit:
-                plan.daysAfterToday === 1
-                  ? t("home.adaptive.day")
-                  : t("home.adaptive.days"),
-              kcal: formatNumber(plan.adaptiveDailyTarget),
-              delta: `${lifted ? "+" : "−"}${formatNumber(
-                lifted ? plan.liftedKcal : plan.trimmedKcal
-              )}`,
-            })}
+            {lines.forward}
           </p>
         ) : null}
 
         {/* The part this week genuinely cannot absorb. It used to vanish from
             the story even though it returns as next week's carry-in. */}
-        {plan.spillToNextWeekKcal > 0 ? (
+        {lines.spill ? (
           <p
             data-testid="plan-intro-spill"
             className="pi-line pi-spill"
             style={nextDelay()}
           >
-            {t("home.adaptive.spill", {
-              kcal: formatNumber(plan.spillToNextWeekKcal),
-            })}
+            {lines.spill}
           </p>
         ) : null}
 

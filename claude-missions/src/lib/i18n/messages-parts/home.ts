@@ -32,6 +32,16 @@ export const homeExtraMessages = {
     "home.overNotice.spill":
       "Nedelja se završava — višak od {kcal} kcal prelazi u sledeću.",
 
+    // Sitni podsetnik koji stoji dok je plan pomeren (2026-08-07, tražio
+    // vlasnik). Trenutak se javi jednom i ode; ovo je jedina stvar koja svakog
+    // dana kaže da broj u prstenu nije redovan. Jedan red visine — kartica je
+    // pala baš zato što je bila veća od onoga što ima da kaže.
+    "home.planNote.loweredDays": "Unos je smanjen još {days} {unit}",
+    "home.planNote.raisedDays": "Unos je podignut još {days} {unit}",
+    "home.planNote.loweredToday": "Unos je smanjen danas",
+    "home.planNote.raisedToday": "Unos je podignut danas",
+    "home.planNote.why": "Zašto?",
+
     // Pitanje o danu kome plan nije poverovao. Bezlično „uneto je" — ne mora
     // da bira između „uneo si" i „unela si". Pitanje imenuje dan i iznos, jer
     // „jedan raniji dan" ne bi značilo ništa nikome.
@@ -173,6 +183,12 @@ export const homeExtraMessages = {
     "home.overNotice.over": "Today came in {kcal} kcal over target.",
     "home.overNotice.spill":
       "The week ends today — {kcal} kcal carries into the next one.",
+
+    "home.planNote.loweredDays": "Intake stays lowered for {days} more {unit}",
+    "home.planNote.raisedDays": "Intake stays raised for {days} more {unit}",
+    "home.planNote.loweredToday": "Intake is lowered today",
+    "home.planNote.raisedToday": "Intake is raised today",
+    "home.planNote.why": "Why?",
 
     "home.dayQuestion.ask": "Was {day} really a {kcal} kcal day?",
     "home.dayQuestion.complete": "Yes, it was a light day",

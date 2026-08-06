@@ -5,6 +5,10 @@ import { getCurrentUserId } from "@/lib/auth/current-user";
 import { getBelgradeDayRange, toBelgradeCalendarDay } from "@/lib/dates";
 import { projectDailyTarget } from "@/lib/home/adaptive";
 import { getAdaptivePlan } from "@/lib/home/adaptive-read";
+import {
+  getDayAnswers,
+  mergeDayAnswers,
+} from "@/lib/home/day-answers-read";
 import { DAY_ANSWER_COOKIE, parseDayAnswers } from "@/lib/home/day-trust";
 import { computeDayTotals } from "@/lib/home/totals";
 import { PLAN_INTRO_COOKIE } from "@/components/home/plan-intro";
@@ -136,6 +140,7 @@ export default async function DanasPage({
     lastWeighInDay,
     weighInDay,
     workoutWeekRows,
+    storedDayAnswers,
   ] = await Promise.all([
     getTodayData(supabase, userId, range),
     // Shared with `layout.tsx` via React `cache()` -- the layout already reads
@@ -178,6 +183,11 @@ export default async function DanasPage({
     // table this environment hasn't migrated yet costs the card its numbers,
     // never the dashboard.
     getWorkoutWeek(supabase, userId, selectedNoon),
+    // The user's corrections to past-day trust verdicts (0029). Needs nothing
+    // but `userId`, so it rides along here instead of costing its own
+    // sequential hop -- and it degrades to an empty map on any failure,
+    // including an environment that has not applied 0029 yet.
+    getDayAnswers(supabase, userId),
   ]);
 
   // The viewed day is the LAST day of each window above, so its own total comes
@@ -226,8 +236,13 @@ export default async function DanasPage({
           now.getUTCFullYear() - profile.birth_year
         )
       : null;
-  const dayAnswers = parseDayAnswers(
-    cookieStore.get(DAY_ANSWER_COOKIE)?.value ?? null
+  // The user's corrections to the trust verdicts. Read from the DATABASE
+  // (0029) with the cookie merged UNDERNEATH: the row wins, so an answer given
+  // on another device is never overwritten by a stale local one, while answers
+  // given before 0029 landed keep working until they are re-stated.
+  const dayAnswers = mergeDayAnswers(
+    storedDayAnswers,
+    parseDayAnswers(cookieStore.get(DAY_ANSWER_COOKIE)?.value ?? null)
   );
 
   const adaptivePlan =

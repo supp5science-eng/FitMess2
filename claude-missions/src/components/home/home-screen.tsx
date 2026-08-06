@@ -8,6 +8,7 @@ import { DayQuestion } from "@/components/home/day-question";
 import { IntroCover } from "@/components/home/intro-cover";
 import { OverNotice } from "@/components/home/over-notice";
 import { PlanIntro } from "@/components/home/plan-intro";
+import { PlanNote } from "@/components/home/plan-note";
 import { InstallOverlay } from "@/components/pwa/install-overlay";
 import { IntakeConfluence } from "@/components/home/intake-confluence";
 import { MicroCards } from "@/components/home/micro-cards";
@@ -285,6 +286,14 @@ export function HomeScreen({
           day: a weigh-in is a reading taken now. */}
       {isToday && weighInDaysWaiting !== null && !introActive ? (
         <WeighInBanner daysWaiting={weighInDaysWaiting} />
+      ) : null}
+
+      {/* The quiet, every-day half of the plan's voice: one line while the
+          number is actually moved, tappable for the full explanation. This is
+          what covers the two gaps the once-a-day moment cannot -- after it has
+          played, and below the threshold where it never plays at all. */}
+      {isToday && adaptivePlan?.isAdjusted && dayKey && !introActive ? (
+        <PlanNote plan={adaptivePlan} dayKey={dayKey} />
       ) : null}
 
       {/* The one question that can correct a wrong trust verdict. Above the

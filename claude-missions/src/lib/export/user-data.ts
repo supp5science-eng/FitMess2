@@ -84,6 +84,15 @@ type UserOwnedTableConfig = {
  * user-owned table lands, it belongs here in the same commit. */
 const USER_OWNED_TABLES: readonly UserOwnedTableConfig[] = [
   {
+    // The user's own statements about their own days ("Da, bio je lagan dan").
+    // They lived in a cookie until 2026-08-06 and were missing from the export
+    // for exactly as long -- see `supabase/migrations/0029_day_answers.sql`.
+    key: "dayAnswers",
+    table: "day_answers",
+    userColumn: "user_id",
+    labelSr: "odgovori o danima",
+  },
+  {
     key: "targets",
     table: "targets",
     userColumn: "user_id",

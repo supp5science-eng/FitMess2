@@ -593,6 +593,53 @@ export interface Database {
           },
         ];
       };
+      /**
+       * The user's own corrections to the plan's trust verdict about a past day
+       * (migration 0029). One row per user per day; re-answering updates in
+       * place. Replaces the `fm_dani` cookie, which did not survive a device
+       * change and never appeared in the data export.
+       */
+      day_answers: {
+        Row: {
+          id: string;
+          user_id: string;
+          /** The Belgrade day the answer is ABOUT (a Postgres `date`). */
+          day_key: string;
+          /** `"complete"` = it really was a light day; `"partial"` = not all logged. */
+          answer: string;
+          /** The Belgrade day the answer was GIVEN. */
+          answered_on: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          day_key: string;
+          answer: string;
+          answered_on: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          day_key?: string;
+          answer?: string;
+          answered_on?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "day_answers_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       step_counts: {
         Row: {
           id: string;

@@ -184,7 +184,22 @@ const FUNNEL_EVENT_ROWS = [
   },
 ];
 
+const DAY_ANSWER_ROWS = [
+  {
+    id: "da-1",
+    user_id: "user-1",
+    day_key: "2026-08-05",
+    answer: "complete",
+    answered_on: "2026-08-06",
+    created_at: "2026-08-06T09:00:00.000Z",
+    updated_at: "2026-08-06T09:00:00.000Z",
+  },
+];
+
 const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
+  // The user's own statements about their own days -- in the export since
+  // 2026-08-07, when they stopped living in a cookie (migration 0029).
+  day_answers: DAY_ANSWER_ROWS,
   targets: TARGET_ROWS,
   logs: LOG_ROWS,
   weigh_ins: WEIGH_IN_ROWS,

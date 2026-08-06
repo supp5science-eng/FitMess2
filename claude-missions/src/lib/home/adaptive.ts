@@ -255,6 +255,53 @@ export interface AdaptivePlan {
    * worth printing good news for (see `ON_TRACK_ROOM_PCT`).
    */
   isOnTrackNotice: boolean;
+  /**
+   * The clamp today's target was squeezed through: the safety floor / trim cap
+   * below, and base (or a capped lift) above.
+   *
+   * Exposed ONLY so `projectDailyTarget` can answer "and what does that make
+   * tomorrow?" without re-deriving the bounds from sex, goal and BMR. Both
+   * depend on `base`, the goal and the floor -- none of which change between
+   * today and tomorrow -- so a projection built from these is the same
+   * arithmetic this function just ran, not a second opinion about it.
+   */
+  lowerBound: number;
+  upperBound: number;
+}
+
+/**
+ * What the daily target becomes AFTER today, once today's real intake is known.
+ *
+ * The plan itself only ever looks at days BEFORE today (`spentBeforeToday`), so
+ * going over at lunch does not move the number the user is looking at -- it
+ * moves tomorrow's. That is correct arithmetic and terrible feedback: the cause
+ * and the consequence land 12 hours apart, and by then nothing connects them.
+ * This function lets the screen close that gap and say it out loud immediately.
+ *
+ * Deliberately NOT a second implementation of the plan: it reuses the bounds
+ * `computeAdaptivePlan` already derived, and repeats only the one line that
+ * differs -- one fewer day to spread across, today's intake now spent. The
+ * comment in `adaptive-read.ts` about two copies of the maths giving two
+ * answers about one week applies here with equal force.
+ *
+ * Returns `null` when today is the last day of the week: there is no remaining
+ * day to absorb anything, so the overage leaves the week entirely and comes
+ * back as next week's carry-in. Saying "tomorrow is X" would be a lie about a
+ * day that belongs to a different budget.
+ */
+export function projectDailyTarget(
+  plan: AdaptivePlan,
+  todayKcal: number
+): number | null {
+  if (plan.daysAfterToday <= 0) return null;
+
+  const remaining =
+    plan.weeklyBudget - plan.spentBeforeToday - plan.carryInKcal - todayKcal;
+  const idealDaily = remaining / plan.daysAfterToday;
+
+  return Math.round(
+    Math.min(plan.upperBound, Math.max(plan.lowerBound, idealDaily))
+  );
 }
 
 export interface CauseDay {
@@ -449,6 +496,8 @@ export function computeAdaptivePlan(input: AdaptivePlanInput): AdaptivePlan {
     isMaterial,
     weekRoomKcal,
     isOnTrackNotice,
+    lowerBound: Math.round(lowerBound),
+    upperBound: Math.round(upperBound),
   };
 }
 

@@ -3,8 +3,12 @@ import { cookies } from "next/headers";
 import { HomeScreen } from "@/components/home/home-screen";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { getBelgradeDayRange, toBelgradeCalendarDay } from "@/lib/dates";
+import { projectDailyTarget } from "@/lib/home/adaptive";
 import { getAdaptivePlan } from "@/lib/home/adaptive-read";
 import { DAY_ANSWER_COOKIE, parseDayAnswers } from "@/lib/home/day-trust";
+import { computeDayTotals } from "@/lib/home/totals";
+import { PLAN_INTRO_COOKIE } from "@/components/home/plan-intro";
+import { OVER_NOTICE_COOKIE } from "@/components/home/over-notice";
 import { bmr } from "@/lib/budget/engine";
 import { getDanasProfile } from "@/lib/home/profile";
 import { getTodayData } from "@/lib/home/today";
@@ -274,6 +278,42 @@ export default async function DanasPage({
     isToday: day.isToday,
   }));
 
+  // ---- The two moments the plan is allowed to speak in (2026-08-06) ----
+  //
+  // Both decisions are the SERVER's, and both are keyed by the day rather than
+  // by an expiry: a new day re-arms them on its own, so nothing has to be timed
+  // to midnight. The components burn their own cookie the instant they mount.
+
+  // On the first visit of the day, and only when the change is big enough to
+  // be worth a full screen (`isMaterial`, >=5% -- the same overshoot is 83
+  // kcal/day spread from Monday and 167 from Thursday, and animating the first
+  // teaches people to swipe past the second).
+  const planIntro =
+    isToday &&
+    adaptivePlan != null &&
+    adaptivePlan.isMaterial &&
+    cookieStore.get(PLAN_INTRO_COOKIE)?.value !== todayKey;
+
+  // Right after the entry that took today past its target. The plan itself
+  // cannot show this: it reads only days BEFORE today, so today's overshoot
+  // moves TOMORROW's number and would otherwise go unmentioned until morning.
+  const todayKcal = isToday ? computeDayTotals(result.data.logs).kcal : 0;
+  const todayTarget = adaptivePlan?.isAdjusted
+    ? adaptivePlan.adaptiveDailyTarget
+    : (result.data.target?.daily_kcal ?? 0);
+  const overKcal =
+    isToday && todayTarget > 0 ? Math.round(todayKcal - todayTarget) : 0;
+  // Never both at once: the day-open moment already explains the plan, and a
+  // second recalculation notice under it would be the same subject twice.
+  const overNotice =
+    overKcal > 0 &&
+    !planIntro &&
+    cookieStore.get(OVER_NOTICE_COOKIE)?.value !== todayKey;
+  const tomorrowKcal =
+    overNotice && adaptivePlan
+      ? projectDailyTarget(adaptivePlan, todayKcal)
+      : null;
+
   const intro = isToday && cookieStore.get("fm_intro") != null;
   // One-shot, set by the plan reveal alongside fm_intro: right after
   // onboarding completes, offer to install the PWA (the overlay itself
@@ -302,6 +342,9 @@ export default async function DanasPage({
           : t("home.mealsOn", { date: shortDate(selectedKey, locale) })
       }
       adaptivePlan={adaptivePlan}
+      planIntro={planIntro}
+      overKcal={overNotice ? overKcal : null}
+      tomorrowKcal={tomorrowKcal}
       dayKey={selectedKey}
       initialWaterMl={waterMl}
       waterGoal={waterGoal}

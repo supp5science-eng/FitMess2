@@ -5,6 +5,8 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { HealthScoreCard } from "@/components/home/health-score-card";
 import { IntakePager } from "@/components/home/intake-pager";
 import { IntroCover } from "@/components/home/intro-cover";
+import { OverNotice } from "@/components/home/over-notice";
+import { PlanIntro } from "@/components/home/plan-intro";
 import { InstallOverlay } from "@/components/pwa/install-overlay";
 import { IntakeConfluence } from "@/components/home/intake-confluence";
 import { MicroCards } from "@/components/home/micro-cards";
@@ -60,6 +62,9 @@ export function HomeScreen({
   installPrompt = false,
   mealsHeading = "Obroci danas",
   adaptivePlan = null,
+  planIntro = false,
+  overKcal = null,
+  tomorrowKcal = null,
   dayKey,
   initialWaterMl = 0,
   waterGoal = waterGoalMl(null),
@@ -90,11 +95,21 @@ export function HomeScreen({
   // it. Null/absent (past days, or a week that's on track) => the ring uses the
   // plain daily target, exactly as before.
   //
-  // It no longer RENDERS anything here (2026-08-01, product owner's call): the
-  // explanatory card that used to sit under the pager is gone, and the week's
-  // standing lives at the top of /analitika. The plan still moves the numbers;
-  // it just stopped narrating itself on the home screen.
+  // The explanatory CARD that used to sit under the pager is still gone
+  // (2026-08-01, product owner's call) and is not coming back -- the week's
+  // standing lives at the top of /analitika. What came back instead
+  // (2026-08-06) is a MOMENT: see `planIntro` below.
   adaptivePlan?: AdaptivePlan | null;
+  // Set by `/danas` on the first visit of a day whose plan moved materially:
+  // play the full-screen "Plan za danas je prilagođen" moment over the
+  // dashboard, once, then leave the screen alone for the rest of the day.
+  planIntro?: boolean;
+  // Set by `/danas` on the visit right after the entry that took today past
+  // its target: how far over, and what that makes tomorrow (null on the last
+  // day of the week, where the overage leaves this week's budget entirely).
+  // Null => nothing to say.
+  overKcal?: number | null;
+  tomorrowKcal?: number | null;
   // Voda: the Belgrade day this screen shows + that day's already-logged water
   // (ml). When `dayKey` is provided the "Voda" and "Trening" cards render on
   // the pager's movement page. Omitted in unit tests that don't exercise them.
@@ -263,6 +278,18 @@ export function HomeScreen({
           day: a weigh-in is a reading taken now. */}
       {isToday && weighInDaysWaiting !== null && !introActive ? (
         <WeighInBanner daysWaiting={weighInDaysWaiting} />
+      ) : null}
+
+      {/* "Sutrašnji plan je preračunat" -- the consequence of going over, said
+          while the meal that caused it is still the last thing the user did.
+          Above the ring because it is about a number the ring cannot show:
+          today's overshoot moves TOMORROW. Transient; it fades on its own. */}
+      {isToday && overKcal !== null && dayKey && !introActive ? (
+        <OverNotice
+          overKcal={overKcal}
+          tomorrowKcal={tomorrowKcal}
+          dayKey={dayKey}
+        />
       ) : null}
 
       {/* The one place notification permission is asked for (2026-08-01).
@@ -450,6 +477,15 @@ export function HomeScreen({
       {/* Post-onboarding install offer: mounts only after the ring hand-off
           has fully settled, so the two moments never fight for attention. */}
       {installPrompt && !introActive ? <InstallOverlay /> : null}
+
+      {/* The once-a-day plan moment. Gated on `!introActive` and on the install
+          offer for the same reason as everything else here: day zero would
+          otherwise stack the onboarding hand-off, an install prompt and a plan
+          explanation on top of each other -- though in practice a first day has
+          no week behind it to redistribute, so the plan has nothing to say. */}
+      {planIntro && adaptivePlan && dayKey && !introActive && !installPrompt ? (
+        <PlanIntro plan={adaptivePlan} dayKey={dayKey} />
+      ) : null}
     </main>
   );
 }

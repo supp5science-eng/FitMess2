@@ -4,6 +4,7 @@ import {
   MAX_TRAINING_SUGGESTION_KCAL,
   computeAdaptivePlan,
   computeCarryInFromLastWeek,
+  projectDailyTarget,
 } from "@/lib/home/adaptive";
 import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 
@@ -668,5 +669,76 @@ describe("computeCarryInFromLastWeek: 1-week debt lookback", () => {
     // The 90 kcal Sunday is charged at base, so the debt is still just the
     // Saturday overshoot -- not 90 kcal worth of fictional credit.
     expect(carry).toBe(2000);
+  });
+});
+
+describe("projectDailyTarget: what today's intake makes of tomorrow", () => {
+  // The plan only ever reads days BEFORE today, so an overshoot at lunch
+  // cannot move the number on screen -- it moves tomorrow's. These lock the
+  // projection that lets the screen say so while the meal is still the last
+  // thing the user did.
+  function planOn(now: Date, logs: { logged_at: string; kcal: number }[]) {
+    return computeAdaptivePlan({
+      weekLogs: logs,
+      baseDailyTarget: 2000,
+      sex: "male",
+      bmrKcal: LOW_BMR,
+      now,
+    });
+  }
+
+  // Wednesday with an unlogged Monday and Tuesday: both are charged at base
+  // rather than at zero (see `day-trust.ts` -- absence of data is not data),
+  // so 4000 of the 14000 week is already spent and today sits at plain base.
+
+  it("leaves tomorrow alone when today lands on plan", () => {
+    const plan = planOn(WED, []);
+    expect(plan.adaptiveDailyTarget).toBe(2000);
+    expect(plan.daysAfterToday).toBe(4);
+
+    // Remaining = 14000 - 4000 - 2000 = 8000 over 4 days = base again.
+    expect(projectDailyTarget(plan, 2000)).toBe(2000);
+  });
+
+  it("spreads today's overshoot across the days that are left", () => {
+    const plan = planOn(WED, []);
+    // 3000 today is 1000 over. Remaining = 14000 - 4000 - 3000 = 7000 over the
+    // four days after today = 1750: the overshoot costs 250 a day rather than
+    // landing whole on tomorrow.
+    expect(projectDailyTarget(plan, 3000)).toBe(1750);
+  });
+
+  it("lowers tomorrow to the cap once the overshoot outgrows the week", () => {
+    const plan = planOn(WED, []);
+    // Remaining = 14000 - 4000 - 8000 = 2000 over 4 days = 500, which the trim
+    // cap refuses; the rest stays in the week and returns as carry-in.
+    expect(projectDailyTarget(plan, 8000)).toBe(1500);
+  });
+
+  it("never cuts tomorrow below the trim cap, however big the day was", () => {
+    const plan = planOn(WED, []);
+    // 25% off a 2000 base is the steepest single-day cut the plan will ever
+    // prescribe -- an enormous day must not produce a starvation target.
+    expect(projectDailyTarget(plan, 20000)).toBe(1500);
+    expect(projectDailyTarget(plan, 20000)).toBe(plan.lowerBound);
+  });
+
+  it("returns null on the last day of the week", () => {
+    // Sunday: there is no remaining day to absorb anything, so the overage
+    // leaves this week's budget entirely and comes back as next week's
+    // carry-in. Naming a number would be a lie about a different budget.
+    const sunday = new Date("2026-01-11T12:00:00.000Z");
+    const plan = planOn(sunday, []);
+    expect(plan.daysAfterToday).toBe(0);
+    expect(projectDailyTarget(plan, 5000)).toBeNull();
+  });
+
+  it("reads the same clamp the plan itself was squeezed through", () => {
+    // The projection must never be a second opinion about the week: its bounds
+    // are the ones `computeAdaptivePlan` already derived from base, goal and
+    // the safety floor.
+    const plan = planOn(WED, []);
+    expect(plan.lowerBound).toBe(1500);
+    expect(plan.upperBound).toBe(2000);
   });
 });

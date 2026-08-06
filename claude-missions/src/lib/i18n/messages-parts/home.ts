@@ -5,9 +5,62 @@
 export const homeExtraMessages = {
   sr: {
     // Kartica „Plan za danas" je UKLONJENA 2026-08-01 (odluka vlasnika): plan i
-    // dalje pomera brojeve u prstenu i cilj koraka, ali se više ne objašnjava na
-    // Početnoj. Stanje nedelje živi na vrhu /analitika (`analytics.onTrack.*`).
-    // Sve `home.adaptive.*` poruke su otišle s njom.
+    // dalje pomera brojeve u prstenu i cilj koraka. Stanje nedelje živi na vrhu
+    // /analitika (`analytics.onTrack.*`).
+    //
+    // 2026-08-06: plan opet govori, ali kao TRENUTAK, ne kao nameštaj. Kartica
+    // je pala zato što je bila stalna — kad nije imala šta da kaže, govorila je
+    // „Plan za danas ostaje isti" uz broj koji prsten ionako pokazuje. Ekran
+    // koji se pojavi, kaže i nestane nema tu cenu. Zato ovde NEMA poruke za
+    // stanje „ništa se nije promenilo": kad nema šta da se kaže, ćuti se.
+    "home.planIntro.title": "Plan za danas je prilagođen",
+    "home.planIntro.from": "sa {kcal}",
+    // Rešenje pre prestupa (dogovor 2026-08-01, tačka 3): prvo broj koji važi
+    // danas, pa tek onda čime je izazvan. Dan se ne otvara prozivkom.
+    "home.planIntro.walk": "Dodaj {min} min hoda pa se nedelja poravna.",
+    "home.planIntro.dismiss": "Dodirni bilo gde",
+
+    // Prekoračenje se javlja ODMAH (2026-08-06), a ne tek sutra ujutru: plan
+    // gleda samo dane PRE današnjeg, pa prejedanje u četvrtak pomera petak.
+    // Uzrok i posledica su inače razdvojeni pola dana i ništa ih ne povezuje.
+    // Bezlično „uneto je" — isti razlog kao kod `causeOverYesterday`: ne mora
+    // da bira između „uneo si" i „unela si".
+    "home.overNotice.title": "Sutrašnji plan je preračunat",
+    "home.overNotice.over": "Danas je uneto {kcal} kcal iznad cilja.",
+    // Nedelja uveče: nema više dana koji bi to upili, pa se ne izmišlja broj za
+    // dan koji pripada sledećem budžetu.
+    "home.overNotice.spill":
+      "Nedelja se završava — višak od {kcal} kcal prelazi u sledeću.",
+
+    // Adaptive plan — rečenice preživele iz kartice (commit f79787d), sad ih
+    // koristi trenutak na otvaranju dana.
+    "home.adaptive.day": "dan",
+    "home.adaptive.days": "dana",
+    "home.adaptive.lifted":
+      "Ranije ove nedelje je uneto manje nego što plan traži, pa je današnji cilj podignut — da nedelja ispuni svoje.",
+    "home.adaptive.lowered":
+      "Zbog ranijeg prekoračenja, današnji cilj je snižen — da se nedelja vrati na prag.",
+    "home.adaptive.carry":
+      "Uračunat je i prenos od {kcal} kcal iz prošle nedelje.",
+    // „još 1 dan" / „još 4 dana" — jedina formulacija čija gramatika drži za
+    // svaki broj bez plural engine-a.
+    "home.adaptive.forward":
+      "Važi i za još {days} {unit}: {kcal} kcal ({delta}/dan)",
+    "home.adaptive.weekdays":
+      "ponedeljak utorak sreda četvrtak petak subota nedelja",
+    // ⚠️ „Juče" ima ZASEBNE rečenice: kao prilog ne može da stoji na mestu
+    // naziva dana („četvrtak je bio veći" ✓, „juče je bio veći" ✗).
+    "home.adaptive.causeOver": "Razlog: {day} je bio {kcal} kcal veći od plana.",
+    "home.adaptive.causeUnder":
+      "Razlog: {day} je bio {kcal} kcal manji od plana.",
+    "home.adaptive.causeOverYesterday":
+      "Razlog: juče je uneto {kcal} kcal više od plana.",
+    "home.adaptive.causeUnderYesterday":
+      "Razlog: juče je uneto {kcal} kcal manje od plana.",
+    // „Višak", ne „ostatak" — red o hodanju već nosi svoju reč, a dva „ostatka"
+    // jedan ispod drugog čitaju se kao isti broj rečen dvaput.
+    "home.adaptive.spill":
+      "Višak od {kcal} kcal ne staje u ovu nedelju — prelazi u sledeću.",
 
     // Add sheet
     "home.addSheet.title": "Dodaj unos",
@@ -100,6 +153,39 @@ export const homeExtraMessages = {
     "home.pushNudge.error": "Nismo uspeli da uključimo podsetnik.",
   },
   en: {
+    // Plan moment (see the Serbian block for why this is a moment and not a
+    // card, and why there is no "nothing changed" string).
+    "home.planIntro.title": "Today's plan is adjusted",
+    "home.planIntro.from": "from {kcal}",
+    "home.planIntro.walk": "Add {min} min of walking and the week evens out.",
+    "home.planIntro.dismiss": "Tap anywhere",
+
+    "home.overNotice.title": "Tomorrow's plan is recalculated",
+    "home.overNotice.over": "Today came in {kcal} kcal over target.",
+    "home.overNotice.spill":
+      "The week ends today — {kcal} kcal carries into the next one.",
+
+    // Adaptive plan
+    "home.adaptive.day": "day",
+    "home.adaptive.days": "days",
+    "home.adaptive.lifted":
+      "Earlier this week came in under what the plan asks for, so today's target is raised — so the week meets its own number.",
+    "home.adaptive.lowered":
+      "After an earlier overshoot, today's target is lowered — to bring the week back to its line.",
+    "home.adaptive.carry": "This includes {kcal} kcal carried over from last week.",
+    "home.adaptive.forward":
+      "Holds for {days} more {unit}: {kcal} kcal ({delta}/day)",
+    "home.adaptive.weekdays":
+      "Monday Tuesday Wednesday Thursday Friday Saturday Sunday",
+    "home.adaptive.causeOver": "Why: {day} came in {kcal} kcal over plan.",
+    "home.adaptive.causeUnder": "Why: {day} came in {kcal} kcal under plan.",
+    "home.adaptive.causeOverYesterday":
+      "Why: yesterday came in {kcal} kcal over plan.",
+    "home.adaptive.causeUnderYesterday":
+      "Why: yesterday came in {kcal} kcal under plan.",
+    "home.adaptive.spill":
+      "{kcal} kcal doesn't fit in this week — it carries into the next one.",
+
     // Add sheet
     "home.addSheet.title": "Add entry",
     "home.addSheet.prizmaDesc": "92% calorie estimate accuracy",

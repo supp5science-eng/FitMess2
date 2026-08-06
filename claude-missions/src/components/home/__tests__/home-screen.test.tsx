@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // F027 / AS-043: proves that saving an edit or confirming a delete on a
 // meal card updates the ring + macro bars + meal list IMMEDIATELY (plain
@@ -284,6 +284,10 @@ describe("Deo 2: adaptive daily target is reflected on today's dashboard", () =>
     isMaterial: false,
     weekRoomKcal: 0,
     isOnTrackNotice: false,
+    // The clamp the engine squeezed today's number through; `projectDailyTarget`
+    // reuses it to answer "and what does that make tomorrow?".
+    lowerBound: 1500,
+    upperBound: 2000,
   };
 
   // The plan MOVES the numbers but no longer NARRATES itself here (2026-08-01,
@@ -434,5 +438,241 @@ describe("Gric: the quick-log button on the home screen", () => {
     // while Voda, which takes an explicit dayKey, stays.
     expect(screen.queryByTestId("gric-open-button")).not.toBeInTheDocument();
     expect(screen.getByTestId("water-open-button")).toBeInTheDocument();
+  });
+});
+
+describe("the plan speaks in moments, not in furniture (2026-08-06)", () => {
+  // The explanatory CARD stays deleted (see the test above that locks it).
+  // What returned is a once-a-day full-screen moment and a transient notice
+  // after an overshoot -- both opt-in from the server, both silent by default.
+  const materialPlan = {
+    baseDailyTarget: 2000,
+    adaptiveDailyTarget: 1600,
+    isAdjusted: true,
+    weeklyBudget: 14000,
+    spentBeforeToday: 6400,
+    daysLeftIncludingToday: 4,
+    carryInKcal: 0,
+    trimmedKcal: 400,
+    liftedKcal: 0,
+    trainingSuggestionKcal: 200,
+    trainingWalkMinutes: 35,
+    adaptiveStepGoal: 13000,
+    extraSteps: 3000,
+    daysAfterToday: 3,
+    untrustedDays: [],
+    hasNotice: true,
+    // 2026-07-23 is the Thursday before the 2026-07-25 dayKey used below, so
+    // it is NOT yesterday -- the weekday-name sentence applies, not the
+    // separate "juče" one.
+    causeDays: [{ dayKey: "2026-07-23", kcal: 2500, deltaKcal: 500 }],
+    spillToNextWeekKcal: 0,
+    isMaterial: true,
+    weekRoomKcal: 0,
+    isOnTrackNotice: false,
+    lowerBound: 1500,
+    upperBound: 2000,
+  };
+
+  function renderWithPlanIntro() {
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        adaptivePlan={materialPlan}
+        planIntro
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+  }
+
+  it("test_the_plan_moment_names_the_day_that_moved_it", () => {
+    renderWithPlanIntro();
+
+    expect(screen.getByTestId("plan-intro")).toBeInTheDocument();
+    // One named reason, not a list, and placed UNDER the number rather than
+    // over it -- a day is not opened with an accusation.
+    expect(screen.getByTestId("plan-intro-cause")).toHaveTextContent(
+      "četvrtak je bio 500 kcal veći od plana"
+    );
+  });
+
+  it("test_the_only_advice_the_moment_gives_is_walking", () => {
+    renderWithPlanIntro();
+
+    // Never sets or training volume: the app knows neither what the user
+    // trains nor whether they are injured, and a set is 15-30 kcal.
+    expect(screen.getByTestId("plan-intro-walk")).toHaveTextContent(
+      "Dodaj 35 min hoda"
+    );
+  });
+
+  it("test_the_moment_says_what_the_plan_looks_like_going_forward", () => {
+    renderWithPlanIntro();
+
+    // Saying only "today is 1.600" would hide the fact that a plan was made.
+    expect(screen.getByTestId("plan-intro-forward")).toHaveTextContent(
+      "još 3 dana"
+    );
+  });
+
+  it("test_the_moment_is_silent_unless_the_server_arms_it", () => {
+    // Same material plan, no `planIntro` prop: the screen says nothing. This
+    // is what keeps the moment from decaying back into a permanent card.
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        adaptivePlan={materialPlan}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+
+    expect(screen.queryByTestId("plan-intro")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Plan za danas/i)).not.toBeInTheDocument();
+  });
+
+  it("test_going_over_today_reports_tomorrows_number", () => {
+    // The plan reads only days BEFORE today, so today's overshoot moves
+    // TOMORROW -- which is exactly the number the user cannot see anywhere.
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        adaptivePlan={materialPlan}
+        overKcal={320}
+        tomorrowKcal={1750}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+
+    expect(screen.getByTestId("over-notice-tomorrow")).toHaveTextContent(
+      "1.750 kcal"
+    );
+    // The recalculated number leads; the overshoot follows, smaller.
+    expect(screen.getByTestId("over-notice")).toHaveTextContent(
+      "320 kcal iznad cilja"
+    );
+  });
+
+  it("test_the_last_day_of_the_week_names_no_tomorrow", () => {
+    // There is no remaining day to absorb anything: the overage leaves this
+    // week's budget entirely. Naming a number would be a lie about a day that
+    // belongs to a different budget.
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        adaptivePlan={{ ...materialPlan, daysAfterToday: 0 }}
+        overKcal={450}
+        tomorrowKcal={null}
+        dayKey="2026-07-26"
+        isToday
+      />
+    );
+
+    expect(screen.getByTestId("over-notice")).toHaveTextContent(
+      "prelazi u sledeću"
+    );
+    expect(screen.queryByTestId("over-notice-tomorrow")).not.toBeInTheDocument();
+  });
+
+  it("test_the_two_moments_never_stack", () => {
+    // Both armed would be the same subject said twice in one screenful. The
+    // page suppresses the notice whenever the day-open moment is playing, so
+    // this asserts the contract the page relies on: they are separate props.
+    render(
+      <HomeScreen
+        initialLogs={[makeLog({ kcal: 200 })]}
+        target={makeTarget({ daily_kcal: 2000 })}
+        adaptivePlan={materialPlan}
+        planIntro
+        overKcal={null}
+        dayKey="2026-07-25"
+        isToday
+      />
+    );
+
+    expect(screen.getByTestId("plan-intro")).toBeInTheDocument();
+    expect(screen.queryByTestId("over-notice")).not.toBeInTheDocument();
+  });
+});
+
+describe("the plan moment must let go of the screen it took over", () => {
+  // Regression lock. The first version scheduled "fade out" and "unmount" in
+  // one effect that also READ `stage`: the fade-out timer changed `stage`,
+  // which tore the effect down, which cancelled the unmount timer. The moment
+  // stayed mounted at opacity 0 forever -- invisible, but still holding
+  // `intro-lock-nav`, so the bottom navigation never came back.
+  const plan = {
+    baseDailyTarget: 2000,
+    adaptiveDailyTarget: 1600,
+    isAdjusted: true,
+    weeklyBudget: 14000,
+    spentBeforeToday: 6400,
+    daysLeftIncludingToday: 4,
+    carryInKcal: 0,
+    trimmedKcal: 400,
+    liftedKcal: 0,
+    trainingSuggestionKcal: 0,
+    trainingWalkMinutes: 0,
+    adaptiveStepGoal: 10000,
+    extraSteps: 0,
+    daysAfterToday: 3,
+    untrustedDays: [],
+    hasNotice: true,
+    causeDays: [],
+    spillToNextWeekKcal: 0,
+    isMaterial: true,
+    weekRoomKcal: 0,
+    isOnTrackNotice: false,
+    lowerBound: 1500,
+    upperBound: 2000,
+  };
+
+  // ⚠️ It has to be the AUTO-dismiss path. A tap has always worked (it drives
+  // its own unmount timer directly), so testing the tap would pass against the
+  // broken version too and lock nothing.
+  it("test_the_moment_unmounts_on_its_own_and_gives_the_nav_back", async () => {
+    vi.useFakeTimers();
+    try {
+      render(
+        <HomeScreen
+          initialLogs={[makeLog({ kcal: 200 })]}
+          target={makeTarget({ daily_kcal: 2000 })}
+          adaptivePlan={plan}
+          planIntro
+          dayKey="2026-07-25"
+          isToday
+        />
+      );
+
+      expect(screen.getByTestId("plan-intro")).toBeInTheDocument();
+      expect(
+        document.documentElement.classList.contains("intro-lock-nav")
+      ).toBe(true);
+
+      // Two steps on purpose, and this is the whole point: the fade-out timer
+      // is only scheduled once "out" has re-rendered. A single long advance
+      // would fire the auto-dismiss and stop, leaving the unmount timer
+      // unscheduled -- and the broken version behaved exactly like that
+      // forever, because it cancelled the timer instead of never setting it.
+      await act(async () => {
+        vi.advanceTimersByTime(5000);
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(1000);
+      });
+
+      expect(screen.queryByTestId("plan-intro")).not.toBeInTheDocument();
+      expect(
+        document.documentElement.classList.contains("intro-lock-nav")
+      ).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

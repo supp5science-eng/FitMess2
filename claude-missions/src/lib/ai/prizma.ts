@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { CONFIDENCE_VALUES, MICRO_PROMPT_RULES } from "@/lib/ai/meal-estimate";
+import { NUTRITION_ANCHORS } from "@/lib/ai/nutrition-anchors";
 import {
   isVessel,
   normaliseUnit,
@@ -568,26 +569,17 @@ export const PRIZMA_FINALIZE_RESPONSE_SCHEMA = {
 } as const;
 
 // --- Shared reference data -------------------------------------------------
-// Hard numbers, not adjectives. "Realne balkanske porcije" tells the model
-// nothing it can compute with; "kašika ulja = 14 g / 126 kcal" does. Fat is
-// listed first because at 9 kcal/g it is where photo-based estimates go wrong:
-// a tablespoon of oil is visually almost invisible and worth more calories
-// than a slice of bread.
-const NUTRITION_ANCHORS = `REFERENTNE VREDNOSTI (koristi ih, ne pogađaj):
-Skrivena mast (najveći izvor greške):
-- kašika ulja = 14 g = 126 kcal; kašika putera = 14 g = 100 kcal
-- prženo u tiganju na ulju: +8–15 g masti po porciji
-- pohovano (jaje + brašno + prezle): +30–40% kcal u odnosu na nepohovano
-- pečeno u rerni na papiru / air fryer: +0–2 g masti
-- majonez = 100 kcal/kašika; pavlaka = 30; jogurt dresing = 15; vinegret ≈ 60
-Meso (na 100 g, kuvano/pečeno):
-- pileće belo 110 · pileći batak 180 · junetina nemasna 180 · svinjski vrat 260 · mleveno mešano 240 · slanina 540
-Prilozi (na 100 g, kuvano):
-- pirinač 130 · testenina 150 · krompir kuvani 85 · pomfrit 310 · pire sa puterom 110 · pasulj 130 · hleb beli 265 · lepinja 270
-Kućne mere:
-- pun plitki tanjir jela ≈ 300–400 g · duboki tanjir čorbe ≈ 350 g
-- velika (supena) kašika ≈ 15–20 g · šaka ≈ 30–40 g · šolja ≈ 240 ml
-- kriška hleba ≈ 30 g · ćevap ≈ 25 g · kašika pirinča kuvanog ≈ 20 g`;
+// `NUTRITION_ANCHORS` used to live here. It now sits in
+// `@/lib/ai/nutrition-anchors` (string unchanged, so both prompts below are
+// byte-for-byte what they were) because the fast photo, voice and combined
+// flows needed the same numbers -- they had none, and under-counted fried food
+// by construction as a result.
+//
+// Prizma deliberately does NOT take `HIDDEN_FAT_RULES` from that module. Those
+// rules tell a model to infer the cooking fat and to break ties upward when it
+// is unsure; Prizma is never unsure, because it ASKS (see `PREP_HINTS` in
+// `portion.ts`). Feeding it both would let a guess argue with the user's own
+// one-tap answer.
 
 // --- ANALYSIS prompts (step 1) --------------------------------------------
 

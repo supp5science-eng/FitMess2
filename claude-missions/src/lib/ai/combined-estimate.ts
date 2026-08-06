@@ -9,6 +9,10 @@
 // confirm/edit screen and the `logs` write stay shared, not duplicated.
 
 import { MICRO_PROMPT_RULES } from "@/lib/ai/meal-estimate";
+import {
+  HIDDEN_FAT_RULES,
+  NUTRITION_ANCHORS,
+} from "@/lib/ai/nutrition-anchors";
 
 export {
   mealEstimateSchema as combinedMealSchema,
@@ -24,6 +28,7 @@ Kako da kombinuješ:
 - Slika ti govori ŠTA je na tanjiru i pomaže oko razmere i izgleda porcije.
 - Korisnikov opis nosi NAJPOUZDANIJU informaciju o količini — on zna koliko je pojeo. Kad korisnik navede količinu ("jedan tanjir", "pola", "dve velike kašike", "200 g"), osloni se na to, a sliku koristi da proveriš i dopuniš (npr. ulje, prilozi, dodaci koje nije spomenuo).
 - Ako se slika i opis razlikuju, veruj korisnikovoj količini, ali to kratko spomeni u "napomena".
+- Ako korisnik sam kaže KAKO je spremljeno ("pekla sam u rerni bez ulja", "prženo na puno ulja", "bez dresinga"), njegova reč je jača od tvoje procene masti — primeni je i preskoči pravilo o dvoumljenju ispod.
 - Pretvaraj kućne mere u grame realnim balkanskim porcijama (npr. pun tanjir pirea ≈ 250–350 g, velika kašika ≈ 15–20 g, šaka ≈ 30–40 g).
 
 Pravila:
@@ -34,6 +39,11 @@ Pravila:
 ${MICRO_PROMPT_RULES}
 - "sigurnost": "visoka" kad se slika i jasan opis slažu; "srednja"/"niska" kad je nešto nejasno ili se izvori kose.
 - "napomena": kratko objasni ključne pretpostavke ili neslaganje slike i opisa.
+
+${HIDDEN_FAT_RULES}
+
+${NUTRITION_ANCHORS}
+
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;
 
 // V2 variant: the photo is a NUTRITION LABEL (deklaracija), and the user says

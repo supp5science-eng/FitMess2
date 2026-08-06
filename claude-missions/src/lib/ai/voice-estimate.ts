@@ -8,6 +8,10 @@
 // and the defensive Zod parse are re-exported from the meal-photo module.
 
 import { MICRO_PROMPT_RULES } from "@/lib/ai/meal-estimate";
+import {
+  HIDDEN_FAT_RULES,
+  NUTRITION_ANCHORS,
+} from "@/lib/ai/nutrition-anchors";
 
 export {
   mealEstimateSchema as voiceMealSchema,
@@ -31,4 +35,11 @@ ${MICRO_PROMPT_RULES}
 - "sigurnost": "visoka" ako je korisnik jasno izgovorio brojeve; "srednja" ili "niska" kada procenjuješ.
 - "napomena": kratko (npr. "vrednosti izgovorene" ili "procenjena tipična porcija od 150 g").
 - Ako u snimku NEMA hrane/pića ili je nerazumljivo, vrati "naziv": "Nejasan unos", sve brojeve 0, "sigurnost": "niska".
+
+Pravila o masti ispod važe SAMO za slučaj 2 (kad procenjuješ). Ako je korisnik izgovorio vrednosti sa deklaracije ili sam rekao kako je spremljeno, to je jače — koristi njegove brojeve i njegovu reč.
+
+${HIDDEN_FAT_RULES}
+
+${NUTRITION_ANCHORS}
+
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { HIDDEN_FAT_COMPACT } from "@/lib/ai/nutrition-anchors";
+
 // "Gric" — quick spoken logging of the small stuff (a cucumber, a handful of
 // seeds, two apricots) that never gets logged because photographing and
 // weighing it costs more than the food is worth. When logging is more
@@ -216,6 +218,7 @@ Zadatak: razdvoj snimak na POJEDINAČNE stavke, pa ih rasporedi po OBROCIMA (pri
   - "srednja": kućna mera bez pakovanja (šaka semenki, par kašika, kriška hleba).
   - "visoka": porcija koja ozbiljno varira i nosi puno kalorija (kolač, torta, pica, burek, sendvič, pljeskavica, „domaći ručak", „nešto iz pekare", hrana u restoranu, alkohol u nepoznatoj meri).
 - Ako korisnik NAVEDE tačne vrednosti sa deklaracije, koristi tačno te brojeve i stavi "varijansa": "niska".
+- ${HIDDEN_FAT_COMPACT}
 - Ako u snimku nema hrane ni pića, ili je nerazumljiv, vrati prazan niz: {"obroci": []}.
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.
 

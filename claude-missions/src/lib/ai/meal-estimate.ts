@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+import {
+  HIDDEN_FAT_RULES,
+  NUTRITION_ANCHORS,
+} from "@/lib/ai/nutrition-anchors";
+
 // MVP (M7 / F064): AI meal-photo estimate. Gemini looks at a photo of a plate
 // and returns a nutrition estimate FOR THE DEPICTED PORTION, as strict JSON.
 // Kept provider-agnostic: this file owns the prompt, the JSON response schema
@@ -335,5 +340,10 @@ Pravila:
 ${MICRO_PROMPT_RULES}
 - Koristi realne balkanske porcije. Ako nisi siguran, daj najbolju procenu i snizi "sigurnost".
 - "sigurnost": "niska" | "srednja" | "visoka".
-- "napomena": kratko objasni pretpostavke (npr. "pretpostavljene 2 kašike ulja").
+- "napomena": kratko objasni pretpostavke (npr. "pretpostavljene 2 kašike ulja jer deluje prženo").
+
+${HIDDEN_FAT_RULES}
+
+${NUTRITION_ANCHORS}
+
 - Vrati ISKLJUČIVO JSON po zadatoj šemi. Bez teksta van JSON-a. Brojevi bez jedinica.`;

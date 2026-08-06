@@ -73,7 +73,12 @@ razmatran i **odbačen** — 130k din je previše za ono što donosi.
 - **Custom User-Agent potpis** (`FitMessApp/1.0`) — server tako zna da je native
 - Native režim u app-u: sakriti install nudge, "dodaj na početni ekran" poruke,
   PWA overlay-e — u instaliranom app-u nemaju smisla
-- Dozvole: kamera **i mikrofon** (Prizma snima audio, lako se zaboravi)
+- Dozvole: kamera **i mikrofon** (Prizma snima audio, lako se zaboravi). Ovo
+  je samo deklaracija — `NSCameraUsageDescription` i
+  `NSMicrophoneUsageDescription` u Info.plist, dva reda u Android manifestu.
+  Bez njih iOS ni ne prikaže dijalog za dozvolu; sa njima radi.
+  `camera-capture.tsx` se ne dira — `getUserMedia` radi u WKWebView-u od iOS
+  14.3, pa Slikaj obrok, Prizma i Gric rade nepromenjeni
 - Android hardversko back dugme da vrti istoriju umesto da izbacuje iz app-a
   (veže se na pravilo "nema izlaza")
 - Splash ekran, status bar, provera `safe-area-inset` (već se koristi na 10+
@@ -173,7 +178,40 @@ U Play Console-u na početnoj stranici piše da li se zahtev odnosi na tebe.
 
 ---
 
-## 7. Kalendar
+## 7. Dev petlja posle izlaska
+
+Ovo je najveća dobit remote režima: **sadržaj app-a je sajt**, pa se
+svakodnevni rad ne menja nimalo.
+
+- `npm run dev` radi kao i do sada; testiranje kroz desktop gate ide sa iPhone
+  UA u Chrome-u, kao i sada
+- Popravka ide `git push` → Vercel → **aplikacija u prodavnici odmah ima
+  ispravku.** Bez nove submisije, bez review-a, bez ažuriranja kod korisnika
+- Native ljuska se ponovo šalje samo kad se menja nešto native — plugin,
+  ikonica, splash, dozvole. Par puta godišnje
+
+### Testiranje na pravom iPhone-u
+
+Zamka: `getUserMedia` traži HTTPS. Preko `http://192.168.x.x:3000` na Wi-Fi-ju
+browser blokira kameru. Dva rešenja:
+
+- **Vercel preview** — push grane daje HTTPS link koji se otvori na telefonu.
+  Bez podešavanja, malo sporija petlja.
+- **Cloudflare tunnel** — besplatan, obmota lokalni dev server u pravi HTTPS.
+  Hot reload i kamera rade uživo na telefonu.
+
+### Hvatanje grešaka
+
+- **Android:** `chrome://inspect` sa Windows PC-a daje pun DevTools nad
+  webview-om
+- **iOS:** Safari Web Inspector traži Mac. Bez njega: `inspect.dev` (~50€/god,
+  radi na Windowsu). U praksi retko treba — sadržaj je isti web koji se vrti u
+  Chrome-u, pa se skoro svaki bug reprodukuje u Chrome emulaciji; iOS
+  inspekcija treba samo za webview-specifične stvari
+
+---
+
+## 8. Kalendar
 
 | Kada | Šta |
 |---|---|
@@ -185,7 +223,7 @@ U Play Console-u na početnoj stranici piše da li se zahtev odnosi na tebe.
 
 ---
 
-## 8. Šta treba od korisnika
+## 9. Šta treba od korisnika
 
 Stanje na 2026-08-06: iPhone ✅, Apple nalog ✅, Play nalog ✅, spreman na
 trošak ✅.

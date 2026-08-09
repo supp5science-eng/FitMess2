@@ -51,6 +51,9 @@ describe("middleware matcher: static assets bypass, pages don't", () => {
       "/next.svg",
       "/manifest.json",
       "/sw.js",
+      // Precached by the service worker: a gate redirect here would be cached
+      // AS the offline screen.
+      "/offline.html",
       "/favicon.ico",
     ]) {
       expect(runsMiddlewareOn(asset), `${asset} must bypass`).toBe(false);

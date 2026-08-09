@@ -50,11 +50,33 @@ beforeEach(() => {
   URL.revokeObjectURL = vi.fn();
 });
 
+const BROWSER_UA = navigator.userAgent;
+
 afterEach(() => {
   vi.unstubAllGlobals();
   Reflect.deleteProperty(navigator, "share");
   Reflect.deleteProperty(navigator, "canShare");
+  Object.defineProperty(navigator, "userAgent", {
+    configurable: true,
+    value: BROWSER_UA,
+  });
 });
+
+/** Puts the component inside the store app: the UA marker the Capacitor shell
+ * appends is the only thing that tells the web app the two apart. */
+function stubNativeShell(plugins: { Filesystem?: unknown; Share?: unknown } | null) {
+  Object.defineProperty(navigator, "userAgent", {
+    configurable: true,
+    value: `${BROWSER_UA} FitMessApp/1.0`,
+  });
+  if (!plugins) return;
+  vi.stubGlobal("Capacitor", {
+    isNativePlatform: () => true,
+    isPluginAvailable: (name: string) => name in plugins,
+    getPlatform: () => "android",
+    Plugins: plugins,
+  });
+}
 
 function stubShare(impl: () => Promise<void>) {
   Object.defineProperty(navigator, "canShare", {
@@ -143,6 +165,48 @@ describe("ExportDownloadButton", () => {
     fireEvent.click(screen.getByTestId("export-pdf-link"));
 
     await screen.findByText(/Sesija je istekla/);
+  });
+
+  it("test_inside_the_store_app_the_file_goes_through_the_native_share_sheet", async () => {
+    fetchMock.mockResolvedValue(pdfResponse());
+    const share = vi.fn(async () => ({}));
+    stubNativeShell({
+      Filesystem: { writeFile: vi.fn(async () => ({ uri: "file:///cache/f.pdf" })) },
+      Share: { share },
+    });
+    // A web share sheet is also present (this is what iOS looks like); the
+    // native route still wins, so both platforms behave identically.
+    const webShare = stubShare(async () => {});
+
+    render(<ExportDownloadButton {...PROPS} />);
+    fireEvent.click(screen.getByTestId("export-pdf-link"));
+
+    await waitFor(() => expect(share).toHaveBeenCalledTimes(1));
+    expect(webShare).not.toHaveBeenCalled();
+    await screen.findByText("PDF je sačuvan.");
+  });
+
+  it("test_a_store_app_that_cannot_save_says_so_instead_of_doing_nothing", async () => {
+    // THE failure this whole path exists for: Android's web view has no
+    // `navigator.share`, and its answer to a blob-link click is silence. An
+    // older shell without the save plugins lands exactly here -- and the user
+    // must get a sentence, not a button that does nothing when tapped.
+    fetchMock.mockResolvedValue(pdfResponse());
+    stubNativeShell(null);
+    const click = vi
+      .spyOn(HTMLAnchorElement.prototype, "click")
+      .mockImplementation(() => {});
+
+    render(<ExportDownloadButton {...PROPS} />);
+    fireEvent.click(screen.getByTestId("export-pdf-link"));
+
+    const status = await screen.findByTestId("export-pdf-link-status");
+    expect(status).toHaveTextContent(/ne ume da sačuva fajl/i);
+    // And it must not pretend: no blob click, no "saved" message.
+    expect(click).not.toHaveBeenCalled();
+    expect(status).not.toHaveTextContent("PDF je sačuvan.");
+
+    click.mockRestore();
   });
 
   it("test_a_dead_connection_does_not_leak_an_exception_into_the_ui", async () => {

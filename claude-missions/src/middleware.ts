@@ -166,7 +166,14 @@ export const config = {
   // `mp4|webm` are load-bearing for the landing hero film: without them the
   // middleware answers `/landing/hero.mp4` with a redirect, the <video> never
   // gets any bytes, and the hero silently degrades to its poster.
+  // `offline.html` for the same reason one step further along: the service
+  // worker PRECACHES it, and a precache fetch happens under whatever User-Agent
+  // the browser has. On a desktop the phone gate would answer with a 307 to
+  // `/samo-za-telefon`, and `cache.addAll` would happily store that page under
+  // the offline URL -- so the one screen meant to say "no connection" would
+  // instead say "open this on your phone". Same trap that once 307-ed
+  // `robots.txt` (see `isCrawlerPath`).
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|webm)$).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|manifest\\.json|sw\\.js|offline\\.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|mp4|webm)$).*)",
   ],
 };

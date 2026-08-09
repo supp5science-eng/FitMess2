@@ -5,6 +5,8 @@ import { Download, FileDown, Loader2 } from "lucide-react";
 
 import { exportErrorText } from "@/lib/export/error-messages";
 import { useT } from "@/components/i18n/locale-provider";
+import { isNativeApp } from "@/lib/device/native";
+import { saveFileNatively } from "@/lib/native/save-file";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,11 +32,23 @@ import { cn } from "@/lib/utils";
  * and, if that happens, flip the button to "Sačuvaj …" -- the next tap is a
  * fresh gesture and shares the already-built file instantly, with no second
  * round trip to the server.
+ *
+ * Inside the STORE APP (the Capacitor shell) neither of those two steps can be
+ * relied on: Android's web view has no `navigator.share` at all, and its answer
+ * to a `blob:` link click is to do nothing whatsoever -- no download, no error.
+ * So the native shell is tried first, through the system share sheet
+ * (`@/lib/native/save-file`), and if this build of the shell cannot do it the
+ * button SAYS so. Silence is not an acceptable outcome for a button whose whole
+ * job is to produce a file.
  */
 
 type Phase = "idle" | "preparing" | "ready" | "done";
 
 const FETCH_ERROR_REASON = "mreza";
+/** The shell tried to save and failed (no space, write refused). */
+const NATIVE_SAVE_REASON = "cuvanje";
+/** A shell build with no way to save a file — nothing the user did wrong. */
+const NATIVE_UNSUPPORTED_REASON = "ljuska";
 
 export function ExportDownloadButton({
   href,
@@ -65,6 +79,28 @@ export function ExportDownloadButton({
   const fileRef = useRef<File | null>(null);
 
   async function deliver(file: File) {
+    // The store app first: on Android the browser paths below are a dead end,
+    // and on iOS this is the same system sheet by a more predictable route.
+    if (isNativeApp()) {
+      let outcome;
+      try {
+        outcome = await saveFileNatively(file);
+      } catch {
+        throw new ExportDownloadError(NATIVE_SAVE_REASON);
+      }
+      if (outcome === "saved") {
+        setPhase("done");
+        return;
+      }
+      if (outcome === "cancelled") {
+        // Sheet dismissed. The file is written; one more tap reopens it.
+        setPhase("ready");
+        return;
+      }
+      // "unsupported": an older shell, from before the save plugins shipped.
+      // Fall through -- on iOS the web share sheet below still works.
+    }
+
     if (canShareFile(file)) {
       const outcome = await shareFile(file);
       if (outcome === "shared") {
@@ -77,6 +113,12 @@ export function ExportDownloadButton({
       return;
     }
 
+    if (isNativeApp()) {
+      // A web view with no share of any kind. Clicking a blob link here would
+      // fail SILENTLY, so refuse loudly instead and name the way out.
+      throw new ExportDownloadError(NATIVE_UNSUPPORTED_REASON);
+    }
+
     saveViaLink(file);
     setPhase("done");
   }
@@ -85,15 +127,20 @@ export function ExportDownloadButton({
     if (phase === "preparing") return;
     setError(null);
 
-    const ready = fileRef.current;
-    if (ready) {
-      // Inside a fresh gesture: share() is allowed here.
-      await deliver(ready);
-      return;
-    }
-
-    setPhase("preparing");
+    // One try/catch around both paths: `deliver` can fail on its own now (the
+    // native save), and the "file already in hand" branch used to run outside
+    // any handler -- a throw there would have surfaced as an unhandled
+    // rejection and left the button silent, the exact failure this file exists
+    // to prevent.
     try {
+      const ready = fileRef.current;
+      if (ready) {
+        // Inside a fresh gesture: share() is allowed here.
+        await deliver(ready);
+        return;
+      }
+
+      setPhase("preparing");
       const file = await fetchExportFile({ href, contentType, fallbackFilename });
       fileRef.current = file;
       await deliver(file);

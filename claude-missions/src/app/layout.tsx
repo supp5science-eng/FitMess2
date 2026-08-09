@@ -7,6 +7,7 @@ import "./globals.css";
 import { AppShell } from "@/components/shell/app-shell";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { HapticProvider } from "@/components/pwa/haptic-provider";
+import { OfflineNotice } from "@/components/pwa/offline-notice";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/locale";
 import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
@@ -198,6 +199,8 @@ export default async function RootLayout({
         </LocaleProvider>
         <ServiceWorkerRegister />
         <HapticProvider />
+        {/* Renders nothing until the connection actually drops. */}
+        <OfflineNotice />
       </body>
     </html>
   );

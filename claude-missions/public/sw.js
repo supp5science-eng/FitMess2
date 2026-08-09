@@ -4,8 +4,9 @@
  * Its jobs are narrow on purpose:
  *  1. Provide a `fetch` handler so the app meets the browsers' PWA
  *     installability criteria (this is what makes "Instaliraj" real).
- *  2. Give an offline fallback for full-page navigations by precaching the
- *     public marketing landing ("/").
+ *  2. Give an offline fallback for full-page navigations, by precaching a
+ *     standalone offline page ("/offline.html") and the public marketing
+ *     landing ("/"). See `offlineResponse` for which one answers when.
  *  3. Receive Web Push reminders and open the right screen when one is tapped
  *     (2026-07-25, "Podsetnici").
  *  4. Serve the build's own static assets from Cache Storage (2026-07-31), so a
@@ -20,8 +21,16 @@
 // Bumped to v3 (2026-07-31) alongside the static-asset caching below: a new
 // bucket starts clean and the activate handler drops v2, so no entry cached
 // under the old, narrower rules lingers.
-const CACHE = "fitmess-shell-v3";
-const PRECACHE = ["/", "/icons/icon-192.png", "/icons/icon-512.png", "/manifest.json"];
+// v4 (2026-08-09): `/offline.html` joins the precache, so the bucket has to be
+// rebuilt for the offline fallback below to have anything to serve.
+const CACHE = "fitmess-shell-v4";
+const PRECACHE = [
+  "/",
+  "/offline.html",
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/manifest.json",
+];
 
 /**
  * Cache Storage buckets this service worker OWNS and may garbage-collect on
@@ -71,11 +80,11 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Full-page navigations: network-first, fall back to the cached landing
-  // only when the network is unavailable (offline). Never cache the response
-  // — it may be an authenticated page.
+  // Full-page navigations: network-first, falling back to a cached page only
+  // when the network is unavailable (offline). Never cache the response — it
+  // may be an authenticated page.
   if (request.mode === "navigate") {
-    event.respondWith(fetch(request).catch(() => caches.match("/")));
+    event.respondWith(fetch(request).catch(() => offlineResponse(url)));
     return;
   }
 
@@ -118,6 +127,43 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(staleWhileRevalidate(request));
   }
 });
+
+/**
+ * What a full-page navigation gets when the network is gone.
+ *
+ * This used to be `caches.match("/")` for every URL, which meant that losing
+ * signal INSIDE the installed app answered a tap on "Danas" with the marketing
+ * landing — a sales page urging you to install FitMess, shown to someone who
+ * already had it, with no way back because a standalone app has no browser
+ * chrome. It read as "the app is broken and forgot who I am".
+ *
+ * So the split is by destination, not by network state:
+ * - the site ROOT keeps the landing. It is genuinely cached, reads fine with no
+ *   connection, and is what a visitor reopening fitmess.app asked for.
+ * - everything else gets `/offline.html`, which names the actual problem and
+ *   offers one button that retries THIS url (the navigation's address is kept,
+ *   so the reload resumes where they were going).
+ *
+ * The last resort exists because `caches.match` resolves to `undefined` on a
+ * miss, and handing `undefined` to `respondWith` fails the navigation outright
+ * — a blank web view, which is exactly what this page is here to prevent.
+ */
+function offlineResponse(url) {
+  const wanted = url.pathname === "/" ? "/" : "/offline.html";
+  return caches
+    .match(wanted)
+    .then((cached) => cached || caches.match("/offline.html"))
+    .then(
+      (cached) =>
+        cached ||
+        new Response(
+          "<!doctype html><meta charset=utf-8><title>FitMess</title>" +
+            "<p style=\"font:16px -apple-system,sans-serif;text-align:center;margin-top:3rem\">" +
+            "Nema veze sa internetom.",
+          { headers: { "content-type": "text/html; charset=utf-8" } }
+        )
+    );
+}
 
 /**
  * Store a response copy, best-effort. Storage can be full or evicted mid-write;

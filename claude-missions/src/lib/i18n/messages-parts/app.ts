@@ -128,6 +128,11 @@ export const appMessages = {
     "app.export.preparing": "Pripremam…",
     "app.export.ready": "Fajl je spreman — dodirni još jednom da izabereš gde da ga sačuvaš.",
 
+    // Offline strip (app-wide). Deliberately states the fact and nothing more:
+    // the app cannot save anything without a connection, and pretending
+    // otherwise would be worse than saying so.
+    "app.offline.banner": "Nema veze sa internetom — unos se ne čuva.",
+
     // Refresh app button (Settings)
     "app.refresh.busy": "Osvežavam…",
     "app.refresh.label": "Osveži aplikaciju",
@@ -279,6 +284,9 @@ export const appMessages = {
     // Data export button (/profil/moji-podaci)
     "app.export.preparing": "Preparing…",
     "app.export.ready": "Your file is ready — tap once more to choose where to save it.",
+
+    // Offline strip (app-wide).
+    "app.offline.banner": "No internet connection — nothing is being saved.",
 
     // Refresh app button (Settings)
     "app.refresh.busy": "Refreshing…",

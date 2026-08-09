@@ -4,6 +4,12 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { Footprints, TrendingDown, TrendingUp } from "lucide-react";
 
 import { useCountUp } from "@/components/home/animated-number";
+import {
+  hasPlayedInSession,
+  markPlayed,
+  playedBeforeThisLoad,
+  subscribeToNothing,
+} from "@/components/home/once-a-day";
 import { formatPlanNumber, planLines } from "@/components/home/plan-lines";
 import { useT } from "@/components/i18n/locale-provider";
 import type { AdaptivePlan } from "@/lib/home/adaptive";
@@ -36,6 +42,11 @@ import "./plan-intro.css";
 const PLAN_COOKIE_MAX_AGE = 60 * 60 * 48;
 
 export const PLAN_INTRO_COOKIE = "fm_plan";
+
+/** The device-local record of the day this moment last played. The cookie above
+ * ARMS the moment; this is what REMEMBERS it, and the two are not the same job
+ * -- see `once-a-day.ts` for the replay bug that separated them. */
+const PLAN_MOMENT_KEY = "fm_plan_seen";
 
 /** Count-up length -- long enough to read as a change, short enough that
  * nobody waits for it. Matches the card's original tuning. */
@@ -102,6 +113,39 @@ export function PlanIntro({
   const [stage, setStage] = useState<Stage>("in");
   const [revealedState, setRevealed] = useState(false);
 
+  // Layer 1 of "once a day": has this already played in THIS tab?
+  //
+  // Read during render rather than in an effect on purpose. The server's
+  // decision arrives inside an RSC payload the client router may replay on a
+  // later navigation -- returning to Početna from Analitika did exactly that,
+  // and the sheet came back every single time. Checking here means a replayed
+  // payload never paints a frame of a full-screen message the user already
+  // dismissed.
+  //
+  // The lazy initializer runs once per mounted instance, so the instance that
+  // is genuinely playing (and marks itself below) can never hide itself
+  // mid-animation.
+  const [playedInThisTab] = useState(() =>
+    hasPlayedInSession(PLAN_MOMENT_KEY, dayKey)
+  );
+
+  // Layer 2: a reload or an app relaunch starts a fresh module, so the check
+  // above knows nothing about it -- `localStorage` does. This is what keeps
+  // "once a day" true even when the cookie never reaches the server.
+  //
+  // Same shape as `useReducedMotion` below and for the same reason: the server
+  // snapshot is `false` and React reuses it for hydration, so the first client
+  // render still matches the HTML that was sent. The snapshot is frozen at tab
+  // load (see `once-a-day.ts`), so writing the record on mount cannot make this
+  // flip to `true` and pull the sheet out from under its own animation.
+  const playedOnEarlierLoad = useSyncExternalStore(
+    subscribeToNothing,
+    () => playedBeforeThisLoad(PLAN_MOMENT_KEY, dayKey),
+    () => false
+  );
+
+  const alreadyHadItsTurn = playedInThisTab || playedOnEarlierLoad;
+
   // Reduced motion lands on the END state by DERIVING it, never by setting it
   // in an effect: no second render pass for the users least able to afford one.
   const revealed = revealedState || reducedMotion;
@@ -121,6 +165,11 @@ export function PlanIntro({
     } catch {
       // A blocked cookie only means the moment may replay -- never a crash.
     }
+    // The device-local record is written in the same breath and for the same
+    // reason. Unconditional: when the moment is being suppressed this simply
+    // re-states what is already true, and it keeps the record fresh on a day
+    // the server armed a moment the device had already spent.
+    markPlayed(PLAN_MOMENT_KEY, dayKey);
   }, [dayKey]);
 
   // The entrance chain, owned by MOUNT rather than by `stage`.
@@ -161,13 +210,13 @@ export function PlanIntro({
   // onboarding hand-off does -- the tab bar showing through a full-screen
   // message reads as two screens stacked rather than one moment.
   useEffect(() => {
-    if (stage === "gone") return;
+    if (alreadyHadItsTurn || stage === "gone") return;
     const root = document.documentElement;
     root.classList.add("intro-lock-nav");
     return () => root.classList.remove("intro-lock-nav");
-  }, [stage]);
+  }, [alreadyHadItsTurn, stage]);
 
-  if (stage === "gone") return null;
+  if (alreadyHadItsTurn || stage === "gone") return null;
 
   function dismiss() {
     setStage("out");

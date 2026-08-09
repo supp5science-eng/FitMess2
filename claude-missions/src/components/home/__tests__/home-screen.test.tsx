@@ -475,7 +475,7 @@ describe("the plan speaks in moments, not in furniture (2026-08-06)", () => {
   };
 
   function renderWithPlanIntro() {
-    render(
+    return render(
       <HomeScreen
         initialLogs={[makeLog({ kcal: 200 })]}
         target={makeTarget({ daily_kcal: 2000 })}
@@ -514,6 +514,29 @@ describe("the plan speaks in moments, not in furniture (2026-08-06)", () => {
     // Saying only "today is 1.600" would hide the fact that a plan was made.
     expect(screen.getByTestId("plan-intro-forward")).toHaveTextContent(
       "još 3 dana"
+    );
+  });
+
+  it("test_the_moment_never_replays_on_a_return_to_the_tab", () => {
+    // The reported bug (2026-08-09): "animacija se prikazuje nonstop kako se
+    // mrdam sa taba danas". The server arms the moment from a cookie the
+    // component burns on mount, but that decision reaches the browser inside
+    // an RSC payload the client router is free to render AGAIN on a later
+    // navigation -- and a payload built before the cookie existed says "play
+    // it" forever. Leaving Početna and coming back is modelled here as an
+    // unmount followed by a second render with the SAME armed props, which is
+    // exactly what a replayed payload produces.
+    const first = renderWithPlanIntro();
+    expect(screen.getByTestId("plan-intro")).toBeInTheDocument();
+    first.unmount();
+
+    renderWithPlanIntro();
+
+    expect(screen.queryByTestId("plan-intro")).not.toBeInTheDocument();
+    // And it lets go of the navigation, rather than leaving it hidden behind a
+    // sheet that decided not to render.
+    expect(document.documentElement.classList.contains("intro-lock-nav")).toBe(
+      false
     );
   });
 

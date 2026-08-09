@@ -1,8 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { CalendarSync } from "lucide-react";
 
+import {
+  hasPlayedInSession,
+  markPlayed,
+  playedBeforeThisLoad,
+  subscribeToNothing,
+} from "@/components/home/once-a-day";
 import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
@@ -29,6 +35,10 @@ import { cn } from "@/lib/utils";
 const OVER_COOKIE_MAX_AGE = 60 * 60 * 48;
 
 export const OVER_NOTICE_COOKIE = "fm_over";
+
+/** Device-local record of the day this notice last showed. The cookie arms it;
+ * this remembers it -- see `once-a-day.ts`. */
+const OVER_MOMENT_KEY = "fm_over_seen";
 
 /** Long enough to read two lines without hurrying, short enough that it is
  * gone before it becomes part of the furniture. */
@@ -61,6 +71,24 @@ export function OverNotice({
   const [visible, setVisible] = useState(true);
   const [gone, setGone] = useState(false);
 
+  // "Once per day" cannot rest on the cookie alone: the server's decision
+  // travels in an RSC payload the client router may replay on a later
+  // navigation, so the notice came back on every return to the tab. Checked
+  // during render (never paints a replay) and against localStorage below
+  // (survives a reload). See `once-a-day.ts`.
+  const [shownInThisTab] = useState(() =>
+    hasPlayedInSession(OVER_MOMENT_KEY, dayKey)
+  );
+  // The reload/relaunch half of the same rule. Server snapshot `false`, so the
+  // hydration pass still agrees with the HTML; frozen at tab load, so writing
+  // the record on mount cannot hide the notice while it is being read.
+  const shownOnEarlierLoad = useSyncExternalStore(
+    subscribeToNothing,
+    () => playedBeforeThisLoad(OVER_MOMENT_KEY, dayKey),
+    () => false
+  );
+  const alreadyHadItsTurn = shownInThisTab || shownOnEarlierLoad;
+
   useEffect(() => {
     // Burned on mount, not on dismiss: navigating away mid-message still spends
     // the moment. Re-showing it on the next tap would be worse than missing it.
@@ -69,6 +97,8 @@ export function OverNotice({
     } catch {
       // A blocked cookie only means the notice may repeat -- never a crash.
     }
+    // Same instant, same reason -- the device-local half of "once per day".
+    markPlayed(OVER_MOMENT_KEY, dayKey);
   }, [dayKey]);
 
   useEffect(() => {
@@ -79,7 +109,7 @@ export function OverNotice({
     return () => timers.forEach((id) => window.clearTimeout(id));
   }, []);
 
-  if (gone) return null;
+  if (alreadyHadItsTurn || gone) return null;
 
   const isLastDayOfWeek = tomorrowKcal === null;
 

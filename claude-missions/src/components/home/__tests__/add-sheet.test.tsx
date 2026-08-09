@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { act, render, screen, fireEvent } from "@testing-library/react";
 
 const recordAddFlowMock = vi.fn();
 vi.mock("@/lib/funnel/record", () => ({
@@ -12,6 +12,7 @@ vi.mock("@/lib/funnel/record", () => ({
 // method's flow -- these tests prove both taps and the sheet's structure.
 
 import { AddSheet } from "@/components/home/add-sheet";
+import { openAddSheet } from "@/components/home/add-sheet-open";
 import { ADD_FLOW_EVENT, isKnownFunnelEvent } from "@/lib/funnel/events";
 
 describe("AS-051: the '+' button is closed by default and opens the sheet on tap 1", () => {
@@ -304,5 +305,18 @@ describe("the '+' menu reports the way into logging", () => {
     fireEvent.click(screen.getByTestId("add-sheet-option-obrok"));
 
     expect(recordAddFlowMock).toHaveBeenCalledWith("start_obrok");
+  });
+
+  it("opens on a request from elsewhere on the screen, and counts as a menu open", () => {
+    // The empty state under "Obroci danas" asks for this menu instead of
+    // choosing a method on the user's behalf. Same menu, same funnel event --
+    // only the tap that reached it differs.
+    render(<AddSheet />);
+    recordAddFlowMock.mockClear();
+
+    act(() => openAddSheet());
+
+    expect(screen.getByTestId("add-sheet")).toBeInTheDocument();
+    expect(recordAddFlowMock).toHaveBeenCalledWith("menu_open");
   });
 });

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import {
@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 
+import { subscribeToAddSheetRequests } from "@/components/home/add-sheet-open";
 import { useT } from "@/components/i18n/locale-provider";
 import type { AddFlowValue } from "@/lib/funnel/events";
 import { recordAddFlow } from "@/lib/funnel/record";
@@ -150,6 +151,19 @@ export function AddSheet() {
   function close() {
     setIsOpen(false);
   }
+
+  // The same menu, opened from somewhere else on the screen -- currently the
+  // empty-state action under "Obroci danas". It goes through the same `open()`
+  // path, so the funnel counts it as the menu open it is; only the tap that
+  // reached it differs.
+  useEffect(
+    () =>
+      subscribeToAddSheetRequests(() => {
+        recordAddFlow("menu_open");
+        setIsOpen(true);
+      }),
+    []
+  );
 
   return (
     <>

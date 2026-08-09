@@ -7,6 +7,7 @@ vi.stubGlobal("fetch", vi.fn());
 // independent of each other's reveals.
 beforeEach(() => window.localStorage.clear());
 
+import { subscribeToAddSheetRequests } from "@/components/home/add-sheet-open";
 import { MealList } from "@/components/home/meal-list";
 import type { LogWithFood } from "@/lib/home/attach-food";
 import type { Food } from "@/lib/types/db";
@@ -122,15 +123,32 @@ describe("AS-049: MealList lists today's logged meals", () => {
     expect(screen.getByTestId("log-delete-open-button")).toBeInTheDocument();
   });
 
-  it("test_AS_049_empty_state_shows_encouraging_serbian_copy_and_a_slikaj_obrok_action_when_no_logs_today", () => {
+  it("test_AS_049_empty_state_shows_encouraging_serbian_copy_and_an_add_action_when_no_logs_today", () => {
     render(<MealList logs={[]} onSaved={vi.fn()} onDeleted={vi.fn()} />);
 
     expect(screen.getByTestId("home-meals-empty")).toBeInTheDocument();
     expect(screen.queryByTestId("home-meals-list")).not.toBeInTheDocument();
-    // Photo/voice-first: the empty-state CTA points at the meal-photo flow now
-    // that catalog search was removed from the add menu.
-    const link = screen.getByRole("link", { name: "Slikaj obrok" });
-    expect(link).toHaveAttribute("href", "/dodaj/obrok");
+    expect(
+      screen.getByRole("button", { name: "Dodaj unos" })
+    ).toBeInTheDocument();
+  });
+
+  it("test_the_empty_state_offers_the_whole_menu_not_one_method", () => {
+    // It used to link straight to `/dodaj/obrok`, which made the meal photo the
+    // silent default for the one person who has logged nothing yet -- exactly
+    // the person who most needs to see that Prizma, Gric and the rest exist.
+    // Owner's call (2026-08-09): it opens the "+" menu instead.
+    const opened = vi.fn();
+    const unsubscribe = subscribeToAddSheetRequests(opened);
+
+    try {
+      render(<MealList logs={[]} onSaved={vi.fn()} onDeleted={vi.fn()} />);
+      fireEvent.click(screen.getByTestId("home-meals-empty-cta"));
+
+      expect(opened).toHaveBeenCalledTimes(1);
+    } finally {
+      unsubscribe();
+    }
   });
 });
 

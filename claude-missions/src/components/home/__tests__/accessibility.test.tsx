@@ -111,15 +111,16 @@ describe("AS-128: MacroBars renders no bare images", () => {
   });
 });
 
-describe("AS-128: MealList's empty-state action is a real, keyboard-reachable link", () => {
-  it("test_AS_128_dodaj_obrok_is_a_native_anchor_not_a_div_with_a_click_handler", () => {
+describe("AS-128: MealList's empty-state action is a real, keyboard-reachable control", () => {
+  it("test_AS_128_the_empty_state_action_is_a_native_button_not_a_div_with_a_click_handler", () => {
     render(<MealList logs={[]} onSaved={vi.fn()} onDeleted={vi.fn()} />);
 
-    // Photo/voice-first: the empty-state CTA is "Slikaj obrok" (catalog search
-    // was removed from the add menu), still a real keyboard-reachable anchor.
-    const link = screen.getByRole("link", { name: "Slikaj obrok" });
-    expect(link.tagName).toBe("A");
-    expect(link).not.toHaveAttribute("tabindex", "-1");
+    // It opens the "+" menu rather than navigating, so it is a button now --
+    // an anchor that goes nowhere would lie to a screen reader about what
+    // happens next. Still a native element, still keyboard-reachable.
+    const action = screen.getByRole("button", { name: "Dodaj unos" });
+    expect(action.tagName).toBe("BUTTON");
+    expect(action).not.toHaveAttribute("tabindex", "-1");
   });
 });
 

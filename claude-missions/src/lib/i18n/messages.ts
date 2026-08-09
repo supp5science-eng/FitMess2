@@ -85,7 +85,9 @@ const sr = {
   "home.view.remaining": "Preostalo",
   "home.view.aria": "Prikaz kalorija i makroa",
   "home.meals.empty": "Još ništa nisi uneo/unela danas.",
-  "home.meals.empty.cta": "Slikaj obrok",
+  // Opens the "+" menu, so it must not name one method inside it. Same words
+  // as that menu's own title, so the button and what it opens agree.
+  "home.meals.empty.cta": "Dodaj unos",
 
   // Calorie ring
   "ring.target": "Cilj",
@@ -171,7 +173,7 @@ const en: Record<MessageKey, string> = {
   "home.view.remaining": "Remaining",
   "home.view.aria": "Calorie and macro display",
   "home.meals.empty": "Nothing logged yet today.",
-  "home.meals.empty.cta": "Snap a meal",
+  "home.meals.empty.cta": "Add entry",
 
   "ring.target": "Goal",
   "ring.consumed": "Consumed",

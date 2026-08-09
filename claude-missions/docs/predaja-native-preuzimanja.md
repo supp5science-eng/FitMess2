@@ -54,6 +54,12 @@ kod ih zatekne i sam počne da ih koristi — bez ijedne izmene u `src/`.
 
 `webDir` je `capacitor/www`, a `capacitor/www/index.html` je već tu (tvoj rad iz
 `570daf2`) — samo ga ništa nije prikazivalo, jer `errorPath` nije bio postavljen.
+
+**Sitnica u tvom fajlu:** `capacitor/www/index.html` boji „Mess" ravnim
+tirkizom, a brend pravilo je sedef gradijent kruške (`--wordmark-grad`). Ista
+strana u `public/offline.html` je ispravljena (commit `92c916c`) — stopovi za
+obe teme su tamo, prekucani iz `globals.css`, pa je prepis šest redova CSS-a.
+Nisam dirao tvoj fajl.
 Test drži da ta strana i `public/offline.html` govore **isti tekst**, pa ako
 menjaš kopiju na jednom mestu, test će te odmah upozoriti na drugo.
 

@@ -44,10 +44,32 @@ export function normalizePhone(dialCode: string, local: string): string {
   return `${dialCode}${localDigits}`;
 }
 
+/**
+ * The consent tick on the signup form.
+ *
+ * Not a formality. What FitMess stores about a user — weight, what they eat, a
+ * goal of losing or gaining — is health data, a special category under GDPR
+ * art. 9 and the Serbian ZZPL. The only legal basis available to us for it is
+ * *explicit* consent, and explicit means a deliberate act: a box the person
+ * ticks, never a pre-ticked box and never "by continuing you agree".
+ *
+ * So this is required, unchecked by default, and validated server-side as well
+ * as in the browser — a signup that arrives without it is refused rather than
+ * quietly accepted, because an account created without consent has no basis
+ * for the very first thing it does (the onboarding questionnaire).
+ *
+ * `src/components/legal/privacy-policy.tsx` is the document being consented to;
+ * the form links to both it and the terms.
+ */
+export const consentSchema = z.literal("on", {
+  message: "Potvrdi da si pročitao/la uslove i politiku privatnosti.",
+});
+
 export const signUpSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   phone: phoneSchema,
+  consent: consentSchema,
 });
 
 export const signInSchema = z.object({

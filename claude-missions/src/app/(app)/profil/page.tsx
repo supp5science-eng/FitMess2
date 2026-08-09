@@ -32,6 +32,7 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LanguageToggle } from "@/components/settings/language-toggle";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getT } from "@/lib/i18n/server";
+import { CONTROLLER } from "@/lib/legal/controller";
 import { createClient } from "@/lib/supabase/server";
 import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
 
@@ -54,7 +55,17 @@ import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
  * rest is server-rendered links/forms.
  */
 
-const SUPPORT_EMAIL = "podrska@fitmess.app";
+/**
+ * Support goes to the same address the privacy policy names as the contact for
+ * data requests — one mailbox, read by one person.
+ *
+ * It used to be `podrska@fitmess.app`, which was a placeholder: the domain is
+ * verified in Resend for *sending*, so nothing was ever delivered to it. A
+ * privacy policy that publishes an unreachable address is worse than one that
+ * publishes a plain personal address, because a data-subject request has a
+ * legal deadline and a store reviewer who gets no answer rejects the app.
+ */
+const SUPPORT_EMAIL = CONTROLLER.email;
 const APP_VERSION = "0.1.0";
 
 export default async function ProfilPage() {

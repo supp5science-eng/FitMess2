@@ -20,12 +20,39 @@ Odrađeno i na produkciji (tri commita na `main`):
   fitmess.app, dozvole kamera + mikrofon, Android back dugme vrti istoriju,
   portret zaključan.
 
+Dodato 2026-08-09 (pravne stranice):
+
+- **Tri javna dokumenta**: `/privatnost`, `/uslovi`, `/brisanje-naloga` —
+  pun tekst, srpski i engleski, izuzeti i iz phone gate-a i iz auth gate-a
+  (`src/lib/legal/paths.ts`), u `robots.txt` i `sitemap.xml`.
+- Isti tekst se prikazuje i u aplikaciji (`/profil/privatnost`, `/profil/uslovi`)
+  iz **iste komponente** — dve verzije politike privatnosti su način da app
+  obeća jedno korisniku a drugo recenzentu.
+- Identitet rukovaoca (ime, adresa, kontakt) živi na jednom mestu:
+  `src/lib/legal/controller.ts`. Podrška više ne pokazuje na
+  `podrska@fitmess.app` — ta adresa je bila samo Resend identitet za SLANJE i
+  ništa joj nije stizalo.
+- **Pristanak na registraciji** (`consentSchema`): podaci o telu i ishrani su
+  posebna vrsta podataka (GDPR čl. 9), a za njih je jedini osnov *izričit*
+  pristanak — što znači svesna radnja, ne „nastavljanjem prihvataš". Kutijica
+  je obavezna, neoznačena, i proverava se i na serveru.
+- Pravni linkovi u futeru landinga (jedino javno mesto do kog dolazi neko ko
+  nema nalog).
+- **Zatečena zamka:** phone gate je 307-ovao svakog sa desktopa, pa bi
+  recenzent koji na laptopu otvori link politike video „otvori na telefonu".
+  Ista greška koja je nekad držala `robots.txt` van Google-a.
+
+Ostaje od korisnika za pravni deo: **puna poštanska adresa** (ulica je poznata,
+fali grad i poštanski broj) — ali samo za „trader" formulare u App Store
+Connect-u i Play Console-u, ne za tekst politike.
+
 Ispravke plana nađene u kodu:
 
 - Push migracija je **0030**, ne 0021 — lokalne migracije su otišle do 0029.
-- **Privatnost i uslovi su iza logina** (`(app)/profil/*`) i pišu „u pripremi".
+- ~~**Privatnost i uslovi su iza logina** (`(app)/profil/*`) i pišu „u pripremi".
   Oba store-a traže javan URL politike privatnosti koji recenzent otvara na
-  desktopu. To u tački 4.2 nije bilo zapisano, a blokira obe submisije.
+  desktopu. To u tački 4.2 nije bilo zapisano, a blokira obe submisije.~~
+  Rešeno 2026-08-09 — vidi gore.
 - Na razvojnoj mašini **nema JDK ni Android SDK-a** — build ide ili preko
   Codemagic-a ili uz lokalnu instalaciju alata.
 

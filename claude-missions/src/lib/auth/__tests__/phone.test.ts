@@ -58,6 +58,8 @@ describe("signUpSchema now requires a phone", () => {
       email: "a@b.com",
       password: "lozinka12",
       phone: "+381600637486",
+      // The GDPR art. 9 consent tick, added alongside the phone field.
+      consent: "on",
     });
     expect(parsed.success).toBe(true);
   });
@@ -96,5 +98,41 @@ describe("updateProfilePhone", () => {
     const result = await updateProfilePhone(client, "user-123", "+381600637486");
 
     expect(result).toEqual({ ok: false, error_sr: SR_AUTH_MESSAGES.generic });
+  });
+});
+
+/**
+ * The consent tick is the legal basis for every body/food figure the app then
+ * stores (GDPR art. 9). It has to fail closed: an unticked box submits no
+ * value at all, and that must be refused server-side, not just hidden behind
+ * `required` in the browser.
+ */
+describe("signUpSchema requires explicit consent", () => {
+  const valid = {
+    email: "a@b.com",
+    password: "lozinka12",
+    phone: "+381600637486",
+  };
+
+  it("rejects a signup with the box left unticked", () => {
+    // An unchecked checkbox is absent from the form data entirely.
+    expect(signUpSchema.safeParse(valid).success).toBe(false);
+  });
+
+  it("rejects a forged value that is not the browser's own", () => {
+    expect(signUpSchema.safeParse({ ...valid, consent: "false" }).success).toBe(
+      false
+    );
+    expect(signUpSchema.safeParse({ ...valid, consent: "" }).success).toBe(false);
+  });
+
+  it("explains in Serbian what to do about it", () => {
+    const parsed = signUpSchema.safeParse(valid);
+    expect(parsed.success).toBe(false);
+    if (!parsed.success) {
+      expect(parsed.error.issues.map((i) => i.message).join(" ")).toMatch(
+        /uslove i politiku privatnosti/i
+      );
+    }
   });
 });

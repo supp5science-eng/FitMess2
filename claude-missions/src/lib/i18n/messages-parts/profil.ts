@@ -131,50 +131,6 @@ export const profilMessages = {
       "Nismo uspeli da učitamo tvoje navike. Proveri konekciju i pokušaj ponovo.",
     "profil.habits.retry": "Pokušaj ponovo",
 
-    // Politika privatnosti (/profil/privatnost)
-    "profil.privacy.p1":
-      "FitMess čuva samo podatke koji su potrebni da aplikacija radi: tvoj nalog (email, broj telefona), podatke iz upitnika (pol, godine, visina, težina, aktivnost, cilj) i unete obroke. Ove podatke koristimo isključivo da bismo ti računali plan i pratili napredak.",
-    "profil.privacy.p2":
-      "Uneti obroci se u aplikaciji prikazuju 30 dana, a u bazi se čuvaju do 3 meseca pa se automatski brišu. U svakom trenutku možeš da preuzmeš svoje podatke ili obrišeš nalog iz Podešavanja.",
-    "profil.privacy.p3":
-      "Kompletan, pravno pregledan tekst politike privatnosti je u pripremi i biće objavljen ovde uskoro.",
-    "profil.privacy.notMedical":
-      "FitMess nije medicinski savet. Procene, planovi i brojevi u aplikaciji su informativni.",
-    "profil.privacy.termsLink": "Pročitaj uslove korišćenja",
-
-    // Uslovi korišćenja (/profil/uslovi)
-    "profil.terms.intro":
-      "FitMess je alat za praćenje ishrane: upisuješ šta jedeš, a mi računamo dnevni budžet kalorija i makronutrijenata i pratimo kako se krećeš ka svom cilju. Korišćenjem aplikacije prihvataš ove uslove.",
-    "profil.terms.medical.h": "Nije medicinski savet",
-    "profil.terms.medical.body":
-      "FitMess nije medicinsko sredstvo i ne daje medicinski, dijagnostički ni terapijski savet. Brojevi koje vidiš — dnevni budžet, makronutrijenti, procena potrošnje, predlozi za korekciju plana — su informativne procene po opštim formulama, a ne nalaz o tvom zdravlju. Ne postavljamo dijagnozu, ne lečimo i ne zamenjujemo lekara ni nutricionistu. Ništa u aplikaciji nije razlog da odložiš odlazak lekaru ili da menjaš terapiju koju ti je lekar propisao.",
-    "profil.terms.doctor.h": "Kad se obavezno javi lekaru",
-    "profil.terms.doctor.lead":
-      "Pre nego što počneš da menjaš ishranu po planu iz aplikacije, posavetuj se sa lekarom ako se prepoznaješ u nečemu od ovoga:",
-    "profil.terms.doctor.li1": "trudna si ili dojiš",
-    "profil.terms.doctor.li2":
-      "imaš dijabetes ili piješ terapiju koja zavisi od unosa hrane (insulin, varfarin i slično)",
-    "profil.terms.doctor.li3":
-      "imaš bolest srca, bubrega, jetre ili štitne žlezde",
-    "profil.terms.doctor.li4":
-      "imaš poremećaj ishrane ili si ga imao/la ranije",
-    "profil.terms.doctor.li5": "mlađi/a si od 18 godina",
-    "profil.terms.doctor.li6":
-      "oporavljaš se od operacije, povrede ili teže bolesti",
-    "profil.terms.doctor.note":
-      "Ako ti se dok pratiš plan jave vrtoglavica, nesvestica, izrazit umor, ubrzan rad srca ili bilo koji simptom koji te brine — stani i obrati se lekaru.",
-    "profil.terms.accuracy.h": "Tačnost brojeva i AI procena",
-    "profil.terms.accuracy.body":
-      "Trudimo se da baza namirnica bude tačna, ali ne garantujemo da je svaka vrednost bez greške. Procene sa slike, glasa i deklaracije radi veštačka inteligencija — to je procena, ne merenje, i ume da promaši. Proveri je i ispravi kad ti nešto ne deluje tačno.",
-    "profil.terms.responsibility.h": "Tvoja odgovornost",
-    "profil.terms.responsibility.body":
-      "Odgovoran/na si za podatke koje unosiš i za odluke koje donosiš na osnovu onoga što ti aplikacija pokaže. Nalog je tvoj lični — čuvaj lozinku i ne deli pristup. FitMess je namenjen zdravim odraslim osobama koje žele da prate ishranu.",
-    "profil.terms.liability.h": "Granica odgovornosti",
-    "profil.terms.liability.body":
-      "Aplikacija se koristi takva kakva jeste. U granicama koje zakon dozvoljava, ne odgovaramo za štetu nastalu oslanjanjem na procene i brojeve iz aplikacije, niti za prekide u radu servisa. Ovim se ne isključuje odgovornost koja se po zakonu ne može isključiti.",
-    "profil.terms.pending":
-      "Kompletni, pravno pregledani uslovi korišćenja su u pripremi i biće objavljeni ovde uskoro.",
-
     // Broj telefona (/profil/telefon)
     "profil.phone.noNumber": "Još nemamo tvoj broj — možeš ga dodati ovde.",
     "profil.phone.dialAria": "Pozivni broj države",
@@ -305,48 +261,6 @@ export const profilMessages = {
     "profil.habits.loadError":
       "We couldn't load your habits. Check your connection and try again.",
     "profil.habits.retry": "Try again",
-
-    "profil.privacy.p1":
-      "FitMess stores only the data needed for the app to work: your account (email, phone number), the details from the questionnaire (sex, age, height, weight, activity, goal), and the meals you log. We use this data solely to calculate your plan and track your progress.",
-    "profil.privacy.p2":
-      "Logged meals are shown in the app for 30 days, and kept in the database for up to 3 months before being deleted automatically. You can download your data or delete your account from Settings at any time.",
-    "profil.privacy.p3":
-      "The complete, legally reviewed privacy policy is in preparation and will be published here soon.",
-    "profil.privacy.notMedical":
-      "FitMess is not medical advice. The estimates, plans and numbers in the app are informational.",
-    "profil.privacy.termsLink": "Read the terms of use",
-
-    "profil.terms.intro":
-      "FitMess is a food-tracking tool: you log what you eat, and we calculate your daily calorie and macronutrient budget and track how you're moving toward your goal. By using the app you accept these terms.",
-    "profil.terms.medical.h": "Not medical advice",
-    "profil.terms.medical.body":
-      "FitMess is not a medical device and does not provide medical, diagnostic or treatment advice. The numbers you see — daily budget, macronutrients, expenditure estimates, suggested plan corrections — are informational estimates based on general formulas, not findings about your health. We do not diagnose, we do not treat, and we do not replace a doctor or a dietitian. Nothing in the app is a reason to delay seeing a doctor or to change treatment your doctor prescribed.",
-    "profil.terms.doctor.h": "When you must talk to a doctor",
-    "profil.terms.doctor.lead":
-      "Before you start changing how you eat based on the app's plan, consult a doctor if any of this applies to you:",
-    "profil.terms.doctor.li1": "you are pregnant or breastfeeding",
-    "profil.terms.doctor.li2":
-      "you have diabetes or take medication that depends on food intake (insulin, warfarin and similar)",
-    "profil.terms.doctor.li3":
-      "you have heart, kidney, liver or thyroid disease",
-    "profil.terms.doctor.li4":
-      "you have an eating disorder or have had one in the past",
-    "profil.terms.doctor.li5": "you are under 18",
-    "profil.terms.doctor.li6":
-      "you are recovering from surgery, an injury or a serious illness",
-    "profil.terms.doctor.note":
-      "If while following the plan you get dizziness, fainting, unusual fatigue, a racing heart or any symptom that worries you — stop and see a doctor.",
-    "profil.terms.accuracy.h": "Accuracy of numbers and AI estimates",
-    "profil.terms.accuracy.body":
-      "We work to keep the food database accurate, but we don't guarantee that every value is error-free. Estimates from a photo, your voice or a nutrition label are produced by AI — that is an estimate, not a measurement, and it can be wrong. Check it and correct it whenever something looks off.",
-    "profil.terms.responsibility.h": "Your responsibility",
-    "profil.terms.responsibility.body":
-      "You are responsible for the data you enter and for the decisions you make based on what the app shows you. Your account is personal — keep your password safe and don't share access. FitMess is intended for healthy adults who want to track their nutrition.",
-    "profil.terms.liability.h": "Limitation of liability",
-    "profil.terms.liability.body":
-      "The app is provided as is. To the extent permitted by law, we are not liable for damage arising from reliance on the estimates and numbers in the app, or for service interruptions. This does not exclude liability that cannot be excluded by law.",
-    "profil.terms.pending":
-      "The complete, legally reviewed terms of use are in preparation and will be published here soon.",
 
     "profil.phone.noNumber": "We don't have your number yet — you can add it here.",
     "profil.phone.dialAria": "Country dialing code",

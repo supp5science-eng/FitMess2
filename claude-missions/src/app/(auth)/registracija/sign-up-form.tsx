@@ -53,6 +53,21 @@ export function SignUpForm({ initialEmail }: { initialEmail?: string }) {
         minLength={8}
         invalid={invalid}
       />
+      {/* Explicit consent, unticked by default. What the app stores is health
+          data (weight, intake, a weight-loss goal), and GDPR art. 9 allows it
+          on explicit consent only — which means a deliberate act, not a notice
+          under the button. See `consentSchema`; the server re-checks it, so
+          removing the box in the browser does not create an account. */}
+      <label className="auth-consent">
+        <input type="checkbox" name="consent" required aria-invalid={invalid} />
+        <span>
+          Pročitao/la sam{" "}
+          <Link href="/uslovi">uslove korišćenja</Link> i{" "}
+          <Link href="/privatnost">politiku privatnosti</Link> i pristajem da
+          FitMess obrađuje moje podatke o ishrani i telesnoj težini da bi mi
+          računao plan.
+        </span>
+      </label>
       {state?.ok === false ? (
         <p role="alert" className="auth-error">
           {state.error_sr}

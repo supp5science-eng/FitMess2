@@ -41,7 +41,18 @@ import { InstallNudge } from "@/components/pwa/install-nudge";
 /** Routes that render their own full-width layout, without the app column or
  * bottom navigation: the marketing landing page and the desktop "open on your
  * phone" gate (`/samo-za-telefon`). */
-const FULL_BLEED_ROUTES = new Set(["/", "/samo-za-telefon"]);
+const FULL_BLEED_ROUTES = new Set([
+  "/",
+  "/samo-za-telefon",
+  // The public legal documents (`src/lib/legal/paths.ts`). Their reader is
+  // usually signed out — often a store reviewer on a desktop — so the bottom
+  // navigation would offer them four tabs that all end at a login screen. The
+  // in-app copies at `/profil/privatnost` and `/profil/uslovi` keep the full
+  // shell; these three are the public URLs the store listings point at.
+  "/privatnost",
+  "/uslovi",
+  "/brisanje-naloga",
+]);
 
 /** Full-bleed route prefixes, covering nested steps by prefix match:
  * - auth (`/prijava`, `/registracija/proveri-email`, ...)

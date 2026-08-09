@@ -355,6 +355,29 @@ export default async function LandingPage() {
             {t("app.landing.close.cta")}
           </Link>
         </section>
+
+        {/* The legal documents, quiet and last. They live here because both
+            store listings point at them and a reviewer looks for them on the
+            site too — and because the landing is the only public page a person
+            who has not signed up can reach. Deliberately understated: nobody
+            arrives wanting to read a privacy policy, but the person who does
+            want it should not have to guess the URL. */}
+        <footer className="mx-auto w-full max-w-[460px] px-[22px] pb-10 text-center">
+          <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-[12.5px] text-muted-foreground">
+            <Link className="underline underline-offset-4" href="/privatnost">
+              {t("legal.link.privacy")}
+            </Link>
+            <Link className="underline underline-offset-4" href="/uslovi">
+              {t("legal.link.terms")}
+            </Link>
+            <Link
+              className="underline underline-offset-4"
+              href="/brisanje-naloga"
+            >
+              {t("legal.link.delete")}
+            </Link>
+          </nav>
+        </footer>
       </main>
     </div>
   );

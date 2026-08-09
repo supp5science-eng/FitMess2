@@ -1,6 +1,7 @@
 import { isCrawlerUserAgent } from "@/lib/device/is-crawler";
 import { isMobileUserAgent } from "@/lib/device/is-mobile";
 import { isNativeAppUserAgent } from "@/lib/device/native";
+import { isLegalPath } from "@/lib/legal/paths";
 
 /**
  * The phone-only gate decision, framework-free so it can be tested directly.
@@ -17,6 +18,11 @@ import { isNativeAppUserAgent } from "@/lib/device/native";
  *  - **The native shell**, because Apple reviews iPhone apps on an iPad, whose
  *    web view reports a "Macintosh" UA. A reviewer who taps the app icon and
  *    gets "open this on your phone" rejects the submission.
+ *
+ * And three *paths* are exempt for anyone at all: the legal documents
+ * (`src/lib/legal/paths.ts`). Their entire job is to be opened by a stranger on
+ * a desktop — a store reviewer clicking the privacy-policy link from the
+ * listing. Gating them defeats the only reason they exist.
  *
  * Everyone exempt is served exactly what a phone visitor is served — the gate
  * is skipped and nothing else about the response changes.
@@ -40,6 +46,7 @@ export function decidePhoneGate({
   userAgent: string | null | undefined;
 }): PhoneGateDecision {
   const allowed =
+    isLegalPath(pathname) ||
     isMobileUserAgent(userAgent) ||
     isCrawlerUserAgent(userAgent) ||
     isNativeAppUserAgent(userAgent);

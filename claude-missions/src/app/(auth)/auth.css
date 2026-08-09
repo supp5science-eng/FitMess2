@@ -362,6 +362,33 @@
   background: var(--line);
 }
 
+/* ---------- Consent ----------
+   The GDPR art. 9 tick on the signup form. Sized to be read and tapped, not
+   to disappear: the box is 20px with a 44px-tall row, and the text sits at
+   13px rather than the "legal small print" size the pattern usually gets. */
+.auth-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.auth-consent input[type="checkbox"] {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  accent-color: var(--teal);
+  cursor: pointer;
+}
+.auth-consent a {
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* ---------- Messages ---------- */
 .auth-error {
   margin: 0;

@@ -24,6 +24,8 @@
  *     stop bouncing and become reachable again).
  */
 
+import { isLegalPath } from "@/lib/legal/paths";
+
 export type RouteProtectionInput = {
   /** `request.nextUrl.pathname` -- no query string, no origin. */
   pathname: string;
@@ -135,14 +137,22 @@ export function isMachinePath(pathname: string): boolean {
 
 /** Never gated regardless of auth/verification/onboarding state: the public
  * marketing landing page, the pre-auth `/upitnik` questionnaire, the
- * login/signup pages, the auth callback, and the password-reset flow. */
+ * login/signup pages, the auth callback, the password-reset flow, and the
+ * three legal documents.
+ *
+ * The legal documents are public in the strongest sense the app has: a store
+ * reviewer opens them from the listing with no account at all, and Play
+ * specifically requires the account-deletion page to work without installing
+ * anything. See `src/lib/legal/paths.ts` — the phone gate exempts the same
+ * three paths one layer earlier. */
 export function isPublicPath(pathname: string): boolean {
   return (
     pathname === MARKETING_HOME_PATH ||
     isQuestionnairePath(pathname) ||
     isLoginOrSignupPath(pathname) ||
     isAuthCallbackPath(pathname) ||
-    isPasswordResetPath(pathname)
+    isPasswordResetPath(pathname) ||
+    isLegalPath(pathname)
   );
 }
 

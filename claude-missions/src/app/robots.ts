@@ -20,8 +20,11 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: "*",
-        // Public, indexable surface only.
-        allow: ["/", "/upitnik"],
+        // Public, indexable surface only. The three legal documents belong
+        // here and not behind the disallow list: both stores link to them from
+        // the listing, and a policy URL that search engines are told to ignore
+        // reads as one that is not meant to be found.
+        allow: ["/", "/upitnik", "/privatnost", "/uslovi", "/brisanje-naloga"],
         // Everything auth-gated or internal — kept out of the index.
         disallow: [
           "/danas",

@@ -86,6 +86,9 @@ export async function signUpAction(
       String(formData.get("phone_cc") ?? ""),
       String(formData.get("phone_local") ?? "")
     ),
+    // An unchecked box submits nothing at all, so a missing value here is
+    // exactly the "no consent given" case -- see `consentSchema`.
+    consent: formData.get("consent"),
   });
   if (!parsed.success) {
     return {

@@ -1,7 +1,39 @@
 # Izlazak u App Store i Google Play
 
-Plan i odluke dogovorene 2026-08-06. Rad **još nije počeo** — čeka se da se
-završi sitni polishing aplikacije.
+Plan i odluke dogovorene 2026-08-06. **Rad je počeo 2026-08-09.**
+
+---
+
+## 0. Stanje na 2026-08-09
+
+Odrađeno i na produkciji (tri commita na `main`):
+
+- **Native potpis `FitMessApp/1.0`** (`src/lib/device/native.ts`) kao jedan
+  izvor istine. `capacitor.config.ts` ga UVOZI, ne prekucava.
+- **Phone gate propušta ljusku** (zamka 4.1). Odluka izvučena iz middleware-a
+  u čistu `decidePhoneGate` (`src/lib/device/phone-gate.ts`) i pokrivena
+  testom sa pravim iPad UA nizom.
+- **Nema PWA install poruka u ljusci** (tačka 3.1). `pushEnvironment()` dobio
+  stanje `native` umesto lažnog `needs-install`; `push-nudge` više ne upisuje
+  `needs_install` u levak za store korisnike.
+- **Capacitor 8.5.0 ljuska**: iOS i Android projekat, `server.url` na
+  fitmess.app, dozvole kamera + mikrofon, Android back dugme vrti istoriju,
+  portret zaključan.
+
+Ispravke plana nađene u kodu:
+
+- Push migracija je **0030**, ne 0021 — lokalne migracije su otišle do 0029.
+- **Privatnost i uslovi su iza logina** (`(app)/profil/*`) i pišu „u pripremi".
+  Oba store-a traže javan URL politike privatnosti koji recenzent otvara na
+  desktopu. To u tački 4.2 nije bilo zapisano, a blokira obe submisije.
+- Na razvojnoj mašini **nema JDK ni Android SDK-a** — build ide ili preko
+  Codemagic-a ili uz lokalnu instalaciju alata.
+
+Ostaje: ikonica i splash (sad Capacitor podrazumevani), preuzimanje fajlova,
+offline ekran, native push, javne pravne stranice, papirologija.
+
+Pregledna verzija ovog stanja:
+https://claude.ai/code/artifact/c553cc3c-cc5f-4ac4-8f28-8260df1abd40
 
 ---
 

@@ -1,16 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { isCrawlerPath, isCrawlerUserAgent } from "@/lib/device/is-crawler";
-import { isMobileUserAgent } from "@/lib/device/is-mobile";
+import { isCrawlerPath } from "@/lib/device/is-crawler";
+import { decidePhoneGate } from "@/lib/device/phone-gate";
 import {
   decideRouteAccess,
   isMachinePath,
   VERIFY_EMAIL_NOTICE_PATH,
 } from "@/lib/auth/route-protection";
 import { updateSession } from "@/lib/supabase/middleware";
-
-/** The phone-only gate route (see `src/app/samo-za-telefon/page.tsx`). */
-const PHONE_ONLY_PATH = "/samo-za-telefon";
 
 /**
  * Cookie that caches "this user has cleared both onboarding + phone gates."
@@ -57,35 +54,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Phone-only gate (runs before any auth/session work). FitMess is designed
-  // and shipped for phones only: non-mobile visitors are redirected to the
-  // "open it on your phone" gate for EVERY route, before the requested page
-  // executes, so desktop never triggers the app's data fetching. Mobile
-  // visitors who land on the gate URL are bounced back into the app.
-  //
-  // Search-engine crawlers are exempt: Google's robots/sitemap/verification
-  // fetchers and the desktop Googlebot variant all send a UA with no mobile
-  // token, so the gate above used to hide the entire site from indexing. They
-  // are served exactly what a phone visitor is served -- the gate is skipped,
-  // nothing else about the response changes, so this is not cloaking.
-  const userAgent = request.headers.get("user-agent");
-  const isMobile =
-    isMobileUserAgent(userAgent) || isCrawlerUserAgent(userAgent);
-  const onGate = request.nextUrl.pathname === PHONE_ONLY_PATH;
+  // Phone-only gate (runs before any auth/session work), so a desktop visit
+  // never triggers the app's data fetching. Who is exempt, and why, lives with
+  // the decision itself in `@/lib/device/phone-gate` -- including the native
+  // shell, whose UA reads as a desktop Mac when Apple reviews the iPhone app on
+  // an iPad.
+  const gate = decidePhoneGate({
+    pathname: request.nextUrl.pathname,
+    userAgent: request.headers.get("user-agent"),
+  });
 
-  if (!isMobile && !onGate) {
+  if (gate.action === "redirect") {
     const url = request.nextUrl.clone();
-    url.pathname = PHONE_ONLY_PATH;
+    url.pathname = gate.to;
     url.search = "";
     return NextResponse.redirect(url);
   }
-  if (isMobile && onGate) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/";
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
-  if (!isMobile && onGate) {
+  if (gate.action === "serve-gate") {
     // Desktop viewing the gate itself: serve it directly, no session refresh.
     return NextResponse.next();
   }

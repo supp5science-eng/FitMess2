@@ -47,3 +47,11 @@ yarn-error.log*
 
 # NOTE: do NOT ignore `missions/` in general — mission state IS the project's
 # documentation. Only the verify/ subdirectory is excluded.
+
+# --- STORE ASSETS ---
+# Raw captures and the framed listing images are rebuilt from the live app by
+# `scripts/store/*.cjs` whenever the UI changes, and each one is ~1 MB. The
+# generators are checked in; their output is not. `store/play-icon-512.png`
+# stays tracked — it comes from the logo, not from a screenshot.
+/store/raw/
+/store/screenshots/

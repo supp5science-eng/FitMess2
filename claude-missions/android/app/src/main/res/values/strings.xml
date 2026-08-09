@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FitMess</string>
+    <string name="title_activity_main">FitMess</string>
+    <string name="package_name">app.fitmess</string>
+    <string name="custom_url_scheme">app.fitmess</string>
+</resources>

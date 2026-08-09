@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="sr-Latn">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>FitMess</title>
+    <style>
+      /* Brand tokens, copied rather than imported: this page must render with
+         zero network. Values mirror `globals.css` (dark ground, teal accent). */
+      :root {
+        --ground: #0a0c0b;
+        --card: #14181a;
+        --fg: #f4f6f5;
+        --muted: #9aa4a1;
+        --primary: #17d1a8;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        background: var(--ground);
+        color: var(--fg);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom));
+        text-align: center;
+      }
+      main { max-width: 340px; display: flex; flex-direction: column; gap: 14px; }
+      h1 { font-size: 22px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
+      p { margin: 0; font-size: 15px; line-height: 1.55; color: var(--muted); }
+      button {
+        margin-top: 10px;
+        min-height: 48px;
+        border: 0;
+        border-radius: 14px;
+        background: var(--primary);
+        color: #04231c;
+        font-size: 16px;
+        font-weight: 600;
+        font-family: inherit;
+      }
+      button:active { opacity: 0.85; }
+      .mark { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+      .mark span { color: var(--primary); }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- The wordmark keeps its rule: "Mess" is the only coloured part. -->
+      <p class="mark">Fit<span>Mess</span></p>
+      <h1>Nema veze sa internetom</h1>
+      <p>
+        FitMess čuva tvoj dan na serveru, pa mu treba mreža da ga prikaže.
+        Uključi Wi-Fi ili mobilne podatke pa probaj ponovo.
+      </p>
+      <button type="button" onclick="location.replace('https://fitmess.app/danas')">
+        Pokušaj ponovo
+      </button>
+    </main>
+  </body>
+</html>

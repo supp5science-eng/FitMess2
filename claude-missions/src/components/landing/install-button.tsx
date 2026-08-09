@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { InstallGuide } from "@/components/landing/install-guide";
 import { useT } from "@/components/i18n/locale-provider";
+import { isNativeApp } from "@/lib/device/native";
 
 /**
  * The landing page's "Instaliraj FitMess" call to action — the single most
@@ -51,6 +52,12 @@ function detectPlatform(): "ios" | "android" | "other" {
 
 /** Resolve what the current browser can do, post-hydration (window-only). */
 function detectInitialMode(): Mode {
+  // The native shell is the installed app, by definition -- so the button says
+  // "open it", exactly as it does for a home-screen PWA. Anything else here
+  // would offer someone an install of the thing they are already inside, and
+  // on iOS it would walk them through a Safari menu their window does not have.
+  if (isNativeApp()) return "open";
+
   const isStandalone =
     window.matchMedia("(display-mode: standalone)").matches ||
     // iOS Safari exposes this legacy flag when launched from the home screen.

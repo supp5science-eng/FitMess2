@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 import { InstallOverlay } from "@/components/pwa/install-overlay";
+import { NATIVE_UA_SUFFIX } from "@/lib/device/native";
 
 // The post-onboarding install overlay: platform-aware walkthrough, one-shot
 // gating (localStorage + consumed cookie), quiet dismissal. jsdom has no
@@ -197,6 +198,29 @@ describe("InstallOverlay in revisit mode", () => {
     });
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
+  });
+
+  it("test_neither_gate_says_a_word_inside_the_native_shell", () => {
+    // The store build loads the same site in a native web view, where none of
+    // the "already installed" signals fire: display-mode is not standalone and
+    // no `appinstalled` event ever happened. Without the UA check, someone who
+    // installed FitMess from the App Store would be shown a walkthrough of a
+    // Safari menu their window does not even have -- on every visit.
+    stubUserAgent(`${IOS_UA} ${NATIVE_UA_SUFFIX}`);
+
+    render(<InstallOverlay mode="revisit" />);
+    act(() => {
+      vi.advanceTimersByTime(PAST_DELAY_MS);
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+
+    cleanup();
+
+    render(<InstallOverlay />);
+    act(() => {
+      vi.advanceTimersByTime(PAST_DELAY_MS);
+    });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
   it("test_revisit_nudge_does_not_burn_the_one_shot_onboarding_moment", () => {

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useT } from "@/components/i18n/locale-provider";
+import { isNativeApp } from "@/lib/device/native";
 import type { TFunction } from "@/lib/i18n/translate";
 
 import "./install-overlay.css";
@@ -162,9 +163,17 @@ function writeStore(key: string, value: string): void {
   }
 }
 
-/** True once the app is installed on this device, by either signal we have. */
+/** True once the app is installed on this device, by any signal we have.
+ *
+ * The native shell counts, and counts FIRST: someone who installed FitMess
+ * from the App Store or Google Play has already done the thing this overlay
+ * asks for, and inside a native web view none of the signals below fire --
+ * `display-mode` is not standalone, no `appinstalled` event ever happened, and
+ * on iOS the walkthrough would be teaching a Safari flow that does not exist in
+ * that window. An install pitch shown inside the installed app is the clearest
+ * possible sign that nobody tested it there. */
 function alreadyInstalled(): boolean {
-  return isStandalone() || readStore(INSTALLED_KEY) === "1";
+  return isNativeApp() || isStandalone() || readStore(INSTALLED_KEY) === "1";
 }
 
 function markShownNow(): void {

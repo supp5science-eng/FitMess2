@@ -119,6 +119,8 @@ export const profilMessages = {
     "profil.reminders.blocked":
       "Notifikacije su blokirane za FitMess. Uključi ih u podešavanjima telefona (Notifikacije → FitMess) pa se vrati ovde.",
     "profil.reminders.missingKey": "Notifikacije još nisu podešene na serveru.",
+    "profil.reminders.native":
+      "Podsetnici u aplikaciji iz prodavnice još nisu uključeni. Stižu sa sledećim ažuriranjem — do tada rade u FitMess-u otvorenom u pregledaču.",
     "profil.reminders.sending": "Šaljem...",
     "profil.reminders.sendTest": "Pošalji probnu notifikaciju",
     "profil.reminders.testSent": "Poslato — trebalo bi da stigne za koji sekund.",
@@ -293,6 +295,8 @@ export const profilMessages = {
     "profil.reminders.blocked":
       "Notifications are blocked for FitMess. Turn them on in your phone's settings (Notifications → FitMess), then come back here.",
     "profil.reminders.missingKey": "Notifications aren't set up on the server yet.",
+    "profil.reminders.native":
+      "Reminders aren't switched on yet in the app from the store. They're coming in the next update — until then they work in FitMess opened in a browser.",
     "profil.reminders.sending": "Sending...",
     "profil.reminders.sendTest": "Send a test notification",
     "profil.reminders.testSent": "Sent — it should arrive in a few seconds.",

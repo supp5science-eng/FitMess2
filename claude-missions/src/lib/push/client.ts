@@ -9,10 +9,14 @@
 // browser supports notifications" is not the question worth asking — "can THIS
 // window subscribe?" is, and that is what `pushEnvironment()` answers.
 
+import { isNativeApp } from "@/lib/device/native";
+
 export type PushEnvironment =
   | { state: "ready" }
   /** iOS/iPadOS Safari tab: must be installed to the Home Screen first. */
   | { state: "needs-install" }
+  /** The native shell: Web Push does not exist here, native push will. */
+  | { state: "native" }
   /** The browser has no Push API at all. */
   | { state: "unsupported" };
 
@@ -34,6 +38,15 @@ function isApple(): boolean {
 }
 
 export function pushEnvironment(): PushEnvironment {
+  // The native shell, before anything else. Neither WKWebView nor Android's
+  // WebView implements the Push API, so every check below would answer with
+  // the browser's vocabulary: iOS would land on `needs-install` and tell
+  // someone INSIDE the installed app to install it, and Android would say
+  // "unsupported" about a device that can receive push perfectly well. Both
+  // are wrong about the same thing -- delivery here goes through the OS, not
+  // the browser.
+  if (isNativeApp()) return { state: "native" };
+
   if (
     typeof window === "undefined" ||
     !("serviceWorker" in navigator) ||

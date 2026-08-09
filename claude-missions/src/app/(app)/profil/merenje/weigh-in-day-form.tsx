@@ -228,7 +228,16 @@ export function WeighInDayForm({
           the reminder is supposed to be on: an iPhone in a Safari tab cannot
           act on "unblock notifications" advice, and a granted phone needs no
           message at all. */}
-      {pushEnabled && environment === "needs-install" ? (
+      {pushEnabled && environment === "native" ? (
+        // Inside the store app, none of the browser explanations below apply:
+        // delivery goes through the OS, which this build does not speak yet.
+        <p
+          data-testid="weigh-in-push-native"
+          className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground"
+        >
+          {t("profil.reminders.native")}
+        </p>
+      ) : pushEnabled && environment === "needs-install" ? (
         <p
           data-testid="weigh-in-push-needs-install"
           className="rounded-xl border border-dashed border-border p-3 text-sm text-muted-foreground"

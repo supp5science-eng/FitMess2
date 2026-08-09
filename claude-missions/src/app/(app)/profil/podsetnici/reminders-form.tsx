@@ -146,20 +146,27 @@ export function RemindersForm({
   // cannot act on "unblock notifications" advice, and a device with no Push API
   // cannot act on either.
   const notice:
+    | "native"
     | "unsupported"
     | "needs-install"
     | "blocked"
     | "missing-key"
     | null =
-    environment === "unsupported"
-      ? "unsupported"
-      : environment === "needs-install"
-        ? "needs-install"
-        : blocked
-          ? "blocked"
-          : missingKey
-            ? "missing-key"
-            : null;
+    // The native shell outranks everything: inside it, none of the other
+    // explanations are even true. It has no Push API to be "unsupported"
+    // about, it IS the installed app, and the browser permission it would
+    // report is not the one that governs delivery.
+    environment === "native"
+      ? "native"
+      : environment === "unsupported"
+        ? "unsupported"
+        : environment === "needs-install"
+          ? "needs-install"
+          : blocked
+            ? "blocked"
+            : missingKey
+              ? "missing-key"
+              : null;
 
   /**
    * Applies a change to the preferences, arming or releasing the device
@@ -347,6 +354,16 @@ export function RemindersForm({
           top of each other: two different instructions for one problem.
           Priority: no Push API at all > must be installed > blocked > server
           not configured. */}
+      {notice === "native" ? (
+        <p
+          data-testid="reminder-native"
+          className="flex items-start gap-2 rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground"
+        >
+          <Smartphone className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          <span>{t("profil.reminders.native")}</span>
+        </p>
+      ) : null}
+
       {notice === "unsupported" ? (
         <p className="rounded-2xl border border-dashed border-border bg-background p-4 text-sm text-muted-foreground">
           {t("profil.reminders.unsupported")}

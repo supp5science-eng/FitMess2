@@ -10,6 +10,7 @@ import {
   enablePush,
   notificationPermission,
   pushEnvironment,
+  type PushEnvironment,
 } from "@/lib/push/client";
 
 /**
@@ -103,7 +104,7 @@ const noopSubscribe = () => () => {};
  * noise); it is a fact worth counting, so we learn whether the notification
  * feature is unreachable for most of the audience.
  */
-function environmentState(): "server" | "ready" | "needs-install" | "unsupported" {
+function environmentState(): PushEnvironment["state"] | "server" {
   if (typeof window === "undefined") return "server";
   return pushEnvironment().state;
 }

@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- The app's ground colour. Same value as `--ground` in globals.css, the
+     manifest theme_color and the native splash, so nothing flashes at launch. -->
 <resources>
-    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="ic_launcher_background">#0a0c0b</color>
 </resources>

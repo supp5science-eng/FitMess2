@@ -34,6 +34,20 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths"></meta-data>
         </provider>
+
+        <!-- Podsetnici: what a reminder looks like in the status bar.
+
+             Without these two Firebase falls back to the launcher icon, and
+             since Android 5 the system keeps only a small icon's ALPHA and
+             repaints the shape — an opaque square icon becomes a solid white
+             block. `ic_stat_fitmess` is the pear's silhouette on transparent,
+             generated at five densities by `scripts/gen-store-assets.cjs`. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_fitmess" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/fitmess_notification" />
     </application>
 
     <!-- Permissions -->

@@ -20,6 +20,11 @@
  *
  *   play-icon-512.png    512²   Play listing icon
  *
+ * And into the Android project, which `@capacitor/assets` does NOT cover:
+ *
+ *   res/drawable-{m,h,xh,xxh,xxxh}dpi/ic_stat_fitmess.png
+ *                        24-96²  status-bar silhouette for Podsetnici
+ *
  * There is no separate App Store icon file: App Store Connect reads the 1024²
  * icon out of the binary, which is `assets/icon-only.png` after `cap sync`.
  *
@@ -41,6 +46,14 @@
  *    drawn smaller than the iOS one — `ANDROID_PEAR_HEIGHT` vs `IOS_PEAR_HEIGHT`
  *    below. They are supposed to differ; equalising them clips the stem.
  *
+ * 3. **The status-bar icon keeps only its ALPHA.** Since Android 5 the system
+ *    throws away every colour in a notification's small icon and repaints the
+ *    remaining shape in white (or the accent colour). Hand it the app icon and
+ *    the whole square is opaque, so the user gets a solid white block in the
+ *    status bar — the single most common "why does my notification look
+ *    broken" bug. So `ic_stat_fitmess` is the pear's silhouette on transparent,
+ *    and the colour it is painted white with is deliberate, not incidental.
+ *
  * Source of truth for the mark is `public/icons/icon-512.png` rather than
  * `public/brand/pear-source.png`: both are raster, but the pear occupies
  * 247×410 px in the former against 174×289 px in the latter, so it carries
@@ -54,6 +67,7 @@ const root = process.argv[2] || ".";
 const SRC = path.join(root, "public/icons/icon-512.png");
 const ASSETS = path.join(root, "assets");
 const STORE = path.join(root, "store");
+const ANDROID_RES = path.join(root, "android/app/src/main/res");
 
 /** The app's ground colour — `--ground` in `globals.css`, `theme_color` in the
  *  manifest. The icon, the splash and the first painted pixel of the site all
@@ -70,6 +84,19 @@ const ANDROID_PEAR_HEIGHT = 0.62;
 /** The splash pear is small on purpose: the 2732² canvas is centre-cropped to
  *  whatever the device screen is, and a big mark looks like an error dialog. */
 const SPLASH_PEAR_HEIGHT = 0.16;
+/** The status-bar icon is a 24dp box, and Android expects roughly 2dp of
+ *  breathing room inside it — a silhouette that touches the edges reads as
+ *  clipped next to the system's own icons. */
+const NOTIFICATION_PEAR_HEIGHT = 0.84;
+/** `ic_stat_fitmess.png` at each density, keyed by the folder it belongs in.
+ *  24dp × the density multiplier (1, 1.5, 2, 3, 4). */
+const NOTIFICATION_SIZES = {
+  "drawable-mdpi": 24,
+  "drawable-hdpi": 36,
+  "drawable-xhdpi": 48,
+  "drawable-xxhdpi": 72,
+  "drawable-xxxhdpi": 96,
+};
 
 /** Trim the source to the pear itself, so every placement below is measured
  *  from the mark and not from whatever padding the export happened to carry. */
@@ -97,6 +124,39 @@ async function compose({ pear, size, heightFraction, background, flatten }) {
 
   if (flatten) canvas = canvas.flatten({ background }).removeAlpha();
   return canvas.png({ compressionLevel: 9 }).toBuffer();
+}
+
+/**
+ * The pear as a white silhouette on transparent — what Android's status bar
+ * wants.
+ *
+ * Done as `dest-in` against a solid white tile rather than by recolouring the
+ * pear: the source mark is black, and every "make it white" that works on the
+ * COLOUR channels leaves the anti-aliased edge pixels dark. Masking a white
+ * tile by the pear's alpha keeps that edge, which is the difference between a
+ * clean 24px mark and a ragged one. Both layers are the full tile size, so the
+ * mask covers the whole canvas and no white survives outside the pear.
+ */
+async function silhouette(pear, size) {
+  const tile = await compose({
+    pear,
+    size,
+    heightFraction: NOTIFICATION_PEAR_HEIGHT,
+    background: null,
+    flatten: false,
+  });
+
+  return sharp({
+    create: {
+      width: size,
+      height: size,
+      channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    },
+  })
+    .composite([{ input: tile, blend: "dest-in" }])
+    .png({ compressionLevel: 9 })
+    .toBuffer();
 }
 
 async function main() {
@@ -152,6 +212,15 @@ async function main() {
     "play-icon-512.png",
     await sharp(iconOnly).resize(512, 512, { kernel: sharp.kernel.lanczos3 }).png({ compressionLevel: 9 }).toBuffer(),
   );
+
+  // Straight into the Android project: `@capacitor/assets` generates launcher
+  // icons and splashes, and nothing else. Without these five files Firebase
+  // falls back to the launcher icon, which is a filled square — see rule 3.
+  for (const [folder, size] of Object.entries(NOTIFICATION_SIZES)) {
+    const dir = path.join(ANDROID_RES, folder);
+    fs.mkdirSync(dir, { recursive: true });
+    write(dir, "ic_stat_fitmess.png", await silhouette(pear, size));
+  }
 }
 
 main().catch((err) => {

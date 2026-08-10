@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- The tint Android paints a reminder's status-bar silhouette and its
+         accent with. This is the brand teal (`--primary` in the dark theme,
+         the colour of the ring and the buttons), so a notification reads as
+         FitMess before the text is even read.
+
+         Note it is NOT the light theme's `--primary`, which is black: a black
+         accent on the system's own dark notification shade disappears. The
+         status bar has no theme of ours to follow, so it gets the one colour
+         that survives both. -->
+    <color name="fitmess_notification">#17D1A8</color>
+
+</resources>

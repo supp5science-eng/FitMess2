@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "489123338476",
+    "project_id": "fitmess-212",
+    "storage_bucket": "fitmess-212.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:489123338476:android:4f5e60aadd44f848932dc9",
+        "android_client_info": {
+          "package_name": "app.fitmess"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3IVigQ3GuwlspNnqjsiOH6ZTgiq0PPb8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

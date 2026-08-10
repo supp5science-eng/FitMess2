@@ -684,9 +684,14 @@ export interface Database {
           id: string;
           user_id: string;
           /** The push service URL for this device (globally unique). */
-          endpoint: string;
-          p256dh: string;
-          auth: string;
+          /** Null on native rows, which are addressed by device_token. */
+          endpoint: string | null;
+          p256dh: string | null;
+          auth: string | null;
+          /** 'web' | 'ios' | 'android' -- picks the transport (0030). */
+          platform: string;
+          /** APNs/FCM token for a store-installed app; null on web rows. */
+          device_token: string | null;
           user_agent: string | null;
           created_at: string;
           last_success_at: string | null;
@@ -694,9 +699,11 @@ export interface Database {
         Insert: {
           id?: string;
           user_id: string;
-          endpoint: string;
-          p256dh: string;
-          auth: string;
+          endpoint?: string | null;
+          p256dh?: string | null;
+          auth?: string | null;
+          platform?: string;
+          device_token?: string | null;
           user_agent?: string | null;
           created_at?: string;
           last_success_at?: string | null;
@@ -704,9 +711,11 @@ export interface Database {
         Update: {
           id?: string;
           user_id?: string;
-          endpoint?: string;
-          p256dh?: string;
-          auth?: string;
+          endpoint?: string | null;
+          p256dh?: string | null;
+          auth?: string | null;
+          platform?: string;
+          device_token?: string | null;
           user_agent?: string | null;
           created_at?: string;
           last_success_at?: string | null;

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The Push Notifications capability. Without this entitlement APNs
+	     refuses to issue a device token, and iOS reminders never arrive.
+
+	     The value stays "development" on purpose: at signing time the
+	     provisioning profile decides which APNs environment the build actually
+	     talks to, and a distribution profile promotes this to production. So
+	     the same file is correct for a TestFlight build and for the App Store.
+
+	     This must ALSO be switched on for the `app.fitmess` App ID at
+	     developer.apple.com (Identifiers -> Push Notifications), or signing
+	     fails with "provisioning profile does not include the
+	     aps-environment entitlement". -->
+	<key>aps-environment</key>
+	<string>development</string>
+</dict>
+</plist>

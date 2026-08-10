@@ -1,5 +1,7 @@
 import webpush from "web-push";
 
+import { apnsConfigFromEnv, sendToApns } from "./apns";
+import { fcmConfigFromEnv, sendToFcm } from "./fcm";
 import type { MealNudgeReason, MealSlot } from "./meal-rhythm";
 
 // Podsetnici: the thin wrapper around `web-push` — VAPID config, one typed
@@ -38,12 +40,58 @@ export interface PushPayload {
   actions?: PushAction[];
 }
 
+/** How a given device is reached. See `0030_native_push.sql`. */
+export type PushPlatform = "web" | "ios" | "android";
+
+/**
+ * One device, whatever it runs.
+ *
+ * A web row carries the Web Push triple; an iOS or Android row carries a single
+ * device token instead. The database enforces that a row is one or the other
+ * (`push_subscriptions_platform_shape`), so the nulls below are not a "maybe" —
+ * they are determined by `platform`.
+ */
 export interface StoredSubscription {
   id: string;
-  endpoint: string;
-  p256dh: string;
-  auth: string;
+  platform: PushPlatform;
+  endpoint: string | null;
+  p256dh: string | null;
+  auth: string | null;
+  deviceToken: string | null;
 }
+
+/**
+ * A `push_subscriptions` row as it comes back from Supabase, in the one shape
+ * the sender wants.
+ *
+ * Shared by both callers (the cron sender and the "pošalji probnu" button) so
+ * neither can forget a column and quietly stop delivering to a whole platform —
+ * which is exactly what a missing `platform` would do: every native row would
+ * read as `undefined` and fall through to the Web Push branch.
+ */
+export function toStoredSubscription(row: {
+  id: string;
+  platform: string | null;
+  endpoint: string | null;
+  p256dh: string | null;
+  auth: string | null;
+  device_token: string | null;
+}): StoredSubscription {
+  return {
+    id: row.id,
+    // Rows created before 0030 have the column defaulted to 'web' in the
+    // database; the fallback covers a client that selected an older shape.
+    platform: (row.platform ?? "web") as PushPlatform,
+    endpoint: row.endpoint,
+    p256dh: row.p256dh,
+    auth: row.auth,
+    deviceToken: row.device_token,
+  };
+}
+
+/** The columns `toStoredSubscription` needs, for `.select(...)`. */
+export const SUBSCRIPTION_COLUMNS =
+  "id, platform, endpoint, p256dh, auth, device_token";
 
 /** Outcome per device: sent, or gone (the row should be deleted), or failed. */
 export type SendResult =
@@ -74,17 +122,40 @@ export function configureWebPush(): boolean {
 }
 
 /**
- * Sends one payload to one device.
+ * Sends one payload to one device, over whichever transport that device uses.
  *
- * A 404/410 from the push service is not an error we should retry: it means the
- * user uninstalled the app, revoked permission, or the browser rotated the
- * endpoint. Those come back as `"gone"` so the caller can delete the row and
- * stop paying for it on every run.
+ * This function is the ONLY place the three transports meet. Everything above
+ * it — who is due (`due.ts`), what it says (the payload builders below) — is
+ * written once and knows nothing about APNs, FCM or VAPID. That is the whole
+ * design: going to the stores changed the last hop and nothing else.
+ *
+ * A 404/410 from a push service is not an error worth retrying: it means the
+ * user uninstalled the app, revoked permission, or the device rotated its
+ * token. All three transports report that as `"gone"` so the caller can delete
+ * the row and stop paying for it on every run.
  */
 export async function sendToSubscription(
   subscription: StoredSubscription,
   payload: PushPayload
 ): Promise<SendResult> {
+  if (subscription.platform === "ios") {
+    return sendToApple(subscription, payload);
+  }
+  if (subscription.platform === "android") {
+    return sendToAndroid(subscription, payload);
+  }
+
+  // A web row without an endpoint cannot exist (the CHECK constraint forbids
+  // it), but the types do not know that and a crash in the fan-out would take
+  // every other device down with it.
+  if (!subscription.endpoint || !subscription.p256dh || !subscription.auth) {
+    return {
+      status: "failed",
+      id: subscription.id,
+      message: "web pretplata bez endpointa",
+    };
+  }
+
   try {
     await webpush.sendNotification(
       {
@@ -112,6 +183,65 @@ export async function sendToSubscription(
       message: error instanceof Error ? error.message : "nepoznata greška",
     };
   }
+}
+
+/**
+ * iOS, via APNs.
+ *
+ * An unconfigured Apple environment is reported as a plain failure rather than
+ * thrown: until the developer account and the `.p8` key exist, iOS rows simply
+ * cannot be delivered to, and that must not stop the Android and web devices in
+ * the same fan-out.
+ */
+async function sendToApple(
+  subscription: StoredSubscription,
+  payload: PushPayload
+): Promise<SendResult> {
+  const config = apnsConfigFromEnv();
+  if (!config || !subscription.deviceToken) {
+    return {
+      status: "failed",
+      id: subscription.id,
+      message: config ? "iOS uređaj bez tokena" : "APNs ključ nije podešen",
+    };
+  }
+
+  const result = await sendToApns(config, subscription.deviceToken, payload);
+  if (result.status === "sent") return { status: "sent", id: subscription.id };
+  if (result.status === "gone") return { status: "gone", id: subscription.id };
+  return {
+    status: "failed",
+    id: subscription.id,
+    statusCode: result.statusCode,
+    message: result.message,
+  };
+}
+
+/** Android, via FCM. Same contract as `sendToApple`. */
+async function sendToAndroid(
+  subscription: StoredSubscription,
+  payload: PushPayload
+): Promise<SendResult> {
+  const config = fcmConfigFromEnv();
+  if (!config || !subscription.deviceToken) {
+    return {
+      status: "failed",
+      id: subscription.id,
+      message: config
+        ? "Android uređaj bez tokena"
+        : "FCM servisni nalog nije podešen",
+    };
+  }
+
+  const result = await sendToFcm(config, subscription.deviceToken, payload);
+  if (result.status === "sent") return { status: "sent", id: subscription.id };
+  if (result.status === "gone") return { status: "gone", id: subscription.id };
+  return {
+    status: "failed",
+    id: subscription.id,
+    statusCode: result.statusCode,
+    message: result.message,
+  };
 }
 
 /** Fan-out to every device a user has. Never throws; one dead device can't

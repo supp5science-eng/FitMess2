@@ -21,6 +21,11 @@ import {
   notificationPermission,
   pushEnvironment,
 } from "@/lib/push/client";
+import {
+  canUseNativePush,
+  disableNativePush,
+  enableNativePush,
+} from "@/lib/push/native";
 import { cn } from "@/lib/utils";
 import { WEIGH_IN_DAY_LABELS_SR } from "@/lib/weight/weigh-in-day";
 
@@ -127,9 +132,26 @@ export function RemindersForm({
   );
   const permission = grantedNow ?? browserPermission;
 
+  // Inside the store app the question is not "can this window subscribe?" but
+  // "does this build carry the push plugin?". A shell built before the plugin
+  // was added still runs this page, and calling into a plugin it does not have
+  // rejects with "not implemented" — so the answer decides between an armable
+  // switch and an honest explanation.
+  const nativeReady = useSyncExternalStore(
+    noopSubscribe,
+    () => canUseNativePush(),
+    () => false
+  );
+  const isNative = environment === "native";
+
   const missingKey = vapidPublicKey.trim() === "";
   const blocked = permission === "denied";
-  const canArm = environment === "ready" && !missingKey && !blocked;
+  // The VAPID key and the browser permission are both web-only facts: native
+  // delivery is keyed by an APNs/FCM token and gated by the OS prompt, so
+  // neither may hold the native switch down.
+  const canArm = isNative
+    ? nativeReady
+    : environment === "ready" && !missingKey && !blocked;
 
   // The weigh-in counts (2026-08-01). It shares the one device subscription
   // with the rest, so leaving it out meant switching the three daily reminders
@@ -155,9 +177,14 @@ export function RemindersForm({
     // The native shell outranks everything: inside it, none of the other
     // explanations are even true. It has no Push API to be "unsupported"
     // about, it IS the installed app, and the browser permission it would
-    // report is not the one that governs delivery.
-    environment === "native"
-      ? "native"
+    // report is not the one that governs delivery. Once the shell carries the
+    // plugin there is nothing left to explain — the switches simply work, so
+    // the notice disappears rather than sitting under working controls
+    // telling the user they do not.
+    isNative
+      ? nativeReady
+        ? null
+        : "native"
       : environment === "unsupported"
         ? "unsupported"
         : environment === "needs-install"
@@ -237,14 +264,19 @@ export function RemindersForm({
     setTestStatus({ kind: "idle" });
 
     if (willBeOn && !wasOn) {
-      const subscribed = await enablePush(vapidPublicKey);
+      // Same contract on both transports — `SubscribeResult`, already in
+      // Serbian — so everything downstream of here stays one code path.
+      const subscribed = isNative
+        ? await enableNativePush()
+        : await enablePush(vapidPublicKey);
       setGrantedNow(notificationPermission());
       if (!subscribed.ok) {
         setStatus({ kind: "error", message: subscribed.message });
         return false;
       }
     } else if (!willBeOn && wasOn) {
-      await disablePush();
+      if (isNative) await disableNativePush();
+      else await disablePush();
     }
 
     return true;

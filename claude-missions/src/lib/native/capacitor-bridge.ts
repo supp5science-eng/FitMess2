@@ -42,6 +42,66 @@ interface SharePlugin {
   }): Promise<{ activityType?: string | null }>;
 }
 
+/** A listener handle, as every `addListener` resolves to. */
+export interface NativeListenerHandle {
+  remove(): Promise<void>;
+}
+
+/** What the OS answers when asked whether it may show notifications. */
+export type NativePermissionState =
+  | "prompt"
+  | "prompt-with-rationale"
+  | "granted"
+  | "denied";
+
+/** The device token, as the `registration` event delivers it. */
+export interface NativeRegistrationToken {
+  value: string;
+}
+
+/** A notification as it arrives; only the fields the tap handler reads. */
+export interface NativePushNotification {
+  title?: string;
+  body?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface NativePushActionEvent {
+  actionId: string;
+  notification: NativePushNotification;
+}
+
+/**
+ * `@capacitor/push-notifications`, narrowed to what Podsetnici uses.
+ *
+ * The registration handshake is the part that surprises: `register()` resolves
+ * as soon as the OS has been ASKED, not when it has answered. The token arrives
+ * later on the `registration` event, and on failure nothing arrives at all
+ * except `registrationError`. So a caller must listen before it registers, and
+ * must have a timeout — see `src/lib/push/native.ts`.
+ */
+interface PushNotificationsPlugin {
+  checkPermissions(): Promise<{ receive: NativePermissionState }>;
+  requestPermissions(): Promise<{ receive: NativePermissionState }>;
+  register(): Promise<void>;
+  unregister(): Promise<void>;
+  removeAllListeners(): Promise<void>;
+  addListener(
+    event: "registration",
+    handler: (token: NativeRegistrationToken) => void
+  ): Promise<NativeListenerHandle>;
+  addListener(
+    event: "registrationError",
+    handler: (error: { error: string }) => void
+  ): Promise<NativeListenerHandle>;
+  addListener(
+    event: "pushNotificationActionPerformed",
+    handler: (action: NativePushActionEvent) => void
+  ): Promise<NativeListenerHandle>;
+}
+
+export type { PushNotificationsPlugin };
+
 interface CapacitorBridge {
   isNativePlatform?: () => boolean;
   isPluginAvailable?: (name: string) => boolean;
@@ -111,4 +171,13 @@ export function filesystemPlugin(): FilesystemPlugin | null {
 
 export function sharePlugin(): SharePlugin | null {
   return nativePlugin<SharePlugin>("Share");
+}
+
+/**
+ * Null in every browser, and also null in a shell built before the plugin was
+ * added — which is the case that matters, because such a shell is already in
+ * someone's hands and must not crash on the settings screen.
+ */
+export function pushNotificationsPlugin(): PushNotificationsPlugin | null {
+  return nativePlugin<PushNotificationsPlugin>("PushNotifications");
 }

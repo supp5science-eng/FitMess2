@@ -2,8 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
 const usePathnameMock = vi.fn(() => "/danas");
+const routerPushMock = vi.fn();
 vi.mock("next/navigation", () => ({
   usePathname: () => usePathnameMock(),
+  // `PushTapListener` (store app only) asks for the router so a tapped
+  // reminder can navigate. It is inert in a browser, but the hook still runs.
+  useRouter: () => ({ push: routerPushMock }),
 }));
 
 import { AppShell } from "./app-shell";

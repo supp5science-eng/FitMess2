@@ -48,6 +48,15 @@
          Easy to miss, and its absence kills those flows outright. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
+    <!-- Podsetnici. Since Android 13 showing a notification is a runtime
+         permission, and `@capacitor/push-notifications` does NOT declare it —
+         its own manifest only registers the Firebase messaging service. The
+         plugin asks for it at runtime, but Android silently refuses to show a
+         dialog for a permission the app never declared: `requestPermissions()`
+         returns "denied" immediately, and the user is told they blocked
+         notifications they were never offered. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
     <!-- Declared optional on purpose: a tablet or a phone with no camera can
          still use every other part of FitMess (manual entry, barcode-free
          search, the plan). Leaving these out would let Play hide the app from

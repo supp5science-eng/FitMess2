@@ -7,6 +7,7 @@ import { AppNavBar } from "@/components/shell/app-nav-bar";
 import { AppSplash } from "@/components/shell/app-splash";
 import { AccountsSync } from "@/components/auth/accounts-sync";
 import { InstallNudge } from "@/components/pwa/install-nudge";
+import { PushTapListener } from "@/components/native/push-tap-listener";
 
 /**
  * F005: app-wide mobile-first shell.
@@ -123,6 +124,9 @@ export function AppShell({
       {/* Asks browser-tab users to install the app, once per visit. Self-gating
           (silent when already installed, on a repeat visit, or mid-logging). */}
       <InstallNudge />
+      {/* Store app only: routes a tapped reminder to the screen it is about.
+          Inert in every browser, where the service worker does this instead. */}
+      <PushTapListener />
     </div>
   );
 }

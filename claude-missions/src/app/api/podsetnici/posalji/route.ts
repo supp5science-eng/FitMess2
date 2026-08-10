@@ -21,6 +21,8 @@ import {
   sendToAll,
   weighInPayload,
   type PushPayload,
+  toStoredSubscription,
+  SUBSCRIPTION_COLUMNS,
   type StoredSubscription,
 } from "@/lib/push/send";
 import { createAdminClient } from "@/lib/supabase/server";
@@ -177,7 +179,7 @@ export async function POST(request: NextRequest) {
 
   const { data: subscriptions, error: subsError } = await supabase
     .from("push_subscriptions")
-    .select("id, user_id, endpoint, p256dh, auth")
+    .select(`user_id, ${SUBSCRIPTION_COLUMNS}`)
     .in("user_id", userIds);
 
   if (subsError) {
@@ -188,12 +190,7 @@ export async function POST(request: NextRequest) {
   const byUser = new Map<string, StoredSubscription[]>();
   for (const row of subscriptions ?? []) {
     const list = byUser.get(row.user_id) ?? [];
-    list.push({
-      id: row.id,
-      endpoint: row.endpoint,
-      p256dh: row.p256dh,
-      auth: row.auth,
-    });
+    list.push(toStoredSubscription(row));
     byUser.set(row.user_id, list);
   }
 

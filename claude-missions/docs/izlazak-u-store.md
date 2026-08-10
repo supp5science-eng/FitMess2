@@ -56,8 +56,48 @@ Ispravke plana nađene u kodu:
 - Na razvojnoj mašini **nema JDK ni Android SDK-a** — build ide ili preko
   Codemagic-a ili uz lokalnu instalaciju alata.
 
-Ostaje: ikonica i splash (sad Capacitor podrazumevani), preuzimanje fajlova,
-offline ekran, native push, javne pravne stranice, papirologija.
+Dodato 2026-08-10 (native push, tačka 3.2):
+
+- **Kanal je zamenjen, funkcija nije.** `due.ts` i dalje odlučuje ko dobija
+  podsetnik i kada; `sendToSubscription` je jedino mesto gde se tri transporta
+  sreću (Web Push / APNs / FCM).
+- `@capacitor/push-notifications@8.1.2`, dosegnut preko `capacitor-bridge.ts`
+  — bez ijednog `import`-a iz plugin paketa, pa web bundle ostaje netaknut.
+- `src/lib/push/native.ts`: dozvola → registracija → token → ista
+  `/api/podsetnici/pretplata` ruta, koja sad prima dva oblika tela.
+- Tap na notifikaciju otvara ekran o kome je podsetnik
+  (`components/native/push-tap-listener.tsx`, u ljusci; na vebu to radi
+  servisni radnik).
+- 23 nova testa nad lažnim Capacitor mostom.
+
+**Četiri tihe rupe nađene i zatvorene** — sve četiri bi otkazale bez ijedne
+greške u logu:
+
+1. **`ON CONFLICT (device_token)` nije mogao da pogodi parcijalni indeks** iz
+   0030 (`42P10`), pa bi svaka registracija telefona vraćala 500. Obrazloženje
+   za parcijalni indeks je bilo pogrešno — Postgres tretira NULL-ove kao
+   različite, pa običan unique indeks dozvoljava koliko god web redova.
+   Migracija **0031**, primenjena i verifikovana na živoj bazi.
+2. **iOS `AppDelegate` nije prosleđivao APNs token** — bez ta dva callback-a
+   `register()` ćuti zauvek, a korisnik dobije poruku o internetu.
+3. **Android manifest nije imao `POST_NOTIFICATIONS`** (plugin ga ne donosi).
+   Na Androidu 13+ dijalog se ne pojavi, a korisniku piše da je *on* blokirao
+   notifikacije.
+4. **`aps-environment` entitlement nije postojao** — potpisivanje bi palo.
+   `App.entitlements` + `CODE_SIGN_ENTITLEMENTS` u obe konfiguracije.
+
+Ostaje za push (samo podaci, kod je gotov):
+
+| Šta | Gde ide |
+|---|---|
+| `google-services.json` iz Firebase-a | `android/app/` |
+| ceo servisni-nalog JSON iz Firebase-a | Vercel env `FCM_SERVICE_ACCOUNT` |
+| APNs `.p8` sadržaj | Vercel env `APNS_KEY_P8` |
+| Key ID i Team ID | Vercel env `APNS_KEY_ID`, `APNS_TEAM_ID` |
+| Push capability na `app.fitmess` App ID-u | developer.apple.com |
+
+Ostaje šire: Android notifikaciona ikonica (sad silueta app ikonice, biće bela
+mrlja), papirologija, build lanac, Play zatvoreno testiranje.
 
 Pregledna verzija ovog stanja:
 https://claude.ai/code/artifact/c553cc3c-cc5f-4ac4-8f28-8260df1abd40

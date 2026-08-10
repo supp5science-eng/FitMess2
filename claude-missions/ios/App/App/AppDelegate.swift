@@ -33,6 +33,31 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    // MARK: - Podsetnici (push notifications)
+    //
+    // These two are not optional glue -- they are the ONLY way an APNs device
+    // token reaches JavaScript. `PushNotifications.register()` asks UIKit to
+    // register, and UIKit answers here, on the app delegate. The Capacitor
+    // plugin listens for these two notifications and turns them into the
+    // `registration` / `registrationError` events that
+    // `src/lib/push/native.ts` awaits.
+    //
+    // Leave them out and nothing errors: registration simply never completes,
+    // the JS side waits out its timeout, and the user is told to check their
+    // internet connection about a problem that is entirely ours.
+
+    func application(_ application: UIApplication,
+                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        NotificationCenter.default.post(name: .capacitorDidRegisterForRemoteNotifications,
+                                        object: deviceToken)
+    }
+
+    func application(_ application: UIApplication,
+                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        NotificationCenter.default.post(name: .capacitorDidFailToRegisterForRemoteNotifications,
+                                        object: error)
+    }
+
     func application(_ application: UIApplication,
                      configurationForConnecting connectingSceneSession: UISceneSession,
                      options: UIScene.ConnectionOptions) -> UISceneConfiguration {

@@ -2,7 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 import { getCurrentUserId } from "@/lib/auth/current-user";
-import { configureWebPush, sendToAll, testPayload } from "@/lib/push/send";
+import {
+  configureWebPush,
+  sendToAll,
+  testPayload,
+  toStoredSubscription,
+  SUBSCRIPTION_COLUMNS,
+} from "@/lib/push/send";
 import type { Database } from "@/lib/types/db";
 
 // Podsetnici: `POST /api/podsetnici/proba` — sends the caller a test push, now.
@@ -59,7 +65,7 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await supabase
     .from("push_subscriptions")
-    .select("id, endpoint, p256dh, auth")
+    .select(SUBSCRIPTION_COLUMNS)
     .eq("user_id", userId);
 
   if (error) {
@@ -70,7 +76,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const subscriptions = data ?? [];
+  const subscriptions = (data ?? []).map(toStoredSubscription);
   if (subscriptions.length === 0) {
     return NextResponse.json(
       { ok: false, error_sr: NO_SUBSCRIPTION_ERROR_SR },

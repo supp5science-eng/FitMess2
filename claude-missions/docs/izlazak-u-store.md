@@ -204,7 +204,11 @@ netaknuta.
 ### 3.3 Papirologija (~1-2 dana)
 
 - Screenshotovi (Playwright postavka već postoji), ikona 1024×1024, opisi
-- **Demo nalog za recenzente** — bez toga oba store-a odbijaju odmah
+- **Demo nalog za recenzente** — bez toga oba store-a odbijaju odmah.
+  Puni ga `node scripts/store/seed-demo-data.cjs`. **Pustiti ga ponovo pred
+  svaku submisiju i jednom tokom recenzije** — nalog ne ustaje od nečijeg rada
+  nego od kalendara, a recenzent koji otvori app dve nedelje kasnije vidi
+  praznu Početnu i ne može da razlikuje „ništa nije uneto" od „pokvareno".
 - Apple privacy upitnik + Play Data Safety: zdravstveni podaci, AI obrada
   fotografija
 - Content rating, trader status za EU (ime i adresa postaju **javno vidljivi**)

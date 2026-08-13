@@ -170,12 +170,28 @@ const PROFILE_LABEL_SR = "profil (lični podaci i podešavanja)";
 const RULES_LABEL_SR = "navike";
 const MEAL_PHOTOS_LABEL_SR = "slike obroka (podaci o slikama, bez same slike)";
 
-/** Postgres' "relation does not exist" code. A table listed above that hasn't
- * been migrated onto this environment yet must not cost the user their whole
- * export -- that section is reported as unavailable instead (see
- * `UserExport.missing_sections`). Any OTHER read error still fails the export
- * loudly, because it means we could not read data that IS there. */
-const UNDEFINED_TABLE_CODE = "42P01";
+/** A table listed above that hasn't been migrated onto this environment yet must
+ * not cost the user their whole export -- that section is reported as
+ * unavailable instead (see `UserExport.missing_sections`). Any OTHER read error
+ * still fails the export loudly, because it means we could not read data that
+ * IS there.
+ *
+ * TWO codes, and the second one is the one that actually happens. `42P01` is
+ * Postgres' own "relation does not exist" -- but a query through Supabase never
+ * reaches Postgres to earn it. PostgREST resolves table names against its own
+ * schema cache first and answers 404 `PGRST205` ("Could not find the table
+ * 'public.x' in the schema cache") without opening a connection.
+ *
+ * Verified against the live project on 2026-08-13, after `funnel_events` was
+ * added to the list above while migration 0028 sat unapplied: every user's
+ * export -- JSON and PDF both -- failed with "Nismo uspeli", because this guard
+ * was watching for a code that cannot arrive. The tolerance was written and
+ * tested, and was dead on the only path that runs in production. */
+const MISSING_TABLE_CODES = new Set(["42P01", "PGRST205"]);
+
+function isMissingTable(error: { code?: string | null }): boolean {
+  return error.code != null && MISSING_TABLE_CODES.has(error.code);
+}
 
 export type UserExportAccount = { id: string; email: string | null };
 
@@ -237,7 +253,7 @@ async function loadMealPhotoMetadata(
     .eq("user_id", userId);
 
   if (error) {
-    if (error.code === UNDEFINED_TABLE_CODE) return { rows: [], missing: true };
+    if (isMissingTable(error)) return { rows: [], missing: true };
     throw new ExportReadError(
       `Failed to read meal_photos for export: ${error.message}`
     );
@@ -276,7 +292,7 @@ export async function collectUserExport(
       .eq(config.userColumn, userId);
 
     if (error) {
-      if (error.code === UNDEFINED_TABLE_CODE) {
+      if (isMissingTable(error)) {
         missingSections.push(config.labelSr);
         continue;
       }

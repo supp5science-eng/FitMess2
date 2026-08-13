@@ -415,6 +415,30 @@ describe("collectUserExport: failure behaviour", () => {
     expect(result.schema_note).toMatch(/Nedostupno u ovom izvozu/);
   });
 
+  it("test_a_table_missing_from_postgrests_schema_cache_is_also_only_reported", async () => {
+    // The case above is the one that CANNOT happen through Supabase, and this
+    // is the one that did. PostgREST resolves table names against its own
+    // schema cache and answers `PGRST205` without ever reaching Postgres, so a
+    // guard that only knew `42P01` let an unmigrated table take down every
+    // user's export — JSON and PDF both — on 2026-08-13, with `funnel_events`.
+    const supabase = makeMockSupabase({
+      tables: {
+        habit_checks: {
+          data: null,
+          error: {
+            message: "Could not find the table 'public.habit_checks' in the schema cache",
+            code: "PGRST205",
+          },
+        },
+      },
+    });
+
+    const result = await runExport(supabase);
+
+    expect(result.missing_sections).toEqual(["čekirane navike po danima"]);
+    expect(result.logs).toEqual(LOG_ROWS);
+  });
+
   it("test_a_missing_meal_photos_table_is_also_only_reported", async () => {
     const supabase = makeMockSupabase({
       tables: {

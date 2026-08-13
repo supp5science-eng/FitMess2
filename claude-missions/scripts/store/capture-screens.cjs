@@ -61,7 +61,19 @@ const SCREENS = [
   // A day the demo account actually ate on. `?dan=` is a real product feature
   // (tap any day in the strip), so this is not a staged screen — it is what the
   // app shows for that date.
-  { id: "pocetna-pun-dan", url: "/danas?dan=2026-08-02" },
+  {
+    id: "pocetna-pun-dan",
+    url: "/danas?dan=2026-08-02",
+    async prepare(page) {
+      // The ring opens on "Preostalo", and on a day that was eaten through that
+      // reads as `0g UH · 0g Masti` — three near-zeros that a stranger sees as
+      // "nothing was logged", under a headline promising the opposite. Tapping
+      // "Potrošeno" shows the day that was actually eaten, which is the claim
+      // the slide is making.
+      await page.getByRole("button", { name: "Potrošeno" }).first().click();
+      await page.waitForTimeout(600);
+    },
+  },
   {
     // Page three of the home pager (kalorije → koraci/voda → kvalitet), which
     // exists only as a horizontal scroll offset, on a day that has food in it.
@@ -77,7 +89,23 @@ const SCREENS = [
       await page.waitForTimeout(800);
     },
   },
-  { id: "analitika", url: "/analitika" },
+  {
+    // The weekly intake chart, not the top of the page: the streak ring and the
+    // BMI card sit above it, and neither is what "nedelja je jedinica uspeha"
+    // is about.
+    id: "analitika",
+    url: "/analitika",
+    async prepare(page) {
+      await page.evaluate(() => {
+        document
+          .querySelector('[data-testid="daily-average-value"]')
+          ?.closest("section, div[class*=rounded]")
+          ?.scrollIntoView({ block: "start" });
+        window.scrollBy(0, -40);
+      });
+      await page.waitForTimeout(700);
+    },
+  },
   { id: "gric", url: "/dodaj/gric" },
   {
     // The single most convincing screen in the listing: a photo turned into

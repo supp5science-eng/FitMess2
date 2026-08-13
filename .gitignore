@@ -9,6 +9,15 @@
 *secret*
 *credential*
 
+# Signing material for the stores. The App Store Connect API key (.p8) is shown
+# exactly once by Apple and cannot be re-downloaded, so it tends to get parked
+# next to the project "for a minute" — and the repository is public.
+*.p8
+*.p12
+*.mobileprovision
+*.keystore
+*.jks
+
 # --- LOCAL CLAUDE CODE SETTINGS (machine-specific) ---
 .claude/settings.local.json
 

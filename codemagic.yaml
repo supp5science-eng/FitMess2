@@ -1,0 +1,99 @@
+# Codemagic — the macOS build machine FitMess does not own.
+#
+# Apple only signs iOS builds on macOS. Instead of buying a Mac, the archive is
+# produced on Codemagic's free tier (500 macOS minutes a month) and signed with
+# an App Store Connect API key, so nothing here needs a Mac on the desk. See
+# `claude-missions/docs/izlazak-u-store.md` for why that decision was made.
+#
+# There is no `triggering:` block on purpose. This app is a remote Capacitor
+# shell: the content of the store app IS fitmess.app, so a normal `git push`
+# already reaches every installed phone. A new binary is only needed when
+# something *native* changes — a plugin, an icon, a permission — a few times a
+# year. Building on every push would burn the free minutes on nothing.
+# Start builds by hand from the Codemagic UI.
+
+workflows:
+  ios-testflight:
+    name: FitMess iOS → TestFlight
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    # The git repository root is one level above the app: the Next.js project,
+    # `package.json` and the `ios/` folder all live in `claude-missions/`.
+    # Every script below runs from there; only this file sits at the root,
+    # because Codemagic reads `codemagic.yaml` from the repository root only.
+    working_directory: claude-missions
+
+    integrations:
+      # Must match the name given to the App Store Connect API key when it is
+      # uploaded in Codemagic → Teams → Integrations. It carries the Issuer ID,
+      # the Key ID and the .p8 itself, so no credential appears in this file.
+      app_store_connect: FitMess ASC
+
+    environment:
+      node: 22
+      xcode: latest
+
+      ios_signing:
+        # Automatic signing: Codemagic asks App Store Connect for the
+        # distribution certificate and a matching profile, creating them if
+        # they do not exist yet. The profile is what promotes the
+        # `aps-environment` entitlement from development to production.
+        distribution_type: app_store
+        bundle_identifier: app.fitmess
+
+      vars:
+        XCODE_PROJECT: "ios/App/App.xcodeproj"
+        XCODE_SCHEME: "App"
+        # Numeric App Store Connect app id for `app.fitmess`, used to ask what
+        # the last uploaded build number was.
+        APP_STORE_APP_ID: 6801093936
+
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci
+
+      - name: Sync the Capacitor iOS project
+        # Not optional and easy to mistake for a no-op in a remote app: this is
+        # what writes `ios/App/App/capacitor.config.json`, the file that carries
+        # `server.url` and the `FitMessApp/1.0` user-agent into the binary. That
+        # file is gitignored, so without this step the shell would ship with no
+        # site to load. It also rewrites `CapApp-SPM/Package.swift` with paths
+        # this machine can read — the Capacitor CLI writes them in the format of
+        # whatever OS ran it, and this project is developed on Windows.
+        script: npx cap sync ios
+
+      - name: Give the build a build number App Store Connect has not seen
+        # TestFlight refuses a build whose number matches one already uploaded,
+        # and the number lives only in the pbxproj. `agvtool` is not used: it
+        # needs `VERSIONING_SYSTEM = apple-generic`, which the Capacitor
+        # template does not set. On the very first upload there is no previous
+        # build, and the query fails rather than answering 0 — hence the guard.
+        script: |
+          set -e
+          LATEST=$(app-store-connect get-latest-testflight-build-number "$APP_STORE_APP_ID" 2>/dev/null || echo 0)
+          NEXT=$(( ${LATEST:-0} + 1 ))
+          echo "Last build on TestFlight: ${LATEST:-0} → building $NEXT"
+          sed -i '' "s/CURRENT_PROJECT_VERSION = [0-9.]*;/CURRENT_PROJECT_VERSION = $NEXT;/g" "$XCODE_PROJECT/project.pbxproj"
+
+      - name: Apply the fetched provisioning profiles to the project
+        script: xcode-project use-profiles
+
+      - name: Build the ipa
+        script: |
+          xcode-project build-ipa \
+            --project "$XCODE_PROJECT" \
+            --scheme "$XCODE_SCHEME"
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - "**/*.dSYM.zip"
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        # Upload only. The build lands in TestFlight for internal testing; the
+        # App Store submission itself stays a deliberate manual act, because it
+        # is the step that starts a review and freezes the metadata.
+        submit_to_testflight: true

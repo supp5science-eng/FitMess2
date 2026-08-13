@@ -76,6 +76,20 @@ const TARGETS = [
   // cannot silently start cropping.
   { name: "appstore-6.9", width: 1320, height: 2868, phoneFill: 0.78, titleSize: 86, subSize: 42 },
   { name: "play-phone", width: 1080, height: 1920, phoneFill: 0.74, titleSize: 62, subSize: 31 },
+  // iPad. The app is declared for tablets (`TARGETED_DEVICE_FAMILY = "1,2"`),
+  // and Apple then refuses the submission without a 13" set. The canvas is far
+  // squarer than a phone's, so `phoneFill` drops: at 0.78 the device would run
+  // into the headline. The mock stays a phone on purpose — every screen is laid
+  // out for one, and showing a stretched tablet would promise a layout that
+  // does not exist.
+  {
+    name: "appstore-ipad-13",
+    width: 2048,
+    height: 2732,
+    phoneFill: 0.68,
+    titleSize: 104,
+    subSize: 50,
+  },
 ];
 
 function page({ target, slide, imageDataUri, imageWidth, imageHeight }) {

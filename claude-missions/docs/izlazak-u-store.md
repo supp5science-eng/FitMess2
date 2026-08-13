@@ -86,21 +86,195 @@ greške u logu:
 4. **`aps-environment` entitlement nije postojao** — potpisivanje bi palo.
    `App.entitlements` + `CODE_SIGN_ENTITLEMENTS` u obe konfiguracije.
 
-Ostaje za push (samo podaci, kod je gotov):
+Push podaci su svi na mestu od 13.08.2026 — vidi blok ispod.
 
-| Šta | Gde ide |
+---
+
+## Dodato 13–14.08.2026: build lanac radi, aplikacija je u TestFlight-u
+
+**Prvi iOS build je napravljen, potpisan i prihvaćen od Apple-a.** Build 1 stoji
+u TestFlight-u (`processingState: VALID`), instaliran je na telefon vlasnika i
+otvara se normalno.
+
+### Kako se od sada pravi build
+
+`codemagic.yaml` je u **korenu repoa** (Codemagic ga traži samo tamo) i nosi
+`working_directory: claude-missions`. Build se pokreće API pozivom, bez
+Codemagic UI-ja:
+
+```
+POST https://api.codemagic.io/builds     (header x-auth-token)
+{ "appId": "6a7e2809f248596b960795ac",
+  "workflowId": "ios-testflight",
+  "branch": "main" }
+```
+
+Token je u `~/.secrets/codemagic-token.txt`. Status: `GET /builds/{id}`.
+
+Nema `triggering:` bloka namerno — sadržaj store aplikacije JESTE fitmess.app,
+pa običan `git push` već stiže do svakog instaliranog telefona. Novi binarni
+paket treba samo kad se menja nešto native, a besplatnih macOS minuta je 500
+mesečno.
+
+### Četiri stvari koje su obarale build, sve nevidljive sa Windowsa
+
+1. **`Package.swift` je imao Windows putanje** (`..\..\..\node_modules\...`).
+   Capacitor CLI piše razdvajače po OS-u koji ga pokrene, a Swift čita `\n` iz
+   `\node_modules` kao novi red. `cap sync` na Mac-u ga prepiše ispravno.
+2. **Nije postojala deljena Xcode šema.** Xcode ih izmišlja kad čovek prvi put
+   otvori projekat i drži u `xcuserdata/` (gitignore). CI projekat nikad ne
+   otvara → `xcodebuild -scheme App` ne nalazi ništa. Šema je sad komitovana.
+3. **`npx cap sync ios` u CI-ju nije prazan hod** iako je app remote: on piše
+   `ios/App/App/capacitor.config.json`, koji je gitignore-ovan a nosi
+   `server.url` i `FitMessApp/1.0`. Bez njega ljuska nema sajt da učita.
+4. **`ITSAppUsesNonExemptEncryption=false`** u `Info.plist` — bez toga svaki
+   build stoji u TestFlight-u kao „Missing Compliance" i ne može se dati
+   testeru, i tako za svaki naredni build.
+
+Broj builda se upisuje `sed`-om nad pbxproj-om, ne `agvtool`-om: Capacitor
+šablon nema `VERSIONING_SYSTEM = apple-generic`.
+
+### ⚠️ Potpisivanje ima TRI karike, ne jednu
+
+Codemagic potpisuje **iz svoje zalihe**, ne gleda Apple uživo. Build koji padne
+za 0.8 sekundi bez ijednog koraka (`buildActions: []`) je odbijen pre nego što
+se mašina i upalila. Redom:
+
+1. **Sertifikat se pravi u Codemagic UI** (Settings → Code signing identities →
+   iOS certificates). Ne može drugačije — Apple vraća samo javni deo, pa
+   sertifikat skinut sa njihovog sajta ne može ništa da potpiše; privatni ključ
+   mora ostati tamo gde je nastao.
+2. **Profil ne nastaje sam.** Napravljen je API-jem: `POST /v1/profiles`,
+   `IOS_APP_STORE`, veze na bundleId + certificate.
+3. **Profil se onda povlači u Codemagic** (iOS provisioning profiles → Fetch
+   profiles). Bez ovog koraka postoji kod Apple-a a build i dalje pada istom
+   porukom.
+
+Stanje kod Apple-a se proverava bez klikanja: JWT (ES256, `aud:
+appstoreconnect-v1`) iz `.p8`, pa `GET /v1/certificates` i `/v1/profiles`.
+
+### App Store listing
+
+Popunjeno kroz API (verzija 1.0, slot **hr** — Apple nema srpski, hrvatski je
+najbliži, a beleška recenzentu je posebno na engleskom):
+
+| Popunjeno | Vrednost |
 |---|---|
-| `google-services.json` iz Firebase-a | `android/app/` |
-| ceo servisni-nalog JSON iz Firebase-a | Vercel env `FCM_SERVICE_ACCOUNT` |
-| APNs `.p8` sadržaj | Vercel env `APNS_KEY_P8` |
-| Key ID i Team ID | Vercel env `APNS_KEY_ID`, `APNS_TEAM_ID` |
-| Push capability na `app.fitmess` App ID-u | developer.apple.com |
+| Subtitle | Alat ka boljem životu |
+| Description / keywords / promo | iz `docs/store-listing.md` (1893 zn. / 98 od 100 / 142) |
+| Kategorije | Health & Fitness + Food & Drink |
+| Privacy / Support / Marketing URL | fitmess.app/privatnost, fitmess.app |
+| Copyright | 2026 Marko Bera (odluka: **fizičko lice**) |
+| Uzrasna ocena | **4+** |
+| Screenshotovi | iPhone 6.9" (`APP_IPHONE_67`) + iPad 13" (`APP_IPAD_PRO_3GEN_129`), po 6 |
+| App Review kontakt | Marko Bera, +381600637486, supp5science@gmail.com |
+| Demo nalog za recenzenta | `supp5science+fitmess-demo@gmail.com` + beleška na engleskom |
 
-Ostaje šire: Android notifikaciona ikonica (sad silueta app ikonice, biće bela
-mrlja), papirologija, build lanac, Play zatvoreno testiranje.
+Uzrasna ocena je iskrena deklaracija: `healthOrWellnessTopics: true`,
+`medicalOrTreatmentInformation: NONE` (app ne opisuje bolesti ni lečenje i
+izričito kaže da ne zamenjuje lekara). Plan je predviđao 12+; Apple na ove
+odgovore računa 4+.
 
-Pregledna verzija ovog stanja:
-https://claude.ai/code/artifact/c553cc3c-cc5f-4ac4-8f28-8260df1abd40
+⚠️ **`whatsNew` se ne postavlja za prvu verziju** — Apple odbija sa
+`STATE_ERROR`, jer nema prethodnog izdanja u odnosu na koje bi bio „novo".
+
+**Odluka o iPad-u:** `TARGETED_DEVICE_FAMILY` ostaje `"1,2"`. Posledica koju
+treba držati na umu: recenzent app testira i na tabletu, gde je svaki ekran
+crtan za telefon. Maketa na iPad screenshotovima je zato i dalje telefon —
+razvučen tablet na slici bi obećao raspored koji ne postoji.
+
+### APNs
+
+⚠️ **Prvi ključ je bio ograničen na Sandbox, i to se posle kreiranja ne vidi
+nigde u Apple-ovom UI-ju.** Pri pravljenju ključa, ispod APNs servisa stoji
+**Environment** — mora **Sandbox & Production**, uz **Key Restriction: Team
+Scoped (All Topics)**. Ključ se ne može izmeniti, pravi se novi (limit 2 po
+timu). TestFlight i App Store buildovi su produkcijski, pa bi sandbox ključ
+značio da podsetnici ćute bez ijedne greške u logu.
+
+Ključ se dokazuje bez telefona: HTTP/2 POST sa namerno pokvarenim device
+tokenom na oba hosta. `400 BadDeviceToken` = ključ radi (odbijen je samo
+uređaj); `403 BadEnvironmentKeyInToken` = ne važi za to okruženje;
+`403 InvalidProviderToken` = ključ ne valja.
+
+Važeći ključ (`Q6G8DC8N3R`) prolazi na oba, i upisan je na Vercel: `APNS_KEY_P8`
+(sensitive), `APNS_KEY_ID`, `APNS_TEAM_ID`, sve samo Production.
+
+### Dva bug-a nađena usput
+
+**1. „Moji podaci" su pucali svakom korisniku** — i PDF i .json. Poruka je
+pokazivala na PDF, ali je `.json` padao isto, što odmah premešta krivicu na
+zajedničko čitanje podataka. `funnel_events` je bio u `USER_OWNED_TABLES`, a
+migracija 0028 nikad nije puštena na bazu.
+
+Ispod toga je bila prava greška: tolerancija za nemigriranu tabelu je
+**postojala, bila opisana i pokrivena testom — i nikad nije radila.** Čekala je
+Postgres-ov `42P01`, a upit kroz Supabase do Postgresa nikad ne stigne —
+PostgREST razreši ime u svom kešu šeme i vrati `PGRST205`. Test je testirao baš
+kod koji ne može da stigne. Popravljeno (oba koda + novi test), migracija
+primenjena, oba izvoza provereno rade na produkciji.
+
+**Pravilo koje iz ovoga sledi:** kad pišeš toleranciju na grešku baze, proveri
+kod na živom PostgREST-u (`GET /rest/v1/nepostojeca_tabela`), ne iz pamćenja.
+
+**2. Merenje levka je ćutalo deset dana.** Ista neprimenjena migracija. Brojke
+pre 13.08.2026 ne postoje — nije da je levak bio prazan, nego se nije merio.
+
+### Screenshotovi
+
+Demo nalog je osvežen (`seed-demo-data.cjs`), sve presnimljeno i zamenjeno kod
+Apple-a. Drugi slajd se sad snima sa prekidačem na **„Potrošeno"**: na
+„Preostalo" dan pojeden do kraja piše `0g UH · 0g Masti`, tri skoro-nule ispod
+naslova „Ceo dan na jednom ekranu".
+
+---
+
+## Šta je sledeće (stanje 14.08.2026)
+
+**Odmah, čim se otvori app na telefonu:**
+
+1. **Uključiti podsetnike u app-u** i prihvatiti iOS dijalog. Trenutno u
+   `push_subscriptions` postoje samo 3 web pretplate i **nijedan iOS token** —
+   dok token ne postoji, lanac nije dokazan do kraja. Čim se pojavi, pravi push
+   se šalje sa razvojne mašine.
+2. **Ponoviti PDF izvoz** u ljusci — sad bi trebalo da radi.
+3. **Ubiti app iz multitaskinga pa ga otvoriti** — jedini test iz tačke 4.4 koji
+   još nije prošao ni u jednom smeru (Supabase sesija kroz restart).
+
+Podeljena kartica obroka je **potvrđeno ispravna** (sistemski share sheet nudi
+WhatsApp, Instagram, Viber).
+
+**Pre Apple submisije:**
+
+- **Trader podaci** — ime i adresa (Ratnih Vojnih Invalida 23, 11211). Nisu u
+  API-ju, upisuju se ručno u App Store Connect. Adresa postaje **javna**.
+- **Cena i dostupnost** — app još nema cenovni raspored; bez njega se ne
+  submituje. Ide besplatno.
+- **Apple Small Business Program** (15% umesto 30%) — ručna prijava, još nije
+  urađena. Vredi pre prve zarade.
+- **Politika privatnosti da pomene ~24h čuvanja fotografija obroka**
+  (`public.meal_photos`, pg_cron briše posle ~dan), radi doslednosti sa
+  odgovorima u Data Safety formi.
+- **Demo nalog pustiti ponovo** neposredno pred submisiju i jednom tokom
+  recenzije — ustaje po kalendaru, ne od nečijeg rada.
+
+**Google Play — dogovoreno da ide bez žurbe, ali je kalendarski najduže:**
+
+- **12 testera × 14 dana** zatvorenog testiranja. Nije počelo. Sve ostalo traje
+  sat do dan-dva; ovo traje dve nedelje bez obzira na sve.
+- Za start treba AAB. Android build lokalno ne može (nema JDK ni SDK), ali može
+  isti Codemagic — drugi workflow u istom fajlu. Traži odluku o keystore-u: gde
+  se čuva i ko ga pravi. **Keystore se gubi jednom i zauvek** — bez njega se
+  aplikacija više ne može ažurirati.
+- Play listing (ikonica 512², feature graphic 1024×500, screenshotovi) —
+  skripte postoje, slike su već napravljene u `store/screenshots/play-phone/`.
+
+**Otvoreno, bez roka:**
+
+- Android notifikaciona ikonica je rešena (commit `5416f6b`), ali nije
+  proverena na pravom uređaju.
+- `app-shell.test.tsx` pada na HEAD-u (4 testa) jer `AccountsSync` traži
+  Supabase env koji Vitest ne učitava. Zatečeno, nije od ovog rada.
 
 ---
 

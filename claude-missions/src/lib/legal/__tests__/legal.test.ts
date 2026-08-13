@@ -5,10 +5,19 @@ import { isPublicPath } from "@/lib/auth/route-protection";
 import { CONTROLLER, LEGAL_EFFECTIVE_DATE, MINIMUM_AGE } from "@/lib/legal/controller";
 import {
   ACCOUNT_DELETION_PATH,
+  ACCOUNT_DELETION_PATH_EN,
+  LEGAL_ALIASES,
+  LEGAL_ALIAS_PATHS,
   LEGAL_PATHS,
+  LEGAL_PATHS_EN,
   PRIVACY_PATH,
+  PRIVACY_PATH_EN,
+  PUBLIC_LEGAL_PATHS,
   TERMS_PATH,
+  TERMS_PATH_EN,
   isLegalPath,
+  legalAliasTarget,
+  legalAlternates,
 } from "@/lib/legal/paths";
 import { messages } from "@/lib/i18n/messages";
 
@@ -59,6 +68,74 @@ describe("a desktop reviewer with no account", () => {
 
   it.each(LEGAL_PATHS)("is not sent to the login screen from %s", (path) => {
     expect(isPublicPath(path)).toBe(true);
+  });
+});
+
+/**
+ * The English URLs exist for a reader who arrives with no cookie — a store
+ * reviewer. Every gate that guards the Serbian originals has to let these
+ * through too, and an alias has to survive the gates BEFORE it can redirect:
+ * the phone gate runs ahead of the route, so an alias missing from the public
+ * list is answered with "open this on your phone" and never reaches its own
+ * `permanentRedirect`.
+ */
+describe("the English URLs", () => {
+  it.each([...LEGAL_PATHS_EN, ...LEGAL_ALIAS_PATHS])(
+    "%s is public and past the phone-only gate",
+    (path) => {
+      expect(isLegalPath(path)).toBe(true);
+      expect(isPublicPath(path)).toBe(true);
+      expect(decidePhoneGate({ pathname: path, userAgent: DESKTOP_UA })).toEqual({
+        action: "allow",
+      });
+    }
+  );
+
+  it("pairs each document with its own translation", () => {
+    expect(LEGAL_PATHS_EN).toEqual([
+      PRIVACY_PATH_EN,
+      TERMS_PATH_EN,
+      ACCOUNT_DELETION_PATH_EN,
+    ]);
+    // Same order as LEGAL_PATHS, so the two lists line up document by
+    // document — that pairing is what `legalAlternates` and the sitemap rely on.
+    expect(LEGAL_PATHS_EN).toHaveLength(LEGAL_PATHS.length);
+  });
+
+  it("redirects every alias to a canonical document, never to another alias", () => {
+    for (const alias of LEGAL_ALIAS_PATHS) {
+      const target = legalAliasTarget(alias);
+      expect(target, `${alias} has no target`).not.toBeNull();
+      expect(LEGAL_PATHS).toContain(target);
+    }
+    expect(LEGAL_ALIASES["/privacy"]).toBe(PRIVACY_PATH);
+    expect(LEGAL_ALIASES["/terms"]).toBe(TERMS_PATH);
+    expect(LEGAL_ALIASES["/delete-account"]).toBe(ACCOUNT_DELETION_PATH);
+  });
+
+  it("is not an alias for anything else", () => {
+    expect(legalAliasTarget("/danas")).toBeNull();
+    expect(legalAliasTarget(PRIVACY_PATH)).toBeNull();
+  });
+
+  it("keeps the Serbian URL canonical for both languages", () => {
+    // One document, one indexable address. If the English page ever declared
+    // itself canonical, the same policy would compete with itself in the index
+    // and a store listing could end up pointing at the losing URL.
+    const alternates = legalAlternates(PRIVACY_PATH, PRIVACY_PATH_EN);
+    expect(alternates.canonical).toBe(PRIVACY_PATH);
+    expect(alternates.languages.en).toBe(PRIVACY_PATH_EN);
+    expect(alternates.languages["sr-Latn-RS"]).toBe(PRIVACY_PATH);
+  });
+
+  it("still matches exactly, never by prefix", () => {
+    expect(isLegalPath("/en")).toBe(false);
+    expect(isLegalPath(`${PRIVACY_PATH_EN}/nesto`)).toBe(false);
+    expect(isLegalPath("/privacyx")).toBe(false);
+  });
+
+  it("lists every public URL exactly once", () => {
+    expect(new Set(PUBLIC_LEGAL_PATHS).size).toBe(PUBLIC_LEGAL_PATHS.length);
   });
 });
 

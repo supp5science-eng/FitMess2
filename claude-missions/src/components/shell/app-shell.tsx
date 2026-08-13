@@ -69,6 +69,10 @@ const FULL_BLEED_PREFIXES = [
   "/upitnik",
   "/onboarding",
   "/telefon",
+  // `/en/*` — the same three legal documents in fixed English
+  // (`src/app/en/layout.tsx`), read by the same signed-out audience as the
+  // Serbian originals above, and full-bleed for the same reason.
+  "/en",
 ] as const;
 
 function isFullBleed(pathname: string): boolean {

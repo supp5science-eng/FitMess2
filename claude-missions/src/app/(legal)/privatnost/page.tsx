@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { PrivacyPolicy } from "@/components/legal/privacy-policy";
 import { getT } from "@/lib/i18n/server";
-import { PRIVACY_PATH } from "@/lib/legal/paths";
+import { legalAlternates, PRIVACY_PATH, PRIVACY_PATH_EN } from "@/lib/legal/paths";
 
 /**
  * `/privatnost` — the public privacy policy.
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   title: "Politika privatnosti",
   description:
     "Šta FitMess prikuplja, zašto, ko još to vidi, koliko dugo se čuva i kako da obrišeš svoje podatke.",
-  alternates: { canonical: PRIVACY_PATH },
+  alternates: legalAlternates(PRIVACY_PATH, PRIVACY_PATH_EN),
   robots: { index: true, follow: true },
 };
 

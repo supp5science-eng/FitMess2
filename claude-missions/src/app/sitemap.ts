@@ -1,10 +1,6 @@
 import type { MetadataRoute } from "next";
 
-import {
-  ACCOUNT_DELETION_PATH,
-  PRIVACY_PATH,
-  TERMS_PATH,
-} from "@/lib/legal/paths";
+import { LEGAL_PATHS, LEGAL_PATHS_EN } from "@/lib/legal/paths";
 
 /**
  * `/sitemap.xml` — the public URL set we hand to Google Search Console.
@@ -34,8 +30,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     // Low priority, rarely changing — but present, so the policy URL a store
-    // listing points at is one Google has actually seen.
-    ...[PRIVACY_PATH, TERMS_PATH, ACCOUNT_DELETION_PATH].map((path) => ({
+    // listing points at is one Google has actually seen. The `/en/*` versions
+    // are listed too (they are real pages, not redirects); the English-word
+    // aliases are not — a sitemap of 308s is a sitemap of URLs that are not
+    // the destination.
+    ...[...LEGAL_PATHS, ...LEGAL_PATHS_EN].map((path) => ({
       url: `${SITE_URL}${path}`,
       lastModified,
       changeFrequency: "yearly" as const,

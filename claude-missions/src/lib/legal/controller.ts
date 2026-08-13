@@ -36,6 +36,21 @@ export const CONTROLLER = {
    * verified for outbound mail and nothing was ever delivered to it. A policy
    * that publishes an address which silently drops mail is worse than one that
    * publishes a plain personal address.
+   *
+   * TO MOVE TO A DOMAIN ADDRESS (`privatnost@fitmess.app`), which reads as a
+   * business rather than a person and is what Google tends to expect on a
+   * data-safety form: the blocker has never been this file — it is that mail
+   * sent to the domain has nowhere to land. Set up inbound routing first
+   * (Cloudflare Email Routing is free and forwards `privatnost@fitmess.app`
+   * into this same Gmail in about ten minutes; the registrar's own forwarding
+   * works too), send yourself a test message and confirm it arrives. THEN
+   * change the one string below — the policy, the terms, the deletion page,
+   * the legal footer and the in-app support row all read from here, so they
+   * move together and cannot disagree.
+   *
+   * Do it in that order. Publishing the address first and wiring it later
+   * means every request sent in between is lost, and a lost data-subject
+   * request is the one kind of mail that has a legal deadline attached.
    */
   email: "markobera749@gmail.com",
   /** Public site the documents live on. */

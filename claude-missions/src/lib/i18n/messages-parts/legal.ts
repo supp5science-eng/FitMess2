@@ -77,7 +77,7 @@ export const legalMessages = {
     "legal.privacy.share.vercel":
       "Vercel — server koji isporučuje aplikaciju.",
     "legal.privacy.share.google":
-      "Google (Gemini API) — procena kalorija sa fotografije, deklaracije i glasa. Koristimo plaćeni nivo usluge, kod koga se poslati sadržaj ne koristi za obučavanje Google-ovih modela.",
+      "Google (Gemini API) — procena kalorija sa fotografije, deklaracije i glasa. Slika odnosno snimak ne ide sa tvog telefona pravo Google-u: prvo stiže na naš server, i on je prosleđuje Gemini-ju uz samu sliku i pitanje — bez tvog imena, email adrese ili oznake naloga, tako da Google ne zna čija je. Koristimo plaćeni nivo usluge, kod koga se poslati sadržaj ne koristi za obučavanje Google-ovih modela. Google obradi sliku i vrati procenu; kod sebe je ne zadržava kao tvoj sadržaj niti je pravi trajnu kopiju za nas. Jedina kopija koja negde ostane je ona kod nas — mala sličica uz taj obrok, oko jedan dan (vidi „Koliko dugo čuvamo“). Snimak glasa ne ostaje ni kod nas ni kod njih.",
     "legal.privacy.share.resend":
       "Resend — slanje email poruka (potvrda naloga, promena lozinke).",
     "legal.privacy.share.never":
@@ -293,7 +293,7 @@ export const legalMessages = {
       "Supabase — the database and account sign-in. Your data physically sits on servers in Ireland (European Union).",
     "legal.privacy.share.vercel": "Vercel — the server that delivers the app.",
     "legal.privacy.share.google":
-      "Google (Gemini API) — calorie estimation from photos, labels and voice. We use the paid tier, on which submitted content is not used to train Google's models.",
+      "Google (Gemini API) — calorie estimation from photos, labels and voice. The image or recording does not go from your phone straight to Google: it reaches our server first, and our server forwards it to Gemini together with the question — with no name, email address or account identifier attached, so Google cannot tell whose it is. We use the paid tier, on which submitted content is not used to train Google's models. Google processes the image and returns an estimate; it does not keep it as your content afterwards, and makes no lasting copy on our behalf. The only copy that stays anywhere is ours — a small thumbnail beside that meal, for about a day (see “How long we keep things”). Voice recordings stay neither with us nor with them.",
     "legal.privacy.share.resend":
       "Resend — sending email (account confirmation, password reset).",
     "legal.privacy.share.never":

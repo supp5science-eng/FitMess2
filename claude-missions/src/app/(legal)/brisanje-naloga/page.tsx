@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 
 import { AccountDeletion } from "@/components/legal/account-deletion";
 import { getT } from "@/lib/i18n/server";
-import { ACCOUNT_DELETION_PATH } from "@/lib/legal/paths";
+import {
+  ACCOUNT_DELETION_PATH,
+  ACCOUNT_DELETION_PATH_EN,
+  legalAlternates,
+} from "@/lib/legal/paths";
 
 /**
  * `/brisanje-naloga` — the account-deletion page Google Play requires.
@@ -15,7 +19,7 @@ export const metadata: Metadata = {
   title: "Brisanje naloga",
   description:
     "Kako da obrišeš svoj FitMess nalog, šta se tačno briše i šta se dešava posle.",
-  alternates: { canonical: ACCOUNT_DELETION_PATH },
+  alternates: legalAlternates(ACCOUNT_DELETION_PATH, ACCOUNT_DELETION_PATH_EN),
   robots: { index: true, follow: true },
 };
 

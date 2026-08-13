@@ -56,6 +56,24 @@ import { reconcileEstimate } from "@/lib/ai/reconcile";
 // e.g. gemini-3-flash and gemini-3.5-flash to compare accuracy is a config
 // change, never a code change. NEVER import this from a client component --
 // it reads the secret `GEMINI_API_KEY`.
+//
+// EVERY user photo and voice clip in FitMess reaches Google through this one
+// file, and only from the server: the phone posts its bytes to our own server
+// action / route handler, which forwards them inline (base64, in the request
+// body) to `generativelanguage.googleapis.com`. Nothing is uploaded to the
+// Files API, nothing is given a Google-side URL, and the client never holds
+// the key. The photo's only resting place is our own database, and only when
+// the user saves the meal (`public.meal_photos`, pruned after ~1 day by
+// pg_cron -- see `supabase/migrations/0014_meal_photos.sql`); audio is never
+// stored anywhere at all.
+//
+// BILLING IS ENABLED on this key (confirmed 2026-08-13). That is not a cost
+// detail, it is a promise made to users: on the paid tier Google does not use
+// submitted content to improve its models, which is exactly what
+// `legal.privacy.share.google` tells them in the privacy policy and what the
+// stores' data-safety forms were filled in with. If billing is ever turned
+// off, the free tier's terms apply instead and that sentence becomes false --
+// so the policy has to change in the same commit.
 
 const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 // gemini-3.6-flash is the current, reliable Flash: newest generation (better
@@ -63,14 +81,17 @@ const API_BASE = "https://generativelanguage.googleapis.com/v1beta/models";
 // quota on our plan. We measured 3.5-flash timing out and the Pro-preview model
 // (see MEAL_MODEL note) returning hard 429s, so both are avoided as defaults.
 const DEFAULT_MODEL = "gemini-3.6-flash";
-// Meal-photo recognition ("Slikaj obrok"). On Flash, not Gemini 3 Pro: Pro
-// (incl. `gemini-3.1-pro-preview`) has a FREE-TIER quota of 0, so every call on
-// our current (unbilled) key returns HTTP 429 -- which is exactly what made the
-// feature "work poorly." Flash 3.6 has real free-tier quota and good vision.
-// Overridable via `GEMINI_MEAL_MODEL` (e.g. to a Pro model once billing is on).
+// Meal-photo recognition ("Slikaj obrok"). On Flash, not Gemini 3 Pro. That
+// choice was forced while the key was still unbilled: Pro (incl.
+// `gemini-3.1-pro-preview`) has a free-tier quota of 0, so every call returned
+// HTTP 429 -- which is exactly what made the feature "work poorly." Billing has
+// since been enabled, so Pro is reachable again and this is now a
+// cost/latency judgement rather than a hard block; Flash 3.6 is fast and its
+// vision is good enough. Try Pro by setting `GEMINI_MEAL_MODEL` -- no code
+// change needed, and worth measuring before committing to it.
 const MEAL_MODEL = "gemini-3.6-flash";
-// Voice logging ("Reci obrok"). Same reasoning as MEAL_MODEL -- Flash, since Pro
-// is 429-blocked on the free tier. Overridable via `GEMINI_VOICE_MODEL`.
+// Voice logging ("Reci obrok"). Same reasoning as MEAL_MODEL -- Flash, and for
+// this flow speed is the feature. Overridable via `GEMINI_VOICE_MODEL`.
 const VOICE_MODEL = "gemini-3.6-flash";
 const REQUEST_TIMEOUT_MS = 45_000;
 

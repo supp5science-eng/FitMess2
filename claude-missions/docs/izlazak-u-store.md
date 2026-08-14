@@ -262,12 +262,23 @@ WhatsApp, Instagram, Viber).
 
 - **12 testera × 14 dana** zatvorenog testiranja. Nije počelo. Sve ostalo traje
   sat do dan-dva; ovo traje dve nedelje bez obzira na sve.
-- Za start treba AAB. Android build lokalno ne može (nema JDK ni SDK), ali može
-  isti Codemagic — drugi workflow u istom fajlu. Traži odluku o keystore-u: gde
-  se čuva i ko ga pravi. **Keystore se gubi jednom i zauvek** — bez njega se
-  aplikacija više ne može ažurirati.
-- Play listing (ikonica 512², feature graphic 1024×500, screenshotovi) —
-  skripte postoje, slike su već napravljene u `store/screenshots/play-phone/`.
+- ✅ Za start treba AAB. Android build lokalno ne može (nema SDK), ali može isti
+  Codemagic — workflow `android-play` je u `codemagic.yaml` od 14.08.2026.
+  Keystore je napravljen lokalno (`~/.secrets/fitmess-upload.jks`, alias
+  `upload`, važi do 2053) i uploadovan u Codemagic pod imenom `fitmess-upload`;
+  Codemagic personal nalog ume samo da ga primi, ne i da ga napravi.
+
+  > **Ispravka ranije tvrdnje na ovom mestu** („keystore se gubi jednom i
+  > zauvek"): to važi za *app signing key*. Uz **Play App Signing**, koji je
+  > podrazumevan za nove aplikacije, taj ključ drži Google, a naš je samo
+  > *upload key* — ako se izgubi, resetuje se zahtevom Google-u i aplikacija
+  > ostaje ažurna. Backup svejedno postoji, jer je reset dani čekanja.
+
+- ✅ Play listing (ikonica 512², feature graphic 1024×500, screenshotovi) —
+  slike su u `store/screenshots/play-phone/` i **od 14.08. su u gitu**. Ranije
+  su bile gitignore-ovane kao „regenerišu se", ali se regenerišu samo tamo gde
+  postoji ceo projekat sa Playwright-om i seed-ovanim demo nalogom — pa na
+  drugoj mašini nisu postojale i zaustavile su završetak listinga.
 
 **Otvoreno, bez roka:**
 

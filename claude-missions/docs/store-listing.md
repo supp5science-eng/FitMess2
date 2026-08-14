@@ -216,10 +216,33 @@ Notes:
   calories and macros back, and does not store the photo beyond one day.
 - Health data (weight, meals, steps) is stored per user and can be exported or
   deleted from inside the app: Podešavanja → Moji podaci / Obriši nalog.
+
+Device features this app uses (all reachable from the demo account):
+- Push notifications. Podešavanja → Podsetnici. The app asks for permission and
+  then sends a morning plan, an evening review of the day, and a reward
+  notification after three logged meals.
+- Camera. The "+" button → "Slikaj obrok" opens the camera to photograph a
+  meal; "Prizma" guides the user through two angles for a closer estimate.
+- Microphone. The "+" button → "Gric" records a short spoken phrase to log
+  small items ("jabuka i šaka badema") without typing.
 ```
 
-⚠️ Demo nalog **mora imati sveže podatke** kad recenzent uđe. Trenutno mu je
-poslednji obrok upisan 02.08.2026 — vidi §6.
+> **Za 4.2, ne za recenzenta.** Gornji odeljak „Device features" je odgovor na
+> pravilo 4.2 („minimum functionality" / „a website bundled as an app"). Nabraja
+> se ono što se stvarno oslanja na uređaj i što web stranica ne može sama —
+> APNs push, kamera, mikrofon. Sve troje je proverljivo iz demo naloga, pa
+> tvrdnja ne visi na obećanju.
+>
+> ⚠️ **Ne slati dok push nije dokazan na pravom telefonu.** Na 15.08.2026. u
+> `push_subscriptions` stoje 3 reda i sva tri su `platform='web'`, najnoviji od
+> 09.08. Nijedan iOS token. Ako recenzent uključi Podsetnike a ništa ne stigne,
+> ovaj argument radi protiv nas jače nego da ga nismo ni napisali.
+
+⚠️ Demo nalog **mora imati sveže podatke** kad recenzent uđe. Zato ga pustiti
+ponovo (`node scripts/store/seed-demo-data.cjs`) neposredno pred slanje i još
+jednom tokom recenzije — ustaje po kalendaru, ne od nečijeg rada.
+**Poslednji put pušten: 15.08.2026** (35 dana, 131 obrok, dnevni prosek 2420
+kcal naspram cilja 2450).
 
 ---
 

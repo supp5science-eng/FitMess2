@@ -101,9 +101,15 @@ workflows:
   android-play:
     name: FitMess Android → AAB
     max_build_duration: 60
-    # Linux, not a Mac: Android needs no Apple toolchain, and the free tier
-    # counts macOS minutes far more dearly than Linux ones.
-    instance_type: linux_x2
+    # A Mac, even though Android needs no Apple toolchain. `linux_x2` was the
+    # obvious choice and was tried first: the build died in under two seconds
+    # with "The selected instance type is not available with the current
+    # billing plan". Linux instances are a paid tier; the free plan gives only
+    # the macOS VM that the iOS workflow already uses. Its image ships the
+    # Android SDK and Gradle anyway, so the build is the same — it just spends
+    # from the 500 monthly macOS minutes. An AAB takes a handful of them, and
+    # this workflow runs a few times a year.
+    instance_type: mac_mini_m2
     working_directory: claude-missions
 
     environment:
@@ -138,7 +144,11 @@ workflows:
         # with every build on this project, which is precisely that guarantee.
         script: |
           set -e
-          sed -i "s/versionCode .*/versionCode ${PROJECT_BUILD_NUMBER}/" android/app/build.gradle
+          # `sed -i ''` and not `sed -i`: this runs on macOS, whose BSD sed
+          # reads the argument after -i as the backup suffix rather than as the
+          # script. The empty string is how you say "edit in place, keep no
+          # backup" there — the same line with GNU syntax fails outright.
+          sed -i '' "s/versionCode .*/versionCode ${PROJECT_BUILD_NUMBER}/" android/app/build.gradle
           grep -n "versionCode" android/app/build.gradle
 
       - name: Build the aab

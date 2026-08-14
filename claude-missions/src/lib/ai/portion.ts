@@ -175,11 +175,25 @@ export function geometryHint(geometry: PortionGeometry, unit: PortionUnit): stri
 export const PREP_METHODS = ["kuvano", "bez_ulja", "malo_ulja", "przeno"] as const;
 export type PrepMethod = (typeof PREP_METHODS)[number];
 
+/**
+ * Chip labels. The OIL leads and the cooking method follows in brackets --
+ * because the amount of fat is what the choice actually controls, while the
+ * method is only how you recognise your own meal.
+ *
+ * Before, the four labels mixed two vocabularies: two named a method
+ * ("Kuvano / na pari", "Prženo / pohovano") and two named an amount of oil, so
+ * picking meant translating between the two axes. Leading with the oil makes
+ * the last three read as one scale -- bez → malo → puno -- which is the scale
+ * the calories actually follow.
+ *
+ * "Na malo ulja" keeps deep-frying in a little oil covered (8-12 g vs the
+ * 15-25 g below), so the split is a real one, not a wording nicety.
+ */
 export const PREP_LABELS: Record<PrepMethod, string> = {
   kuvano: "Kuvano / na pari",
   bez_ulja: "Pečeno bez ulja",
   malo_ulja: "Na malo ulja",
-  przeno: "Prženo / pohovano",
+  przeno: "Puno ulja (prženo/pohovano)",
 };
 
 /** What each choice means in grams of added fat, spelled out for the model. */

@@ -13,7 +13,7 @@ pravnih stranica koje pravi Agent A).
 
 | Šta | Stanje |
 |---|---|
-| Ime u store-u | čeka izbor — vidi §1 |
+| Ime u store-u | ✅ **FitMess** (odluka 09.08.2026) |
 | Pravno lice (fizičko lice vs firma) | čeka; EU trader pravilo, ime i adresa postaju **javni** u oba store-a |
 | Kontakt email | `podrska@fitmess.app` je do sada bio placeholder — treba sanduče koje se stvarno čita |
 | Privacy Policy URL | čeka Agenta A (`/privatnost`) |
@@ -23,18 +23,21 @@ pravnih stranica koje pravi Agent A).
 
 ## 1. Ime
 
-Apple i Play daju po 30 znakova. Ime nosi najveću težinu u pretrazi oba
-store-a, jače od opisa i jače od Apple-ovih keywords.
+```
+FitMess
+```
 
-| Predlog | Znakova | Napomena |
-|---|---|---|
-| `FitMess: kalorije bez stresa` | 28 | preporuka — „bez stresa" je već jezik landinga, „kalorije" je reč koju ljudi kucaju |
-| `FitMess: ishrana bez stresa` | 27 | isto, mekše; „ishrana" se traži ređe od „kalorije" |
-| `FitMess - alat ka boljem životu` | 31 | **ne staje** u Apple-ovih 30; i ne kaže šta app radi, pa ga pretraga ne nalazi |
-| `FitMess` | 7 | najčistije, ali te nalazi samo onaj ko već zna ime |
+Odluka vlasnika, 09.08.2026: čisto ime brenda, bez ključnih reči u naslovu.
 
-„Alat ka boljem životu" savršeno stoji kao **subtitle** (§2) — tamo ne troši
-pretragu.
+Posledica koju treba znati unapred: naslov nosi najveću težinu u pretrazi oba
+store-a, pa se sav teret nalaženja prebacuje na **Apple keywords** (§2) i na
+**Play short description** (§3) — oba su ispod napisana tako da nose reči koje
+ljudi zaista kucaju („kalorije", „ishrana", „obrok"). Ako se za nekoliko meseci
+pokaže da organska pretraga ne donosi instalacije, prvo mesto za probu je ime:
+Apple i Play ga dozvoljavaju da se menja sa svakim novim izdanjem.
+
+„Alat ka boljem životu" ide kao **subtitle** (§2) — tamo govori istu stvar, a ne
+troši mesto koje pretraga čita.
 
 Ispod ikonice na telefonu piše samo `FitMess` (`appName` u `capacitor.config.ts`
 i `app_name` u `strings.xml`) — to se ne menja bez obzira na ime u listingu.

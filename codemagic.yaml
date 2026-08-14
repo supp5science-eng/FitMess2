@@ -97,3 +97,62 @@ workflows:
         # App Store submission itself stays a deliberate manual act, because it
         # is the step that starts a review and freezes the metadata.
         submit_to_testflight: true
+
+  android-play:
+    name: FitMess Android → AAB
+    max_build_duration: 60
+    # Linux, not a Mac: Android needs no Apple toolchain, and the free tier
+    # counts macOS minutes far more dearly than Linux ones.
+    instance_type: linux_x2
+    working_directory: claude-missions
+
+    environment:
+      node: 22
+      # AGP 8.13 refuses to run on an older JDK.
+      java: 21
+
+      android_signing:
+        # The name given to the keystore in Codemagic → Settings → Code signing
+        # identities. Codemagic resolves it here and exports CM_KEYSTORE_PATH /
+        # CM_KEYSTORE_PASSWORD / CM_KEY_ALIAS / CM_KEY_PASSWORD, which is
+        # exactly what `android/app/build.gradle` reads. Nothing secret is in
+        # this file, and a laptop build without those variables stays unsigned.
+        - fitmess-upload
+
+    scripts:
+      - name: Install npm dependencies
+        script: npm ci
+
+      - name: Sync the Capacitor Android project
+        # Same reason as on iOS, and just as easy to mistake for a no-op: this
+        # is what writes `android/app/src/main/assets/capacitor.config.json`,
+        # the file carrying `server.url` and the `FitMessApp/1.0` user-agent
+        # into the apk. It is gitignored, so without this step the shell would
+        # ship with no site to load.
+        script: npx cap sync android
+
+      - name: Give the bundle a versionCode Play has not seen
+        # Play rejects an AAB whose versionCode was already uploaded to *any*
+        # track, deleted releases included — the number is burned forever, so
+        # it can never be reset to 1. PROJECT_BUILD_NUMBER climbs on its own
+        # with every build on this project, which is precisely that guarantee.
+        script: |
+          set -e
+          sed -i "s/versionCode .*/versionCode ${PROJECT_BUILD_NUMBER}/" android/app/build.gradle
+          grep -n "versionCode" android/app/build.gradle
+
+      - name: Build the aab
+        # `bundleRelease`, not `assembleRelease`: Play has required the App
+        # Bundle format for new apps since 2021 and will not take an apk.
+        script: |
+          chmod +x android/gradlew
+          cd android && ./gradlew bundleRelease
+
+    artifacts:
+      - android/app/build/outputs/**/*.aab
+      - android/app/build/outputs/**/mapping.txt
+
+    # There is deliberately no `publishing: google_play:` block. The Play
+    # Developer API refuses the *first* upload of an application — the opening
+    # AAB has to be dragged through the Play Console by hand. Wiring a service
+    # account only starts paying off from the second release onward.

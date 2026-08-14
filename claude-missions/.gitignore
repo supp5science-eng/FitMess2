@@ -49,9 +49,14 @@ yarn-error.log*
 # documentation. Only the verify/ subdirectory is excluded.
 
 # --- STORE ASSETS ---
-# Raw captures and the framed listing images are rebuilt from the live app by
-# `scripts/store/*.cjs` whenever the UI changes, and each one is ~1 MB. The
-# generators are checked in; their output is not. `store/play-icon-512.png`
-# stays tracked — it comes from the logo, not from a screenshot.
+# Raw captures stay out: they are the unframed intermediate step, nothing
+# uploads them anywhere, and `scripts/store/capture-screens.cjs` remakes them
+# from the live app in one run.
 /store/raw/
-/store/screenshots/
+#
+# The framed listing images under `store/screenshots/` USED to be ignored for
+# the same reason — regenerable, ~1 MB each. That was wrong. Regenerating them
+# needs the app running under Playwright with a seeded demo account, so on any
+# machine without the project they do not exist at all, and on 13.08.2026 that
+# stopped the Play listing from being finished from a laptop. 20 MB once is
+# cheaper than a blocked store submission.

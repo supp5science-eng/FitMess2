@@ -3,6 +3,24 @@ apply plugin: 'com.android.application'
 android {
     namespace = "app.fitmess"
     compileSdk = rootProject.ext.compileSdkVersion
+
+    // The upload key never touches this repository. Codemagic exports these
+    // four variables into the build environment when the workflow references
+    // the keystore by name under `android_signing:`; on a laptop they are
+    // simply absent, and the guard below is what keeps that from being an
+    // error. A local `bundleRelease` then produces an *unsigned* bundle, which
+    // is the honest outcome — the key is not on this disk.
+    signingConfigs {
+        release {
+            if (System.getenv("CM_KEYSTORE_PATH")) {
+                storeFile file(System.getenv("CM_KEYSTORE_PATH"))
+                storePassword System.getenv("CM_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("CM_KEY_ALIAS")
+                keyPassword System.getenv("CM_KEY_PASSWORD")
+            }
+        }
+    }
+
     defaultConfig {
         applicationId "app.fitmess"
         minSdkVersion rootProject.ext.minSdkVersion
@@ -18,6 +36,9 @@ android {
     }
     buildTypes {
         release {
+            if (System.getenv("CM_KEYSTORE_PATH")) {
+                signingConfig signingConfigs.release
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }

@@ -97,6 +97,17 @@ workflows:
         # App Store submission itself stays a deliberate manual act, because it
         # is the step that starts a review and freezes the metadata.
         submit_to_testflight: true
+        # ⚠️ Without this the upload is invisible. An uploaded build is not a
+        # distributed one: the "FitMess interni" group has
+        # `hasAccessToAllBuilds: false`, so a build nobody adds to a group
+        # never appears on anyone's phone -- TestFlight simply keeps offering
+        # the last one that was added, with no error anywhere. Builds 2 and 3
+        # both sat unreachable this way while the tester stayed on build 1.
+        # (`hasAccessToAllBuilds` cannot be flipped through the API --
+        # `ENTITY_ERROR.ATTRIBUTE.NOT_ALLOWED` on update -- so distribution is
+        # named here instead.)
+        beta_groups:
+          - FitMess interni
 
   android-play:
     name: FitMess Android → AAB

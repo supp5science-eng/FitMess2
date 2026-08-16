@@ -105,7 +105,20 @@ export function AppShell({
       {/* Launch splash: a first-paint brand cover over the app column that
           dismisses itself. Suppressed during the onboarding hand-off. */}
       {introActive ? null : <AppSplash />}
-      <div className="relative isolate mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm">
+      {/* `paddingTop` is the notch/Dynamic Island clearance for the whole
+          column, so every screen inherits it instead of each header
+          remembering. In a browser and in the installed PWA the inset is 0 and
+          nothing moves; inside the App Store shell the web view really does
+          span the camera cutout (`viewport-fit=cover` in `layout.tsx`), and
+          without this the wordmark sits underneath it. `h-dvh` is
+          border-box, so the column still ends exactly at the screen edge and
+          the bottom navigation keeps its own `env(safe-area-inset-bottom)`.
+          The full-bleed routes returned above (onboarding, questionnaire,
+          auth) pad themselves and never reach here, so nothing double-counts. */}
+      <div
+        className="relative isolate mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         {/* App aurora: a barely-there iridescent wash in the corners, behind
             all content. `isolate` on the column makes it a stacking context, so
             this `-z-10` layer paints above the white/near-black background but

@@ -62,9 +62,19 @@ const config: CapacitorConfig = {
   appendUserAgent: NATIVE_UA_SUFFIX,
 
   ios: {
-    /** Apple rejects apps that hide content behind the home indicator; the
-     * site already handles safe areas via `env(safe-area-inset-*)`. */
-    contentInset: "always",
+    /**
+     * `never`, because the SITE owns its safe areas — the bottom navigation
+     * pads itself with `env(safe-area-inset-bottom)` and the app column pads
+     * itself with `env(safe-area-inset-top)` (`app-shell.tsx`).
+     *
+     * It was `always`, and that inset the web view's own scroll view on top of
+     * all of that. The app column is `h-dvh` with its own inner scroll region,
+     * so WKWebView's scroll view never actually scrolls — the inset had
+     * nothing to offset and simply became dead space under the bottom
+     * navigation, on top of the padding the bar had already added itself.
+     * Two owners of one inset; now there is one.
+     */
+    contentInset: "never",
     /** Links to anything that is not fitmess.app (support mail, store pages)
      * open in the system browser rather than trapping the user in our shell. */
     limitsNavigationsToAppBoundDomains: false,

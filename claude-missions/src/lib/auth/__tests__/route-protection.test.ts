@@ -413,3 +413,100 @@ describe("machine-to-machine paths", () => {
     expect(isMachinePath("/danas")).toBe(false);
   });
 });
+
+describe("the native shell never opens on the marketing landing page", () => {
+  // `capacitor.config.ts` points the web view at the site root, so every app
+  // launch requests `/`. In a browser that is the public marketing page and
+  // must stay so; inside the shell it has to behave like the PWA's
+  // `start_url: "/danas"` -- otherwise a signed-in user is greeted by
+  // "Započni → /upitnik" on every launch and reads it as a lost session.
+  const NATIVE = { isNativeShell: true } as const;
+
+  it("test_native_shell_requesting_the_root_lands_a_fully_set_up_user_on_the_app_home", () => {
+    expect(
+      decideRouteAccess({
+        ...NATIVE,
+        pathname: "/",
+        isAuthenticated: true,
+        isEmailVerified: true,
+        isOnboarded: true,
+      })
+    ).toEqual({ action: "redirect", to: SIGNED_IN_HOME_PATH });
+  });
+
+  it("test_native_shell_requesting_the_root_sends_a_signed_out_user_to_the_login_screen", () => {
+    // Not the questionnaire: a fresh install with no account still has a way
+    // in, because /prijava links to /registracija.
+    expect(
+      decideRouteAccess({
+        ...NATIVE,
+        pathname: "/",
+        isAuthenticated: false,
+        isEmailVerified: false,
+        isOnboarded: false,
+      })
+    ).toEqual({ action: "redirect", to: SIGNED_OUT_REDIRECT_PATH });
+  });
+
+  it("test_native_shell_requesting_the_root_sends_a_half_finished_signup_back_to_onboarding", () => {
+    expect(
+      decideRouteAccess({
+        ...NATIVE,
+        pathname: "/",
+        isAuthenticated: true,
+        isEmailVerified: true,
+        isOnboarded: false,
+      })
+    ).toEqual({ action: "redirect", to: ONBOARDING_PATH });
+  });
+
+  it("test_native_shell_requesting_the_root_still_honours_the_phone_capture_gate", () => {
+    expect(
+      decideRouteAccess({
+        ...NATIVE,
+        pathname: "/",
+        isAuthenticated: true,
+        isEmailVerified: true,
+        isOnboarded: true,
+        hasPhone: false,
+      })
+    ).toEqual({ action: "redirect", to: PHONE_CAPTURE_PATH });
+  });
+
+  it("test_a_browser_visitor_still_gets_the_marketing_landing_page", () => {
+    // The whole point of the flag: `/` is unchanged for everyone else --
+    // signed in, signed out, and the crawlers the landing page exists for.
+    for (const isAuthenticated of [true, false]) {
+      expect(
+        decideRouteAccess({
+          pathname: "/",
+          isAuthenticated,
+          isEmailVerified: isAuthenticated,
+          isOnboarded: isAuthenticated,
+        })
+      ).toEqual({ action: "allow" });
+    }
+  });
+
+  it("test_the_native_shell_changes_nothing_for_any_path_other_than_the_root", () => {
+    expect(
+      decideRouteAccess({
+        ...NATIVE,
+        pathname: "/upitnik",
+        isAuthenticated: false,
+        isEmailVerified: false,
+        isOnboarded: false,
+      })
+    ).toEqual({ action: "allow" });
+
+    expect(
+      decideRouteAccess({
+        ...NATIVE,
+        pathname: "/danas",
+        isAuthenticated: true,
+        isEmailVerified: true,
+        isOnboarded: true,
+      })
+    ).toEqual({ action: "allow" });
+  });
+});

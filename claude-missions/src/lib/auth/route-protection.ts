@@ -43,6 +43,11 @@ export type RouteProtectionInput = {
    * once, right after signing in. Optional + defaults to "has phone" so a
    * caller that doesn't care (most unit tests) never trips the gate. */
   hasPhone?: boolean;
+  /** `isNativeAppUserAgent(...)` -- whether this request comes from the
+   * App Store / Play shell rather than a browser. Only changes the answer for
+   * `/`; see the note at the top of `decideRouteAccess`. Optional + defaults
+   * to "browser" so every existing caller keeps its old behaviour. */
+  isNativeShell?: boolean;
 };
 
 export type RouteDecision =
@@ -167,7 +172,42 @@ export function decideRouteAccess(input: RouteProtectionInput): RouteDecision {
     isEmailVerified: verified,
     isOnboarded,
     hasPhone = true,
+    isNativeShell = false,
   } = input;
+
+  // 0. The native shell asking for `/`.
+  //
+  //    `capacitor.config.ts` points the web view at https://fitmess.app, so
+  //    every launch of the installed app requests the site root -- which is
+  //    the public marketing landing page. It renders identically for a signed
+  //    -in user (it never looks at the session), so the app opened on "Započni
+  //    → /upitnik" every single time and read as "it forgot my account".
+  //
+  //    The installed PWA never had this: `public/manifest.json` already
+  //    declares `start_url: "/danas"`. The correct entry point exists; only the
+  //    shell wasn't using it. So this is that same start_url, enforced one
+  //    layer deeper -- where it also covers shells already on people's phones,
+  //    since the fix ships with a deploy rather than a new binary.
+  //
+  //    It also matters for review: an App Store reviewer who launches the app
+  //    and lands on a marketing page with a "Započni" button is looking at the
+  //    most recognisable signature of a repackaged website there is
+  //    (Guideline 4.2).
+  //
+  //    Answered by asking what would happen if the shell had requested
+  //    `/danas` instead: if that would be allowed, send it there; if a gate
+  //    would catch it (signed out, unverified, no phone, not onboarded), that
+  //    gate's own redirect is the right answer here too.
+  if (isNativeShell && pathname === MARKETING_HOME_PATH) {
+    const asAppHome = decideRouteAccess({
+      ...input,
+      pathname: SIGNED_IN_HOME_PATH,
+      isNativeShell: false,
+    });
+    return asAppHome.action === "allow"
+      ? { action: "redirect", to: SIGNED_IN_HOME_PATH }
+      : asAppHome;
+  }
 
   // 1. No session at all (AS-011).
   if (!isAuthenticated) {

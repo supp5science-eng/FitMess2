@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { isCrawlerPath } from "@/lib/device/is-crawler";
 import { decidePhoneGate } from "@/lib/device/phone-gate";
+import { isNativeAppUserAgent } from "@/lib/device/native";
 import {
   decideRouteAccess,
   isMachinePath,
@@ -59,9 +60,10 @@ export async function middleware(request: NextRequest) {
   // the decision itself in `@/lib/device/phone-gate` -- including the native
   // shell, whose UA reads as a desktop Mac when Apple reviews the iPhone app on
   // an iPad.
+  const userAgent = request.headers.get("user-agent");
   const gate = decidePhoneGate({
     pathname: request.nextUrl.pathname,
-    userAgent: request.headers.get("user-agent"),
+    userAgent,
   });
 
   if (gate.action === "redirect") {
@@ -137,6 +139,9 @@ export async function middleware(request: NextRequest) {
     isEmailVerified: verified,
     isOnboarded: onboarded,
     hasPhone,
+    // Only ever changes the answer for `/`: the shell's start URL is the site
+    // root, and a store app must not open on the marketing landing page.
+    isNativeShell: isNativeAppUserAgent(userAgent),
   });
 
   if (decision.action === "redirect") {

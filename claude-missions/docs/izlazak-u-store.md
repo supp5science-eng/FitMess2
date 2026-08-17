@@ -229,6 +229,34 @@ naslova „Ceo dan na jednom ekranu".
 
 ---
 
+## Dodato 17.08.2026: poziv za testere je proban i pao na tri mesta
+
+Prvi pokušaj da se poziv prođe od početka do kraja na pravom Android telefonu
+**nije doveo do instalacije.** Tri nezavisna uzroka, sva tri bi pogodila
+svakog pozvanog čoveka jednako:
+
+1. **Google grupa `fitmess-testeri` je zatvorena** — nečlan dobije „Nemate
+   dozvolu za pristup ovom sadržaju", bez dugmeta za pridruživanje. Nova
+   grupa se tako pravi podrazumevano.
+2. **„Stavka nije pronađena" je recenzija, ne greška.** Dok closed-testing
+   release stoji `In review`, stavka u prodavnici ne postoji ni za jednog
+   testera. Opt-in stranica u istom trenutku istinito piše „You are a tester"
+   — nju servira konzola, a listing prodavnica.
+3. **Grupa nije ono što nekoga čini testerom.** U konzoli je izvor testera
+   email lista sa 2 adrese; ulazak u grupu je ne dodiruje. Po tom
+   podešavanju 15 ljudi u grupi daje **0 testera**, i to bez ijedne greške
+   igde — najskuplji od tri kvara.
+
+Ceo nalaz, popravke po koracima, prepisana poruka za testere i tabela
+odgovora na „ne radi mi": **`docs/testeri-onboarding.md`**.
+
+Pravilo koje iz ovoga sledi: **poziv se šalje tek posle kruga na tuđem
+telefonu** — drugi nalog, drugi uređaj, od nule do otvorenog app-a. Sve tri
+greške preživljavaju podešavanje i vide se tek tamo, a molba za testiranje se
+istim ljudima ne postavlja dva puta.
+
+---
+
 ## Šta je sledeće (stanje 14.08.2026)
 
 **Odmah, čim se otvori app na telefonu:**

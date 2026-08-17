@@ -238,10 +238,12 @@ svakog pozvanog čoveka jednako:
 1. **Google grupa `fitmess-testeri` je zatvorena** — nečlan dobije „Nemate
    dozvolu za pristup ovom sadržaju", bez dugmeta za pridruživanje. Nova
    grupa se tako pravi podrazumevano.
-2. **„Stavka nije pronađena" je recenzija, ne greška.** Dok closed-testing
-   release stoji `In review`, stavka u prodavnici ne postoji ni za jednog
-   testera. Opt-in stranica u istom trenutku istinito piše „You are a tester"
-   — nju servira konzola, a listing prodavnica.
+2. **„Stavka nije pronađena" je bila recenzija, ne greška.** Dok
+   closed-testing release stoji `In review`, stavka u prodavnici ne postoji
+   ni za jednog testera. Opt-in stranica u istom trenutku istinito piše „You
+   are a tester" — nju servira konzola, a listing prodavnica. **Rešeno
+   16.08.2026**: obe pošiljke su `Published`. Test je bio rađen u istoj
+   minuti u kojoj je release otišao Google-u.
 3. **Grupa nije ono što nekoga čini testerom.** U konzoli je izvor testera
    email lista sa 2 adrese; ulazak u grupu je ne dodiruje. Po tom
    podešavanju 15 ljudi u grupi daje **0 testera**, i to bez ijedne greške

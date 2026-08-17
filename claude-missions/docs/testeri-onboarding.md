@@ -45,9 +45,19 @@ dugme „Pridruži se grupi", radi. Ako vidiš zid, nije sačuvano.
 
 ## 2. Greška B — „Stavka nije pronađena" je Google, ne ti
 
-Konzola od 15.08. stoji na `Update status: In review`. Dok Google ne odobri
-**sam closed-testing release**, stavka u prodavnici ne postoji ni za jednog
-testera — ni za vlasnika naloga.
+> **Rešeno 16.08.2026.** Submission activity pokazuje obe pošiljke kao
+> **Published** (1: 15.08. u 00:13 — release + listing + App content;
+> 2: 16.08. u 20:46 — Closed testing), a Publishing overview „Last published
+> on August 16, 2026". Recenzija je prošla; ostatak ovog odeljka objašnjava
+> zašto je test tada pao i ostaje kao zapis.
+>
+> Sat na telefonu u trenutku testa je pokazivao **12:13**, a pošiljka 1 je
+> poslata **15.08. u 12:13 AM**. Test je rađen u istoj minuti u kojoj je
+> release otišao na recenziju — nije imao šanse da prođe.
+
+Konzola je od 15.08. stajala na `Update status: In review`. Dok Google ne
+odobri **sam closed-testing release**, stavka u prodavnici ne postoji ni za
+jednog testera — ni za vlasnika naloga.
 
 Zato dva ekrana koja izgledaju kontradiktorno to nisu:
 
@@ -107,7 +117,8 @@ ide bez diranja aktivnog traka.
 Poziv za testiranje se traži jednom. Petnaest ljudi koji dobiju „Stavka nije
 pronađena" ne probaju drugi put, i drugu molbu istim ljudima nemaš.
 
-1. **Sačekaj odobrenje** — release mora otići sa „In review".
+1. ~~**Sačekaj odobrenje** — release mora otići sa „In review".~~ ✅ prošlo
+   16.08.2026, obe pošiljke `Published`.
 2. **Otvori grupu** (§1) i proveri je u anonimnom prozoru.
 3. **Upiši izvor testera u konzolu** (§3) i sačuvaj.
 4. **Dokaz na tuđem telefonu.** Jedan čovek koji nije ti: drugi Google nalog,

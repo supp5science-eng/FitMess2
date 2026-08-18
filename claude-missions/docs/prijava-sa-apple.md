@@ -93,13 +93,13 @@ desno u portalu).
   Dodaj i `app.fitmess` (odvojeno zarezom). Danas se ne koristi, ali je to
   `aud` koji bi stigao ako se jednom doda pravi native Sign in with Apple
   dijalog — a tada je ovo jedina izmena koja bi falila.
-- **Secret Key (for OAuth):** zavisi šta panel traži:
-  - ako traži **Team ID, Key ID i sadržaj `.p8`** — upiši ih i gotovo, Supabase
-    sam pravi i obnavlja token;
-  - ako traži **jedan „Secret Key"** — to je JWT koji potpisuješ sam:
+- **Secret Key (for OAuth):** panel traži **jedan gotov „Secret Key“** — JWT
+  koji potpisujemo sami `.p8` ključem (provereno u Supabase dokumentaciji,
+  18.08.2026). Nije lozinka koju Apple izdaje — Sign in with Apple nema
+  dugotrajnu deljenu tajnu:
 
     ```bash
-    node scripts/apple-client-secret.cjs \
+    node scripts/apple-client-jwt.cjs \
       --team-id   <TEAM_ID> \
       --key-id    <KEY_ID> \
       --client-id app.fitmess.web \
@@ -107,6 +107,11 @@ desno u portalu).
     ```
 
     Skripta ispiše token i, na `stderr`, datum isteka.
+
+    > ⚠️ Skripta se zove `apple-client-jwt.cjs`, a ne `...-secret...`, zato što
+    > `.gitignore` ima pravilo `*secret*`. Prvi put je napisana pod imenom sa
+    > „secret“ i git ju je **tiho ignorisao** — uputstvo je upućivalo na fajl
+    > koji u repou nije postojao. Pravilo je korisno; ime se sklonilo.
 
 > ⏰ **Apple ograničava taj JWT na ~6 meseci.** Kad istekne, Sign in with Apple
 > prestane da radi — bez greške u našem logu, bez deploya, na dan kad niko

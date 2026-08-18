@@ -75,8 +75,43 @@ const config: CapacitorConfig = {
      * and the account-chooser hop it makes on the way.
      */
     allowNavigation: [
+      /**
+       * ⚠️ THE FIRST HOP, and the one that is easy to leave out — as it was in
+       * build 4, which sent every sign-in tap straight to Safari even though
+       * both providers below were already listed.
+       *
+       * The app never navigates to Apple or Google directly.
+       * `supabase.auth.signInWithOAuth` sends the web view to Supabase's own
+       * `/auth/v1/authorize`, which 302s onward to the provider; the provider
+       * then posts back to `/auth/v1/callback` on this same host, which
+       * finally redirects to `fitmess.app/auth/callback`. So this host is
+       * crossed TWICE per sign-in, before and after the provider, and without
+       * it the round trip is cancelled on its very first step.
+       *
+       * Hardcoded rather than read from `NEXT_PUBLIC_SUPABASE_URL`: this file
+       * is evaluated by the Capacitor CLI on the build machine, where that
+       * variable is not set — deriving it there would silently produce
+       * `undefined` and reintroduce exactly this bug.
+       */
+      "femrzpfslejzqnvfsfoe.supabase.co",
+      /**
+       * Measured on 19.08.2026 by following the redirect chain the Supabase
+       * authorize URL actually produces: Apple resolves to `appleid.apple.com`
+       * and Google to `accounts.google.com`, nothing else.
+       */
       "appleid.apple.com",
       "accounts.google.com",
+      /**
+       * Insurance, not measurement. The trace above can only see the hops
+       * BEFORE credentials are entered; whatever a provider does afterwards
+       * (two-factor, an account chooser, a consent interstitial) happens on
+       * hosts no outside request can enumerate. A hop that lands outside this
+       * list does not fail loudly — it silently hands the user to Safari, and
+       * the cost of discovering that is another full build cycle. These
+       * wildcards cover the providers' own domains only.
+       */
+      "*.apple.com",
+      "*.google.com",
       "accounts.youtube.com",
     ],
   },

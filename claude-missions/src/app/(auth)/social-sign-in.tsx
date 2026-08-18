@@ -5,7 +5,7 @@ import { GoogleSignInButton } from "./google-sign-in-button";
 
 /**
  * The third-party sign-in block shown under the form on both `/prijava` and
- * `/registracija`: one "ili" divider, then Apple, then (in a browser) Google.
+ * `/registracija`: one "ili" divider, then Apple, then Google.
  *
  * Both providers live here rather than being dropped into each page separately
  * so the two screens can never drift into offering different options — which
@@ -13,53 +13,52 @@ import { GoogleSignInButton } from "./google-sign-in-button";
  * compliant login service is offered as an **equivalent** option: same
  * screens, same prominence, not tucked away. Apple goes first because it is
  * the one that satisfies the guideline; Google follows in the identical button
- * size and shape.
+ * size and shape (`.auth-btn` sets the geometry, the modifier only the colour).
  *
- * ## Why Google is not offered inside the native shell
+ * ## Google used to be hidden inside the native shell. It is not any more.
  *
- * Not a product preference — Google refuses the request. Google's OAuth policy
- * blocks sign-in from embedded web views (`disallowed_useragent`), and both
- * shells are exactly that: WKWebView on iOS, Android WebView on Android. A
- * tapped Google button inside the app can only end in one of two ways, and
- * both are worse than not offering it:
+ * The claim was that Google's OAuth policy blocks sign-in from embedded web
+ * views (`disallowed_useragent`), so a tap inside the shell could only end in
+ * Google's "this browser or app may not be secure" page. It was written from
+ * memory, not measured, and it does not hold: on 18.08.2026 the authorize URL
+ * Supabase generates for this project was requested with four user agents —
+ * iPhone Safari, iPhone Safari + `FitMessApp/1.0`, Android Chrome, and an
+ * Android WebView UA carrying the `; wv)` token Google is said to key on. All
+ * four were served the same ordinary `Sign in - Google Accounts` page. Nothing
+ * was blocked.
  *
- *  - the host is in `server.allowNavigation` → Google answers inside the app
- *    with its own "this browser or app may not be secure" page;
- *  - the host is not → Capacitor hands the URL to the system browser, the user
- *    signs in **in Safari**, the session cookie lands in Safari's cookie jar,
- *    and the app is still sitting on the login screen it never left.
+ * That makes sense for iOS in particular: Capacitor's WKWebView sends Mobile
+ * Safari's user agent with our token appended, so there is nothing for Google
+ * to key on in the first place.
  *
- * Either one is a functional defect a reviewer finds on the first tap
- * (guideline 2.1). So the shell offers Sign in with Apple and email/password —
- * both of which work end to end inside the web view — while the site keeps all
- * three for every browser, including Android's.
+ * What is genuinely required for the round trip to finish inside the app is
+ * `server.allowNavigation` in `capacitor.config.ts` — without it Capacitor
+ * cancels the navigation and hands the URL to the system browser, signing the
+ * user in inside Safari while the app sits on the login screen it never left.
+ * Both providers' hosts are listed there.
  *
- * A user who created their account with Google and then installs the app is
- * not locked out: "Zaboravljena lozinka" sets a password on the same email
- * address and signs them in. Restoring the in-app Google button properly needs
- * `ASWebAuthenticationSession` (iOS) / Custom Tabs (Android) via a Capacitor
- * plugin and a deep link back — a native change, tracked in
- * `docs/prijava-sa-apple.md`, not something the site can fix on its own.
+ * The residual risk is that Google enforces the policy later in the flow
+ * (after credentials are entered), which no request from outside a real web
+ * view can prove either way. That is a TestFlight question, and a cheap one:
+ * showing or hiding a button here is a WEB change, so if Google does break
+ * inside the shell it goes back to Apple-only with a `git push` — no new
+ * binary, no submission. Re-hiding means restoring the `isNativeShell` prop
+ * (`@/lib/device/native-server` still provides the answer) and gating the
+ * Google button on it.
  *
  * A synchronous server component on purpose: it renders two client components
  * and holds no state, and an async component nested inside another one cannot
  * be rendered by React's test renderer — which is exactly the code that must
- * stay tested. The page resolves `isNativeShell` and hands it down.
+ * stay tested.
  */
-export function SocialSignIn({
-  t,
-  isNativeShell = false,
-}: {
-  t: TFunction;
-  isNativeShell?: boolean;
-}) {
+export function SocialSignIn({ t }: { t: TFunction }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="auth-or" aria-hidden="true">
         <span>{t("auth.oauth.or")}</span>
       </div>
       <AppleSignInButton />
-      {isNativeShell ? null : <GoogleSignInButton />}
+      <GoogleSignInButton />
     </div>
   );
 }

@@ -23,9 +23,8 @@ odgovor je Sign in with Apple.
 
 > **Nemoj rešavati izbacivanjem Google dugmeta sa sajta.** Time 4.8 prestaje da
 > važi, ali svi koji su nalog napravili Google nalogom ostaju zaključani. Google
-> dugme ostaje na vebu; unutar ljuske se ne prikazuje, iz razloga koji je
-> objašnjen u `src/app/(auth)/social-sign-in.tsx` (Google odbija OAuth iz
-> ugrađenog webview-a).
+> dugme ostaje i na vebu i u ljusci — vidi
+> `src/app/(auth)/social-sign-in.tsx`.
 
 ---
 
@@ -183,15 +182,22 @@ od „pokvareno".
 
 ## Ostalo otvoreno (namerno, nije za ovu submisiju)
 
-**Google login u ljusci.** Google odbija OAuth iz ugrađenog webview-a
-(`disallowed_useragent`), pa Google dugme unutar aplikacije nije rešivo
-`allowNavigation`-om — bilo bi zamenjeno Google-ovom stranicom „this browser or
-app may not be secure". Zato se u ljusci ne prikazuje, a na vebu ostaje.
+**Google login u ljusci — proveriti u TestFlight-u.** Jedno vreme je bio
+sakriven u aplikaciji, uz obrazloženje da Google odbija OAuth iz ugrađenog
+webview-a (`disallowed_useragent`). To je bilo napisano po sećanju, a mereno
+18.08.2026 ne stoji: authorize URL koji Supabase pravi za ovaj projekat
+zatražen je sa četiri UA-a — iPhone Safari, iPhone Safari + `FitMessApp/1.0`,
+Android Chrome i Android WebView sa `; wv)` tokenom — i sva četiri su dobila
+običnu stranicu `Sign in - Google Accounts`. Ništa nije blokirano. Za iOS to
+ima smisla i inače: Capacitor-ov WKWebView šalje UA mobilnog Safari-ja sa našim
+tokenom na kraju, pa Google nema po čemu da ga razlikuje.
 
-Korisnik koji je nalog napravio Google nalogom nije zaključan: „Zaboravljena
-lozinka" postavlja lozinku na istu mejl adresu i uloguje ga.
+Dugme je zato vraćeno u ljusku. Ostaje rizik da Google primeni politiku kasnije
+u toku (pošto se unesu podaci), što se izvan pravog webview-a ne može dokazati
+— **zato se Google mora tapnuti u TestFlight buildu pre slanja na recenziju.**
+Ako pukne, vraćanje na „samo Apple" je izmena na vebu i stiže `git push`-om,
+bez novog paketa.
 
-Pravo rešenje je `ASWebAuthenticationSession` (iOS) / Custom Tabs (Android)
-kroz Capacitor plugin i deep link nazad u app. To je native posao sa svojim
-buildom i svojim testiranjem, i nema ga smisla gurati u isti krug u kom se
-gasi odbijanje.
+Pravo, trajno rešenje ostaje `ASWebAuthenticationSession` (iOS) / Custom Tabs
+(Android) kroz Capacitor plugin i deep link nazad u app — native posao sa
+svojim buildom, nezavisan od ovog kruga.

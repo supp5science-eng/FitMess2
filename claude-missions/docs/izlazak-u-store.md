@@ -294,11 +294,12 @@ na prvi tap recenzenta (2.1). Dodat je `allowNavigation` za `appleid.apple.com`
 — i to je **jedini razlog zašto treba nov binarni paket**; sve ostalo iz ovog
 kruga stiže običnim `git push`-om.
 
-Google login unutar ljuske ostaje nerešen namerno: Google odbija OAuth iz
-ugrađenog webview-a (`disallowed_useragent`), pa dugme u ljusci ne bi radilo
-ni sa `allowNavigation`. Zato se u aplikaciji ne prikazuje, a na vebu ostaje;
-obrazloženje i put ka pravom rešenju su u `social-sign-in.tsx` i u
-`prijava-sa-apple.md`.
+`allowNavigation` nosi i Google-ove hostove. Google dugme je jedno vreme bilo
+sakriveno u ljusci zbog `disallowed_useragent`, ali je ta tvrdnja izmerena
+18.08.2026 i ne stoji (detalji u `prijava-sa-apple.md` i `social-sign-in.tsx`),
+pa je dugme vraćeno. ⚠️ Google se ipak **mora tapnuti u TestFlight buildu pre
+slanja** — ostatak rizika je da politika stupi kasnije u toku, a to se izvan
+pravog webview-a ne vidi.
 
 ### Nacrt odgovora recenzentu
 

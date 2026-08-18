@@ -210,3 +210,38 @@ u istoriji javnog repozitorijuma.
   pre nego što kažeš da ih ima 12.
 - Posle 14 dana ide još i **prijava za production access sa upitnikom** — to
   nije automatsko.
+
+---
+
+## 8. Put jednog testera — od poruke do brojača
+
+Ovako izgleda proces kad je sve podešeno kako treba. Vremena su tipična, ne
+garantovana; Google nigde ne obećava rok.
+
+| # | Šta radi on | Koliko traje | Šta ti vidiš |
+|---|---|---|---|
+| 1 | Klikne link grupe, klikne „Pridruži se grupi" | 10 sek | ništa u Play Console-u; član se pojavi u Google grupi |
+| 2 | Čeka da Google prenese članstvo u Play | ~10-15 min, ume i duže | ništa |
+| 3 | Otvori opt-in link, klikne **„Postani tester"** | 10 sek | brojač *opted-in* raste za 1 — **ovo je jedini korak koji se broji** |
+| 4 | Klikne link ka prodavnici, pa **Instaliraj** | 1-2 min | instalacija se vidi tek u statistici, sa danom zakašnjenja |
+| 5 | Otvori app, napravi nalog u FitMess-u | 2 min | novi red u `profiles` |
+| 6 | **Ne briše app 14 dana** | 14 dana | brojač mora ostati ≥12 sve vreme |
+
+**Šta se zapravo broji:** opt-in, ne instalacija i ne korišćenje. Čovek koji
+klikne „Postani tester" a nikad ne instalira — i dalje se broji. Čovek koji
+instalira pa se ispiše iz grupe — više se ne broji, i sat pada.
+
+**Gde puca u praksi, po učestalosti:**
+
+1. **Drugi nalog u browseru nego u Play prodavnici.** Najčešći kvar. Telefon
+   ume da bude ulogovan na privatni Gmail u Chrome-u a na neki drugi u Play-u.
+   Simptom: „niste tester" ili „Stavka nije pronađena" iako je sve podešeno.
+2. **Nestrpljenje između koraka 1 i 3.** Ko otvori opt-in odmah po ulasku u
+   grupu, dobije „niste tester", pomisli da ne radi i odustane. Zato poruka
+   izričito kaže da se sačeka 10-15 minuta.
+3. **Ispisivanje iz grupe posle instalacije.** Ljudi čiste pretplate na mejl
+   grupe i ne znaju da time prestaju da budu testeri. Vredi to reći unapred.
+
+**Šta ne treba da te brine:** app se ne ažurira preko Play-a. Sadržaj je
+`fitmess.app`, pa svaka popravka stiže `git push`-om na Vercel — bez novog
+builda, bez nove recenzije, i **bez zaustavljanja sata od 14 dana**.

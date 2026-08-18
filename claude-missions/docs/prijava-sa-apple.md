@@ -23,8 +23,8 @@ odgovor je Sign in with Apple.
 
 > **Nemoj rešavati izbacivanjem Google dugmeta sa sajta.** Time 4.8 prestaje da
 > važi, ali svi koji su nalog napravili Google nalogom ostaju zaključani. Google
-> dugme ostaje i na vebu i u ljusci — vidi
-> `src/app/(auth)/social-sign-in.tsx`.
+> dugme ostaje na vebu; u ljusci se ne prikazuje jer
+> tamo ne radi — vidi `src/app/(auth)/social-sign-in.tsx`.
 
 ---
 
@@ -182,21 +182,21 @@ od „pokvareno".
 
 ## Ostalo otvoreno (namerno, nije za ovu submisiju)
 
-**Google login u ljusci — proveriti u TestFlight-u.** Jedno vreme je bio
-sakriven u aplikaciji, uz obrazloženje da Google odbija OAuth iz ugrađenog
-webview-a (`disallowed_useragent`). To je bilo napisano po sećanju, a mereno
-18.08.2026 ne stoji: authorize URL koji Supabase pravi za ovaj projekat
-zatražen je sa četiri UA-a — iPhone Safari, iPhone Safari + `FitMessApp/1.0`,
-Android Chrome i Android WebView sa `; wv)` tokenom — i sva četiri su dobila
-običnu stranicu `Sign in - Google Accounts`. Ništa nije blokirano. Za iOS to
-ima smisla i inače: Capacitor-ov WKWebView šalje UA mobilnog Safari-ja sa našim
-tokenom na kraju, pa Google nema po čemu da ga razlikuje.
+**Google login u ljusci — provereno, ne radi.** Priča ima tri koraka i vredi je
+pamtiti, jer očigledna provera daje pogrešan odgovor:
 
-Dugme je zato vraćeno u ljusku. Ostaje rizik da Google primeni politiku kasnije
-u toku (pošto se unesu podaci), što se izvan pravog webview-a ne može dokazati
-— **zato se Google mora tapnuti u TestFlight buildu pre slanja na recenziju.**
-Ako pukne, vraćanje na „samo Apple" je izmena na vebu i stiže `git push`-om,
-bez novog paketa.
+1. Prvo je dugme bilo sakriveno, uz obrazloženje da Google odbija OAuth iz
+   ugrađenog webview-a (`disallowed_useragent`) — napisano po sećanju.
+2. 18.08.2026. je mereno spolja: authorize URL zatražen sa četiri UA-a (iPhone
+   Safari, iPhone Safari + `FitMessApp/1.0`, Android Chrome, Android WebView sa
+   `; wv)`) — sva četiri su dobila običnu stranicu `Sign in - Google Accounts`.
+   Ništa nije blokirano, pa je dugme vraćeno.
+3. 19.08.2026. je tapnuto u TestFlight buildu: Google ne nudi sačuvane naloge i
+   umesto prijave traži dodatnu verifikaciju.
+
+⚠️ Pouka: **Google politiku ne sprovodi odbijanjem prvog zahteva**, nego unutar
+toka. `curl` to ne može da vidi — samo pravi uređaj. Dugme je zato ponovo van
+ljuske; na vebu su sva tri.
 
 Pravo, trajno rešenje ostaje `ASWebAuthenticationSession` (iOS) / Custom Tabs
 (Android) kroz Capacitor plugin i deep link nazad u app — native posao sa

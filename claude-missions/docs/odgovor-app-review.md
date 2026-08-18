@@ -9,8 +9,8 @@ njihovu poruku, **uz** resubmisiju — ne umesto nje.
 **Pre slanja proveri da je tačno:**
 
 - [ ] Sign in with Apple radi na `fitmess.app` (uputstvo: `docs/prijava-sa-apple.md`, tačka 5)
-- [ ] **U TestFlight buildu tapnuta OBA dugmeta** — Apple i Google — i oba
-      otvaraju svoj ekran *u aplikaciji*, ne u Safari-ju
+- [ ] **U TestFlight buildu tapnut Apple** i otvara se *u aplikaciji*, ne u
+      Safari-ju (Google se u ljusci ne prikazuje — vidi `social-sign-in.tsx`)
 - [ ] `https://fitmess.app/en/sources` se otvara na desktopu, bez naloga
 - [ ] Novi build je u TestFlight-u i priložen uz verziju (broj dodeljuje
       workflow sam: pita TestFlight koji je poslednji i dodaje 1)
@@ -90,11 +90,16 @@ proverava, ne veruje na reč — i s pravom.
 
 ## Ako pitaju dalje
 
-**„Da li su obe opcije prijave dostupne u aplikaciji?"**
+**„Zašto Google login ne postoji u aplikaciji, a postoji na sajtu?"**
 
-> Yes. Sign in with Apple, Google, and email/password are all offered on both
-> authentication screens, in the app and on the web, in identical button size
-> and style. Sign in with Apple is listed first.
+> Google's OAuth policy restricts sign-in from embedded web views, which is
+> what the app's web view is: tested on a device, Google offers no saved
+> accounts there and interrupts the flow with an additional verification step.
+> Rather than ship a button that behaves that way, the app offers Sign in with
+> Apple and email/password, both of which complete inside the app. Users who
+> created their account with Google can sign in through the password-reset flow
+> on the same email address. The web version, used in a real browser, offers
+> all three.
 
 **„Da li app daje medicinske savete?"**
 

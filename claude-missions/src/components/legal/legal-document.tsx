@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { LEGAL_EFFECTIVE_DATE } from "@/lib/legal/controller";
+import type { Citation } from "@/lib/legal/sources";
 import type { Locale } from "@/lib/i18n/locale";
 import type { TFunction } from "@/lib/i18n/translate";
 
@@ -111,6 +112,56 @@ export function LegalSteps({ items }: { items: readonly string[] }) {
         <li key={item}>{item}</li>
       ))}
     </ol>
+  );
+}
+
+/**
+ * A list of citations, each one a real link to the paper or guideline.
+ *
+ * Not `LegalList`: those items are plain strings, and a citation whose source
+ * cannot be opened is exactly what guideline 1.4.1 rejects — "include
+ * citations… such as links to those sources". The bibliographic line stays
+ * visible next to the link so the reference survives the URL rotting.
+ *
+ * `numbered` switches to an ordered list for the full reference section at the
+ * bottom of `/izvori`; the per-section lists stay unnumbered so their numbering
+ * cannot imply an order the sections do not have.
+ *
+ * `rel="noopener noreferrer"` on every link, and `target="_blank"`: inside the
+ * installed app these are the only links that deliberately leave the web view,
+ * and a source opening over the app with no way back is how a reader loses
+ * their place mid-plan.
+ */
+export function LegalReferenceList({
+  items,
+  numbered = false,
+}: {
+  items: readonly Citation[];
+  numbered?: boolean;
+}) {
+  const List = numbered ? "ol" : "ul";
+  return (
+    <List
+      className={`flex flex-col gap-3 pl-5 text-[15px] leading-relaxed text-muted-foreground ${
+        numbered ? "list-decimal" : "list-disc"
+      }`}
+    >
+      {items.map((citation) => (
+        <li key={citation.id}>
+          <span className="text-foreground/90">{citation.authors}.</span>{" "}
+          {citation.title}.{" "}
+          <span className="whitespace-normal">{citation.where}.</span>{" "}
+          <a
+            href={citation.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="break-words underline underline-offset-4 hover:text-foreground"
+          >
+            {citation.url}
+          </a>
+        </li>
+      ))}
+    </List>
   );
 }
 

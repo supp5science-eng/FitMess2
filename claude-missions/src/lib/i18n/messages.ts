@@ -12,6 +12,7 @@ import { mediaMessages } from "@/lib/i18n/messages-parts/media";
 import { merenjeMessages } from "@/lib/i18n/messages-parts/merenje";
 import { onboardingMessages } from "@/lib/i18n/messages-parts/onboarding";
 import { profilMessages } from "@/lib/i18n/messages-parts/profil";
+import { sourcesMessages } from "@/lib/i18n/messages-parts/sources";
 import { treningMessages } from "@/lib/i18n/messages-parts/trening";
 
 /**
@@ -115,6 +116,7 @@ const sr = {
   ...merenjeMessages.sr,
   ...treningMessages.sr,
   ...legalMessages.sr,
+  ...sourcesMessages.sr,
 } as const;
 
 export type MessageKey = keyof typeof sr;
@@ -200,6 +202,7 @@ const en: Record<MessageKey, string> = {
   ...merenjeMessages.en,
   ...treningMessages.en,
   ...legalMessages.en,
+  ...sourcesMessages.en,
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { sr, en };

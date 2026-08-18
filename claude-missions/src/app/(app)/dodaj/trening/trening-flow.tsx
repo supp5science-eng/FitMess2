@@ -7,6 +7,7 @@ import { Flame, Minus, Plus, Trash2 } from "lucide-react";
 import type { MiniWeekDay } from "@/components/home/mini-week-bars";
 import { StepsCard } from "@/components/home/steps-card";
 import { useT } from "@/components/i18n/locale-provider";
+import { SourcesLink } from "@/components/sources/sources-link";
 import { Button } from "@/components/ui/button";
 import { FALLBACK_STEP_GOAL } from "@/lib/steps/step-goal";
 import type { MessageKey } from "@/lib/i18n/messages";
@@ -494,6 +495,12 @@ export function TreningFlow({
         <p className="px-1 text-[0.7rem] leading-relaxed text-muted-foreground">
           {t("trening.note.estimate")}
         </p>
+        {/* The kcal figures above come from published MET values, and the note
+            right before this one already says they are estimates -- guideline
+            1.4.1 asks for the source of the estimate, not just the caveat. */}
+        <div className="px-1 pt-1">
+          <SourcesLink t={t} />
+        </div>
       </section>
     </main>
   );

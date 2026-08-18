@@ -441,3 +441,12 @@
     stroke-dashoffset: 55;
   }
 }
+
+/* The "Odakle ovaj broj?" footnote under the revealed plan (guideline 1.4.1).
+   Centred under the macro row and given room to breathe: it is a footnote to
+   the number above it, not a competing call to action. */
+.pr-sources {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}

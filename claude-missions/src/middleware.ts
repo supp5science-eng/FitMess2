@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isCrawlerPath } from "@/lib/device/is-crawler";
 import { decidePhoneGate } from "@/lib/device/phone-gate";
 import { isNativeAppUserAgent } from "@/lib/device/native";
+import { hasClearedPhonePrompt, PHONE_PROMPT_COOKIE } from "@/lib/auth/phone-prompt";
 import {
   decideRouteAccess,
   isMachinePath,
@@ -11,10 +12,11 @@ import {
 import { updateSession } from "@/lib/supabase/middleware";
 
 /**
- * Cookie that caches "this user has cleared both onboarding + phone gates."
- * Both are one-way, permanent states (a user never un-onboards, and a phone is
- * never removed), so once set we can skip the per-navigation `profiles` round
- * trip entirely. The value is the user id, so the cache is only trusted for
+ * Cookie that caches "this user has cleared both onboarding and the phone ask."
+ * Both are one-way states for gate purposes (a user never un-onboards, and an
+ * answered phone ask is never re-asked -- deleting the number later from
+ * `/profil/telefon` does not put the ask back), so once set we can skip the
+ * per-navigation `profiles` round trip entirely. The value is the user id, so the cache is only trusted for
  * the exact user it was issued to -- a different (or re-registered) account
  * won't match and falls back to a fresh DB check.
  */
@@ -93,35 +95,39 @@ export async function middleware(request: NextRequest) {
   // user is authenticated + verified -- an anonymous or unverified visitor is
   // redirected before onboarding/phone status is ever relevant.
   let onboarded = false;
-  let hasPhone = true;
+  // "The phone ask has nothing left to do", NOT "this user has a phone number".
+  // The two stopped being the same question when the number became optional.
+  let phonePromptCleared = true;
   if (verified && claims) {
     // Fast path: if the gate cookie was issued to THIS user, both gates are
     // already permanently cleared -- skip the `profiles` round trip entirely.
     const gateHit = request.cookies.get(GATE_COOKIE)?.value === claims.sub;
     if (gateHit) {
       onboarded = true;
-      hasPhone = true;
+      phonePromptCleared = true;
     } else {
-      // One query fetches both the onboarding marker and the phone (Google
-      // users lack it).
+      // One query fetches both the onboarding marker and the phone.
       const { data } = await supabase
         .from("profiles")
         .select("onboarded_at, phone")
         .eq("user_id", claims.sub)
         .maybeSingle();
       onboarded = Boolean(data?.onboarded_at);
-      // Only Google (OAuth) users are routed through the /telefon gate: they
-      // never saw the signup form's phone field. Email/password users give a
-      // phone at signup, and -- crucially -- legacy email accounts created
-      // BEFORE the phone field existed have phone = null but must NEVER be
-      // walled out of the whole app. So the phone requirement counts as met
-      // for any non-Google user, regardless of whether a phone is on file.
-      const signedUpWithGoogle = claims.provider === "google";
-      hasPhone = signedUpWithGoogle ? Boolean(data?.phone) : true;
+      // Only OAuth users (Apple, Google) are shown the /telefon ask at all:
+      // they never saw the signup form's optional phone field. The number is
+      // NOT required -- see `@/lib/auth/phone-prompt` for why guideline
+      // 5.1.1(v) and Apple's Hide My Email leave no room for it to be -- so
+      // "cleared" also covers a user who tapped "Preskoči" on this device.
+      phonePromptCleared = hasClearedPhonePrompt({
+        provider: claims.provider,
+        phone: data?.phone,
+        promptCookie: request.cookies.get(PHONE_PROMPT_COOKIE)?.value,
+        userId: claims.sub,
+      });
 
       // Cache the cleared-gates state so subsequent navigations take the fast
       // path above. Bound to the user id; only set once BOTH gates pass.
-      if (onboarded && hasPhone) {
+      if (onboarded && phonePromptCleared) {
         response.cookies.set(GATE_COOKIE, claims.sub, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
@@ -138,7 +144,7 @@ export async function middleware(request: NextRequest) {
     isAuthenticated: authenticated,
     isEmailVerified: verified,
     isOnboarded: onboarded,
-    hasPhone,
+    hasPhone: phonePromptCleared,
     // Only ever changes the answer for `/`: the shell's start URL is the site
     // root, and a store app must not open on the marketing landing page.
     isNativeShell: isNativeAppUserAgent(userAgent),

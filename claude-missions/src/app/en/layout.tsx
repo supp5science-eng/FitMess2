@@ -3,6 +3,7 @@ import { createT } from "@/lib/i18n/translate";
 import {
   ACCOUNT_DELETION_PATH_EN,
   PRIVACY_PATH_EN,
+  SOURCES_PATH_EN,
   TERMS_PATH_EN,
 } from "@/lib/legal/paths";
 
@@ -31,6 +32,7 @@ export default function EnglishLegalLayout({
     { href: PRIVACY_PATH_EN, label: t("legal.link.privacy") },
     { href: TERMS_PATH_EN, label: t("legal.link.terms") },
     { href: ACCOUNT_DELETION_PATH_EN, label: t("legal.link.delete") },
+    { href: SOURCES_PATH_EN, label: t("legal.link.sources") },
   ];
 
   return (

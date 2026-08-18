@@ -1,8 +1,9 @@
 import Link from "next/link";
 
+import { isNativeShellRequest } from "@/lib/device/native-server";
 import { getT } from "@/lib/i18n/server";
 
-import { GoogleSignInButton } from "../google-sign-in-button";
+import { SocialSignIn } from "../social-sign-in";
 import { SignInForm } from "./sign-in-form";
 
 export default async function PrijavaPage({
@@ -12,6 +13,9 @@ export default async function PrijavaPage({
 }) {
   const { greska, email } = await searchParams;
   const { t } = await getT();
+  // Google is dropped inside the shell — Google refuses OAuth from an embedded
+  // web view. See `social-sign-in.tsx`.
+  const isNativeShell = await isNativeShellRequest();
 
   return (
     <>
@@ -29,7 +33,7 @@ export default async function PrijavaPage({
         <p className="auth-alt" style={{ marginTop: 0 }}>
           <Link href="/zaboravljena-lozinka">{t("auth.signIn.forgotLink")}</Link>
         </p>
-        <GoogleSignInButton />
+        <SocialSignIn t={t} isNativeShell={isNativeShell} />
       </div>
       <p className="auth-alt">
         {t("auth.signIn.noAccount")}{" "}

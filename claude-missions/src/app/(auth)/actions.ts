@@ -1,8 +1,12 @@
 "use server";
 
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
+import {
+  PHONE_PROMPT_COOKIE,
+  PHONE_PROMPT_COOKIE_MAX_AGE,
+} from "@/lib/auth/phone-prompt";
 import { createClient } from "@/lib/supabase/server";
 import {
   resendConfirmationEmail,
@@ -103,7 +107,9 @@ export async function signUpAction(
     parsed.data.email,
     parsed.data.password,
     `${await emailRedirectOrigin()}/auth/callback`,
-    parsed.data.phone
+    // Optional field: `null` means the user left it blank, which is a complete,
+    // valid signup -- see `@/lib/auth/phone-prompt`.
+    parsed.data.phone ?? undefined
   );
 
   if (!result.ok) {
@@ -264,29 +270,43 @@ export async function verifyEmailCodeAction(
 }
 
 /**
- * Saves the phone number for a signed-in user who doesn't have one yet -- the
- * `/telefon` gate that Google OAuth users hit once right after signing in
- * (email/password users already gave a phone on the signup form). On success we
- * send them onward; the middleware then routes a not-yet-onboarded user into
- * onboarding, or a returning user straight into the app.
+ * Marks the one-time `/telefon` ask as answered for this user on this device,
+ * so it is never shown again — see `@/lib/auth/phone-prompt` for why the ask
+ * is skippable at all (App Store guideline 5.1.1(v), and Hide My Email).
+ *
+ * A cookie rather than a profile column: "I was asked and said no" is a UI
+ * preference, and the worst case if it is cleared is one optional screen shown
+ * twice. Bound to the user id so two accounts on one phone don't share one
+ * answer.
+ */
+async function rememberPhonePromptAnswered(userId: string): Promise<void> {
+  const store = await cookies();
+  store.set(PHONE_PROMPT_COOKIE, userId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: PHONE_PROMPT_COOKIE_MAX_AGE,
+  });
+}
+
+/**
+ * Saves the (optional) phone number for a signed-in user — the `/telefon` ask
+ * OAuth users see once right after signing in, since they never saw the signup
+ * form's own optional field. On success we send them onward; the middleware
+ * then routes a not-yet-onboarded user into onboarding, or a returning user
+ * straight into the app.
+ *
+ * Submitting an EMPTY field is not an error here, it is the same answer as
+ * "Preskoči": the user was told the number is optional, and a form that then
+ * refuses to move until they type something is the wall this whole change
+ * removed. Only a number that was actually typed, and typed wrong, gets an
+ * error.
  */
 export async function savePhoneAction(
   _prevState: AuthFormState,
   formData: FormData
 ): Promise<AuthFormState> {
-  const parsed = phoneSchema.safeParse(
-    normalizePhone(
-      String(formData.get("phone_cc") ?? ""),
-      String(formData.get("phone_local") ?? "")
-    )
-  );
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error_sr: parsed.error.issues[0]?.message ?? SR_AUTH_MESSAGES.generic,
-    };
-  }
-
   const supabase = await createClient();
   const {
     data: { user },
@@ -297,9 +317,42 @@ export async function savePhoneAction(
     return { ok: false, error_sr: SR_AUTH_MESSAGES.generic };
   }
 
+  const typed = normalizePhone(
+    String(formData.get("phone_cc") ?? ""),
+    String(formData.get("phone_local") ?? "")
+  );
+
+  if (typed === null) {
+    await rememberPhonePromptAnswered(user.id);
+    redirect("/danas");
+  }
+
+  const parsed = phoneSchema.safeParse(typed);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error_sr: parsed.error.issues[0]?.message ?? SR_AUTH_MESSAGES.generic,
+    };
+  }
+
   const result = await updateProfilePhone(supabase, user.id, parsed.data);
   if (!result.ok) {
     return result;
+  }
+
+  await rememberPhonePromptAnswered(user.id);
+  redirect("/danas");
+}
+
+/** The "Preskoči" button on `/telefon`. Ends the ask for good and moves on. */
+export async function skipPhoneAction(): Promise<void> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    await rememberPhonePromptAnswered(user.id);
   }
 
   redirect("/danas");

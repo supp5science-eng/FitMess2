@@ -14,6 +14,7 @@ import { IntakeConfluence } from "@/components/home/intake-confluence";
 import { MicroCards } from "@/components/home/micro-cards";
 import type { MiniWeekDay } from "@/components/home/mini-week-bars";
 import { MealList } from "@/components/home/meal-list";
+import { SourcesLink } from "@/components/sources/sources-link";
 import { useT } from "@/components/i18n/locale-provider";
 import { GricButton } from "@/components/home/gric-button";
 import { PushNudge } from "@/components/home/push-nudge";
@@ -488,6 +489,14 @@ export function HomeScreen({
         </h2>
         <MealList logs={logs} onSaved={handleSaved} onDeleted={handleDeleted} />
       </section>
+
+      {/* Guideline 1.4.1: the calorie ring and macro bars above are computed,
+          not measured, and the person reading them is entitled to know from
+          what. Placed at the foot of the day rather than beside the ring so it
+          answers the question without interrupting the screen. */}
+      <div className="home-body flex justify-center pb-2">
+        <SourcesLink t={t} />
+      </div>
 
       {introActive ? (
         <IntroCover

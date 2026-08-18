@@ -3,6 +3,7 @@ import { getT } from "@/lib/i18n/server";
 import {
   ACCOUNT_DELETION_PATH,
   PRIVACY_PATH,
+  SOURCES_PATH,
   TERMS_PATH,
 } from "@/lib/legal/paths";
 
@@ -25,6 +26,9 @@ export default async function LegalLayout({
     { href: PRIVACY_PATH, label: t("legal.link.privacy") },
     { href: TERMS_PATH, label: t("legal.link.terms") },
     { href: ACCOUNT_DELETION_PATH, label: t("legal.link.delete") },
+    // A reviewer who opened the privacy policy is one tap from the citations
+    // guideline 1.4.1 asks for — "easy for the user to find" starts here.
+    { href: SOURCES_PATH, label: t("legal.link.sources") },
   ];
 
   return (

@@ -13,6 +13,8 @@ import {
   PRIVACY_PATH,
   PRIVACY_PATH_EN,
   PUBLIC_LEGAL_PATHS,
+  SOURCES_PATH,
+  SOURCES_PATH_EN,
   TERMS_PATH,
   TERMS_PATH_EN,
   isLegalPath,
@@ -33,11 +35,16 @@ const DESKTOP_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36";
 
 describe("legal document paths", () => {
-  it("names exactly the three documents the stores require", () => {
+  it("names exactly the four documents the stores require", () => {
+    // The fourth is `/izvori` — the citations behind the app's health
+    // calculations, which App Review requires under guideline 1.4.1 and
+    // requires to be easy to find. It is public in the same strong sense as
+    // the other three: a reviewer opens it on a desktop with no account.
     expect(LEGAL_PATHS).toEqual([
       PRIVACY_PATH,
       TERMS_PATH,
       ACCOUNT_DELETION_PATH,
+      SOURCES_PATH,
     ]);
   });
 
@@ -96,6 +103,7 @@ describe("the English URLs", () => {
       PRIVACY_PATH_EN,
       TERMS_PATH_EN,
       ACCOUNT_DELETION_PATH_EN,
+      SOURCES_PATH_EN,
     ]);
     // Same order as LEGAL_PATHS, so the two lists line up document by
     // document — that pairing is what `legalAlternates` and the sitemap rely on.
@@ -111,6 +119,7 @@ describe("the English URLs", () => {
     expect(LEGAL_ALIASES["/privacy"]).toBe(PRIVACY_PATH);
     expect(LEGAL_ALIASES["/terms"]).toBe(TERMS_PATH);
     expect(LEGAL_ALIASES["/delete-account"]).toBe(ACCOUNT_DELETION_PATH);
+    expect(LEGAL_ALIASES["/sources"]).toBe(SOURCES_PATH);
   });
 
   it("is not an alias for anything else", () => {

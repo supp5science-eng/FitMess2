@@ -40,6 +40,8 @@ function fakeProfile(overrides: Partial<Profile>): Profile {
   return {
     user_id: "u1",
     full_name: null,
+    // `Profile` requires the key; the optional phone is simply absent here.
+    phone: null,
     sex: null,
     birth_year: null,
     height_cm: null,

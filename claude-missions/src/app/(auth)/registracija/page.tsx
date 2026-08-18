@@ -1,8 +1,9 @@
 import Link from "next/link";
 
+import { isNativeShellRequest } from "@/lib/device/native-server";
 import { getT } from "@/lib/i18n/server";
 
-import { GoogleSignInButton } from "../google-sign-in-button";
+import { SocialSignIn } from "../social-sign-in";
 import { SignUpForm } from "./sign-up-form";
 
 export default async function RegistracijaPage({
@@ -15,6 +16,9 @@ export default async function RegistracijaPage({
   // it from scratch.
   const { email } = await searchParams;
   const { t } = await getT();
+  // Google is dropped inside the shell — Google refuses OAuth from an embedded
+  // web view. See `social-sign-in.tsx`.
+  const isNativeShell = await isNativeShellRequest();
 
   return (
     <>
@@ -24,7 +28,7 @@ export default async function RegistracijaPage({
           <p>{t("auth.signUp.subtitle")}</p>
         </div>
         <SignUpForm initialEmail={email} />
-        <GoogleSignInButton />
+        <SocialSignIn t={t} isNativeShell={isNativeShell} />
       </div>
       <p className="auth-alt">
         {t("auth.signUp.haveAccount")}{" "}

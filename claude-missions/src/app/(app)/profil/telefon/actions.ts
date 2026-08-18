@@ -16,23 +16,31 @@ export interface ChangePhoneResult {
 /**
  * "Broj telefona" save from Podešavanja (`/profil/telefon`).
  *
- * Same core + same schema as the `/telefon` capture gate Google users pass
- * through (`savePhoneAction`), so the two never validate differently -- the
- * only difference is that this one is an EDIT: it stays inside the app and
- * returns a result instead of redirecting to `/danas`.
+ * Same core + same schema as the `/telefon` ask OAuth users pass through
+ * (`savePhoneAction`), so the two never validate differently -- the only
+ * difference is that this one is an EDIT: it stays inside the app and returns
+ * a result instead of redirecting to `/danas`. Submitting an empty field here
+ * removes the stored number.
  */
 export async function changePhoneAction(input: {
   dialCode: string;
   local: string;
 }): Promise<ChangePhoneResult> {
-  const parsed = phoneSchema.safeParse(
-    normalizePhone(input.dialCode, input.local)
-  );
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error_sr: parsed.error.issues[0]?.message ?? "Unesi ispravan broj telefona.",
-    };
+  const typed = normalizePhone(input.dialCode, input.local);
+
+  // An emptied field DELETES the number rather than failing validation. The
+  // phone is optional (guideline 5.1.1(v)); a field the user may leave blank at
+  // signup is one they must be able to take back afterwards, and "you can never
+  // remove it once given" is the same collection problem one step later.
+  if (typed !== null) {
+    const parsed = phoneSchema.safeParse(typed);
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error_sr:
+          parsed.error.issues[0]?.message ?? "Unesi ispravan broj telefona.",
+      };
+    }
   }
 
   const supabase = await createClient();
@@ -44,10 +52,10 @@ export async function changePhoneAction(input: {
     };
   }
 
-  const result = await updateProfilePhone(supabase, userId, parsed.data);
+  const result = await updateProfilePhone(supabase, userId, typed);
   if (!result.ok) {
     return { ok: false, error_sr: result.error_sr };
   }
 
-  return { ok: true, phone: parsed.data };
+  return { ok: true, phone: typed ?? undefined };
 }

@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useT } from "@/components/i18n/locale-provider";
 
-import { createClient } from "@/lib/supabase/client";
-import { SR_AUTH_MESSAGES } from "@/lib/auth/errors";
+import { useOAuthSignIn } from "./use-oauth-sign-in";
 
 /** Official multi-color Google "G" mark for the sign-in button. */
 function GoogleLogo() {
@@ -31,73 +30,34 @@ function GoogleLogo() {
 
 /**
  * F012 / AS-010: "Nastavi sa Google" button, shared by `/prijava` and
- * `/registracija`.
+ * `/registracija` through `SocialSignIn`.
  *
- * Deliberately a plain client-side call to
- * `supabase.auth.signInWithOAuth({ provider: "google", ... })` rather than a
- * Server Action -- the whole point of this call is that the *browser* itself
- * navigates away to Google's consent screen (the browser `@supabase/ssr`
- * client does this internally once it gets a `url` back with the default
- * `skipBrowserRedirect: false`), which only makes sense triggered from
- * client-side code. `redirectTo` points at the same `/auth/callback` route
- * handler F011 already built (`src/app/auth/callback/route.ts`) -- it calls
- * `exchangeCodeForSession` unconditionally for any `code` it receives,
- * regardless of which provider produced it, so no callback-route changes
- * were needed for this feature; reusing it here is what "wire the
- * client-side OAuth flow" means for this feature per its run instructions.
- *
- * `window.location.origin` (not a request header, since this never runs on
- * the server) gives the correct origin in dev
- * (`http://localhost:3000`, already in the live project's `uri_allow_list`
- * per F011) and after the eventual Vercel deploy without a new env var,
- * mirroring `emailRedirectOrigin()`'s reasoning in `../actions.ts`.
+ * The OAuth handshake itself moved into `useOAuthSignIn` when Sign in with
+ * Apple was added (guideline 4.8) -- two buttons doing the same handshake in
+ * two files is how one of them quietly stops matching the other. The divider
+ * above the buttons moved to `social-sign-in.tsx` for the same reason: there
+ * is one "ili" for the whole group, not one per provider.
  */
 export function GoogleSignInButton() {
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-
-  async function handleClick() {
-    setPending(true);
-    setError(null);
-
-    const supabase = createClient();
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-        // Always show Google's account chooser. Without this, once the browser
-        // is already signed into a single Google account, Google silently
-        // reuses it and bounces straight back -- giving the user no chance to
-        // pick which account. `prompt: "select_account"` forces the picker.
-        queryParams: { prompt: "select_account" },
-      },
-    });
-
-    if (oauthError) {
-      // Never surface Google/Supabase's raw error text -- same
-      // never-technical Serbian-error convention F011 established in
-      // `@/lib/auth/errors`. A browser-side navigation to Google normally
-      // happens before this branch is ever reached; it's only hit if the
-      // OAuth request itself couldn't even be started (e.g. provider
-      // misconfiguration, network failure).
-      setError(SR_AUTH_MESSAGES.generic);
-      setPending(false);
-    }
-  }
+  const { t } = useT();
+  const { error, pending, signIn } = useOAuthSignIn("google", {
+    // Always show Google's account chooser. Without this, once the browser is
+    // already signed into a single Google account, Google silently reuses it
+    // and bounces straight back -- giving the user no chance to pick which
+    // account.
+    prompt: "select_account",
+  });
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="auth-or" aria-hidden="true">
-        <span>ili</span>
-      </div>
       <button
         type="button"
         className="auth-btn auth-btn-google"
-        onClick={handleClick}
+        onClick={signIn}
         disabled={pending}
       >
         <GoogleLogo />
-        {pending ? "Preusmeravanje na Google…" : "Nastavi sa Google"}
+        {pending ? t("auth.oauth.googleRedirecting") : t("auth.oauth.google")}
       </button>
       {error ? (
         <p role="alert" className="auth-error">

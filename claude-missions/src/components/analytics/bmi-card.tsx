@@ -1,3 +1,4 @@
+import { SourcesLink } from "@/components/sources/sources-link";
 import { getT } from "@/lib/i18n/server";
 
 // Analitika: the "Tvoj BMI" card. Body-mass-index value + WHO category, a
@@ -150,6 +151,10 @@ export async function BmiCard({ bmi }: { bmi: number | null }) {
           </li>
         ))}
       </ul>
+
+      {/* The zone thresholds are WHO's, not ours -- guideline 1.4.1 wants that
+          checkable from the screen that shows them. */}
+      <SourcesLink t={t} />
     </section>
   );
 }

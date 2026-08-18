@@ -19,8 +19,16 @@ export const authMessages = {
     "auth.signUp.subtitle": "Unesi email i lozinku da bi počeo/la sa praćenjem ishrane.",
     "auth.signUp.haveAccount": "Već imaš nalog?",
 
+    // Third-party sign-in block (social-sign-in.tsx)
+    "auth.oauth.or": "ili",
+    "auth.oauth.apple": "Nastavi sa Apple nalogom",
+    "auth.oauth.appleRedirecting": "Preusmeravanje na Apple…",
+    "auth.oauth.google": "Nastavi sa Google",
+    "auth.oauth.googleRedirecting": "Preusmeravanje na Google…",
+
     // Phone field (shared signup + /telefon)
     "auth.phone.label": "Broj telefona",
+    "auth.phone.labelOptional": "Broj telefona (opciono)",
     "auth.phone.dialCodeAria": "Pozivni broj države",
 
     // Verify email (/registracija/proveri-email)
@@ -63,10 +71,11 @@ export const authMessages = {
     "auth.password.show": "Prikaži lozinku",
 
     // Phone capture page (/telefon)
-    "auth.phonePage.title": "Još samo broj telefona",
+    "auth.phonePage.title": "Broj telefona?",
     "auth.phonePage.subtitle":
-      "Unesi svoj broj telefona da završiš. Čuvamo ga samo da bismo mogli da te kontaktiramo — nikad za prijavu.",
+      "Ako želiš, ostavi broj da bismo mogli da te kontaktiramo. Nije obavezan — aplikacija radi isto i bez njega, a možeš ga dodati ili obrisati kasnije u Profilu.",
     "auth.phoneForm.save": "Sačuvaj i nastavi",
+    "auth.phoneForm.skip": "Preskoči",
 
     // Forgot password (/zaboravljena-lozinka)
     "auth.forgot.title": "Zaboravljena lozinka",
@@ -97,8 +106,16 @@ export const authMessages = {
     "auth.signUp.subtitle": "Enter your email and password to start tracking your meals.",
     "auth.signUp.haveAccount": "Already have an account?",
 
+    // Third-party sign-in block (social-sign-in.tsx)
+    "auth.oauth.or": "or",
+    "auth.oauth.apple": "Continue with Apple",
+    "auth.oauth.appleRedirecting": "Redirecting to Apple…",
+    "auth.oauth.google": "Continue with Google",
+    "auth.oauth.googleRedirecting": "Redirecting to Google…",
+
     // Phone field (shared signup + /telefon)
     "auth.phone.label": "Phone number",
+    "auth.phone.labelOptional": "Phone number (optional)",
     "auth.phone.dialCodeAria": "Country dial code",
 
     // Verify email (/registracija/proveri-email)
@@ -141,10 +158,11 @@ export const authMessages = {
     "auth.password.show": "Show password",
 
     // Phone capture page (/telefon)
-    "auth.phonePage.title": "Just your phone number",
+    "auth.phonePage.title": "Your phone number?",
     "auth.phonePage.subtitle":
-      "Enter your phone number to finish. We only keep it so we can reach you — never for signing in.",
+      "Leave a number if you want us to be able to reach you. It is optional — the app works exactly the same without it, and you can add or remove it later in Profile.",
     "auth.phoneForm.save": "Save and continue",
+    "auth.phoneForm.skip": "Skip",
 
     // Forgot password (/zaboravljena-lozinka)
     "auth.forgot.title": "Forgot password",

@@ -49,6 +49,36 @@ const config: CapacitorConfig = {
      * but a secure context) all behave exactly as they do in Chrome.
      */
     androidScheme: "https",
+    /**
+     * THE SIGN-IN HOSTS. Without this list, sign-in is broken inside the shell
+     * in a way that looks like nothing at all in any log.
+     *
+     * Capacitor cancels every top-level navigation to a host that is not
+     * `server.url` and hands the URL to the SYSTEM browser instead. That is
+     * the right default — a support mail or a store link should not trap the
+     * user inside our web view — but an OAuth handshake is not a link out. It
+     * is a round trip: the provider signs the user in and redirects back to
+     * `fitmess.app/auth/callback`, where the session cookie is set. Bounced
+     * out to Safari, that whole round trip happens in Safari: the user really
+     * is signed in — in the wrong browser — while the app sits on the login
+     * screen it never left.
+     *
+     * That is what "Nastavi sa Google" did in the shell before this list
+     * existed, and it is what Sign in with Apple would have done on the very
+     * first tap an App Review reviewer gave it (guideline 2.1). Adding a
+     * provider button to the site is therefore only half of adding a provider:
+     * its host belongs here, and this file only reaches phones through a NEW
+     * BINARY — unlike the site, which reaches them with a `git push`.
+     *
+     * `appleid.apple.com` — Sign in with Apple, required under guideline 4.8.
+     * `accounts.google.com` + `accounts.youtube.com` — Google's consent screen
+     * and the account-chooser hop it makes on the way.
+     */
+    allowNavigation: [
+      "appleid.apple.com",
+      "accounts.google.com",
+      "accounts.youtube.com",
+    ],
   },
 
   /**

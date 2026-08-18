@@ -245,7 +245,10 @@ export async function verifySignupOtp(
 export async function updateProfilePhone(
   supabase: SupabaseClient,
   userId: string,
-  phone: string
+  /** `null` CLEARS the number. The phone is optional (guideline 5.1.1(v)), and
+   * a field a user may leave blank is one they must also be able to empty
+   * again — see `@/lib/auth/phone-prompt`. */
+  phone: string | null
 ): Promise<AuthActionResult> {
   const { error } = await supabase
     .from("profiles")

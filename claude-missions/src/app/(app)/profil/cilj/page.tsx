@@ -7,6 +7,8 @@ import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import type { GoalType } from "@/lib/types/db";
 
+import { SourcesLink } from "@/components/sources/sources-link";
+
 import { GoalForm } from "./goal-form";
 
 // `/profil/cilj` -- change goal + plan from within Podešavanja. Server
@@ -112,6 +114,10 @@ export default async function CiljPage() {
         initialTargetWeightKg={target?.goal_weight_kg ?? null}
         initialTimeframeWeeks={target?.timeframe_weeks ?? null}
       />
+
+      {/* Guideline 1.4.1: this screen turns body stats into a calorie
+          prescription, so the equations behind it are one tap away from it. */}
+      <SourcesLink t={t} className="self-start" />
     </main>
   );
 }

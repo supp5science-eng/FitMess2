@@ -308,6 +308,34 @@
   transform: translateY(0);
 }
 
+/* Sign in with Apple (guideline 4.8). Apple's own brand guidance: black
+   background, white mark and label, the same corner radius and height as the
+   buttons around it. Same size as the Google button below it on purpose --
+   "equivalent login option" is a placement requirement, not only an existence
+   one, so neither provider may look like the afterthought. */
+.auth-btn-apple {
+  background: #000000;
+  color: #ffffff;
+  font-weight: 650;
+  border-color: #000000;
+  box-shadow: 0 10px 24px -12px rgba(0, 0, 0, 0.45);
+}
+.auth-btn-apple:not(:disabled):hover {
+  background: #1a1a1a;
+  border-color: #1a1a1a;
+  transform: translateY(-1px);
+}
+.auth-btn-apple:not(:disabled):active {
+  transform: translateY(0);
+}
+.auth-btn-apple svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  /* The glyph's optical centre sits low; nudge it back onto the text baseline. */
+  margin-top: -2px;
+}
+
 /* Compliant Google button: white pill, dark text, 4-color mark. On the white
    card it needs a visible border to read as a button. */
 .auth-btn-google {

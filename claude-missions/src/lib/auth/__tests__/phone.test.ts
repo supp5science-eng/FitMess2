@@ -10,10 +10,12 @@ import {
 } from "@/lib/auth/validation";
 
 /**
- * Unit coverage for the mandatory signup phone field: the dial-code + local
+ * Unit coverage for the OPTIONAL phone field: the dial-code + local
  * recombination (`normalizePhone`), the E.164 shape check (`phoneSchema`), and
- * that `signUpSchema` now requires a phone. Phone is stored for cold-calling
- * only -- never used for verification.
+ * that `signUpSchema` accepts a signup with no number at all. The phone is
+ * stored so we can reach a user who wants to be reached -- never used for
+ * verification, and never required (App Store guideline 5.1.1(v); see
+ * `@/lib/auth/phone-prompt`).
  */
 
 describe("normalizePhone", () => {
@@ -31,6 +33,20 @@ describe("normalizePhone", () => {
 
   it("strips stray non-digit characters from the local part", () => {
     expect(normalizePhone("+381", "(60) 123-4567")).toBe("+381601234567");
+  });
+
+  it("returns null for an untouched optional field, not the bare dial code", () => {
+    // The trap this guards: "+381" on its own is not a phone number, and
+    // returning it would fail `phoneSchema` on a field the user was told they
+    // could leave blank.
+    expect(normalizePhone("+381", "")).toBeNull();
+  });
+
+  it("returns null when the local part holds no digits at all", () => {
+    expect(normalizePhone("+381", "   ")).toBeNull();
+    expect(normalizePhone("+381", "(-)")).toBeNull();
+    // A lone trunk zero is stripped and leaves nothing behind.
+    expect(normalizePhone("+381", "0")).toBeNull();
   });
 });
 
@@ -52,7 +68,7 @@ describe("phoneSchema", () => {
   });
 });
 
-describe("signUpSchema now requires a phone", () => {
+describe("signUpSchema treats the phone as optional", () => {
   it("accepts email + password + a valid phone", () => {
     const parsed = signUpSchema.safeParse({
       email: "a@b.com",
@@ -64,10 +80,38 @@ describe("signUpSchema now requires a phone", () => {
     expect(parsed.success).toBe(true);
   });
 
-  it("rejects a signup missing the phone", () => {
+  it("accepts a signup with no phone number at all", () => {
+    // The whole point of the 5.1.1(v) fix: a blank field is a complete signup,
+    // not a validation error.
     const parsed = signUpSchema.safeParse({
       email: "a@b.com",
       password: "lozinka12",
+      phone: null,
+      consent: "on",
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.phone).toBeNull();
+  });
+
+  it("still rejects a number that was typed but typed wrong", () => {
+    // Optional is not the same as unvalidated -- a half-typed number must not
+    // be stored as if it were reachable.
+    const parsed = signUpSchema.safeParse({
+      email: "a@b.com",
+      password: "lozinka12",
+      phone: "+3816",
+      consent: "on",
+    });
+    expect(parsed.success).toBe(false);
+  });
+
+  it("still rejects a signup whose form never posted the field", () => {
+    // `null` means "left blank"; a MISSING key means the form is not the form
+    // we think it is, which is worth failing loudly.
+    const parsed = signUpSchema.safeParse({
+      email: "a@b.com",
+      password: "lozinka12",
+      consent: "on",
     });
     expect(parsed.success).toBe(false);
   });

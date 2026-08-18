@@ -5,6 +5,7 @@ import type { CSSProperties } from "react";
 
 import { useT } from "@/components/i18n/locale-provider";
 import { Button } from "@/components/ui/button";
+import { SourcesLink } from "@/components/sources/sources-link";
 import { finishOnboardingAction } from "@/app/(app)/onboarding/pregled/actions";
 import { computeBudgetSummary } from "@/lib/onboarding/summary";
 import type { CompleteOnboardingData } from "@/lib/onboarding/summary";
@@ -327,6 +328,18 @@ export function PlanReveal({
               <span>{t("macro.carbs")}</span>
             </div>
           </div>
+
+          {/* Guideline 1.4.1: this is the screen where the app first tells a
+              person how much to eat, so it is the screen that owes them the
+              equations behind it. Shown only once the reveal has settled --
+              during the animation it would be reading material nobody has.
+              Preview mode has no session yet, so it points at the PUBLIC
+              document; `/profil/*` would bounce a visitor to the login form. */}
+          {animationDone ? (
+            <div className="pr-sources">
+              <SourcesLink t={t} variant={persist ? "app" : "public"} />
+            </div>
+          ) : null}
 
           {/* Preview (pre-auth) mode: once the reveal has settled, invite the
               visitor to create an account so the plan is saved. Persist mode

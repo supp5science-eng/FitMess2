@@ -46,8 +46,12 @@ describe("AS-010: a user can sign in with Google OAuth", () => {
     ).toBeInTheDocument();
   });
 
-  it("test_AS_010_google_button_renders_on_the_registracija_page", () => {
-    render(<RegistracijaPage />);
+  it("test_AS_010_google_button_renders_on_the_registracija_page", async () => {
+    // Same async-RSC pattern as the prijava case above: call it and await the
+    // element it returns. Rendering `<RegistracijaPage />` directly typechecks
+    // only by accident -- the component requires `searchParams`.
+    const ui = await RegistracijaPage({ searchParams: Promise.resolve({}) });
+    render(ui);
 
     expect(
       screen.getByRole("button", { name: /Nastavi sa Google/i })

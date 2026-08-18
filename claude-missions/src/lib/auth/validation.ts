@@ -23,10 +23,19 @@ export const passwordSchema = z
   .min(8, "Lozinka mora imati bar 8 karaktera.");
 
 /**
- * Phone number in E.164 form (`+` then 7-15 digits). Collected as a mandatory
- * signup field for later cold-calling -- NOT used for any verification, just
- * stored on the profile. The UI splits it into a country dial-code picker
- * (default +381) plus the local part; `normalizePhone` recombines them.
+ * Phone number in E.164 form (`+` then 7-15 digits). OPTIONAL everywhere it is
+ * asked for -- NOT used for any verification, just stored on the profile so we
+ * can reach a user who wants to be reached.
+ *
+ * It used to be mandatory. App Store guideline 5.1.1(v) does not allow that:
+ * an app may not require personal information that isn't directly relevant to
+ * its core functionality, and counting calories needs no phone number. See the
+ * header of `@/lib/auth/phone-prompt` for the full reasoning, including why it
+ * could not survive alongside Sign in with Apple's Hide My Email.
+ *
+ * This schema still validates the FORMAT of a number that was actually typed;
+ * "no number at all" is expressed by `normalizePhone` returning `null`, never
+ * by loosening the regex.
  */
 export const phoneSchema = z
   .string()
@@ -38,9 +47,16 @@ export const phoneSchema = z
  * part into an E.164 string. Strips everything but digits from the local part
  * and drops the national trunk "0" (so "060 063 7486" under +381 becomes
  * "+381600637486"), matching how the number is actually dialed internationally.
+ *
+ * Returns `null` when the local part holds no digits at all -- an untouched
+ * (or cleared) optional field. Without this, an empty field under the default
+ * dial code would normalize to the bare `"+381"`, which is not a phone number
+ * and would fail validation on a form the user was told they could leave
+ * blank.
  */
-export function normalizePhone(dialCode: string, local: string): string {
+export function normalizePhone(dialCode: string, local: string): string | null {
   const localDigits = local.replace(/\D/g, "").replace(/^0+/, "");
+  if (!localDigits) return null;
   return `${dialCode}${localDigits}`;
 }
 
@@ -68,7 +84,10 @@ export const consentSchema = z.literal("on", {
 export const signUpSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
-  phone: phoneSchema,
+  /** Optional (5.1.1(v)) -- `null` from `normalizePhone` means "left blank",
+   * and a blank field must never fail the form. A number that WAS typed is
+   * still held to E.164. */
+  phone: phoneSchema.nullable(),
   consent: consentSchema,
 });
 

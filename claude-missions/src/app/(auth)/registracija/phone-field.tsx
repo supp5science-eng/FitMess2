@@ -6,10 +6,15 @@ import { useT } from "@/components/i18n/locale-provider";
 import { DEFAULT_DIAL_CODE, DIAL_CODES } from "@/lib/auth/dial-codes";
 
 /**
- * Mandatory signup phone field: a country dial-code picker (native `<select>`,
- * so on iOS it opens the system wheel) defaulting to +381 🇷🇸, plus the local
- * number. The two post as `phone_cc` + `phone_local`; `signUpAction` recombines
- * them with `normalizePhone` into an E.164 string stored on the profile.
+ * OPTIONAL phone field: a country dial-code picker (native `<select>`, so on
+ * iOS it opens the system wheel) defaulting to +381 🇷🇸, plus the local number.
+ * The two post as `phone_cc` + `phone_local`; the action recombines them with
+ * `normalizePhone` into an E.164 string, or `null` when nothing was typed.
+ *
+ * It used to be `required`. It cannot be: App Store guideline 5.1.1(v) forbids
+ * demanding personal information a calorie tracker does not need to function,
+ * and the label says so out loud rather than letting the user discover it by
+ * submitting. See `@/lib/auth/phone-prompt`.
  *
  * iOS-minded: `type="tel"` + `inputMode="numeric"` shows the number pad,
  * `autoComplete="tel-national"` offers the saved number, 16px font
@@ -21,7 +26,7 @@ export function PhoneField({ invalid }: { invalid?: true | undefined }) {
 
   return (
     <div className="auth-field">
-      <label htmlFor="signup-phone">{t("auth.phone.label")}</label>
+      <label htmlFor="signup-phone">{t("auth.phone.labelOptional")}</label>
       <div className="auth-phone">
         <select
           name="phone_cc"
@@ -46,7 +51,6 @@ export function PhoneField({ invalid }: { invalid?: true | undefined }) {
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
-          required
           value={local}
           // Keep only digits and spaces as the user types; the action strips
           // everything but digits anyway when it builds the E.164 value.

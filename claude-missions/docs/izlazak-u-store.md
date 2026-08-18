@@ -229,6 +229,84 @@ naslova „Ceo dan na jednom ekranu".
 
 ---
 
+## Drugo odbijanje, 17.08.2026 — i šta je urađeno
+
+Submission `4f3c776d-297d-4899-a184-265ccf27be15`, recenzirano na **iPad Pro
+11" (M4)**, verzija 1.0 (3). Dve tačke.
+
+Vredi razumeti *zašto tek sada*: prvi krug je pao na vizuelnim i funkcionalnim
+stvarima (app se palio na marketing stranici, deklarisao se kao iPad app,
+ljuska je sekla sadržaj). Recenzent tada nije prošao dalje od prvog ekrana. Kad
+je to popravljeno, isti recenzent je **prvi put stvarno ušao u aplikaciju** —
+video login ekran do kraja i video izračunate brojeve. Otud dva potpuno nova
+nalaza. Očekuj da treći krug ide još dublje.
+
+### 4.8 — Login Services
+
+App nudi „Nastavi sa Google", a nema ravnopravnu alternativu koja skuplja samo
+ime i mejl, dozvoljava skrivanje mejla i ne skuplja interakcije za reklame.
+
+**Zamka koju treba zapamtiti:** registracija mejlom i lozinkom se **ne računa**.
+Guideline traži *login service*, ne sopstveni nalog — zato je odbijanje i
+stiglo iako `/registracija` odavno radi.
+
+Urađeno: **Sign in with Apple** (`src/app/(auth)/apple-sign-in-button.tsx`),
+iznad Google dugmeta, na oba auth ekrana, kroz zajednički
+`use-oauth-sign-in.ts`. Konfiguracija koja se ne može uraditi iz koda (Services
+ID, `.p8` ključ, Supabase provider) opisana je korak po korak u
+[`prijava-sa-apple.md`](./prijava-sa-apple.md).
+
+### 1.4.1 — Physical Harm
+
+App radi zdravstvene proračune bez citata.
+
+Izvori su **postojali — u komentarima u kodu.** `engine.ts` imenuje
+Mifflin-St Jeor, `micro.ts` WHO i DGA granice, `activities.ts` Compendium,
+`day-trust.ts` Goldberg. Nijedan nije bio dostupan čoveku kome se ti brojevi
+prikazuju.
+
+Urađeno: javna stranica **`/izvori`** (+ `/en/sources`, alias `/sources`, u
+aplikaciji `/profil/izvori`) sa punom bibliografijom i linkom na svaki izvor —
+`src/lib/legal/sources.ts` i `src/components/legal/medical-sources.tsx`.
+Medicinsko ograđivanje je **prva** sekcija, ne fusnota. Stranica je izuzeta iz
+oba middleware gate-a preko `LEGAL_PATHS`, pa je recenzent otvara sa laptopa
+bez naloga, i ušla je u `sitemap.xml`.
+
+Guideline traži i da citati budu **lako dostupni**, što je pitanje rutiranja a
+ne pisanja — zato „Odakle ovaj broj?" (`components/sources/sources-link.tsx`)
+stoji na Početnoj, u Analitici uz BMI, na `/profil/cilj`, na ekranu treninga i
+ispod plana na kraju onboardinga, plus stalni red u Podešavanjima.
+
+### Treće, što nije bilo u pismu
+
+**Telefon je bio obavezan.** To je 5.1.1(v) — app ne sme da traži lične podatke
+koji nisu nužni za funkciju, a brojanje kalorija ne traži broj telefona. Uz to
+se direktno sudaralo sa Apple-ovim **Hide My Email**: korisnik koji sakrije
+mejl bi odmah udario u obavezno polje za telefon. Sad je polje opciono,
+`/telefon` ima „Preskoči" (`src/lib/auth/phone-prompt.ts`), a broj se može i
+obrisati iz Podešavanja.
+
+**Ljuska je izbacivala OAuth u Safari.** `capacitor.config.ts` nije imao
+`server.allowNavigation`, pa Capacitor svaku navigaciju van `fitmess.app`
+otkaže i preda sistemskom pretraživaču: korisnik se uloguje **u Safari-ju**, a
+app ostane na login ekranu. To je važilo za Google, i važilo bi za Apple dugme
+na prvi tap recenzenta (2.1). Dodat je `allowNavigation` za `appleid.apple.com`
+— i to je **jedini razlog zašto treba nov binarni paket**; sve ostalo iz ovog
+kruga stiže običnim `git push`-om.
+
+Google login unutar ljuske ostaje nerešen namerno: Google odbija OAuth iz
+ugrađenog webview-a (`disallowed_useragent`), pa dugme u ljusci ne bi radilo
+ni sa `allowNavigation`. Zato se u aplikaciji ne prikazuje, a na vebu ostaje;
+obrazloženje i put ka pravom rešenju su u `social-sign-in.tsx` i u
+`prijava-sa-apple.md`.
+
+### Nacrt odgovora recenzentu
+
+[`odgovor-app-review.md`](./odgovor-app-review.md) — sa spiskom stvari koje
+moraju biti tačne u trenutku slanja.
+
+---
+
 ## Šta je sledeće (stanje 14.08.2026)
 
 **Odmah, čim se otvori app na telefonu:**

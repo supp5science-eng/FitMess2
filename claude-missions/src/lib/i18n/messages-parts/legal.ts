@@ -237,6 +237,7 @@ export const legalMessages = {
     "legal.link.privacy": "Politika privatnosti",
     "legal.link.terms": "Uslovi korišćenja",
     "legal.link.delete": "Brisanje naloga",
+    "legal.link.sources": "Odakle brojevi",
   },
 
   en: {
@@ -453,5 +454,6 @@ export const legalMessages = {
     "legal.link.privacy": "Privacy policy",
     "legal.link.terms": "Terms of use",
     "legal.link.delete": "Delete your account",
+    "legal.link.sources": "Where the numbers come from",
   },
 } as const;

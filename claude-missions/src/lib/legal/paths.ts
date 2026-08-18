@@ -1,6 +1,6 @@
 /**
- * The three legal documents that must be readable by a stranger on a desktop
- * browser, with no account and no phone — and the extra URLs those same three
+ * The public documents that must be readable by a stranger on a desktop
+ * browser, with no account and no phone — and the extra URLs those same
  * documents also answer on.
  *
  * This is not a preference. Each one is a hard condition of shipping:
@@ -13,6 +13,12 @@
  *    reachable *without installing the app*, describing how to delete the
  *    account and what gets erased. Apple is satisfied by the in-app flow
  *    (guideline 5.1.1(v)); Google is not.
+ *  - `/izvori` — the citations behind every health number the app computes.
+ *    App Review rejected FitMess under guideline 1.4.1 for showing health
+ *    calculations without them, and the guideline's wording is that the
+ *    citations must be *easy for the user to find* — so this is public, in the
+ *    sitemap, linked from the footer of every other document, and linked from
+ *    inside the app next to the numbers themselves.
  *
  * FitMess otherwise redirects every non-phone visitor to `/samo-za-telefon`
  * before anything else runs (`src/lib/device/phone-gate.ts`). That gate would
@@ -44,22 +50,26 @@
 export const PRIVACY_PATH = "/privatnost";
 export const TERMS_PATH = "/uslovi";
 export const ACCOUNT_DELETION_PATH = "/brisanje-naloga";
+export const SOURCES_PATH = "/izvori";
 
 /** The same three documents, rendered in English regardless of any cookie. */
 export const PRIVACY_PATH_EN = "/en/privacy";
 export const TERMS_PATH_EN = "/en/terms";
 export const ACCOUNT_DELETION_PATH_EN = "/en/delete-account";
+export const SOURCES_PATH_EN = "/en/sources";
 
 export const LEGAL_PATHS: readonly string[] = [
   PRIVACY_PATH,
   TERMS_PATH,
   ACCOUNT_DELETION_PATH,
+  SOURCES_PATH,
 ];
 
 export const LEGAL_PATHS_EN: readonly string[] = [
   PRIVACY_PATH_EN,
   TERMS_PATH_EN,
   ACCOUNT_DELETION_PATH_EN,
+  SOURCES_PATH_EN,
 ];
 
 /**
@@ -71,6 +81,7 @@ export const LEGAL_ALIASES: Readonly<Record<string, string>> = {
   "/privacy": PRIVACY_PATH,
   "/terms": TERMS_PATH,
   "/delete-account": ACCOUNT_DELETION_PATH,
+  "/sources": SOURCES_PATH,
 };
 
 export const LEGAL_ALIAS_PATHS: readonly string[] = Object.keys(LEGAL_ALIASES);

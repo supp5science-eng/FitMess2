@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import {
   Bell,
+  BookOpen,
   Download,
   FileText,
   Footprints,
@@ -195,6 +196,17 @@ export default async function ProfilPage() {
           href="/profil/uslovi"
           icon={ScrollText}
           label={t("settings.terms")}
+        />
+        {/* Guideline 1.4.1: the citations behind every number the app computes
+            have to be easy for the USER to find, not only for a reviewer who
+            opens the public URL. This is the permanent address for them
+            inside the app; the "Odakle ovaj broj?" links on the screens that
+            show the numbers point at the same page. */}
+        <SettingsLinkRow
+          href="/profil/izvori"
+          icon={BookOpen}
+          label={t("sources.link.settings")}
+          description={t("sources.link.settingsDesc")}
         />
       </SettingsGroup>
 

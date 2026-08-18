@@ -37,11 +37,14 @@ export type RouteProtectionInput = {
   /** `profiles.onboarded_at IS NOT NULL` for the current user -- ignored
    * when `isAuthenticated` is false or the email isn't verified yet. */
   isOnboarded: boolean;
-  /** `profiles.phone IS NOT NULL` for the current user. Email/password signups
-   * collect the phone on the registration form (stored at signup); Google
-   * OAuth users don't, so they're routed through the `/telefon` capture page
-   * once, right after signing in. Optional + defaults to "has phone" so a
-   * caller that doesn't care (most unit tests) never trips the gate. */
+  /**
+   * Whether the one-time, SKIPPABLE phone ask has nothing left to do —
+   * `hasClearedPhonePrompt(...)` from `@/lib/auth/phone-prompt`. Despite the
+   * name this is NOT "a phone number is on file": the number is optional
+   * (guideline 5.1.1(v)), and a user who tapped "Preskoči" has cleared the ask
+   * without giving one. Optional + defaults to cleared, so a caller that
+   * doesn't care (most unit tests) never trips the gate.
+   */
   hasPhone?: boolean;
   /** `isNativeAppUserAgent(...)` -- whether this request comes from the
    * App Store / Play shell rather than a browser. Only changes the answer for
@@ -60,8 +63,8 @@ export const SIGNED_OUT_REDIRECT_PATH = "/prijava";
 export const VERIFY_EMAIL_NOTICE_PATH = "/registracija/proveri-email";
 /** Where a verified-but-not-yet-onboarded visitor to a protected page is sent. */
 export const ONBOARDING_PATH = "/onboarding";
-/** Where a verified visitor who has no phone on file yet is sent (Google OAuth
- * users, who never saw the signup form's phone field). */
+/** Where a verified OAuth visitor who hasn't answered the optional phone ask
+ * is sent once. Skippable — never a wall. */
 export const PHONE_CAPTURE_PATH = "/telefon";
 /** Where a fully set-up visitor landing on an auth page is bounced to. */
 export const SIGNED_IN_HOME_PATH = "/danas";
@@ -225,12 +228,13 @@ export function decideRouteAccess(input: RouteProtectionInput): RouteDecision {
     return { action: "redirect", to: VERIFY_EMAIL_NOTICE_PATH };
   }
 
-  // 2.5. Verified, but no phone on file yet. Email/password signups already
-  //    have one (collected on the registration form); this only ever catches
-  //    Google OAuth users, who are routed through `/telefon` once before
-  //    anything else -- deliberately BEFORE onboarding, both to capture the
-  //    number right after sign-in and to stay out of the onboarding ->
-  //    plan-reveal -> /danas hand-off entirely.
+  // 2.5. Verified, but the optional phone ask hasn't been answered yet. Only
+  //    ever catches OAuth users (Apple, Google), who never saw the signup
+  //    form's optional phone field; they get `/telefon` once -- with a
+  //    "Preskoči" that ends the ask for good -- deliberately BEFORE onboarding,
+  //    to stay out of the onboarding -> plan-reveal -> /danas hand-off
+  //    entirely. Nothing here may become mandatory again: see the header of
+  //    `@/lib/auth/phone-prompt` for the guideline that forbids it.
   if (!hasPhone) {
     if (isPhoneCapturePath(pathname)) return { action: "allow" }; // no loop
     if (isPublicPath(pathname)) return { action: "allow" };

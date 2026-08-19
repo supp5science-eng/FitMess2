@@ -1,6 +1,10 @@
 import Link from "next/link";
 
-import { isNativeShellRequest } from "@/lib/device/native-server";
+import { canSignInWithGoogleNatively } from "@/lib/auth/google-clients";
+import {
+  isIosNativeShellRequest,
+  isNativeShellRequest,
+} from "@/lib/device/native-server";
 import { getT } from "@/lib/i18n/server";
 
 import { SocialSignIn } from "../social-sign-in";
@@ -13,9 +17,12 @@ export default async function PrijavaPage({
 }) {
   const { greska, email } = await searchParams;
   const { t } = await getT();
-  // Google is dropped inside the shell — Google refuses OAuth from an embedded
-  // web view. See `social-sign-in.tsx`.
+  // Inside the shell the Google button is not the web redirect handshake —
+  // Google degrades that inside an embedded web view — but the platform's own
+  // account picker, and only where that is configured. See `social-sign-in.tsx`.
   const isNativeShell = await isNativeShellRequest();
+  const nativeGoogle =
+    (await isIosNativeShellRequest()) && canSignInWithGoogleNatively();
 
   return (
     <>
@@ -33,7 +40,11 @@ export default async function PrijavaPage({
         <p className="auth-alt" style={{ marginTop: 0 }}>
           <Link href="/zaboravljena-lozinka">{t("auth.signIn.forgotLink")}</Link>
         </p>
-        <SocialSignIn t={t} isNativeShell={isNativeShell} />
+        <SocialSignIn
+          t={t}
+          isNativeShell={isNativeShell}
+          nativeGoogle={nativeGoogle}
+        />
       </div>
       <p className="auth-alt">
         {t("auth.signIn.noAccount")}{" "}

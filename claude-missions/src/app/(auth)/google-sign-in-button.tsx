@@ -1,6 +1,10 @@
 "use client";
 
+import { useState } from "react";
+
 import { useT } from "@/components/i18n/locale-provider";
+import { SR_AUTH_MESSAGES } from "@/lib/auth/errors";
+import { signInWithGoogleNatively } from "@/lib/auth/google-native";
 
 import { useOAuthSignIn } from "./use-oauth-sign-in";
 
@@ -29,6 +33,37 @@ function GoogleLogo() {
 }
 
 /**
+ * The shell's engine for the same button: the platform account picker, then
+ * Supabase, then a FULL page load so the middleware re-runs against the fresh
+ * session cookies and applies the same gates any other sign-in goes through.
+ *
+ * `pending` is never cleared on success on purpose — the page is on its way
+ * out, and re-enabling the button under a user who is already signed in only
+ * invites a second tap.
+ */
+function useNativeGoogleSignIn() {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function signIn() {
+    setPending(true);
+    setError(null);
+    try {
+      await signInWithGoogleNatively();
+      window.location.assign("/danas");
+    } catch {
+      // Closing the sheet arrives here too, which is why this says nothing
+      // about what went wrong: "you cancelled" and "Google refused" are the
+      // same event to us, and the generic Serbian message covers both.
+      setError(SR_AUTH_MESSAGES.generic);
+      setPending(false);
+    }
+  }
+
+  return { error, pending, signIn };
+}
+
+/**
  * F012 / AS-010: "Nastavi sa Google" button, shared by `/prijava` and
  * `/registracija` through `SocialSignIn`.
  *
@@ -37,16 +72,25 @@ function GoogleLogo() {
  * two files is how one of them quietly stops matching the other. The divider
  * above the buttons moved to `social-sign-in.tsx` for the same reason: there
  * is one "ili" for the whole group, not one per provider.
+ *
+ * Two engines now sit behind it — see `native` below.
  */
-export function GoogleSignInButton() {
+
+export function GoogleSignInButton({ native = false }: { native?: boolean }) {
   const { t } = useT();
-  const { error, pending, signIn } = useOAuthSignIn("google", {
+  const web = useOAuthSignIn("google", {
     // Always show Google's account chooser. Without this, once the browser is
     // already signed into a single Google account, Google silently reuses it
     // and bounces straight back -- giving the user no chance to pick which
     // account.
     prompt: "select_account",
   });
+  const nativeFlow = useNativeGoogleSignIn();
+
+  // Same button, two engines. Inside the shell the web view never goes to
+  // Google at all (`@/lib/auth/google-native` explains why); everywhere else
+  // this is the redirect handshake it has always been.
+  const { error, pending, signIn } = native ? nativeFlow : web;
 
   return (
     <div className="flex flex-col gap-3">

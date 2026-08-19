@@ -53,9 +53,18 @@ import { GoogleSignInButton } from "./google-sign-in-button";
  * still lands in the app. That is native work with its own binary, tracked in
  * `docs/prijava-sa-apple.md`.
  *
- * Note that hiding the button is a WEB change and reaches installed phones
- * with a `git push`; `capacitor.config.ts` still allows Google's hosts, so
- * when the plugin lands the button can come back without touching the shell.
+ * ## And why it is coming back — through a different door
+ *
+ * Hiding it was always a stopgap. The shell now signs in with Google through
+ * the PLATFORM's account picker instead of the web view, which is a system
+ * surface Google's embedded-web-view policy does not apply to — see
+ * `@/lib/auth/google-native`. The button therefore returns to the shell as
+ * soon as that path is configured for the platform in question, and not one
+ * moment earlier: `nativeGoogle` below is false until then, because a Google
+ * button that fails at the tap is worse than a Google button that is absent.
+ *
+ * On the web nothing about this changed: there the redirect handshake works,
+ * and all three options are offered.
  *
  * A synchronous server component on purpose: it renders two client components
  * and holds no state, and an async component nested inside another one cannot
@@ -65,9 +74,13 @@ import { GoogleSignInButton } from "./google-sign-in-button";
 export function SocialSignIn({
   t,
   isNativeShell = false,
+  nativeGoogle = false,
 }: {
   t: TFunction;
   isNativeShell?: boolean;
+  /** Shell only: the platform's native Google sign-in is configured and ready
+   * on this platform. Resolved by the page, which knows the User-Agent. */
+  nativeGoogle?: boolean;
 }) {
   return (
     <div className="flex flex-col gap-3">
@@ -75,7 +88,11 @@ export function SocialSignIn({
         <span>{t("auth.oauth.or")}</span>
       </div>
       <AppleSignInButton />
-      {isNativeShell ? null : <GoogleSignInButton />}
+      {isNativeShell ? (
+        nativeGoogle ? <GoogleSignInButton native /> : null
+      ) : (
+        <GoogleSignInButton />
+      )}
     </div>
   );
 }

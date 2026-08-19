@@ -53,6 +53,31 @@ export function isNativeAppUserAgent(
 }
 
 /**
+ * "Is this the iOS shell specifically?" — the narrower question the native
+ * Google sign-in has to ask.
+ *
+ * Sign in with Google inside the shell does not go through the web view at all
+ * (see `@/lib/auth/google-native`); it goes through the platform's own account
+ * picker, and the two platforms need different setup in Google Cloud Console.
+ * iOS needs one OAuth client keyed to the bundle id; Android needs one per
+ * signing certificate — debug, upload, AND Play App Signing — and a build
+ * whose certificate is not registered fails at the tap with an error that
+ * blames the console, not the code. So the button appears per platform, as the
+ * console setup for that platform lands, rather than everywhere at once.
+ *
+ * The test is "shell, and not Android" rather than "shell, and iPhone": the
+ * iPad web view reports a `Macintosh` UA (the same quirk that forces the
+ * phone-gate exemption above), so matching on `iPhone` would hide the button
+ * on exactly the device App Review uses.
+ */
+export function isIosNativeShellUserAgent(
+  userAgent: string | null | undefined
+): boolean {
+  if (!isNativeAppUserAgent(userAgent)) return false;
+  return !/android/i.test(userAgent ?? "");
+}
+
+/**
  * Client-side counterpart, for components that must not offer browser-only
  * affordances inside an installed app — "add to Home Screen" walkthroughs,
  * the install nudge, anything that assumes a browser tab.

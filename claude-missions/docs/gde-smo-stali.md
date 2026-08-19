@@ -1,4 +1,4 @@
-# Gde smo stali — 19.08.2026, 20:30
+# Gde smo stali — 19.08.2026, 21:30 · SPREMNO ZA SLANJE
 
 Drugo odbijanje od Apple-a (17.08.2026, submission
 `4f3c776d-297d-4899-a184-265ccf27be15`, iPad Pro 11") po tačkama **4.8 Login
@@ -11,27 +11,21 @@ pa se šalje na recenziju.
 
 ## ⏭️ Šta se radi kad se nastavi
 
-### 1. Provera na uređaju — TestFlight build **#9**
+### 1. Provera na uređaju — TestFlight build **#9** ✅ PROŠLO
 
-„Preskoči" na `/telefon`: **bilo pokvareno, popravljeno, potvrđeno na uređaju
-19.08.** Dugme je sada običan link (`/telefon/preskoci`), ne Server Action —
-izlaz iz ekrana visi o manje mehanike nego sam ekran. Commit `6343359`.
+Sve tri stvari potvrđene na uređaju 19.08.:
 
-Ostaje da se u buildu **#9** tapne ono što je novo:
+- **„Preskoči"** na `/telefon` radi (bio pokvaren; sad je link, ne Server Action)
+- **Sign in with Apple** radi, u aplikaciji
+- **„Nastavi sa Google"** radi, u aplikaciji, kroz sistemski list sa nalozima
 
-- [ ] **„Nastavi sa Google"** — mora se otvoriti **sistemski list sa nalozima**,
-      u aplikaciji, bez skoka u Safari. Izaberi nalog → app se sam vrati na
-      `/danas` (ili na upitnik ako je nalog nov). Ubij app i otvori ponovo —
-      mora te pamtiti.
-- [ ] **„Nastavi sa Apple"** — i dalje radi, u aplikaciji (regresija: build #9
-      nosi novi plugin).
+Put do Google-a je opisan u `docs/prijava-sa-google.md`; dva mesta na kojima je
+puklo i koja bi se ponovila pri svakoj sličnoj integraciji: Google-ov iOS SDK
+**sam pravi nonce** kad mu ga ne daš (pa Supabase odbije token koji nema sa čim
+da uporedi), i plugin **obnovi staru sesiju** umesto da traži novu ako mu ne
+kažeš `forcePrompt: true` (pa od drugog tapa vrati token sa tuđim nonce-om).
 
-Ako Google skoči u Safari, kriv je `server.allowNavigation`. Ako list ne pusti
-nalog, kriv je jedan od tri upisa (client id u kodu / URL scheme u `Info.plist` /
-Supabase lista) — sve tri su upisane 19.08., detalji u
-`docs/prijava-sa-google.md`.
-
-### 2. Osveži demo nalog — na dan slanja, u toku dana
+### 2. Osveži demo nalog — na dan slanja, u toku dana ✅ URAĐENO 19.08. u 21:20
 
 ```bash
 node scripts/store/seed-demo-data.cjs
@@ -42,8 +36,9 @@ ostavlja današnji dan na 0 kcal. Gore od toga: podaci se pune do *dana kad je
 puštena*, pa recenzent koji otvori app za dan-dva vidi prazne poslednje dane i
 Početnu koja izgleda pokvareno. **Pusti je i još jednom dok recenzija traje.**
 
-Provereno 19.08. u 00:55: demo nalog `supp5science+fitmess-demo@gmail.com` se
-prijavljuje normalno, mejl potvrđen. Lozinka je u `docs/store-listing.md`.
+Puštena 19.08. u 21:20: 35 dana, 135 obroka, današnji dan 2390 kcal. Lozinka je
+u `docs/store-listing.md`. **Pusti je još jednom dok recenzija traje**, da
+recenzent koji otvori app za dan-dva ne vidi prazne poslednje dane.
 
 ### 3. App Store Connect
 

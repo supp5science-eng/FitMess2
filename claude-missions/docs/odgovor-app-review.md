@@ -30,11 +30,14 @@ proverava, ne veruje na reč — i s pravom.
 >
 > **Guideline 4.8 — Login Services**
 >
-> The app now offers **Sign in with Apple** as an equivalent login option
-> alongside Google. It appears on both authentication screens — "Prijavi se"
-> (sign in) and "Napravi nalog" (sign up) — as the first of the two buttons,
-> in the same size and style as the Google button, with no additional taps
-> required to reach it. Sign in with Apple limits data collection to name and
+> The app now offers **Sign in with Apple**. It appears on both authentication
+> screens — "Prijavi se" (sign in) and "Napravi nalog" (sign up) — as the first
+> option, above email and password, with no additional taps required to reach
+> it. On the review device it is the only third-party login service the app
+> presents: Google sign-in is offered on the website, but is not shown inside
+> the app, because Google restricts sign-in from embedded web views. Nothing in
+> the app is therefore more prominent or easier to reach than Sign in with
+> Apple. Sign in with Apple limits data collection to name and
 > email address, lets the user keep their email private via Hide My Email, and
 > does not collect in-app interactions for advertising. Accounts created with a
 > private relay address are fully functional; nothing in the app treats them

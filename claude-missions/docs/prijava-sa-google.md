@@ -115,6 +115,9 @@ otisci upišu, uključivanje je jedna izmena u `isIosNativeShellUserAgent`.
 
 ## Provera na uređaju (jedino što vredi)
 
+✅ Prošlo 19.08.2026 na buildu `1.0 (6)` (Codemagic #9 — brojači se razlikuju).
+
+
 1. Odjavi se u TestFlight buildu.
 2. Tapni „Nastavi sa Google" — mora se otvoriti **sistemski list sa nalozima**,
    u aplikaciji, bez skoka u Safari.

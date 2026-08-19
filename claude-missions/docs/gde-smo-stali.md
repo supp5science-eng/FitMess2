@@ -11,7 +11,7 @@ pa se šalje na recenziju.
 
 ## ⏭️ Šta se radi kad se nastavi
 
-### 1. Provera na uređaju — TestFlight build **#9** ✅ PROŠLO
+### 1. Provera na uređaju — TestFlight build **1.0 (6)** ✅ PROŠLO
 
 Sve tri stvari potvrđene na uređaju 19.08.:
 
@@ -42,8 +42,12 @@ recenzent koji otvori app za dan-dva ne vidi prazne poslednje dane.
 
 ### 3. App Store Connect
 
-1. Zakači na verziju 1.0 **build #9** (commit `41f133d`) — prvi koji nosi
-   Google prijavu u aplikaciji
+1. Zakači na verziju 1.0 **build 1.0 (6)** (commit `41f133d`) — prvi koji nosi
+   Google prijavu u aplikaciji. ⚠️ **Codemagic i App Store Connect broje
+   različito:** Codemagic-ov build #9 je u ASC-u `1.0 (6)`. Codemagic ima svoj
+   redni broj pokretanja, a `CURRENT_PROJECT_VERSION` se računa tako što se
+   pita TestFlight koji je poslednji i doda 1 — dva nezavisna brojača. Uvek
+   proveri **vreme otpremanja** u TestFlight → Build Uploads, ne broj.
 2. Pošalji tekst iz **`docs/odgovor-app-review.md`** kroz **App Review →
    Messages**
 3. **Uz** resubmisiju, ne umesto nje

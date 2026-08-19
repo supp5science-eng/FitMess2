@@ -344,19 +344,13 @@ export async function savePhoneAction(
   redirect("/danas");
 }
 
-/** The "Preskoči" button on `/telefon`. Ends the ask for good and moves on. */
-export async function skipPhoneAction(): Promise<void> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (user) {
-    await rememberPhonePromptAnswered(user.id);
-  }
-
-  redirect("/danas");
-}
+/*
+ * The "Preskoči" button on `/telefon` used to be a Server Action here. It is
+ * now a GET route handler — `src/app/(auth)/telefon/preskoci/route.ts` — after
+ * the button turned out to do nothing on a real device while the save button
+ * next to it worked. That file explains why the way out of a screen should
+ * ride on less machinery than the screen itself.
+ */
 
 /** The "posalji ponovo" (resend) action on the verification notice page. */
 export async function resendAction(

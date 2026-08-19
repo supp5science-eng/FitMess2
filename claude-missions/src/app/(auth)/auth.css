@@ -364,6 +364,14 @@
   color: var(--ink);
   border-color: var(--line);
 }
+/* The "Preskoči" on /telefon is an <a>, not a <button> (see
+   `telefon/preskoci/route.ts`), so it needs the two properties a button gets
+   for free — otherwise it renders underlined and in the link colour, and stops
+   looking like the equally-weighted way out that guideline 5.1.1(v) wants. */
+a.auth-btn {
+  text-decoration: none;
+  color: var(--ink);
+}
 .auth-btn-ghost:not(:disabled):hover {
   border-color: var(--line-strong);
   background: rgba(0, 0, 0, 0.05);

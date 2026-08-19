@@ -22,6 +22,27 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<!-- The URL scheme Google's Sign-In SDK hands control back on.
+
+	     It is the iOS OAuth client id with its parts reversed, and it is not
+	     optional decoration: without this key the SDK refuses to start at all,
+	     so "Nastavi sa Google" fails at the tap with nothing in any log. The
+	     value must stay in lockstep with `GOOGLE_IOS_CLIENT_ID` in
+	     `src/lib/auth/google-clients.ts` — same client, written two ways — and
+	     with the same id in Supabase's *Authorized Client IDs*. See
+	     `docs/prijava-sa-google.md`.
+
+	     Nothing else in the app registers a URL scheme; this array exists solely
+	     for the sign-in round trip, which is why it carries no other entry. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1004641833797-je2j6t0fi7darlto4pv9aaduohvpd9j7</string>
+			</array>
+		</dict>
+	</array>
 	<!-- Export compliance, answered here instead of in a form. Every build
 	     uploaded to TestFlight otherwise arrives flagged "Missing Compliance"
 	     and cannot be handed to a single tester until someone clicks through

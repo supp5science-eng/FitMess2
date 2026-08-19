@@ -23,6 +23,7 @@ odluka o prikazivanju `src/app/(auth)/social-sign-in.tsx`.
 ## Prekidač
 
 Dugme se u ljusci prikazuje **samo ako je `GOOGLE_IOS_CLIENT_ID` popunjen**
+(popunjen 19.08.2026)
 (`src/lib/auth/google-clients.ts`). Prazan id → nema dugmeta. To nije opreznost
 nego pravilo naučeno u ovom krugu: **dugme koje pukne na tap gore je od dugmeta
 kojeg nema.**
@@ -42,12 +43,39 @@ Sve ostalo ide iz koda:
 |---|---|
 | `src/lib/auth/google-clients.ts` | `GOOGLE_IOS_CLIENT_ID` |
 | `ios/App/App/Info.plist` | `CFBundleURLTypes` sa **obrnutim** id-em: `com.googleusercontent.apps.1004641833797-nesto` |
-| Supabase → Auth → Google → *Authorized Client IDs* | isti iOS client ID, pored web-ovog |
+| Supabase → Auth → Google → *Client IDs* | **zarezom odvojena lista**: web id, pa iOS id |
+
+⚠️ **Zamka u Supabase Management API-ju, plaćena 19.08.2026:** polje
+`external_google_additional_client_ids` postoji u odgovoru, ali `PATCH` sa njim
+**prepiše `external_google_client_id`** umesto da doda pored njega — web client
+id nestane, a tajna ostane web-ova, pa Google prijava na sajtu pukne. Ispravno
+je patch-ovati `external_google_client_id` kao listu `"<web>,<ios>"`; prvi u
+listi je onaj uz koji ide secret i koji se koristi za redirect tok. Isti oblik
+koji Apple provajder već ima (`app.fitmess.web,app.fitmess`). Posle svake izmene
+proveri čime se authorize URL zaista predstavlja:
+
+```bash
+curl -s -o /dev/null -D - "https://femrzpfslejzqnvfsfoe.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Ffitmess.app%2Fauth%2Fcallback"   | grep -i ^location | grep -o "client_id=[^&]*"
+```
 
 ⚠️ Sva tri moraju da odu zajedno. ID token je izdat za **iOS** client, pa ga
 Supabase odbija dok taj id nije na spisku — a Google SDK odbija da se pokrene
 bez URL scheme-a u `Info.plist`. Svaka od tri rupe se vidi tek na uređaju, i
 svaka košta pun build ciklus.
+
+## Cena koju plugin nosi sa sobom
+
+`@capgo/capacitor-social-login` na iOS-u linkuje **GoogleSignIn, Alamofire i
+Facebook SDK** — Facebook zato što isti plugin nudi i Facebook prijavu, koju mi
+ne koristimo. Ne inicijalizujemo ga (`SocialLogin.initialize` dobija samo
+`google`), pa je mrtav kod: ne čita `FacebookAppID`, ne skuplja ništa, ne javlja
+se. Ostaje trošak u veličini binarnog fajla i još nekoliko SPM zavisnosti koje
+build mora da razreši.
+
+Vredelo je izmeriti pre nego što uđe u build, jer je alternativa (sistemski
+browser + deep link nazad) izbegava, ali unosi četiri koraka koji mogu tiho da
+puknu na uređaju. Izabran je manji broj pokretnih delova u toku prijave, po cenu
+većeg broja zavisnosti u buildu.
 
 ## Android — namerno nije uključen
 

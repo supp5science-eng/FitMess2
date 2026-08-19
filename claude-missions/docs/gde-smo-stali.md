@@ -11,15 +11,24 @@ pa se šalje na recenziju.
 
 ## ⏭️ Šta se radi kad se nastavi
 
-### 1. Tapni „Preskoči" na telefonu (30 sekundi)
+### 1. Tapni „Preskoči" na telefonu — POPRAVLJENO 19.08., traži ponovnu proveru
 
-Jedina stavka sa spiska koju niko nije video svojim očima. U aplikaciji: odjavi
-se, prijavi se ponovo, i na ekranu „Broj telefona?" tapni **Preskoči** — moraš
-proći dalje **bez broja**. Ako te bilo šta zaustavi, to je odbijanje po
-**5.1.1(v)**.
+Provereno na uređaju 19.08.: **dugme nije radilo.** „Sačuvaj i nastavi" pored
+njega jeste (i propušta dalje sa praznim poljem — to je namerno, prazno polje je
+isti odgovor kao „Preskoči"), ali sam „Preskoči" nije radio ništa. Ekran čiji je
+jedini vidljiv izlaz mrtav je odbijanje po **5.1.1(v)**.
 
-Kod i testovi to pokrivaju (`skipPhoneAction`, `src/lib/auth/phone-prompt.ts`,
-165 testova prolazi), ali potvrda na uređaju nedostaje.
+Uzrok se nije dao izmeriti sa strane: oba dugmeta su bila `<form>` sa Server
+Action-om, POST-uju na isti URL i izvršavaju iste tri linije. Zato ispravka ne
+pogađa uzrok nego ga uklanja — **„Preskoči" je sada običan link** na
+`/telefon/preskoci` (route handler: postavi `fm_tel` cookie, redirect na
+`/danas`). Nema hidracije, nema Server Action id-a koji mora da preživi deploy,
+nema POST-a koji service worker preskače, nema 303 koji web view mora da isprati.
+Izlaz iz ekrana sada visi o manje mehanike nego sam ekran.
+
+Commit `6343359`, živo na produkciji, potvrđeno kroz pravi browser (demo nalog,
+iPhone UA): link postoji i vodi na `/danas`. **Ostaje tap na uređaju** — ista
+provera kao ranije, jer je uređaj jedini koji je ovo i uhvatio.
 
 ### 2. Osveži demo nalog — na dan slanja, u toku dana
 
@@ -120,6 +129,20 @@ prošao iz prve, *Fetch profiles* nije trebao.
 i deep link nazad — to su sistemske površine, ne ugrađeni webview, pa ih Google
 prihvata. Native posao sa svojim buildom. `capacitor.config.ts` već pušta
 Google-ove hostove, pa se dugme vraća samo izmenom na vebu kad plugin stigne.
+
+**Hidraciona greška na `/danas`.** Svako *tvrdo* učitavanje `/danas` (cold start
+ljuske, reload, dolazak preko linka) baca React #418 (server HTML != klijent) i
+odmah za njim `TypeError: Cannot read properties of null (reading 'parentNode')`.
+Ne javlja se pri mekoj navigaciji unutar app-a, pa se lako previdi. Postojalo je
+i pre „Preskoči" ispravke — mereno na čistom učitavanju bez ijednog tapa.
+Ne blokira slanje (ekran se iscrta), ali je prava rupa i traži svoj krug.
+
+**Google prijava u ljusci.** Korisnik je 19.08. na uređaju prijavio da mu smeta
+što u app-u postoji samo Sign in with Apple. Stanje nije previd nego odluka od
+19.08. (vidi „Šta je naučeno", tačka 2). Vraćanje traži native posao —
+`ASWebAuthenticationSession` / Custom Tabs kroz Capacitor plugin + deep link —
+i svoj build. Nije za ovaj krug: Apple po 4.8 ne traži Google, a dugme koje se
+u webview-u ponaša loše je gore od dugmeta kojeg nema.
 
 **Grana `wip/local-partial-citati`** — nedovršen paralelni pokušaj istog posla
 (drugi imenovani fajlovi, bez capacitor-a/middleware-a/telefona). Sačuvan da

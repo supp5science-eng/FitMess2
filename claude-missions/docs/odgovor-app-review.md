@@ -10,7 +10,9 @@ njihovu poruku, **uz** resubmisiju — ne umesto nje.
 
 - [ ] Sign in with Apple radi na `fitmess.app` (uputstvo: `docs/prijava-sa-apple.md`, tačka 5)
 - [ ] **U TestFlight buildu tapnut Apple** i otvara se *u aplikaciji*, ne u
-      Safari-ju (Google se u ljusci ne prikazuje — vidi `social-sign-in.tsx`)
+      Safari-ju
+- [ ] **U TestFlight buildu tapnut Google** i otvara se **sistemski list sa
+      nalozima**, u aplikaciji, ne u Safari-ju (`docs/prijava-sa-google.md`)
 - [ ] `https://fitmess.app/en/sources` se otvara na desktopu, bez naloga
 - [ ] Novi build je u TestFlight-u i priložen uz verziju (broj dodeljuje
       workflow sam: pita TestFlight koji je poslednji i dodaje 1)
@@ -30,14 +32,11 @@ proverava, ne veruje na reč — i s pravom.
 >
 > **Guideline 4.8 — Login Services**
 >
-> The app now offers **Sign in with Apple**. It appears on both authentication
-> screens — "Prijavi se" (sign in) and "Napravi nalog" (sign up) — as the first
-> option, above email and password, with no additional taps required to reach
-> it. On the review device it is the only third-party login service the app
-> presents: Google sign-in is offered on the website, but is not shown inside
-> the app, because Google restricts sign-in from embedded web views. Nothing in
-> the app is therefore more prominent or easier to reach than Sign in with
-> Apple. Sign in with Apple limits data collection to name and
+> The app now offers **Sign in with Apple** as an equivalent login option
+> alongside Google. It appears on both authentication screens — "Prijavi se"
+> (sign in) and "Napravi nalog" (sign up) — as the first of the two buttons,
+> in the same size and style as the Google button, with no additional taps
+> required to reach it. Sign in with Apple limits data collection to name and
 > email address, lets the user keep their email private via Hide My Email, and
 > does not collect in-app interactions for advertising. Accounts created with a
 > private relay address are fully functional; nothing in the app treats them
@@ -93,16 +92,12 @@ proverava, ne veruje na reč — i s pravom.
 
 ## Ako pitaju dalje
 
-**„Zašto Google login ne postoji u aplikaciji, a postoji na sajtu?"**
+**„Zašto Google prijava izgleda drugačije u aplikaciji nego na sajtu?"**
 
-> Google's OAuth policy restricts sign-in from embedded web views, which is
-> what the app's web view is: tested on a device, Google offers no saved
-> accounts there and interrupts the flow with an additional verification step.
-> Rather than ship a button that behaves that way, the app offers Sign in with
-> Apple and email/password, both of which complete inside the app. Users who
-> created their account with Google can sign in through the password-reset flow
-> on the same email address. The web version, used in a real browser, offers
-> all three.
+> Inside the app, Google sign-in uses the system account picker provided by the
+> operating system rather than a web view, and completes without leaving the
+> app. On the website, where a real browser is available, it uses the ordinary
+> OAuth redirect. Both create the same account.
 
 **„Da li app daje medicinske savete?"**
 

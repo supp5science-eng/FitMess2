@@ -44,14 +44,24 @@ import { createClient } from "@/lib/supabase/client";
  * screens — a Google button that fails at the tap is worse than no button, and
  * that is the whole lesson of this feature.
  *
- * ## No nonce, deliberately
+ * ## The nonce, and why it cannot be skipped
  *
- * Supabase's documented native-Google recipe passes no nonce, and the token
- * never leaves the process: the SDK hands it to this function, which hands it
- * to Supabase over TLS. A nonce guards against a replayed token arriving from
- * somewhere else, which this path has no room for. Adding one anyway would put
- * a value Google echoes and Supabase re-checks in the middle of a flow whose
- * every failure costs a full build cycle to observe.
+ * The first device test failed here with `Passed nonce and nonce in id_token
+ * should either both exist or not` — because **Google's iOS SDK mints a nonce
+ * of its own** when the caller supplies none. The token therefore arrived
+ * carrying a nonce that this code had no way to know, and Supabase, seeing a
+ * claim it was given nothing to compare against, refused it. Passing no nonce
+ * is not an option; it only looks like one.
+ *
+ * So the nonce is ours, and it travels two ways on purpose:
+ *
+ *  - **Google gets the SHA-256 hash.** It echoes whatever it is given straight
+ *    into the `nonce` claim, so what lands in the token is the hash.
+ *  - **Supabase gets the raw value.** It hashes it itself and compares.
+ *
+ * That is the shape Supabase's own native-sign-in recipe uses, and it is what
+ * makes the check meaningful: a token replayed from somewhere else carries a
+ * hash whose original the attacker does not have.
  */
 
 let initialized = false;
@@ -91,9 +101,10 @@ async function ensureInitialized(): Promise<void> {
 export async function signInWithGoogleNatively(): Promise<void> {
   await ensureInitialized();
 
+  const rawNonce = createRawNonce();
   const login = await SocialLogin.login({
     provider: "google",
-    options: { scopes: ["email", "profile"] },
+    options: { scopes: ["email", "profile"], nonce: await sha256Hex(rawNonce) },
   });
 
   // Tokens are nested under `result` — `login.idToken` is always undefined and
@@ -110,6 +121,8 @@ export async function signInWithGoogleNatively(): Promise<void> {
   const { error } = await supabase.auth.signInWithIdToken({
     provider: "google",
     token: idToken,
+    // Raw, not hashed — Supabase does the hashing on its side.
+    nonce: rawNonce,
   });
   if (error) {
     // The token was minted; Supabase refused it. Which of the two is wrong is
@@ -120,6 +133,28 @@ export async function signInWithGoogleNatively(): Promise<void> {
       ...describeIdToken(idToken),
     });
   }
+}
+
+/** A single-use random value, long enough that guessing it is not a strategy. */
+function createRawNonce(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Hex SHA-256 — what Google is handed, so the token carries the hash rather
+ * than the secret. `crypto.subtle` needs a secure context, which the shell
+ * always has: it loads the site over https.
+ */
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value)
+  );
+  return Array.from(new Uint8Array(digest), (b) =>
+    b.toString(16).padStart(2, "0")
+  ).join("");
 }
 
 /**

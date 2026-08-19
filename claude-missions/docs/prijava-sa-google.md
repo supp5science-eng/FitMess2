@@ -58,10 +58,31 @@ proveri čime se authorize URL zaista predstavlja:
 curl -s -o /dev/null -D - "https://femrzpfslejzqnvfsfoe.supabase.co/auth/v1/authorize?provider=google&redirect_to=https%3A%2F%2Ffitmess.app%2Fauth%2Fcallback"   | grep -i ^location | grep -o "client_id=[^&]*"
 ```
 
-⚠️ Sva tri moraju da odu zajedno. ID token je izdat za **iOS** client, pa ga
-Supabase odbija dok taj id nije na spisku — a Google SDK odbija da se pokrene
-bez URL scheme-a u `Info.plist`. Svaka od tri rupe se vidi tek na uređaju, i
-svaka košta pun build ciklus.
+⚠️ Google SDK odbija da se pokrene bez URL scheme-a u `Info.plist`, i to se vidi
+tek na uređaju.
+
+📏 **Mereno na uređaju 19.08.:** pošto je `iOSServerClientId` postavljen, ID token
+dolazi sa `aud` = **web** client id, ne iOS. iOS id u Supabase listi je zato
+pojas i tregeri, ne uslov. Ostaje na spisku jer ne košta ništa, a menjanje
+`iOSServerClientId` bi ga učinilo obaveznim.
+
+## Nonce — mesto na kom je ovo puklo
+
+Prvi test na uređaju: list sa nalozima se otvori, izabereš mejl, i dobiješ
+`Passed nonce and nonce in id_token should either both exist or not` (status 400).
+
+Uzrok: **Google-ov iOS SDK sam napravi nonce kad mu ga pozivalac ne da.** Token
+je stigao sa `nonce` claim-om koji naš kod nije mogao da zna, a Supabase odbija
+claim koji nema sa čim da uporedi. „Ne šalji nonce" nije opcija — samo tako
+izgleda.
+
+Zato nonce sad pravimo mi i putuje na dve strane:
+
+- **Google-u ide SHA-256 heš** — on u token upiše ono što dobije.
+- **Supabase-u ide original** — on ga sam heširа i uporedi.
+
+Taj oblik je ono što proveru čini smislenom: token preigran sa strane nosi heš
+čiji original napadač nema.
 
 ## Cena koju plugin nosi sa sobom
 

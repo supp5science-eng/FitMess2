@@ -53,6 +53,18 @@ beforeEach(() => {
   });
 });
 
+/** The same hash Supabase computes, so the test checks the pairing rather than
+ * trusting the implementation to agree with itself. */
+async function sha256Hex(value: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(value)
+  );
+  return Array.from(new Uint8Array(digest), (b) =>
+    b.toString(16).padStart(2, "0")
+  ).join("");
+}
+
 describe("Google in the native shell", () => {
   it("offers no Google button while the native path is not configured", () => {
     render(<SocialSignIn t={t} isNativeShell nativeGoogle={false} />);
@@ -72,10 +84,18 @@ describe("Google in the native shell", () => {
     fireEvent.click(screen.getByRole("button", { name: /google/i }));
 
     await waitFor(() => expect(signInWithIdTokenMock).toHaveBeenCalled());
-    expect(signInWithIdTokenMock).toHaveBeenCalledWith({
-      provider: "google",
-      token: "id-token-123",
-    });
+
+    // The nonce is the part the first device test broke on: Google's SDK mints
+    // one whether or not we do, so ours has to be the one in the token. Google
+    // is handed the HASH and Supabase the raw value — same nonce, and only the
+    // raw side can prove it.
+    const sentToGoogle = loginMock.mock.calls[0][0].options.nonce as string;
+    const sentToSupabase = signInWithIdTokenMock.mock.calls[0][0];
+    expect(sentToSupabase.provider).toBe("google");
+    expect(sentToSupabase.token).toBe("id-token-123");
+    expect(sentToGoogle).toMatch(/^[0-9a-f]{64}$/);
+    expect(sentToSupabase.nonce).not.toBe(sentToGoogle);
+    expect(await sha256Hex(sentToSupabase.nonce as string)).toBe(sentToGoogle);
     // The web view must never be sent to Google from inside the shell — that
     // is the flow Google degrades, and the reason this path exists.
     expect(signInWithOAuthMock).not.toHaveBeenCalled();

@@ -1,4 +1,4 @@
-# Gde smo stali — 19.08.2026, 01:00
+# Gde smo stali — 19.08.2026, 20:30
 
 Drugo odbijanje od Apple-a (17.08.2026, submission
 `4f3c776d-297d-4899-a184-265ccf27be15`, iPad Pro 11") po tačkama **4.8 Login
@@ -11,24 +11,25 @@ pa se šalje na recenziju.
 
 ## ⏭️ Šta se radi kad se nastavi
 
-### 1. Tapni „Preskoči" na telefonu — POPRAVLJENO 19.08., traži ponovnu proveru
+### 1. Provera na uređaju — TestFlight build **#9**
 
-Provereno na uređaju 19.08.: **dugme nije radilo.** „Sačuvaj i nastavi" pored
-njega jeste (i propušta dalje sa praznim poljem — to je namerno, prazno polje je
-isti odgovor kao „Preskoči"), ali sam „Preskoči" nije radio ništa. Ekran čiji je
-jedini vidljiv izlaz mrtav je odbijanje po **5.1.1(v)**.
+„Preskoči" na `/telefon`: **bilo pokvareno, popravljeno, potvrđeno na uređaju
+19.08.** Dugme je sada običan link (`/telefon/preskoci`), ne Server Action —
+izlaz iz ekrana visi o manje mehanike nego sam ekran. Commit `6343359`.
 
-Uzrok se nije dao izmeriti sa strane: oba dugmeta su bila `<form>` sa Server
-Action-om, POST-uju na isti URL i izvršavaju iste tri linije. Zato ispravka ne
-pogađa uzrok nego ga uklanja — **„Preskoči" je sada običan link** na
-`/telefon/preskoci` (route handler: postavi `fm_tel` cookie, redirect na
-`/danas`). Nema hidracije, nema Server Action id-a koji mora da preživi deploy,
-nema POST-a koji service worker preskače, nema 303 koji web view mora da isprati.
-Izlaz iz ekrana sada visi o manje mehanike nego sam ekran.
+Ostaje da se u buildu **#9** tapne ono što je novo:
 
-Commit `6343359`, živo na produkciji, potvrđeno kroz pravi browser (demo nalog,
-iPhone UA): link postoji i vodi na `/danas`. **Ostaje tap na uređaju** — ista
-provera kao ranije, jer je uređaj jedini koji je ovo i uhvatio.
+- [ ] **„Nastavi sa Google"** — mora se otvoriti **sistemski list sa nalozima**,
+      u aplikaciji, bez skoka u Safari. Izaberi nalog → app se sam vrati na
+      `/danas` (ili na upitnik ako je nalog nov). Ubij app i otvori ponovo —
+      mora te pamtiti.
+- [ ] **„Nastavi sa Apple"** — i dalje radi, u aplikaciji (regresija: build #9
+      nosi novi plugin).
+
+Ako Google skoči u Safari, kriv je `server.allowNavigation`. Ako list ne pusti
+nalog, kriv je jedan od tri upisa (client id u kodu / URL scheme u `Info.plist` /
+Supabase lista) — sve tri su upisane 19.08., detalji u
+`docs/prijava-sa-google.md`.
 
 ### 2. Osveži demo nalog — na dan slanja, u toku dana
 
@@ -46,8 +47,8 @@ prijavljuje normalno, mejl potvrđen. Lozinka je u `docs/store-listing.md`.
 
 ### 3. App Store Connect
 
-1. Zakači na verziju 1.0 build koji je testiran (poslednji u TestFlight-u —
-   sadrži ispravku `allowNavigation`)
+1. Zakači na verziju 1.0 **build #9** (commit `41f133d`) — prvi koji nosi
+   Google prijavu u aplikaciji
 2. Pošalji tekst iz **`docs/odgovor-app-review.md`** kroz **App Review →
    Messages**
 3. **Uz** resubmisiju, ne umesto nje
@@ -137,12 +138,11 @@ Ne javlja se pri mekoj navigaciji unutar app-a, pa se lako previdi. Postojalo je
 i pre „Preskoči" ispravke — mereno na čistom učitavanju bez ijednog tapa.
 Ne blokira slanje (ekran se iscrta), ali je prava rupa i traži svoj krug.
 
-**Google prijava u ljusci.** Korisnik je 19.08. na uređaju prijavio da mu smeta
-što u app-u postoji samo Sign in with Apple. Stanje nije previd nego odluka od
-19.08. (vidi „Šta je naučeno", tačka 2). Vraćanje traži native posao —
-`ASWebAuthenticationSession` / Custom Tabs kroz Capacitor plugin + deep link —
-i svoj build. Nije za ovaj krug: Apple po 4.8 ne traži Google, a dugme koje se
-u webview-u ponaša loše je gore od dugmeta kojeg nema.
+**Google prijava u ljusci — URAĐENO 19.08.**, na korisnikov izričit zahtev, i
+zbog toga se slanje čekalo da bi otišao jedan build umesto dva. Ljuska više ne
+šalje web view na Google nego otvara sistemski izbor naloga
+(`@capgo/capacitor-social-login`) i predaje ID token Supabase-u. Android namerno
+čeka svoje Google Cloud upise. Ceo postupak: `docs/prijava-sa-google.md`.
 
 **Grana `wip/local-partial-citati`** — nedovršen paralelni pokušaj istog posla
 (drugi imenovani fajlovi, bez capacitor-a/middleware-a/telefona). Sačuvan da

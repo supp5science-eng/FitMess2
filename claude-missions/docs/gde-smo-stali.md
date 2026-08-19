@@ -1,4 +1,4 @@
-# Gde smo stali — 19.08.2026, 21:30 · SPREMNO ZA SLANJE
+# Gde smo stali — 19.08.2026, 21:50 · ✅ POSLATO NA RECENZIJU
 
 Drugo odbijanje od Apple-a (17.08.2026, submission
 `4f3c776d-297d-4899-a184-265ccf27be15`, iPad Pro 11") po tačkama **4.8 Login
@@ -40,20 +40,18 @@ Puštena 19.08. u 21:20: 35 dana, 135 obroka, današnji dan 2390 kcal. Lozinka j
 u `docs/store-listing.md`. **Pusti je još jednom dok recenzija traje**, da
 recenzent koji otvori app za dan-dva ne vidi prazne poslednje dane.
 
-### 3. App Store Connect
+### 3. App Store Connect ✅ URAĐENO 19.08. u 21:50
 
-1. Zakači na verziju 1.0 **build 1.0 (6)** (commit `41f133d`) — prvi koji nosi
-   Google prijavu u aplikaciji. ⚠️ **Codemagic i App Store Connect broje
-   različito:** Codemagic-ov build #9 je u ASC-u `1.0 (6)`. Codemagic ima svoj
-   redni broj pokretanja, a `CURRENT_PROJECT_VERSION` se računa tako što se
-   pita TestFlight koji je poslednji i doda 1 — dva nezavisna brojača. Uvek
-   proveri **vreme otpremanja** u TestFlight → Build Uploads, ne broj.
-2. Pošalji tekst iz **`docs/odgovor-app-review.md`** kroz **App Review →
-   Messages**
-3. **Uz** resubmisiju, ne umesto nje
+Treća submisija je poslata. Status: **Waiting for Review**.
 
-Ugovor (Apple Developer Program License Agreement) je potpisan 18.08. za tim
-`CA5SN5H95V` — ne blokira slanje.
+- Verzija 1.0, build **`1.0 (6)`** (Codemagic #9, commit `41f133d`)
+- Odgovor recenzentu poslat kroz App Review → Messages (peta poruka u niti),
+  sa linkom na snimak ekrana sa uređaja
+- Submission ID ostaje `4f3c776d-297d-4899-a184-265ccf27be15`
+
+⚠️ **Dok recenzija traje:** pusti `node scripts/store/seed-demo-data.cjs` još
+jednom za dan-dva. Skripta puni podatke do dana kad je puštena, pa bi recenzent
+inače video prazne poslednje dane.
 
 ---
 

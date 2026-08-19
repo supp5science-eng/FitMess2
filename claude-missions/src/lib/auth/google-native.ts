@@ -104,7 +104,18 @@ export async function signInWithGoogleNatively(): Promise<void> {
   const rawNonce = createRawNonce();
   const login = await SocialLogin.login({
     provider: "google",
-    options: { scopes: ["email", "profile"], nonce: await sha256Hex(rawNonce) },
+    options: {
+      scopes: ["email", "profile"],
+      nonce: await sha256Hex(rawNonce),
+      // NOT a UX preference — it is what keeps the nonce above meaningful.
+      // Without it the plugin takes a shortcut whenever the SDK remembers a
+      // previous sign-in: it restores that session and refreshes its tokens,
+      // returning an ID token minted for the nonce of the ORIGINAL sign-in.
+      // The nonce we just generated would never reach Google, and Supabase
+      // would reject the mismatch — on the second tap onwards only, which is
+      // the kind of bug that looks like flakiness. Always ask.
+      forcePrompt: true,
+    },
   });
 
   // Tokens are nested under `result` — `login.idToken` is always undefined and

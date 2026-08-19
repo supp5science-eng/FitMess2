@@ -84,6 +84,12 @@ Zato nonce sad pravimo mi i putuje na dve strane:
 Taj oblik je ono što proveru čini smislenom: token preigran sa strane nosi heš
 čiji original napadač nema.
 
+⚠️ Uz nonce ide i **`forcePrompt: true`**, i to nije stvar ukusa. Kad SDK pamti
+prethodnu prijavu, plugin preskače pravi tok i samo *obnovi* staru sesiju — a
+token koji tako dobiješ nosi nonce ORIGINALNE prijave, ne onaj koji smo upravo
+napravili. Palo bi tek od drugog tapa nadalje, što izgleda kao „nekad radi,
+nekad ne".
+
 ## Cena koju plugin nosi sa sobom
 
 `@capgo/capacitor-social-login` na iOS-u linkuje **GoogleSignIn, Alamofire i

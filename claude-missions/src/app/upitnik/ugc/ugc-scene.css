@@ -1,0 +1,140 @@
+/*
+ * Capture-stage overrides for the UGC film (`ugc-scene.tsx`).
+ *
+ * The scene reuses the REAL onboarding CSS (`name-screen.css`,
+ * `plan-reveal.css`, the app's tokens and Inter) so every colour, size and
+ * spacing is the shipped one. The only thing this sheet changes is WHO drives
+ * the motion: it disables the wall-clock CSS animations/transitions on those
+ * surfaces so the scene can set each animated property inline from a virtual
+ * clock, and lets the two ambient glows (which are `::before` pseudo-elements
+ * and therefore unreachable from React) be driven through CSS variables.
+ *
+ * Nothing here ships to users -- it is only ever loaded by the capture route.
+ */
+
+.ugc-stage {
+  position: relative;
+  width: 100%;
+  min-height: 100dvh;
+  overflow: hidden;
+  /* Every keystroke, press and reveal is stepped by the capture script, so the
+     browser must never animate anything on its own clock. */
+  --ugc-caret: 0;
+}
+
+.ugc-stage *,
+.ugc-stage *::before,
+.ugc-stage *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* The two ambient glows live on `::before`, so they take their (scene-driven)
+   opacity and scale through variables set on the host element. */
+.ugc-stage .ns::before,
+.ugc-stage .pr::before {
+  opacity: var(--ugc-glow-o, 0.65);
+  transform: translate(-50%, -50%) scale(var(--ugc-glow-s, 1));
+}
+
+/* The name input is a div rather than an <input> so the caret can be drawn at
+   an exact virtual time instead of blinking on the browser's own clock. Same
+   class, so it inherits every shipped rule; these two only restore what an
+   input's line box gives for free. */
+.ugc-input {
+  display: block;
+  min-height: 1.2em;
+  white-space: pre;
+}
+.ugc-input-inner {
+  display: inline-flex;
+  align-items: baseline;
+}
+/* Mirrors `.ns-input::placeholder`. */
+.ugc-placeholder {
+  color: color-mix(in srgb, var(--muted-foreground) 55%, transparent);
+  font-weight: 600;
+}
+.ugc-caret {
+  display: inline-block;
+  width: 2px;
+  height: 0.92em;
+  margin-left: 1px;
+  border-radius: 1px;
+  background: var(--primary);
+  transform: translateY(0.06em);
+  opacity: var(--ugc-caret, 0);
+}
+
+/* The shipped press states, applied from the scene clock instead of `:active`:
+   `active:not-aria-[haspopup]:translate-y-px` on the button itself and
+   `.liquid-glass:active::before { opacity: .85 }` on its gloss layer. */
+.ugc-press [data-slot="button"] {
+  transform: translateY(1px) scale(0.976);
+  filter: brightness(0.93);
+}
+.ugc-press [data-slot="button"].liquid-glass::before {
+  opacity: 0.85;
+}
+
+/* Touch feedback: a soft ripple clipped to the pill, in place of a cursor. */
+.ugc-tap {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ugc-tap i {
+  position: absolute;
+  display: block;
+  border-radius: 50%;
+  /* Tinted with the button's own foreground, so the ripple reads on the
+     near-black pill of the light theme and on the teal pill of the dark one
+     alike. */
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary-foreground) 30%, transparent) 0%,
+    color-mix(in srgb, var(--primary-foreground) 13%, transparent) 55%,
+    transparent 72%
+  );
+}
+
+/* ---------- iOS status bar ----------
+   Drawn by the capture stage, not by the app: on a device this strip belongs
+   to iOS and sits above the web view. Sized and weighted to match iOS 18 and
+   painted in `--foreground`, the way iOS tints it for the content beneath. */
+.ugc-statusbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  padding: 0 21px 0 24px;
+  color: var(--foreground);
+  pointer-events: none;
+  user-select: none;
+}
+.ugc-statusbar-time {
+  font-size: 13.5px;
+  font-weight: 640;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.ugc-statusbar-icons {
+  display: flex;
+  align-items: center;
+  gap: 5.5px;
+}
+
+/* Dev-server chrome (the Next.js build indicator) must never reach a frame. */
+nextjs-portal,
+[data-nextjs-toast],
+#__next-build-watcher {
+  display: none !important;
+}

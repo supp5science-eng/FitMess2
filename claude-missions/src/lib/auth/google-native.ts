@@ -101,7 +101,9 @@ export async function signInWithGoogleNatively(): Promise<void> {
   const result = login.result as { idToken?: string | null } | undefined;
   const idToken = result?.idToken;
   if (!idToken) {
-    throw new Error("Google did not return an ID token");
+    throw new NativeGoogleError("no ID token in login result", {
+      keys: Object.keys(result ?? {}).join(",") || "none",
+    });
   }
 
   const supabase = createClient();
@@ -109,5 +111,58 @@ export async function signInWithGoogleNatively(): Promise<void> {
     provider: "google",
     token: idToken,
   });
-  if (error) throw error;
+  if (error) {
+    // The token was minted; Supabase refused it. Which of the two is wrong is
+    // the whole question, and it is answered by the token's own claims — so
+    // they travel with the error rather than being guessed at afterwards.
+    throw new NativeGoogleError(error.message, {
+      status: String(error.status ?? ""),
+      ...describeIdToken(idToken),
+    });
+  }
+}
+
+/**
+ * An error that carries what the screen needs to say something useful.
+ *
+ * This exists because the first device test of this flow produced "Došlo je do
+ * greške" and nothing else — a message that is right for a user and useless for
+ * anyone trying to fix it. Every failure mode here (wrong audience, provider
+ * off, nonce mismatch, no token) looks identical from the outside and different
+ * in one field of the token or the response.
+ */
+export class NativeGoogleError extends Error {
+  readonly detail: string;
+
+  constructor(message: string, fields: Record<string, string>) {
+    super(message);
+    this.name = "NativeGoogleError";
+    this.detail = Object.entries(fields)
+      .filter(([, value]) => value)
+      .map(([key, value]) => `${key}=${value}`)
+      .join(" ");
+  }
+}
+
+/**
+ * The claims that decide whether Supabase may accept this token, read straight
+ * off the JWT. No signature check and none needed: this is a diagnostic, and
+ * the token has already been rejected by the only party whose verdict counts.
+ *
+ * `aud` is shortened because the interesting part of a Google client id is its
+ * middle, and the full value does not fit on a phone screen.
+ */
+function describeIdToken(token: string): Record<string, string> {
+  try {
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    ) as { aud?: string; iss?: string; nonce?: string; azp?: string };
+    return {
+      aud: (payload.aud ?? "?").replace(/\.apps\.googleusercontent\.com$/, ""),
+      iss: (payload.iss ?? "?").replace(/^https:\/\//, ""),
+      nonce: payload.nonce ? "yes" : "no",
+    };
+  } catch {
+    return { token: "unreadable" };
+  }
 }

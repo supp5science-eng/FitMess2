@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import { useT } from "@/components/i18n/locale-provider";
 import { SR_AUTH_MESSAGES } from "@/lib/auth/errors";
-import { signInWithGoogleNatively } from "@/lib/auth/google-native";
+import {
+  NativeGoogleError,
+  signInWithGoogleNatively,
+} from "@/lib/auth/google-native";
 
 import { useOAuthSignIn } from "./use-oauth-sign-in";
 
@@ -43,24 +46,37 @@ function GoogleLogo() {
  */
 function useNativeGoogleSignIn() {
   const [error, setError] = useState<string | null>(null);
+  const [detail, setDetail] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function signIn() {
     setPending(true);
     setError(null);
+    setDetail(null);
     try {
       await signInWithGoogleNatively();
       window.location.assign("/danas");
-    } catch {
-      // Closing the sheet arrives here too, which is why this says nothing
-      // about what went wrong: "you cancelled" and "Google refused" are the
-      // same event to us, and the generic Serbian message covers both.
+    } catch (thrown) {
+      // The user-facing message stays generic — closing the sheet arrives here
+      // too, and "you cancelled" and "Google refused" are the same event to a
+      // person. The technical line below it is what the first device test was
+      // missing: without it, every failure in this flow reads identically.
       setError(SR_AUTH_MESSAGES.generic);
+      setDetail(describeFailure(thrown));
       setPending(false);
     }
   }
 
-  return { error, pending, signIn };
+  return { error, detail, pending, signIn };
+}
+
+/** A single line that names which half of the handshake refused, and why. */
+function describeFailure(thrown: unknown): string {
+  if (thrown instanceof NativeGoogleError) {
+    return `${thrown.message}${thrown.detail ? ` · ${thrown.detail}` : ""}`;
+  }
+  if (thrown instanceof Error) return `${thrown.name}: ${thrown.message}`;
+  return String(thrown);
 }
 
 /**
@@ -91,6 +107,7 @@ export function GoogleSignInButton({ native = false }: { native?: boolean }) {
   // Google at all (`@/lib/auth/google-native` explains why); everywhere else
   // this is the redirect handshake it has always been.
   const { error, pending, signIn } = native ? nativeFlow : web;
+  const detail = native ? nativeFlow.detail : null;
 
   return (
     <div className="flex flex-col gap-3">
@@ -108,6 +125,11 @@ export function GoogleSignInButton({ native = false }: { native?: boolean }) {
           {error}
         </p>
       ) : null}
+      {/* Shown only inside the shell, only after a failure. A user who reads it
+          learns nothing; a user who reports it hands over the one fact that
+          separates "wrong audience" from "provider disabled" from "no token" —
+          which is otherwise a build cycle of guessing. */}
+      {detail ? <p className="auth-error-detail">{detail}</p> : null}
     </div>
   );
 }

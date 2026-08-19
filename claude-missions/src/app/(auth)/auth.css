@@ -515,3 +515,13 @@ a.auth-btn {
     animation: none !important;
   }
 }
+
+/* The technical line under a failed native Google sign-in. Deliberately quiet
+   and small: it is for a bug report, not for reading. */
+.auth-error-detail {
+  font-size: 11.5px;
+  line-height: 1.45;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--ink-faint);
+  word-break: break-word;
+}

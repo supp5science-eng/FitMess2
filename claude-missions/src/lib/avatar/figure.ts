@@ -125,11 +125,11 @@ export function geom(p: BodyParams): Geom {
   return {
     w: {
       neck: (12.5 + fat * 5 + muscle * 3) * (1 - fem * 0.13),
-      shoulder: (45 + muscle * 25 + fat * 8) * (1 - fem * 0.14),
-      chest: (40 + muscle * 17 + fat * 13) * (1 - fem * 0.07) + fem * 4,
-      waist: (28 + fat * 32 - muscle * 4) * (1 - fem * 0.09),
-      belly: (32 + fat * 36 - muscle * 2) * (1 - fem * 0.07),
-      hip: (36 + fat * 20 + muscle * 3) * (1 + fem * 0.17),
+      shoulder: (42 + muscle * 32 + fat * 7) * (1 - fem * 0.14),
+      chest: (38 + muscle * 22 + fat * 14) * (1 - fem * 0.07) + fem * 4,
+      waist: (25 + fat * 42 - muscle * 6) * (1 - fem * 0.09),
+      belly: (28 + fat * 48 - muscle * 4) * (1 - fem * 0.07),
+      hip: (33 + fat * 26 + muscle * 3) * (1 + fem * 0.17),
     },
     limb: {
       upperArm: 9 + muscle * 9 + fat * 5.5,
@@ -165,12 +165,22 @@ export function torsoPath(g: Geom): string {
   ]);
 }
 
-/** Glava: širi se sa masnoćom, malo se skraćuje (okruglije lice). */
+/**
+ * Glava: širi se sa masnoćom, malo se skraćuje (okruglije lice).
+ *
+ * Namerno krupna -- Bitmoji drži glavu na oko šestinu visine figure. Manja
+ * glava odmah odaje "generički vektor čovečuljak", a veća pada u chibi, gde
+ * telo postane premalo da bi se forma uopšte videla.
+ */
 export function head(g: Geom) {
-  const rx = 29 + g.fat * 7.5 - g.fem * 1.5;
-  const ry = 33 - g.fat * 1.5;
+  const rx = 33 + g.fat * 7.5 - g.fem * 1.5;
+  const ry = 37 - g.fat * 1.5;
   return { cx: CX, cy: Y.chin - ry + 2, rx, ry };
 }
+
+/** Debljina konture. Jedini najvažniji potez za Bitmoji izgled. */
+export const INK = "#2A2118";
+export const OUTLINE = 4.5;
 
 /**
  * Vidljivost detalja.
@@ -189,12 +199,12 @@ export function detail(g: Geom) {
 
 /** Zglobovi za udove -- izvedeni iz širina, da ruka uvek stoji na ramenu. */
 export function joints(g: Geom) {
-  const shoulderX = g.w.shoulder - g.limb.upperArm * 0.52;
+  const shoulderX = g.w.shoulder - g.limb.upperArm * 0.72;
   const hipX = g.w.hip * 0.46;
   return {
     shoulder: [shoulderX, Y.shoulder + 7] as const,
-    elbow: [shoulderX + 5, Y.waist + 8] as const,
-    wrist: [shoulderX + 10, Y.hip + 26] as const,
+    elbow: [shoulderX + g.limb.upperArm * 0.9, Y.waist + 10] as const,
+    wrist: [shoulderX + g.limb.upperArm * 1.5, Y.hip + 24] as const,
     hip: [hipX, Y.crotch - 16] as const,
     knee: [hipX + 2, Y.knee] as const,
     ankle: [hipX + 3, Y.ankle] as const,
@@ -303,39 +313,38 @@ export function hairPath(kind: HairId, h: Head): string {
   }
 }
 
-/** Brada / brkovi kao `path` preko donje polovine lica. */
+/**
+ * Brada kao TRAKA duž vilice, ne kao mrlja preko pola lica -- prvi pokušaj
+ * je bio pun oblik od obraza naniže i progutao je usta.
+ */
 export function beardPath(kind: BeardId, h: Head): string {
   const { cx, cy, rx, ry } = h;
 
-  switch (kind) {
-    case "bez":
-      return "";
-    case "brkovi":
-      return (
-        `M ${cx - rx * 0.3} ${cy + ry * 0.42}` +
-        ` Q ${cx} ${cy + ry * 0.34} ${cx + rx * 0.3} ${cy + ry * 0.42}` +
-        ` Q ${cx} ${cy + ry * 0.54} ${cx - rx * 0.3} ${cy + ry * 0.42} Z`
-      );
-    case "malje":
-    case "brada": {
-      const drop = kind === "brada" ? 1.2 : 1.0;
-      const w = kind === "brada" ? 0.98 : 0.9;
-      return (
-        `M ${cx - rx * w} ${cy + ry * 0.1}` +
-        ` C ${cx - rx * w} ${cy + ry * drop}, ${cx + rx * w} ${cy + ry * drop}, ${cx + rx * w} ${cy + ry * 0.1}` +
-        ` C ${cx + rx * 0.7} ${cy + ry * 0.5}, ${cx - rx * 0.7} ${cy + ry * 0.5}, ${cx - rx * w} ${cy + ry * 0.1} Z`
-      );
-    }
+  if (kind === "bez") return "";
+  if (kind === "brkovi") {
+    return (
+      `M ${cx - rx * 0.26} ${cy + ry * 0.44}` +
+      ` Q ${cx} ${cy + ry * 0.36} ${cx + rx * 0.26} ${cy + ry * 0.44}` +
+      ` Q ${cx} ${cy + ry * 0.56} ${cx - rx * 0.26} ${cy + ry * 0.44} Z`
+    );
   }
+
+  // Spoljna ivica prati bradu, unutrašnja se vraća iznad usta.
+  const inner = kind === "brada" ? 0.72 : 0.84;
+  return (
+    `M ${cx - rx * 0.94} ${cy + ry * 0.04}` +
+    ` C ${cx - rx * 0.9} ${cy + ry * 0.94}, ${cx + rx * 0.9} ${cy + ry * 0.94}, ${cx + rx * 0.94} ${cy + ry * 0.04}` +
+    ` C ${cx + rx * 0.7} ${cy + ry * inner}, ${cx - rx * 0.7} ${cy + ry * inner}, ${cx - rx * 0.94} ${cy + ry * 0.04} Z`
+  );
 }
 
 /** Naočare: okvir + most, kao stroke preko očiju. */
 export function glassesPaths(kind: GlassesId, h: Head): string[] {
   if (kind === "bez") return [];
   const { cx, cy, rx, ry } = h;
-  const ex = rx * 0.4;
-  const ey = cy + ry * 0.1;
-  const w = rx * 0.32;
+  const ex = rx * 0.36;
+  const ey = cy + ry * 0.08;
+  const w = rx * 0.26;
 
   if (kind === "okrugle") {
     return [

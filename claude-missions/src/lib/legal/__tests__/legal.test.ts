@@ -187,9 +187,11 @@ describe("document copy", () => {
   });
 
   it("leaves no unfilled placeholder in either language", () => {
-    // Every `{...}` in this copy is interpolated from `controller.ts`; a typo
-    // in a placeholder name renders the literal braces to the reader.
-    const allowed = new Set(["name", "email", "date", "age", "phrase"]);
+    // Every `{...}` in this copy is filled in by whoever renders it — most from
+    // `controller.ts`, and `limit` from `@/lib/ai/limits` so the free allowance
+    // the terms PROMISE is the same number the code enforces. A typo in a
+    // placeholder name renders the literal braces to the reader.
+    const allowed = new Set(["name", "email", "date", "age", "phrase", "limit"]);
     for (const key of LEGAL_KEYS) {
       for (const locale of ["sr", "en"] as const) {
         const text = messages[locale][key as keyof typeof messages.sr];

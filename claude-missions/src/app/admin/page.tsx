@@ -31,6 +31,13 @@ export default async function AdminPage() {
       label: t("admin.section.troskovi.label"),
       description: t("admin.section.troskovi.desc"),
     },
+    // Proba avatar riga -- nije korisnički feature, pa namerno bez i18n
+    // ključa: kad se stil zaključa, ovaj red ide napolje ili dobija svoj.
+    {
+      href: "/admin/avatar",
+      label: "Avatar lab",
+      description: "Proba: lice se bira, telo se računa iz podataka",
+    },
   ] as const;
 
   return (

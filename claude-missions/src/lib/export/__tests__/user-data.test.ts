@@ -196,7 +196,26 @@ const DAY_ANSWER_ROWS = [
   },
 ];
 
+// 0032 (naplata): what the user paid for, and how much of the app they used.
+// Both are records about the user, so both belong in "sve što čuvamo o tebi".
+const ENTITLEMENT_ROWS = [
+  {
+    user_id: "user-1",
+    tier: "plus",
+    source: "app_store",
+    expires_at: "2026-09-23T00:00:00.000Z",
+    created_at: "2026-08-23T10:00:00.000Z",
+    updated_at: "2026-08-23T10:00:00.000Z",
+  },
+];
+
+const AI_USAGE_ROWS = [
+  { user_id: "user-1", day: "2026-08-23", count: 3 },
+];
+
 const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
+  entitlements: ENTITLEMENT_ROWS,
+  ai_usage: AI_USAGE_ROWS,
   // The user's own statements about their own days -- in the export since
   // 2026-08-07, when they stopped living in a cookie (migration 0029).
   day_answers: DAY_ANSWER_ROWS,

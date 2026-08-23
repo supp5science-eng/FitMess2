@@ -67,11 +67,41 @@ export const ADD_FLOW_VALUES = [
 
 export type AddFlowValue = (typeof ADD_FLOW_VALUES)[number];
 
+/**
+ * 0032 (naplata): the user ran out of the free daily AI allowance, and WHERE
+ * they were standing when it happened.
+ *
+ * This is the one measurement that decides whether web payment ever gets
+ * built. Selling on the site is not forbidden — Apple's 3.1.3(b) allows an app
+ * to honour a subscription bought elsewhere — but FitMess ships as a REMOTE
+ * Capacitor shell, so the site is literally the store app's content and a
+ * checkout page is one bad render away from a guideline violation. That risk
+ * is only worth taking if would-be payers who never install either store app
+ * actually exist. Nobody can answer that from intuition; this answers it from
+ * traffic.
+ *
+ * The value is the SURFACE, not a count: `ai_usage.count` already carries
+ * magnitude, and `funnel_events`' primary key deliberately stores "reached at
+ * least once". Together they say how many people hit the wall, how hard, and
+ * from where.
+ */
+export const AI_LIMIT_EVENT = "ai_limit_hit";
+
+/** Which surface the user was on when the allowance ran out. */
+export const AI_LIMIT_VALUES = [
+  "native_ios",
+  "native_android",
+  "browser",
+] as const;
+
+export type AiLimitValue = (typeof AI_LIMIT_VALUES)[number];
+
 /** Every (event, value) pair the API will store. Anything else is a 400. */
 export const FUNNEL_EVENTS: Readonly<Record<string, readonly string[]>> = {
   [ONBOARDING_STEP_EVENT]: ONBOARDING_STEP_IDS,
   [PUSH_PROMPT_EVENT]: PUSH_PROMPT_VALUES,
   [ADD_FLOW_EVENT]: ADD_FLOW_VALUES,
+  [AI_LIMIT_EVENT]: AI_LIMIT_VALUES,
 };
 
 export function isKnownFunnelEvent(event: string, value: string): boolean {

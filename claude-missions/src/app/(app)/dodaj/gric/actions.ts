@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { aiErrorSr, estimateGricFromAudio } from "@/lib/ai/gemini";
 import type { GricEstimate } from "@/lib/ai/gric-estimate";
+import { chargeAiEstimate } from "@/lib/ai/quota";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { buildGricRows } from "@/lib/gric/rows";
 import { createClient } from "@/lib/supabase/server";
@@ -39,6 +40,13 @@ export async function estimateGricAction(
       error_sr: "Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.",
     };
   }
+
+  // One user action = one charge against the free daily allowance, taken here
+  // rather than inside `gemini.ts` because a single action can make two model
+  // calls and "five a day" has to mean five meals. Enforcement is OFF today --
+  // this call is what measures demand (see `@/lib/ai/quota`).
+  const quota = await chargeAiEstimate(supabase, userId);
+  if (!quota.ok) return { ok: false, error_sr: quota.error_sr };
 
   const file = formData.get("audio");
   if (!(file instanceof File) || file.size === 0) {

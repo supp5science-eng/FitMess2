@@ -31,6 +31,7 @@ import {
   type PrizmaVariant,
   type ReferenceObject,
 } from "@/lib/ai/prizma";
+import { chargeAiEstimate } from "@/lib/ai/quota";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
@@ -62,6 +63,13 @@ export async function estimateCombinedAction(
       error_sr: "Sesija je istekla. Prijavi se ponovo pa pokušaj ponovo.",
     };
   }
+
+  // One user action = one charge against the free daily allowance, taken here
+  // rather than inside `gemini.ts` because a single action can make two model
+  // calls and "five a day" has to mean five meals. Enforcement is OFF today --
+  // this call is what measures demand (see `@/lib/ai/quota`).
+  const quota = await chargeAiEstimate(supabase, userId);
+  if (!quota.ok) return { ok: false, error_sr: quota.error_sr };
 
   const image = formData.get("slika");
   if (!(image instanceof File) || image.size === 0) {
@@ -256,6 +264,18 @@ export async function analyzeMealAction(
 ): Promise<PrizmaAnalyzeResult> {
   const read = await readImages(formData);
   if (!read.ok) return read;
+
+  // Charged on step 1 ONLY. `readImages` is shared with `finalizeMealAction`,
+  // so putting this there would bill one Prizma meal twice -- the user takes
+  // one photo and answers questions about it, and that is one estimate. The
+  // second auth round trip is free: `getCurrentUserId` verifies the JWT
+  // locally (see its own comment), it does not call the Auth server.
+  const quotaClient = await createClient();
+  const quotaUser = await getCurrentUserId(quotaClient);
+  if (quotaUser) {
+    const quota = await chargeAiEstimate(quotaClient, quotaUser);
+    if (!quota.ok) return { ok: false, error_sr: quota.error_sr };
+  }
 
   try {
     const data = await analyzePrizmaMeal(read.images, read.variant, read.reference);

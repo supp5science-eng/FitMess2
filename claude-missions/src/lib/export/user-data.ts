@@ -129,6 +129,21 @@ const USER_OWNED_TABLES: readonly UserOwnedTableConfig[] = [
     labelSr: "čekirane navike po danima",
   },
   {
+    // 0032. Both land here the day they are created, not the day someone
+    // notices: what a user paid for and how much of the app they used are
+    // exactly the kind of records "sve što čuvamo o tebi" has to cover.
+    key: "entitlements",
+    table: "entitlements",
+    userColumn: "user_id",
+    labelSr: "pretplata",
+  },
+  {
+    key: "aiUsage",
+    table: "ai_usage",
+    userColumn: "user_id",
+    labelSr: "iskorišćene AI procene po danima",
+  },
+  {
     key: "reminderSettings",
     table: "reminder_settings",
     userColumn: "user_id",

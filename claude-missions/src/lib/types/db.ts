@@ -376,6 +376,84 @@ export interface Database {
        * permission offer. Bounded (one row per named point per user) and
        * write-once: the primary key discards every arrival after the first.
        */
+      /**
+       * 0032 (naplata): paid access, one row per entitled user. NO ROW is the
+       * free tier — there is nothing to backfill at signup. Read-only from the
+       * app: RLS grants SELECT and nothing else, so every write has to arrive
+       * from a payment webhook holding the service-role key.
+       */
+      entitlements: {
+        Row: {
+          user_id: string;
+          /** `free` | `plus`. A `free` row is possible (a lapsed subscriber). */
+          tier: string;
+          /** Which rail owns the row: `app_store` | `play` | `stripe` | `manual`. */
+          source: string;
+          /** End of the paid period; `null` = never expires (manual grant). */
+          expires_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          tier?: string;
+          source: string;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          tier?: string;
+          source?: string;
+          expires_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "entitlements_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
+      /**
+       * 0032 (naplata): AI estimates per user per Belgrade calendar day.
+       * SELECT-only from the app — the counter moves solely through the
+       * `consume_ai_quota` RPC, because an own-row UPDATE policy would let a
+       * user reset their own usage.
+       */
+      ai_usage: {
+        Row: {
+          user_id: string;
+          /** Belgrade calendar day (`YYYY-MM-DD`), never a UTC date. */
+          day: string;
+          /** Keeps climbing past the free allowance — the overflow is the point. */
+          count: number;
+        };
+        Insert: {
+          user_id: string;
+          day: string;
+          count?: number;
+        };
+        Update: {
+          user_id?: string;
+          day?: string;
+          count?: number;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       funnel_events: {
         Row: {
           user_id: string;
@@ -973,6 +1051,17 @@ export interface Database {
           result_limit?: number;
         };
         Returns: Database["public"]["Tables"]["foods"]["Row"][];
+      };
+      /**
+       * 0032: charges one AI estimate to `auth.uid()` for the given Belgrade
+       * day. The user id is NOT an argument — the function reads it itself, so
+       * a caller can only ever move their own counter. Returns a single row.
+       */
+      consume_ai_quota: {
+        Args: {
+          p_day: string;
+        };
+        Returns: { used: number; entitled: boolean }[];
       };
     };
     Enums: {

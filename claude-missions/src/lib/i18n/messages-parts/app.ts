@@ -11,16 +11,16 @@ export const appMessages = {
     // Landing "where you can get it" status. Deliberately makes NO promise
     // about a date -- "u pripremi" is the honest state, and a missed date on a
     // landing page costs more trust than the wait itself.
-    "app.landing.stores.heading": "Za sad web, uskoro i u prodavnicama",
+    "app.landing.stores.heading": "Gde možeš da ga preuzmeš",
     "app.landing.stores.body":
-      "FitMess je ceo tu — samo još nije u prodavnicama aplikacija. Pustili smo ga kao web aplikaciju da ne moraš da čekaš: otvoriš na telefonu, dodaš na početni ekran i dobiješ svoju ikonicu, podsetnike i pun ekran, bez pretraživača okolo.",
+      "Na iPhone-u ga skineš sa App Store-a. Za Android je Google Play u pripremi, pa dotle ide kao web aplikacija: otvoriš na telefonu, dodaš na početni ekran i dobiješ svoju ikonicu, podsetnike i pun ekran, bez pretraživača okolo.",
     "app.landing.stores.web": "Web aplikacija",
-    "app.landing.stores.webNote": "Dostupno sada",
+    "app.landing.stores.nowNote": "Dostupno sada",
     "app.landing.stores.appStore": "App Store",
     "app.landing.stores.play": "Google Play",
     "app.landing.stores.soonNote": "U pripremi",
     "app.landing.stores.foot":
-      "Isti nalog, isti podaci. Ništa što uneseš sada se ne gubi kad aplikacija stigne u prodavnicu.",
+      "Isti nalog, isti podaci — svejedno odakle ga otvoriš. Ništa što uneseš sada se ne gubi.",
 
     // Landing feature showcase
     "app.landing.features.heading": "Šta te čeka unutra",
@@ -46,67 +46,24 @@ export const appMessages = {
     // Common
     "app.common.close": "Zatvori",
 
-    // Install CTA / button
-    "app.install.cta": "Instaliraj FitMess",
-    "app.install.open": "Otvori FitMess",
-
     // Simulated OS / browser UI labels (install walkthroughs)
-    "app.os.copy": "Kopiraj",
-    "app.os.addToHome": "Dodaj na početni ekran",
-    "app.os.bookmark": "Označi stranicu",
-    "app.os.addBookmark": "Dodaj obeleživač",
-    "app.os.share": "Podeli",
     "app.os.newTab": "Nova kartica",
     "app.os.installApp": "Instaliraj aplikaciju",
     "app.os.history": "Istorija",
 
-    // Install guide (landing modal)
-    "app.ig.ariaLabel": "Kako da instaliraš FitMess",
-    "app.ig.steps.aria": "Koraci",
-    "app.ig.step.aria": "Korak {n}",
-    "app.ig.foot.ios.a": "Mora",
-    "app.ig.foot.ios.b": "Safari",
-    "app.ig.foot.ios.c": "— na iPhone-u samo on ume da doda na ekran.",
-    "app.ig.foot.android.a": "Najbolje radi u",
-    "app.ig.foot.android.b": "Chrome",
-    "app.ig.foot.android.c": "-u.",
-    "app.ig.step.ios.share.a": "Tapni",
-    "app.ig.step.ios.share.b": "Podeli",
-    "app.ig.step.ios.share.c": "u dnu Safari-ja",
-    "app.ig.step.ios.add.a": "Izaberi",
-    "app.ig.step.ios.add.b": "Dodaj na početni ekran",
-    "app.ig.step.ios.done.a": "Potvrdi na",
-    "app.ig.step.ios.done.b": "Dodaj",
-    "app.ig.step.ios.done.c": "— i gotovo!",
-    "app.ig.step.android.menu.a": "Tapni meni",
-    "app.ig.step.android.menu.c": "gore desno",
-    "app.ig.step.android.install.a": "Izaberi",
-    "app.ig.step.android.install.b": "Instaliraj aplikaciju",
-    "app.ig.step.android.done.a": "Potvrdi na",
-    "app.ig.step.android.done.b": "Instaliraj",
-    "app.ig.step.android.done.c": "— i gotovo!",
-
     // Install overlay (in-app nudge)
-    "app.pwi.ariaLabel": "Dodaj FitMess na početni ekran",
+    "app.pwi.ariaLabel": "Preuzmi FitMess",
     "app.pwi.title.a": "Tvoj plan te čeka",
     "app.pwi.title.hi": "na jedan tap",
     "app.pwi.sub": "Dodaj FitMess na početni ekran — otvara se kao prava aplikacija, bez kucanja adrese.",
-    "app.pwi.iosPush":
-      "Podsetnik za nedeljno merenje stiže samo iz instalirane aplikacije.",
-    "app.pwi.note.a": "Ne vidiš „Dodaj na početni ekran”? Skroluj listu ili tapni",
-    "app.pwi.note.b": "Prikaži još",
-    "app.pwi.note.c": ".",
+    "app.pwi.store.sub": "Preuzmi FitMess i otvara se kao prava aplikacija — sa svojom ikonicom, podsetnicima i punim ekranom.",
+    "app.pwi.store.ios": "Preuzmi sa App Store-a",
+    "app.pwi.store.android": "Preuzmi sa Google Play-a",
     "app.pwi.skip": "Nastavi u pregledaču",
     "app.pwi.done.title": "Instalirano! 🎉",
     "app.pwi.done.a": "Potraži",
     "app.pwi.done.b": "FitMess",
     "app.pwi.done.c": "na početnom ekranu — tu te čeka tvoj plan.",
-    "app.pwi.step.ios.more.a": "Tapni",
-    "app.pwi.step.ios.more.c": "u dnu Safari-ja",
-    "app.pwi.step.ios.share.a": "Izaberi",
-    "app.pwi.step.ios.share.b": "Podeli",
-    "app.pwi.step.ios.add.a": "Tapni",
-    "app.pwi.step.ios.add.b": "Dodaj na početni ekran",
     "app.pwi.step.android.menu.a": "Tapni meni",
     "app.pwi.step.android.menu.c": "gore desno",
     "app.pwi.step.android.install.a": "Izaberi",
@@ -168,16 +125,16 @@ export const appMessages = {
     "app.landing.hero.badge": "Prelaunch · web version",
 
     // Landing "where you can get it" status
-    "app.landing.stores.heading": "Web for now, the stores are coming",
+    "app.landing.stores.heading": "Where you can get it",
     "app.landing.stores.body":
-      "FitMess is all here — it just isn't in the app stores yet. We released it as a web app so you don't have to wait: open it on your phone, add it to your home screen, and you get your own icon, reminders and a full screen, with no browser around it.",
+      "On iPhone you download it from the App Store. For Android, Google Play is still in progress, so until then it runs as a web app: open it on your phone, add it to your home screen, and you get your own icon, reminders and a full screen, with no browser around it.",
     "app.landing.stores.web": "Web app",
-    "app.landing.stores.webNote": "Available now",
+    "app.landing.stores.nowNote": "Available now",
     "app.landing.stores.appStore": "App Store",
     "app.landing.stores.play": "Google Play",
     "app.landing.stores.soonNote": "In progress",
     "app.landing.stores.foot":
-      "Same account, same data. Nothing you log now is lost when the app lands in the stores.",
+      "Same account, same data — wherever you open it from. Nothing you log now is lost.",
 
     // Landing feature showcase
     "app.landing.features.heading": "What's waiting inside",
@@ -203,67 +160,24 @@ export const appMessages = {
     // Common
     "app.common.close": "Close",
 
-    // Install CTA / button
-    "app.install.cta": "Install FitMess",
-    "app.install.open": "Open FitMess",
-
     // Simulated OS / browser UI labels (install walkthroughs)
-    "app.os.copy": "Copy",
-    "app.os.addToHome": "Add to Home Screen",
-    "app.os.bookmark": "Bookmark this page",
-    "app.os.addBookmark": "Add bookmark",
-    "app.os.share": "Share",
     "app.os.newTab": "New tab",
     "app.os.installApp": "Install app",
     "app.os.history": "History",
 
-    // Install guide (landing modal)
-    "app.ig.ariaLabel": "How to install FitMess",
-    "app.ig.steps.aria": "Steps",
-    "app.ig.step.aria": "Step {n}",
-    "app.ig.foot.ios.a": "You need",
-    "app.ig.foot.ios.b": "Safari",
-    "app.ig.foot.ios.c": "— on iPhone it's the only one that can add to your home screen.",
-    "app.ig.foot.android.a": "Works best in",
-    "app.ig.foot.android.b": "Chrome",
-    "app.ig.foot.android.c": ".",
-    "app.ig.step.ios.share.a": "Tap",
-    "app.ig.step.ios.share.b": "Share",
-    "app.ig.step.ios.share.c": "at the bottom of Safari",
-    "app.ig.step.ios.add.a": "Choose",
-    "app.ig.step.ios.add.b": "Add to Home Screen",
-    "app.ig.step.ios.done.a": "Confirm with",
-    "app.ig.step.ios.done.b": "Add",
-    "app.ig.step.ios.done.c": "— and you're done!",
-    "app.ig.step.android.menu.a": "Tap the",
-    "app.ig.step.android.menu.c": "menu top-right",
-    "app.ig.step.android.install.a": "Choose",
-    "app.ig.step.android.install.b": "Install app",
-    "app.ig.step.android.done.a": "Confirm with",
-    "app.ig.step.android.done.b": "Install",
-    "app.ig.step.android.done.c": "— and you're done!",
-
     // Install overlay (in-app nudge)
-    "app.pwi.ariaLabel": "Add FitMess to your home screen",
+    "app.pwi.ariaLabel": "Get FitMess",
     "app.pwi.title.a": "Your plan is",
     "app.pwi.title.hi": "one tap away",
     "app.pwi.sub": "Add FitMess to your home screen — it opens like a real app, no typing the address.",
-    "app.pwi.iosPush":
-      "The weekly weigh-in reminder only arrives from the installed app.",
-    "app.pwi.note.a": "Don't see “Add to Home Screen”? Scroll the list or tap",
-    "app.pwi.note.b": "Show more",
-    "app.pwi.note.c": ".",
+    "app.pwi.store.sub": "Get FitMess and it opens like a real app — its own icon, reminders and a full screen.",
+    "app.pwi.store.ios": "Get it on the App Store",
+    "app.pwi.store.android": "Get it on Google Play",
     "app.pwi.skip": "Keep using the browser",
     "app.pwi.done.title": "Installed! 🎉",
     "app.pwi.done.a": "Look for",
     "app.pwi.done.b": "FitMess",
     "app.pwi.done.c": "on your home screen — your plan is waiting there.",
-    "app.pwi.step.ios.more.a": "Tap",
-    "app.pwi.step.ios.more.c": "at the bottom of Safari",
-    "app.pwi.step.ios.share.a": "Choose",
-    "app.pwi.step.ios.share.b": "Share",
-    "app.pwi.step.ios.add.a": "Tap",
-    "app.pwi.step.ios.add.b": "Add to Home Screen",
     "app.pwi.step.android.menu.a": "Tap the",
     "app.pwi.step.android.menu.c": "menu top-right",
     "app.pwi.step.android.install.a": "Choose",

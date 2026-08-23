@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { useT } from "@/components/i18n/locale-provider";
 import { isNativeApp } from "@/lib/device/native";
+import { storeUrlFor } from "@/lib/device/stores";
 import type { TFunction } from "@/lib/i18n/translate";
 
 import "./install-overlay.css";
@@ -91,26 +92,40 @@ interface BeforeInstallPromptEvent extends Event {
 // icon is NOT in the toolbar — you go ••• (More) → Podeli (Share) → the system
 // share sheet → Dodaj na početni ekran. Verified against the product owner's
 // own on-device screenshots (2026-07). Android/Chrome is the ⋮ menu flow.
-const STEPS: Record<Platform, { key: string }[]> = {
-  ios: [{ key: "more" }, { key: "share" }, { key: "add" }, { key: "done" }],
-  android: [{ key: "menu" }, { key: "install" }, { key: "done" }],
-};
+/**
+ * The "add it to your Home Screen" walkthrough — for platforms that have NO
+ * store listing yet, which today means Android alone (`@/lib/device/stores`
+ * explains why Play is still dark).
+ *
+ * iOS is deliberately absent. The App Store listing went live on 23.08.2026,
+ * and from that moment teaching an iPhone visitor a bookmark trick is worse
+ * than useless: it hands them a second-class copy of an app they could simply
+ * download, with no automatic updates and no native push. Everything the iOS
+ * half of this file used to render — the Safari share-sheet re-enactment, the
+ * "Prikaži još" hint, the notifications-only-when-installed warning — went
+ * with it. When Play goes live this whole walkthrough follows.
+ */
+const ANDROID_STEPS: { key: string }[] = [
+  { key: "menu" },
+  { key: "install" },
+  { key: "done" },
+];
+
+/** Walkthrough steps for a platform, or none when a store link replaces it. */
+function stepsFor(platform: Platform): { key: string }[] {
+  return platform === "android" && storeUrlFor("android") === null
+    ? ANDROID_STEPS
+    : [];
+}
 
 /** The per-step instruction text, rebuilt from translation keys (the bolded
  * word is a `<b>` around a separate key, so word order can differ by language). */
 function stepText(platform: Platform, key: string, t: TFunction): ReactNode {
   switch (`${platform}.${key}`) {
-    case "ios.more":
-      return <>{t("app.pwi.step.ios.more.a")} <b>•••</b> {t("app.pwi.step.ios.more.c")}</>;
-    case "ios.share":
-      return <>{t("app.pwi.step.ios.share.a")} <b>{t("app.pwi.step.ios.share.b")}</b></>;
-    case "ios.add":
-      return <>{t("app.pwi.step.ios.add.a")} <b>{t("app.pwi.step.ios.add.b")}</b></>;
     case "android.menu":
       return <>{t("app.pwi.step.android.menu.a")} <b>⋮</b> {t("app.pwi.step.android.menu.c")}</>;
     case "android.install":
       return <>{t("app.pwi.step.android.install.a")} <b>{t("app.pwi.step.android.install.b")}</b></>;
-    case "ios.done":
     case "android.done":
       return <>{t("app.pwi.step.done.a")} <b>{t("app.pwi.step.done.b")}</b> {t("app.pwi.step.done.c")}</>;
     default:
@@ -284,7 +299,9 @@ export function InstallOverlay({
       paused
     )
       return;
-    const count = STEPS[platform].length;
+    const count = stepsFor(platform).length;
+    // A platform sent straight to its store has no steps to cycle through.
+    if (count === 0) return;
     const id = window.setInterval(() => {
       setStep((s) => (s + 1) % count);
     }, STEP_MS);
@@ -315,7 +332,8 @@ export function InstallOverlay({
 
   if (!visible) return null;
 
-  const steps = STEPS[platform];
+  const storeUrl = storeUrlFor(platform);
+  const steps = stepsFor(platform);
 
   return (
     <div
@@ -355,65 +373,76 @@ export function InstallOverlay({
             {t("app.pwi.title.a")} <span className="pwi-hi">{t("app.pwi.title.hi")}</span>
           </h2>
           <p className="pwi-sub pwi-in pwi-d2">
-            {t("app.pwi.sub")}
+            {t(storeUrl ? "app.pwi.store.sub" : "app.pwi.sub")}
           </p>
 
-          {/* iPhone only, and the one reason to install that is not about
-              convenience: Apple lets a site send notifications ONLY from an
-              installed Home Screen app. Someone weighing up "is this worth a
-              tap" deserves to know that staying in the tab costs them the
-              weekly weigh-in reminder outright. Stated as a fact about their
-              situation, not as an instruction. */}
-          {platform === "ios" ? (
-            <p className="pwi-sub pwi-in pwi-d2">{t("app.pwi.iosPush")}</p>
-          ) : null}
-
-          <div className="pwi-demo pwi-in pwi-d3">
-            <MiniPhone platform={platform} step={step} t={t} />
-
-            <ol className="pwi-steps">
-              {steps.map((s, i) => (
-                <li key={s.key} className={i === step ? "is-active" : ""}>
-                  <button
-                    type="button"
-                    className="pwi-step-btn"
-                    onClick={() => {
-                      setPaused(true);
-                      setStep(i);
-                    }}
-                    aria-current={i === step ? "step" : undefined}
-                  >
-                    <span className="pwi-num">{i + 1}</span>
-                    <span className="pwi-step-text">{stepText(platform, s.key, t)}</span>
-                  </button>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {platform === "ios" ? (
-            <p className="pwi-note pwi-in pwi-d4">
-              {t("app.pwi.note.a")}
-              {" "}
-              <b>{t("app.pwi.note.b")}</b>{t("app.pwi.note.c")}
-            </p>
-          ) : null}
-
-          <div className="pwi-cta pwi-in pwi-d5">
-            {deferred ? (
-              <button type="button" className="pwi-install" onClick={onPrimary}>
+          {storeUrl ? (
+            /* The platform HAS a listing, so there is nothing left to teach:
+               one link, and the OS takes over. `close()` fires on the way out
+               so coming back from the store does not land on this overlay
+               again -- the store visit is the answer to what it was asking. */
+            <div className="pwi-cta pwi-in pwi-d3">
+              <a
+                className="pwi-install"
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={close}
+              >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                   <path d="M12 3v13" />
                   <path d="m7 12 5 5 5-5" />
                   <path d="M5 21h14" />
                 </svg>
-                {t("app.os.installApp")}
+                {t(platform === "ios" ? "app.pwi.store.ios" : "app.pwi.store.android")}
+              </a>
+              <button type="button" className="pwi-skip" onClick={close}>
+                {t("app.pwi.skip")}
               </button>
-            ) : null}
-            <button type="button" className="pwi-skip" onClick={close}>
-              {t("app.pwi.skip")}
-            </button>
-          </div>
+            </div>
+          ) : (
+            <>
+            <div className="pwi-demo pwi-in pwi-d3">
+              <MiniPhone platform={platform} step={step} t={t} />
+
+              <ol className="pwi-steps">
+                {steps.map((s, i) => (
+                  <li key={s.key} className={i === step ? "is-active" : ""}>
+                    <button
+                      type="button"
+                      className="pwi-step-btn"
+                      onClick={() => {
+                        setPaused(true);
+                        setStep(i);
+                      }}
+                      aria-current={i === step ? "step" : undefined}
+                    >
+                      <span className="pwi-num">{i + 1}</span>
+                      <span className="pwi-step-text">{stepText(platform, s.key, t)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+
+            <div className="pwi-cta pwi-in pwi-d5">
+              {deferred ? (
+                <button type="button" className="pwi-install" onClick={onPrimary}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M12 3v13" />
+                    <path d="m7 12 5 5 5-5" />
+                    <path d="M5 21h14" />
+                  </svg>
+                  {t("app.os.installApp")}
+                </button>
+              ) : null}
+              <button type="button" className="pwi-skip" onClick={close}>
+                {t("app.pwi.skip")}
+              </button>
+            </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -430,102 +459,42 @@ export function InstallOverlay({
  * step index of whichever platform (iOS: 3, Android: 2).
  */
 function MiniPhone({ platform, step, t }: { platform: Platform; step: number; t: TFunction }) {
-  const lastIndex = STEPS[platform].length - 1;
+  const lastIndex = stepsFor(platform).length - 1;
   return (
     <div className="pwi-phone" data-step={step} data-platform={platform}>
       <span className="pwi-notch" aria-hidden="true" />
       <div className="pwi-screen">
-        {platform === "ios" ? (
-          <>
-            {/* 0: Safari with the BOTTOM address bar; ••• (More) pulsing */}
-            <div className="pwi-layer" data-for="0">
-              <WebLines />
-              <div className="pwi-bar pwi-bar-bottom">
-                <span className="pwi-bar-ic">‹</span>
-                <span className="pwi-omni pwi-omni-c">fitmess.app</span>
-                <span className="pwi-bar-ic pwi-reload">↻</span>
-                <span className="pwi-bar-ic pwi-target pwi-more">
-                  •••<span className="pwi-tap" />
-                </span>
-              </div>
+        {/* 0: Chrome, kebab pulsing */}
+        <div className="pwi-layer" data-for="0">
+          <div className="pwi-bar pwi-bar-top">
+            <span className="pwi-omni">fitmess.app</span>
+            <span className="pwi-bar-ic pwi-target pwi-kebab">
+              ⋮<span className="pwi-tap" />
+            </span>
+          </div>
+          <WebLines />
+        </div>
+        {/* 1: menu, target row */}
+        <div className="pwi-layer" data-for="1">
+          <div className="pwi-bar pwi-bar-top">
+            <span className="pwi-omni">fitmess.app</span>
+            <span className="pwi-bar-ic pwi-kebab">⋮</span>
+          </div>
+          <WebLines dim />
+          <div className="pwi-menu">
+            <div className="pwi-row">{t("app.os.newTab")}</div>
+            <div className="pwi-row pwi-target">
+              <span>{t("app.os.installApp")}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M12 3v12" />
+                <path d="m8 11 4 4 4-4" />
+                <path d="M5 21h14" />
+              </svg>
+              <span className="pwi-tap" />
             </div>
-            {/* 1: the ••• menu (bottom-right); Podeli highlighted */}
-            <div className="pwi-layer" data-for="1">
-              <WebLines dim />
-              <div className="pwi-menu pwi-menu-br">
-                <div className="pwi-row pwi-target">
-                  <span>{t("app.os.share")}</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M12 3v13" />
-                    <path d="m8 7 4-4 4 4" />
-                    <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7" />
-                  </svg>
-                  <span className="pwi-tap" />
-                </div>
-                <div className="pwi-row">{t("app.os.addBookmark")}</div>
-                <div className="pwi-row">{t("app.os.newTab")}</div>
-              </div>
-            </div>
-            {/* 2: the system share sheet; Dodaj na početni ekran highlighted */}
-            <div className="pwi-layer" data-for="2">
-              <WebLines dim />
-              <div className="pwi-sheet">
-                <span className="pwi-grip" />
-                <div className="pwi-share-card">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/landing/obrok.jpg" alt="" />
-                  <span className="pwi-share-meta">
-                    <b>FitMess</b>
-                    <span>fitmess.app</span>
-                  </span>
-                </div>
-                <div className="pwi-row">{t("app.os.copy")}</div>
-                <div className="pwi-row pwi-target">
-                  <span>{t("app.os.addToHome")}</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <rect x="4" y="4" width="16" height="16" rx="3" />
-                    <path d="M12 9v6M9 12h6" />
-                  </svg>
-                  <span className="pwi-tap" />
-                </div>
-              </div>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* 0: Chrome, kebab pulsing */}
-            <div className="pwi-layer" data-for="0">
-              <div className="pwi-bar pwi-bar-top">
-                <span className="pwi-omni">fitmess.app</span>
-                <span className="pwi-bar-ic pwi-target pwi-kebab">
-                  ⋮<span className="pwi-tap" />
-                </span>
-              </div>
-              <WebLines />
-            </div>
-            {/* 1: menu, target row */}
-            <div className="pwi-layer" data-for="1">
-              <div className="pwi-bar pwi-bar-top">
-                <span className="pwi-omni">fitmess.app</span>
-                <span className="pwi-bar-ic pwi-kebab">⋮</span>
-              </div>
-              <WebLines dim />
-              <div className="pwi-menu">
-                <div className="pwi-row">{t("app.os.newTab")}</div>
-                <div className="pwi-row pwi-target">
-                  <span>{t("app.os.installApp")}</span>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                    <path d="M12 3v12" />
-                    <path d="m8 11 4 4 4-4" />
-                    <path d="M5 21h14" />
-                  </svg>
-                  <span className="pwi-tap" />
-                </div>
-                <div className="pwi-row">{t("app.os.history")}</div>
-              </div>
-            </div>
-          </>
-        )}
+            <div className="pwi-row">{t("app.os.history")}</div>
+          </div>
+        </div>
 
         {/* shared final: home screen, tile pops in with a teal spark */}
         <div className="pwi-layer" data-for={String(lastIndex)}>

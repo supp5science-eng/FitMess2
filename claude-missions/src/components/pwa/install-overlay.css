@@ -610,6 +610,8 @@
   margin-top: 4px;
 }
 .pwi-install {
+  /* Also worn by an <a> (the store link), which arrives underlined. */
+  text-decoration: none;
   display: flex;
   align-items: center;
   justify-content: center;

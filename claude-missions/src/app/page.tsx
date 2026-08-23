@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { HeroVideo } from "@/components/landing/hero-video";
 import { getT } from "@/lib/i18n/server";
+import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/device/stores";
 import type { MessageKey } from "@/lib/i18n/messages";
 
 import "./landing.css";
@@ -138,17 +139,24 @@ function IconBuilding() {
  *
  * `live` is what separates a fact from a plan, and it is the only thing that
  * changes the row's colour — the teal is reserved for the thing you can
- * actually open right now, so the two pending rows can never read as shipped.
+ * actually open right now, so a pending row can never read as shipped.
+ *
+ * `href` turns the row into a real link. Only a live row ever gets one: a
+ * store link before the listing is public lands on "item not found", which
+ * reads as a broken app rather than an unfinished rollout.
  */
 function StoreRow({
   label,
   note,
   live = false,
+  href,
 }: {
   label: string;
   note: string;
   live?: boolean;
+  href?: string | null;
 }) {
+  const Row = href ? "a" : "span";
   return (
     <li className="flex items-center gap-3">
       <span
@@ -158,9 +166,14 @@ function StoreRow({
       >
         {live ? <IconCheck /> : <IconBuilding />}
       </span>
-      <span className="min-w-0 flex-1 text-[14.5px] font-semibold text-foreground">
+      <Row
+        {...(href
+          ? { href, target: "_blank", rel: "noopener noreferrer" }
+          : {})}
+        className="min-w-0 flex-1 text-[14.5px] font-semibold text-foreground"
+      >
         {label}
-      </span>
+      </Row>
       <span
         className={`shrink-0 text-[12.5px] font-semibold ${
           live ? "text-primary" : "text-muted-foreground"
@@ -296,16 +309,20 @@ export default async function LandingPage() {
           </ul>
         </section>
 
-        {/* ---------- Availability: web now, stores in progress ----------
+        {/* ---------- Availability: App Store live, Play in progress ----------
             Sits between the features and the closing CTA on purpose: by here
             the visitor wants the product, and "where do I get it" is the last
             thing standing between them and "Kreni besplatno". Framed as a
-            deliberate prelaunch rather than a missing feature — the web app is
+            deliberate rollout rather than a missing feature — the web app is
             a shipped row on the list, not a stand-in for one.
 
             No date is promised anywhere in this block. A missed launch date on
             a landing page costs more trust than the wait itself, so the copy
-            says "u pripremi" and stops. */}
+            says "u pripremi" and stops.
+
+            The Play row stays pending until the closed test finishes and the
+            listing is public; `@/lib/device/stores` is the single switch, so
+            this block flips itself the day `PLAY_STORE_URL` stops being null. */}
         <section
           className="mx-auto w-full max-w-[460px] px-[22px] pb-14"
           aria-labelledby="lp-stores-h"
@@ -323,17 +340,25 @@ export default async function LandingPage() {
 
             <ul className="mt-4 grid gap-2.5 border-t border-border/60 pt-4">
               <StoreRow
-                label={t("app.landing.stores.web")}
-                note={t("app.landing.stores.webNote")}
+                label={t("app.landing.stores.appStore")}
+                note={t("app.landing.stores.nowNote")}
+                href={APP_STORE_URL}
                 live
               />
               <StoreRow
-                label={t("app.landing.stores.appStore")}
-                note={t("app.landing.stores.soonNote")}
+                label={t("app.landing.stores.play")}
+                note={t(
+                  PLAY_STORE_URL
+                    ? "app.landing.stores.nowNote"
+                    : "app.landing.stores.soonNote"
+                )}
+                href={PLAY_STORE_URL}
+                live={PLAY_STORE_URL !== null}
               />
               <StoreRow
-                label={t("app.landing.stores.play")}
-                note={t("app.landing.stores.soonNote")}
+                label={t("app.landing.stores.web")}
+                note={t("app.landing.stores.nowNote")}
+                live
               />
             </ul>
 

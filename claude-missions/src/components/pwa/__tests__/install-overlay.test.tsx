@@ -5,7 +5,8 @@ import { cleanup, render, screen } from "@testing-library/react";
 import { InstallOverlay } from "@/components/pwa/install-overlay";
 import { NATIVE_UA_SUFFIX } from "@/lib/device/native";
 
-// The post-onboarding install overlay: platform-aware walkthrough, one-shot
+// The post-onboarding install overlay: a store link where a store listing
+// exists and the "add to Home Screen" walkthrough where one does not, one-shot
 // gating (localStorage + consumed cookie), quiet dismissal. jsdom has no
 // matchMedia, so we stub it per-test (standalone vs browser-tab).
 
@@ -27,6 +28,8 @@ function stubUserAgent(ua: string) {
 
 const IOS_UA =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15";
+const ANDROID_UA =
+  "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/126";
 
 describe("InstallOverlay", () => {
   beforeEach(() => {
@@ -40,24 +43,48 @@ describe("InstallOverlay", () => {
     vi.useRealTimers();
   });
 
-  it("test_install_overlay_rises_with_platform_walkthrough_after_intro_beat", () => {
+  it("test_install_overlay_sends_an_iphone_to_the_app_store_after_intro_beat", () => {
     stubUserAgent(IOS_UA);
     render(<InstallOverlay />);
 
     // Hidden during the post-intro beat...
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
 
-    // ...then rises with the iOS (Safari) walkthrough.
+    // ...then rises with the one thing an iPhone visitor actually needs.
     act(() => {
       vi.advanceTimersByTime(800);
     });
     expect(
-      screen.getByRole("dialog", { name: /Dodaj FitMess na početni ekran/ })
+      screen.getByRole("dialog", { name: /Preuzmi FitMess/ })
     ).toBeInTheDocument();
-    // Appears twice by design: in the step list AND inside the mini phone's
-    // share sheet that demonstrates it.
-    expect(screen.getAllByText(/Dodaj na početni ekran/).length).toBeGreaterThan(1);
-    expect(screen.getByText(/u dnu Safari-ja/)).toBeInTheDocument();
+
+    const link = screen.getByRole("link", { name: /App Store/ });
+    expect(link).toHaveAttribute("href", "https://apps.apple.com/app/id6801093936");
+
+    // THE POINT OF THIS TEST. The App Store listing went live on 23.08.2026,
+    // and from that day teaching an iPhone visitor the Safari bookmark trick
+    // hands them a worse copy of an app they could simply download. If any of
+    // this comes back, it comes back by accident.
+    expect(screen.queryByText(/Dodaj na početni ekran/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Safari/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Podeli/)).not.toBeInTheDocument();
+  });
+
+  it("test_install_overlay_still_teaches_android_while_play_has_no_listing", () => {
+    // The mirror image, and the reason the walkthrough was kept rather than
+    // deleted: Play is still in closed testing, so an Android visitor has no
+    // listing to be sent to. Take this away and a web tab is all they get --
+    // no icon, no notifications. It goes when `PLAY_STORE_URL` stops being
+    // null, and not one day sooner.
+    stubUserAgent(ANDROID_UA);
+    render(<InstallOverlay />);
+    act(() => {
+      vi.advanceTimersByTime(800);
+    });
+
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Google Play/ })).not.toBeInTheDocument();
+    expect(screen.getAllByText(/Instaliraj aplikaciju/).length).toBeGreaterThan(0);
   });
 
   it("test_install_overlay_dismisses_via_quiet_continue_in_browser", () => {
@@ -125,7 +152,7 @@ describe("InstallOverlay in revisit mode", () => {
     });
 
     expect(
-      screen.getByRole("dialog", { name: /Dodaj FitMess na početni ekran/ })
+      screen.getByRole("dialog", { name: /Preuzmi FitMess/ })
     ).toBeInTheDocument();
   });
 

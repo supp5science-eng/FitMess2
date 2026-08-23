@@ -45,22 +45,33 @@ describe("root landing page (F001 scaffold smoke test + FitMess landing)", () =>
     expect(screen.getByText(/Prelaunch · web verzija/i)).toBeInTheDocument();
   });
 
-  it("test_landing_lists_the_web_app_as_available_and_both_stores_as_in_progress", async () => {
+  it("test_landing_lists_the_app_store_as_live_and_play_as_in_progress", async () => {
     render(await Home());
 
     const stores = screen.getByRole("region", {
-      name: /Za sad web, uskoro i u prodavnicama/i,
+      name: /Gde možeš da ga preuzmeš/i,
     });
     expect(stores).toBeInTheDocument();
 
-    // The one row that is a fact today reads differently from the two that are
-    // plans -- if "U pripremi" ever leaked onto the web row, the page would be
+    // Rows that are a fact today read differently from the one that is still a
+    // plan -- if "U pripremi" ever leaked onto a live row, the page would be
     // telling visitors the thing they are looking at doesn't exist yet.
-    expect(screen.getByText(/Web aplikacija/i)).toBeInTheDocument();
-    expect(screen.getByText(/Dostupno sada/i)).toBeInTheDocument();
-    expect(screen.getByText("App Store")).toBeInTheDocument();
+    // Exact, not a regex: the section's body copy also says "web aplikacija".
+    expect(screen.getByText("Web aplikacija")).toBeInTheDocument();
     expect(screen.getByText("Google Play")).toBeInTheDocument();
-    expect(screen.getAllByText(/U pripremi/i)).toHaveLength(2);
+    expect(screen.getAllByText("Dostupno sada")).toHaveLength(2);
+    expect(screen.getAllByText("U pripremi")).toHaveLength(1);
+
+    // The App Store row is a real link now that the listing is public. Play is
+    // NOT: its listing stays private until the closed test finishes, and a
+    // link would land every visitor on "item not found".
+    expect(screen.getByRole("link", { name: "App Store" })).toHaveAttribute(
+      "href",
+      "https://apps.apple.com/app/id6801093936"
+    );
+    expect(
+      screen.queryByRole("link", { name: "Google Play" })
+    ).not.toBeInTheDocument();
   });
 
   it("test_landing_promises_no_launch_date", async () => {
@@ -69,7 +80,7 @@ describe("root landing page (F001 scaffold smoke test + FitMess landing)", () =>
     // ("uskoro u martu!") from quietly introducing one.
     render(await Home());
     const stores = screen.getByRole("region", {
-      name: /Za sad web, uskoro i u prodavnicama/i,
+      name: /Gde možeš da ga preuzmeš/i,
     });
     expect(stores.textContent ?? "").not.toMatch(
       /\b(20\d\d|januar|februar|mart|april|maj|jun|jul|avgust|septembar|oktobar|novembar|decembar|Q[1-4])\b/i

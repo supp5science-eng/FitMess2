@@ -6,6 +6,7 @@ import {
   isIosNativeShellUserAgent,
   isNativeAppUserAgent,
 } from "@/lib/device/native";
+import { FREE_DAILY_AI } from "@/lib/ai/limits";
 import { AI_LIMIT_EVENT, type AiLimitValue } from "@/lib/funnel/events";
 import type { Database } from "@/lib/types/db";
 
@@ -22,8 +23,7 @@ import type { Database } from "@/lib/types/db";
  * "five a day" a lie. The unit of charge is a user action.
  */
 
-/** Estimates a free account gets per Belgrade day. */
-export const FREE_DAILY_AI = 5;
+export { FREE_DAILY_AI } from "@/lib/ai/limits";
 
 /**
  * ⚠️ ENFORCEMENT IS OFF, AND THAT IS THE DECISION, NOT AN UNFINISHED EDGE.

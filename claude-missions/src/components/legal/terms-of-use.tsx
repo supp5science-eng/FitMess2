@@ -7,6 +7,7 @@ import {
   LegalText,
   type LegalDocumentProps,
 } from "@/components/legal/legal-document";
+import { FREE_DAILY_AI } from "@/lib/ai/limits";
 import { CONTROLLER, MINIMUM_AGE } from "@/lib/legal/controller";
 
 /**
@@ -68,7 +69,14 @@ export function TermsOfUse({ locale, t }: LegalDocumentProps) {
       </LegalSection>
 
       <LegalSection title={t("legal.terms.price.h")}>
-        <LegalText>{t("legal.terms.price.body")}</LegalText>
+        {/* The allowance is interpolated from `FREE_DAILY_AI`, never retyped.
+            This paragraph is a PROMISE: it used to advertise "7 days free"
+            while the product had settled on a permanent free tier instead, and
+            a hardcoded number here would drift the same way the moment the
+            allowance changes. */}
+        <LegalText>
+          {t("legal.terms.price.body", { limit: FREE_DAILY_AI })}
+        </LegalText>
       </LegalSection>
 
       <LegalSection title={t("legal.terms.accuracy.h")}>

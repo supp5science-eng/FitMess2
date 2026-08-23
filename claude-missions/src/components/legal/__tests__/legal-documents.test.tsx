@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+
+import { FREE_DAILY_AI } from "@/lib/ai/limits";
 import { render, screen } from "@testing-library/react";
 
 import { AccountDeletion } from "@/components/legal/account-deletion";
@@ -94,9 +96,18 @@ describe("terms of use", () => {
   it("says what happens when the app starts charging", () => {
     render(<TermsOfUse locale="sr" t={sr} />);
 
-    // Apple rejects apps that take payment outside their system, and both
-    // stores require the trial length to be stated before the charge.
-    expect(screen.getByText(/7 dana besplatnog/i)).toBeInTheDocument();
+    // This paragraph is a PROMISE, and it has already been wrong once: it
+    // advertised a 7-day trial while the product had settled on a permanently
+    // free tier instead. What is promised now is the allowance itself, and the
+    // number is read from the same constant the code enforces -- so a change to
+    // one without the other fails here rather than misleading a user.
+    expect(
+      screen.getByText(new RegExp(`do ${FREE_DAILY_AI} AI procena dnevno`, "i"))
+    ).toBeInTheDocument();
+    expect(screen.getByText(/trajno, ne kao probni period/i)).toBeInTheDocument();
+
+    // Apple rejects apps that take payment outside their own system, so the
+    // terms have to name where the money actually goes.
     expect(screen.getByText(/App Store-a odnosno Google Play-a/i)).toBeInTheDocument();
   });
 });

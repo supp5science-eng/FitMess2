@@ -1,4 +1,85 @@
-# Gde smo stali — 19.08.2026, 21:50 · ✅ POSLATO NA RECENZIJU
+# Gde smo stali
+
+> Najnoviji unos je na vrhu. Stariji krugovi stoje ispod, netaknuti.
+
+---
+
+# 24.08.2026, 23:00 — dizajn: staklo, zvuk, verzija 2.0.1
+
+Radilo je više agenata odjednom u istom radnom stablu. Ovo je **dizajnerska
+traka**; klon i 3D idu svojim tokom (`docs/klon.md`).
+
+## ✅ Urađeno i živo na produkciji
+
+**Verzija 2.0.1, sa jednim izvorom istine** (`c324ef0`). Broj je stajao na
+četiri mesta koja niko ne upoređuje: `package.json` i ekran Podešavanja su
+govorili `0.1.0` onog dana kad je App Store odobrio binar koji se zove `1.0`, a
+jedno podizanje na 2.0.1 se pre toga izgubilo **celo u merge-u, bez ijedne
+greške**. Sad broj živi samo u `src/lib/app-version.ts`, a tri fajla koja ne
+mogu da ga uvezu (`package.json`, `versionName`, `MARKETING_VERSION`) drži
+`src/lib/__tests__/app-version.test.ts` — otvara ih sa diska i pada čim se
+raziđu. `versionCode` i `CURRENT_PROJECT_VERSION` se **ne diraju**, njih
+Codemagic piše na svaki build.
+
+⚠️ Tag **`v1.0`** stoji na `35a4dc9` = tačno stanje koje je Apple odobrio
+23.08. To je povratna tačka.
+
+**Staklo na mastilu + zvuk klika** (`b83902a`, pojačano u `774677e`).
+Puna priča i zamke: memorija `fitmess-liquid-glass`. Ukratko:
+
+- Staklo ide **samo na površine punjene mastilom** (`.liquid-glass.bg-primary`,
+  `.bg-destructive`), nikad na papir. Referenca koju je vlasnik dao (tamno
+  dugme sa iridescentnim rubom) živi na crnom; preko toplog belog papira je to
+  tačno greška koju je projekat već jednom napravio i vratio.
+- Selektor gađa `.bg-primary` umesto nove klase jer je **svaka** kontrola
+  punjena mastilom već napisana kao `liquid-glass bg-primary`.
+- Zvuk se **sintetizuje u trenutku pritiska** (`src/lib/feel/click-sound.ts`,
+  Web Audio) — app ne nosi nijedan zvučni fajl i radi offline. Kači se na
+  postojeći delegirani `touchstart` u `HapticProvider`; nijedno dugme se ne
+  dira. Mastilo = `stamp`, sve ostalo = `tick`.
+- Gasi se u **Podešavanja → Aplikacija → Zvuk klika** (`localStorage`,
+  `fm_click_sound`), jer da li telefon sme da se čuje zavisi od prostorije, ne
+  od naloga.
+- ⚠️ Na iPhone-u **bočni prekidač za zvono gasi Web Audio**. To nije bug i
+  namerno se ne zaobilazi.
+
+## ⚠️ Dug koji je svesno napravljen — politika privatnosti je ISPRED koda
+
+Commit `c042a43` objavljuje da se **izvorne slike lica čuvaju** vezane za nalog,
+uvodi izričit pristanak i imenuje prava. Pushovano **na izričit zahtev
+vlasnika, uz upozorenje**.
+
+Danas kod to ne radi:
+
+- slike se **ne čuvaju** — `api/klon/sacuvaj` upisuje samo crtež, tabele za
+  slike nema;
+- `avatar_clones` **nije** u `USER_OWNED_TABLES` → ne izlazi ni u „Moji podaci";
+- nema kontrole za brisanje slika;
+- pristanak pre slanja ne postoji na ekranu za klona.
+
+**Da se zatvori:** tabela za slike + upis u nju → pristanak na `/klon` pre
+slanja → `avatar_clones` i nova tabela u `USER_OWNED_TABLES` → oboje u brisanje
+naloga. Dok to ne stoji, objavljena politika imenuje tri prava koja ne postoje,
+a to je prvo što recenzent čita.
+
+## 📌 Otvoreno, sa mog stola
+
+**Redizajn UI-a je odložen, ali dijagnoza je gotova.** Vlasnik: „izgleda kao
+klasičan calorie tracking app". Snimio sam živi app i našao sedam stvari koje
+odaju žanr; teza je **„FitMess ne broji hranu, FitMess crta tebe"** — klon kao
+jedinica mere, ne red u Podešavanjima. Detalji i redosled: memorija
+`fitmess-ui-redizajn`. Vlasnik je rekao **„polako sa UI-em dok ne rešim klona"**
+— ne kretati bez njegove reči.
+
+**Hidraciona greška** i dalje stoji, sad potvrđena i na `/analitika`, ne samo na
+`/danas` (vidi „Ostalo otvoreno" niže). Nije ničija.
+
+**`app-shell.test.tsx`** pada u 4 testa: `AccountsSync` traži Supabase env koji
+vitest ne dobija. Provereno `git stash`-om — pada i bez izmena iz ovog kruga.
+
+---
+
+# 19.08.2026, 21:50 · ✅ POSLATO NA RECENZIJU
 
 Drugo odbijanje od Apple-a (17.08.2026, submission
 `4f3c776d-297d-4899-a184-265ccf27be15`, iPad Pro 11") po tačkama **4.8 Login

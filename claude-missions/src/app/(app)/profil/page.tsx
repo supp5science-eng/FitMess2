@@ -17,12 +17,14 @@ import {
   Trash2,
   User,
   UtensilsCrossed,
+  Volume2,
 } from "lucide-react";
 
 import { signOutAction } from "../actions";
 import { DeleteAccountDialog } from "@/components/profil/delete-account-dialog";
 import { MedicalDisclaimer } from "@/components/settings/medical-disclaimer";
 import { RefreshAppButton } from "@/components/settings/refresh-app-button";
+import { SoundToggle } from "@/components/settings/sound-toggle";
 import { SettingsGroup } from "@/components/settings/settings-group";
 import {
   SettingsInfoRow,
@@ -160,6 +162,12 @@ export default async function ProfilPage() {
           icon={Languages}
           label={t("settings.language")}
           trailing={<LanguageToggle initialLocale={locale} />}
+        />
+        <SettingsInfoRow
+          icon={Volume2}
+          label={t("settings.sound")}
+          description={t("settings.sound.desc")}
+          trailing={<SoundToggle label={t("settings.sound")} />}
         />
         <SettingsLinkRow
           href="/profil/podsetnici"

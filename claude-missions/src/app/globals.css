@@ -398,6 +398,160 @@
 }
 
 /* ---------------------------------------------------------------------
+   INK GLASS — the one place this plate is allowed to be glass.
+
+   The reference the owner sent is a dark button with an iridescent rim and a
+   specular highlight running around it. That effect lives on black. Dropping
+   it on `--paper` is the exact mistake this project already made and reverted
+   once: rainbow light over a warm white ground turns the whole app colourful,
+   and "jedan veliki redo svega" was the verdict. So the glass is scoped to the
+   surfaces that are ALREADY dark — the ones filled with ink.
+
+   The selector keys on `.bg-primary` / `.bg-destructive` rather than on a new
+   class because every ink-filled control in this codebase is already written
+   as `liquid-glass bg-primary`: the big buttons, the "+", the selected portion
+   chips, the gric shutter. One rule reaches all of them, nothing to remember
+   on the next one, and it is the same set `HapticProvider` gives the heavier
+   press sound to. Anything not ink keeps the flat print overprint above.
+
+   Three parts, and only the first is visible at rest:
+     1. the fill becomes a lozenge of ink — bright at the top edge, deep at the
+        bottom — with a paper-light inner highlight along the top;
+     2. a specular sweep that CROSSES the button on press, not on a loop: an
+        idle animation on a control you tap two hundred times a day is noise;
+     3. a dispersion rim that only lights while the finger is down.
+   Press is where the glass happens, which is the whole point — the owner asked
+   that a tap be felt, and this is the half of that a screen can carry.
+   ------------------------------------------------------------------- */
+@property --fm-sweep {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 130%;
+}
+
+.liquid-glass.bg-primary,
+.liquid-glass.bg-destructive {
+  /* The ultramarine ramp is not invented here: `--gauge-grad-*` is the plate's
+     own bright-to-deep range, already used by the calorie ring. A button and
+     the ring are then lit by the same three inks. */
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(255, 252, 240, 0.26) 0%,
+      rgba(255, 252, 240, 0.04) 46%,
+      rgba(10, 9, 60, 0.16) 100%
+    ),
+    linear-gradient(
+      180deg,
+      var(--gauge-grad-1) 0%,
+      var(--gauge-grad-2) 52%,
+      var(--gauge-grad-3) 100%
+    );
+  box-shadow:
+    inset 0 1.5px 0 0 rgba(255, 252, 240, 0.42),
+    inset 0 -3px 8px -4px rgba(8, 7, 52, 0.55),
+    0 2px 0 0 color-mix(in srgb, var(--ink) 35%, transparent);
+}
+.liquid-glass.bg-destructive {
+  background-image:
+    linear-gradient(
+      180deg,
+      rgba(255, 252, 240, 0.24) 0%,
+      rgba(255, 252, 240, 0.04) 46%,
+      rgba(48, 12, 4, 0.18) 100%
+    ),
+    linear-gradient(180deg, #c9502f 0%, var(--destructive) 55%, #8a2c14 100%);
+}
+
+/* The sweep rides on the existing halftone pseudo, as one more background
+   layer — no extra element, and the dot screen stays exactly where it was. */
+.liquid-glass.bg-primary::before,
+.liquid-glass.bg-destructive::before {
+  background-image:
+    linear-gradient(
+      105deg,
+      transparent 34%,
+      rgba(255, 255, 255, 0.4) 47%,
+      rgba(198, 216, 255, 0.24) 53%,
+      transparent 66%
+    ),
+    radial-gradient(circle, rgba(255, 252, 240, 0.14) 0.5px, transparent 0.9px),
+    linear-gradient(
+      to bottom,
+      rgba(255, 252, 240, 0.18) 0%,
+      rgba(255, 252, 240, 0.05) 34%,
+      rgba(255, 252, 240, 0) 62%
+    );
+  background-size: 260% 100%, 3px 3px, 100% 100%;
+  background-position: var(--fm-sweep) 0, 0 0, 0 0;
+  background-repeat: no-repeat, repeat, no-repeat;
+  /* No duration at rest, on purpose: the sweep is animated only INTO the
+     pressed state (below). Given a duration here it would also animate on
+     release, i.e. slide back across the button in reverse — one press, two
+     glints, and the second one belongs to nothing the finger did. */
+  transition: opacity 0.2s ease;
+}
+.liquid-glass.bg-primary:active::before,
+.liquid-glass.bg-destructive:active::before {
+  --fm-sweep: -40%;
+  opacity: 1;
+  transition:
+    --fm-sweep 0.45s cubic-bezier(0.22, 0.8, 0.3, 1),
+    opacity 0.2s ease;
+}
+
+/* The dispersion rim: a conic rainbow drawn as a ring by masking out its own
+   middle. Invisible at rest (`opacity: 0`), so the ground never sees colour it
+   did not ask for. `::after` and not a child element, so no component markup
+   changes; the ring sits at the very edge, clear of any label. */
+.liquid-glass.bg-primary::after,
+.liquid-glass.bg-destructive::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  pointer-events: none;
+  opacity: 0;
+  background: conic-gradient(
+    from 0deg,
+    #ff5b8a,
+    #ffd166,
+    #7dffb4,
+    #66d9ff,
+    #8b7dff,
+    #ff5b8a
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  transition: opacity 0.18s ease;
+}
+.liquid-glass.bg-primary:active::after,
+.liquid-glass.bg-destructive:active::after {
+  /* Short of full: at 1 the ring reads as a painted hoop around the button
+     rather than as light caught on its edge, and this palette has spent a lot
+     of care on not being colourful. */
+  opacity: 0.8;
+}
+
+/* Reduce Motion keeps the glass and drops the travel: the sweep sits where it
+   would land instead of crossing, and the rim still answers the press. */
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass.bg-primary::before,
+  .liquid-glass.bg-destructive::before,
+  .liquid-glass.bg-primary::after,
+  .liquid-glass.bg-destructive::after {
+    transition: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
    Bottom-nav sliding lens — the mark that travels from tab to tab as you
    switch sections. Was a frosted glass bubble with a chromatic rim; it is
    now a PRESSED one: raised paper inside a solid ink hairline, with the same

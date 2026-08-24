@@ -2,13 +2,16 @@
 
 import { useEffect } from "react";
 
+import { playClick } from "@/lib/feel/click-sound";
+
 /**
  * App-wide tap feedback. A single delegated `touchstart` listener gives every
  * tappable control (button, link, the bottom-nav tabs, or anything
  * `role="button"`) a real physical "click" feel, with zero per-button wiring.
  * Renders nothing; mounted once in the root layout.
  *
- * Three things happen, best-available-wins:
+ * Four things happen; the first three are best-available-wins, the fourth
+ * always runs because it is the only one an iPhone still hears:
  *  1. The listener's mere presence makes iOS Safari apply `:active`, which is
  *     what drives the CSS press-scale in `globals.css` (without any touch
  *     listener, iOS never fires `:active`, so the press looked dead on iPhone).
@@ -17,10 +20,23 @@ import { useEffect } from "react";
  *     hidden `<input type="checkbox" switch>` fires the Taptic Engine. This
  *     works on iOS 17.4–26.4; Apple patched it in iOS 26.5, so the newest
  *     iPhones fall back to the visual press from #1. Harmless everywhere else.
+ *  4. A synthesised click (`@/lib/feel/click-sound`). Ink-filled controls —
+ *     the ones `bg-primary` also gives the glass to — land with the heavier
+ *     `stamp`; everything else ticks. This is the only layer that reaches a
+ *     current iPhone at all, and the user can switch it off in Podešavanja.
  */
 
 /** Controls that should give feedback on press. */
 const TAP_SELECTOR = 'button, a, [role="button"], summary';
+
+/**
+ * Controls whose press deserves the heavier sound: the ones filled with ink.
+ * Keyed on the fill utility rather than on a component prop because that is
+ * exactly the set the ink glass in `globals.css` keys on too — one rule,
+ * "filled with ink", drives both how a control looks and how it sounds, so the
+ * two can never drift into disagreeing about which button is the big one.
+ */
+const INK_SELECTOR = ".bg-primary, .bg-destructive";
 
 /** Short, gentle buzz (ms) — enough to feel a tap, never a rumble. */
 const TAP_DURATION_MS = 8;
@@ -88,6 +104,11 @@ export function HapticProvider() {
       if (!(target instanceof Element)) return;
       const control = target.closest(TAP_SELECTOR);
       if (!control || isDisabled(control)) return;
+
+      // Sound first, and unconditionally: it is the layer that survives on
+      // every platform, so it must not sit behind a `return` that a vibrating
+      // device takes.
+      playClick(control.matches(INK_SELECTOR) ? "stamp" : "tick");
 
       if (canVibrate) {
         try {

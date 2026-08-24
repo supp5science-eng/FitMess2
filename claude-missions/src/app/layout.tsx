@@ -150,7 +150,7 @@ export const metadata: Metadata = {
 // `--background`; it is the one place the token has to be duplicated, because
 // the browser reads it from the document head before any stylesheet lands.
 export const viewport: Viewport = {
-  themeColor: "#f5e9cd",
+  themeColor: "#fdf9f0",
   width: "device-width",
   initialScale: 1,
   // iOS PWA: let content extend into the notch/home-indicator area; the

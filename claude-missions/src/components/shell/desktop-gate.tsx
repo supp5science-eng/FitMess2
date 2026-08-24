@@ -34,7 +34,7 @@ export async function DesktopGate() {
     width: 200,
     // Ink on paper, like everything else -- 12:1 contrast, well inside
     // what a scanner needs.
-    color: { dark: "#1c1b8f", light: "#fdf7e4" },
+    color: { dark: "#1c1b8f", light: "#ffffff" },
     errorCorrectionLevel: "M",
   });
 

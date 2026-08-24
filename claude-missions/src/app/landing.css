@@ -11,7 +11,7 @@
  * printed sheet, and the copy and CTA are the same two inks.
  *
  * The hero film is the one hard problem here. It was rendered on a WHITE
- * ground, so dropping it onto cream would draw a bright rectangle exactly
+ * ground, so dropping it onto the warm paper would draw a bright rectangle exactly
  * where the full-bleed treatment is trying not to have one. It is handled the
  * way a printer would: `mix-blend-mode: multiply` on the video (see
  * `.lp-video`), which makes its white ground vanish into the paper and prints
@@ -26,9 +26,9 @@
  */
 
 .lp {
-  --ground: #f5e9cd;
+  --ground: #fdf9f0;
   --ink: #1c1b8f;
-  --paper: #fdf7e4;
+  --paper: #ffffff;
   --ink-soft: #5654b4;
   --accent: #2f2ce6;
   --accent-bright: #15139c;
@@ -119,7 +119,8 @@
   object-fit: contain;
   background: transparent;
   /*
-   * Overprint. The film was rendered on WHITE, and this page is cream, so the
+   * Overprint. The film was rendered on pure WHITE and this page is a shade
+   * warmer, so the
    * film is printed onto the paper instead of pasted over it: `multiply`
    * keeps a pixel only to the extent that it is DARKER than the ground, so
    * pure white becomes fully transparent and the phone mockup lands on the

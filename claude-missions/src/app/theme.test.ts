@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 // The "Gravira" theme (2026-08-24) — ONE theme, two inks.
 //
 // The app used to ship a light/dark pair behind an `fm_theme` cookie. It now
-// prints in a single palette: a warm cream paper carrying a vivid ultramarine
+// prints in a single palette: a pale warm paper carrying a vivid ultramarine
 // ink, the duotone of an engraved plate. These tests guard the two things that
 // are easy to undo by accident:
 //
@@ -24,7 +24,7 @@ const GLOBALS_CSS_PATH = path.resolve(HERE, "globals.css");
 const LAYOUT_TSX_PATH = path.resolve(HERE, "layout.tsx");
 const SRC_DIR = path.resolve(HERE, "..");
 
-const PAPER_HEX = "#f5e9cd";
+const PAPER_HEX = "#fdf9f0";
 const INK_HEX = "#1c1b8f";
 const ACCENT_HEX = "#2f2ce6";
 
@@ -40,7 +40,7 @@ function sourceFiles(dir: string): string[] {
   });
 }
 
-describe("Gravira theme: cream paper, ultramarine ink", () => {
+describe("Gravira theme: warm paper, ultramarine ink", () => {
   it("test_theme_root_defines_the_two_printing_inks", () => {
     expect(rootBlock).toMatch(new RegExp(`--paper:\\s*${PAPER_HEX}`));
     expect(rootBlock).toMatch(new RegExp(`--ink:\\s*${INK_HEX}`));
@@ -53,7 +53,7 @@ describe("Gravira theme: cream paper, ultramarine ink", () => {
 
   it("test_theme_primary_is_the_bright_ultramarine_on_paper", () => {
     expect(rootBlock).toMatch(new RegExp(`--primary:\\s*${ACCENT_HEX}`));
-    expect(rootBlock).toMatch(/--primary-foreground:\s*#fdf7e4/);
+    expect(rootBlock).toMatch(/--primary-foreground:\s*#fdf9f0/);
   });
 
   it("test_theme_same_accent_hue_is_reused_for_ring_and_sidebar_primary_not_a_second_color", () => {

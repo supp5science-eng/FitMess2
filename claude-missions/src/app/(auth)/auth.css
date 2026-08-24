@@ -7,8 +7,8 @@
  *
  * Design ("Gravira", 2026-08-24): the same printed world as the app and the
  * marketing landing (`src/app/landing.css`), so the jump from "Kreni" into
- * sign-in stays one product. A raised cream card holds the form on a deeper
- * cream ground, every rule is ink at low alpha, and the primary action is the
+ * sign-in stays one product. A white card holds the form on a warm paper
+ * ground, every rule is ink at low alpha, and the primary action is the
  * plate's ultramarine.
  *
  * The two provider buttons are the exception, on purpose: Apple's guideline
@@ -18,9 +18,9 @@
  */
 
 .auth {
-  --ground: #f0e2c2;
-  --surface: #fdf7e4;
-  --surface-2: #f3e7c6;
+  --ground: #f7f1e6;
+  --surface: #ffffff;
+  --surface-2: #f6f1e8;
   --ink: #1c1b8f;
   --ink-soft: #5654b4;
   --ink-faint: #8583c2;
@@ -309,7 +309,7 @@
 
 .auth-btn-primary {
   background: var(--accent);
-  color: #fdf7e4;
+  color: #fdf9f0;
   box-shadow: 0 3px 0 0 rgba(21, 19, 156, 0.45);
 }
 .auth-btn-primary:not(:disabled):hover {

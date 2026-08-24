@@ -36,9 +36,9 @@
  *    flat icon is what its adaptive mask expects anyway.
  *
  * 1b. **The splash is not the icon's colour.** The icon is always dark, but the
- *    app itself is printed on cream (`--background: #f5e9cd` in
+ *    app itself is printed on pale warm paper (`--background: #fdf9f0` in
  *    `globals.css` — one theme, no dark variant since 2026-08-24). A splash
- *    painted the icon's black would flash cream the moment the site loads, so
+ *    painted the icon's black would flash pale the moment the site loads, so
  *    the light splash matches `--background` exactly. The `-dark` splash is
  *    kept only because the native shells still ask for a dark-appearance
  *    asset; nothing in the web app can reach it.
@@ -77,7 +77,7 @@ const ANDROID_RES = path.join(root, "android/app/src/main/res");
 const GROUND = { r: 10, g: 12, b: 11, alpha: 1 }; // #0a0c0b
 /** `--background` — the cream paper the site paints first. Keep in step with
  *  `globals.css` and with `themeColor` in `src/app/layout.tsx`. */
-const GROUND_LIGHT = { r: 245, g: 233, b: 205, alpha: 1 }; // #f5e9cd
+const GROUND_LIGHT = { r: 253, g: 249, b: 240, alpha: 1 }; // #fdf9f0
 
 /** Fraction of the icon canvas the pear's height fills. iOS shows the icon
  *  whole (rounded corners only), so it can run tall; Android's circular crop

@@ -11,8 +11,8 @@ import { wordmarkLetterColors } from "@/lib/brand/wordmark";
  *
  * Rendered with `next/og` (no extra dependency) using system-styled markup
  * only — no remote font fetch — so the build stays hermetic and fast. The
- * palette is the app's "Gravira" plate: the cream paper (`--paper`,
- * `#f5e9cd`) carrying the ultramarine ink (`--ink`, `#1c1b8f`), with the
+ * palette is the app's "Gravira" plate: the pale warm paper (`--paper`,
+ * `#fdf9f0`) carrying the ultramarine ink (`--ink`, `#1c1b8f`), with the
  * halftone screen printed across it as a repeating dot grid — `next/og` has
  * no CSS mask, so the stipple is laid on flat and kept faint enough to sit
  * behind the type.
@@ -37,9 +37,9 @@ export default function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          backgroundColor: "#f5e9cd",
+          backgroundColor: "#fdf9f0",
           backgroundImage:
-            "radial-gradient(circle at 1px 1px, rgba(28,27,143,0.16) 1px, transparent 1.6px), radial-gradient(120% 120% at 100% 0%, rgba(47,44,230,0.14) 0%, transparent 58%)",
+            "radial-gradient(circle at 1px 1px, rgba(28,27,143,0.12) 1px, transparent 1.6px), radial-gradient(120% 120% at 100% 0%, rgba(47,44,230,0.12) 0%, transparent 58%)",
           backgroundSize: "10px 10px, 100% 100%",
           padding: "72px 80px",
           color: "#1c1b8f",
@@ -59,7 +59,7 @@ export default function OpengraphImage() {
               justifyContent: "center",
               fontSize: 40,
               fontWeight: 800,
-              color: "#fdf7e4",
+              color: "#ffffff",
             }}
           >
             F
@@ -67,7 +67,7 @@ export default function OpengraphImage() {
           {/* "Mess" in the pear's shell gradient, one letter at a time --
               `next/og` renders flat fills, so the shimmer is sampled per
               letter (same trick as the PDF report). Paper stops: this card
-              is printed on the cream ground. */}
+              is printed on the paper ground. */}
           <div
             style={{
               display: "flex",

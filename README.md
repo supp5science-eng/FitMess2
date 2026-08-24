@@ -36,7 +36,7 @@ phone — desktop shows a QR to hand off)
   soon.
 
 Everything is in Serbian (sr‑Latn), informal *"ti"*, mobile‑first at 375px, and
-printed in one theme — **"Gravira"**: a vivid ultramarine ink on warm cream
+printed in one theme — **"Gravira"**: a vivid ultramarine ink on pale warm
 paper, with a halftone stipple ground. There is no light/dark switch.
 
 ---

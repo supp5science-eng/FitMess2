@@ -10,7 +10,7 @@
  * carry the pearl gradient the wordmark always carries — a `background-clip`
  * trick no image library does for free.
  *
- * The palette is copied from `src/app/globals.css`: the cream `--background`
+ * The palette is copied from `src/app/globals.css`: the pale `--background`
  * with the halftone screen over it, and the `--wordmark-grad` stops for
  * "Mess". If either changes, change it here too; there is no way to import a
  * CSS custom property into a standalone page.
@@ -35,11 +35,11 @@ const html = (markDataUri) => `<!doctype html>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: ${WIDTH}px; height: ${HEIGHT}px; overflow: hidden;
-    background: #f5e9cd;
+    background: #fdf9f0;
     background-image:
-      radial-gradient(circle at 1px 1px, rgba(28,27,143,0.15) 1px, transparent 1.6px),
-      radial-gradient(70% 120% at 78% 50%, rgba(47,44,230,0.16) 0%, rgba(245,233,205,0) 65%),
-      radial-gradient(60% 100% at 12% 30%, rgba(47,44,230,0.10) 0%, rgba(245,233,205,0) 62%);
+      radial-gradient(circle at 1px 1px, rgba(28,27,143,0.12) 1px, transparent 1.6px),
+      radial-gradient(70% 120% at 78% 50%, rgba(47,44,230,0.14) 0%, rgba(253,249,240,0) 65%),
+      radial-gradient(60% 100% at 12% 30%, rgba(47,44,230,0.09) 0%, rgba(253,249,240,0) 62%);
     background-size: 9px 9px, 100% 100%, 100% 100%;
     display: flex; align-items: center; gap: 44px;
     padding: 0 96px;

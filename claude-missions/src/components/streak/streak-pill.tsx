@@ -14,7 +14,8 @@ import { cn } from "@/lib/utils";
 // badges screen -- the home entry is deliberately just the number.
 //
 // Presentational: `current` arrives pre-derived from `computeStreak`. Warm
-// (lit flame + soft tint) while a streak is running, calm grey at zero.
+// (lit flame + soft tint inside an amber hairline) while a streak is running,
+// calm and edgeless at zero.
 
 export function StreakPill({
   streak,
@@ -30,9 +31,16 @@ export function StreakPill({
   const { t } = useT();
   const active = streak.current > 0;
 
+  // A hairline of the accent, not just the soft fill. On the pale paper a
+  // low-alpha tint alone has almost nothing to sit against, so the pill lost
+  // its edge and read as a smudge rather than a chip; the rule gives it a shape
+  // and lets the fill stay light enough to never look stained. Only the lit
+  // state gets it -- at zero the pill is deliberately quiet.
   const base = cn(
-    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5",
-    active ? "bg-[var(--streak-soft)]" : "bg-muted",
+    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5",
+    active
+      ? "border-[color-mix(in_srgb,var(--streak-accent)_28%,transparent)] bg-[var(--streak-soft)]"
+      : "border-transparent bg-muted",
     className
   );
 

@@ -153,11 +153,11 @@
   fill: var(--foreground, #1c1b8f);
 }
 .sg-phone-screen {
-  fill: color-mix(in srgb, var(--card, #fdf7e4) 88%, var(--foreground, #1c1b8f));
+  fill: color-mix(in srgb, var(--card, #ffffff) 88%, var(--foreground, #1c1b8f));
 }
 .sg-phone-lens {
   fill: var(--brand, #2f2ce6);
-  stroke: var(--card, #fdf7e4);
+  stroke: var(--card, #ffffff);
   stroke-width: 1.5;
 }
 /* The cone is what actually communicates "this is where it's looking". */

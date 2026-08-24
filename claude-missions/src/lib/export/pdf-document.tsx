@@ -39,7 +39,7 @@ const BRAND = "#2f2ce6";
 const INK = "#1c1b8f";
 const MUTED = "#5654b4";
 const LINE = "#dcd3f0";
-const ZEBRA = "#faf4e6";
+const ZEBRA = "#fbf7f0";
 
 const styles = StyleSheet.create({
   page: {

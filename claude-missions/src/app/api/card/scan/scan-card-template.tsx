@@ -46,7 +46,7 @@ export function scanCardElement(model: ScanCardModel): ReactElement {
 
   // The lockup sits over the photo's dark scrim, so it takes the lifted
   // "on ink" stops rather than the deep ones the app prints on paper. The rest
-  // of this card is deliberately NOT re-skinned to the app's cream plate: it is
+  // of this card is deliberately NOT re-skinned to the app's paper plate: it is
   // a full-bleed photo, and white type over a scrim is what stays legible over
   // an arbitrary meal shot (see the tier palette in `lib/share/tier.ts`).
   const messColors = wordmarkLetterColors(4, "ink");

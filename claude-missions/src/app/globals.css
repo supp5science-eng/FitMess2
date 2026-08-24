@@ -69,11 +69,11 @@
 
 /*
  * ============================================================
- *  FitMess "Gravira" — plavo mastilo na krem papiru.
+ *  FitMess "Gravira" — plavo mastilo na svetlom, toplom papiru.
  * ============================================================
  *
  * ONE theme. The old light/dark pair was retired (2026-08-24): the app is now
- * a single printed surface — a warm cream paper (`--paper`) carrying a vivid
+ * a single printed surface — a pale warm paper (`--paper`) carrying a vivid
  * ultramarine ink (`--ink` / `--ink-bright`), the duotone of an engraved
  * plate. There is no `.dark` block, no `fm_theme` cookie and no appearance
  * switch; `lib/theme/theme.ts` is gone. If you are tempted to add a second
@@ -85,7 +85,7 @@
  * resolve to the same one theme, so pinning is now a no-op that costs nothing.
  *
  * Reading the palette:
- *   --paper / --paper-raised   the two cream grounds (page, raised card)
+ *   --paper / --paper-raised   the page ground and the raised card (white)
  *   --ink                      the deep ink every glyph and rule is drawn in
  *   --ink-bright               the vivid ultramarine of the reference plate;
  *                              this is `--primary` — buttons, ring, gauge
@@ -99,34 +99,47 @@
  */
 .light,
 :root {
-  /* --- The two printing inks --------------------------------------- */
-  --paper: #f5e9cd;
-  --paper-raised: #fdf7e4;
+  /* --- The two printing inks ---------------------------------------
+     The paper is a WHISPER of warmth, not a colour. It was a full cream
+     (#f5e9cd) at first, straight off the reference plate, and it was wrong:
+     that is yellow at ~67% saturation, and a phone screen fills whole
+     unbroken fields with it where the reference only ever shows it in the
+     gaps between dense blue linework. Large and flat, it stopped reading as
+     "warm paper" and started reading as "paper that has gone off". The hue is
+     unchanged; the saturation is a quarter of what it was and the lightness
+     is up, which is the whole difference between warm and dirty.
+
+     The raised surface is now plain white on purpose: it gives the
+     ultramarine the maximum contrast it can get, and it is what makes a card
+     read as a fresh sheet laid on the ground rather than another shade of the
+     same stain. */
+  --paper: #fdf9f0;
+  --paper-raised: #ffffff;
   --ink: #1c1b8f;
   --ink-bright: #2f2ce6;
 
   /* --- Semantic surfaces ------------------------------------------- */
-  --background: #f5e9cd;
+  --background: #fdf9f0;
   --foreground: #1c1b8f;
-  --card: #fdf7e4;
+  --card: #ffffff;
   --card-foreground: #1c1b8f;
-  --popover: #fdf7e4;
+  --popover: #ffffff;
   --popover-foreground: #1c1b8f;
   /* The primary action is the plate's brightest ultramarine, on paper-white
      type -- the single loudest thing on any screen. */
   --primary: #2f2ce6;
-  --primary-foreground: #fdf7e4;
-  --secondary: #ecdcb6;
+  --primary-foreground: #fdf9f0;
+  --secondary: #f4eee1;
   --secondary-foreground: #1c1b8f;
-  --muted: #eddfba;
+  --muted: #f6f1e6;
   --muted-foreground: #5654b4;
-  --accent: #e6d5ac;
+  --accent: #f1ebdc;
   --accent-foreground: #1c1b8f;
   /* Errors are a brick/terracotta, never a screen red: this palette has no
      pure red in it and a fire-engine one would look like a foreign object.
      (Zero-shame rule stands -- going OVER target still uses `--chart-5`.) */
   --destructive: #b03a20;
-  /* Rules and hairlines are INK at low alpha, never a grey: on cream, grey
+  /* Rules and hairlines are INK at low alpha, never a grey: on warm paper, grey
      reads as dirt. Everything that draws a line on this paper is the same
      blue, just thinner. */
   --border: color-mix(in srgb, #1c1b8f 20%, transparent);
@@ -150,7 +163,12 @@
   --streak-2: #c2731f;
   --streak-3: #9c5312;
   --streak-accent: #b5651a;
-  --streak-soft: color-mix(in srgb, #b5651a 16%, transparent);
+  /* Mixed from the BRIGHT amber, not from `--streak-accent`: a deep ochre at
+     low alpha over a light ground composites to a beige-brown smudge -- the
+     dirtiest thing on the screen once the paper went pale. The bright amber at
+     the same alpha lands on a clean pale gold instead. The accent itself (the
+     flame, the numbers) stays deep, because that one has to hold contrast. */
+  --streak-soft: color-mix(in srgb, #d9963a 15%, transparent);
   --streak-line: color-mix(in srgb, #b5651a 55%, transparent);
   --streak-glow: rgba(181, 101, 26, 0.26);
 
@@ -229,14 +247,14 @@
      is the ink of a single dot; `--halftone-size` the grid pitch. Tuning
      either changes the texture everywhere at once (`.app-aurora`,
      `.fm-halftone`, the button overprint). */
-  --halftone-dot: color-mix(in srgb, #1c1b8f 30%, transparent);
+  --halftone-dot: color-mix(in srgb, #1c1b8f 16%, transparent);
   --halftone-size: 7px;
 
-  --sidebar: #f2e4c2;
+  --sidebar: #faf5ea;
   --sidebar-foreground: #1c1b8f;
   --sidebar-primary: #2f2ce6;
-  --sidebar-primary-foreground: #fdf7e4;
-  --sidebar-accent: #e6d5ac;
+  --sidebar-primary-foreground: #fdf9f0;
+  --sidebar-accent: #f1ebdc;
   --sidebar-accent-foreground: #1c1b8f;
   --sidebar-border: color-mix(in srgb, #1c1b8f 20%, transparent);
   --sidebar-ring: #2f2ce6;

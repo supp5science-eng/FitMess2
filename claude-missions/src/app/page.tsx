@@ -17,17 +17,17 @@ import "./landing.css";
  * short, app-styled feature showcase hints at what's inside, then a closing
  * CTA. Kept intentionally brief.
  *
- * The page is printed on the app's own cream plate: the `.lp` root carries
+ * The page is printed on the app's own plate: the `.lp` root carries
  * `.light` (the app has ONE theme now, and that class is what a subtree pins
  * it with), so `bg-card` / `text-foreground` / `--primary` / the macro colours
  * resolve to the real app tokens (globals.css), and the cards reuse the same
  * `rounded-2xl border-border bg-card` surface the authenticated screens use.
  * So the landing reads as the same product, not a separate marketing skin.
  *
- * The hero film was rendered on WHITE, though, and this page is cream — it is
- * printed onto the paper with `mix-blend-mode: multiply` rather than pasted
- * over it, which is what keeps it from drawing a white box (see `.lp-video`
- * in `landing.css`).
+ * The hero film was rendered on pure WHITE, and this page is a shade warmer —
+ * so it is printed onto the paper with `mix-blend-mode: multiply` rather than
+ * pasted over it, which is what keeps it from drawing a bright box (see
+ * `.lp-video` in `landing.css`).
  *
  * There is NO "install the app" CTA here — the whole onboarding
  * (questionnaire → plan) runs on the web first, and the PWA install prompt

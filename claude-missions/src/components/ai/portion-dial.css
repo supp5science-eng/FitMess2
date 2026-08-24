@@ -207,7 +207,7 @@
   margin-top: -11px;
   border-radius: 50%;
   background: var(--brand, #2f2ce6);
-  border: 3px solid var(--background, #f5e9cd);
+  border: 3px solid var(--background, #fdf9f0);
   box-shadow: 0 2px 10px color-mix(in srgb, var(--brand, #2f2ce6) 45%, transparent);
   cursor: grab;
 }
@@ -217,7 +217,7 @@
   height: 28px;
   border-radius: 50%;
   background: var(--brand, #2f2ce6);
-  border: 3px solid var(--background, #f5e9cd);
+  border: 3px solid var(--background, #fdf9f0);
   box-shadow: 0 2px 10px color-mix(in srgb, var(--brand, #2f2ce6) 45%, transparent);
   cursor: grab;
 }
@@ -287,7 +287,7 @@
 .pd-chip[data-on="true"] {
   border-color: var(--primary, #2f2ce6);
   background: var(--primary, #2f2ce6);
-  color: var(--primary-foreground, #fdf7e4);
+  color: var(--primary-foreground, #fdf9f0);
   font-weight: 600;
 }
 

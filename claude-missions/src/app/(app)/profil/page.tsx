@@ -29,6 +29,7 @@ import {
   SettingsLinkRow,
 } from "@/components/settings/settings-row";
 import { LanguageToggle } from "@/components/settings/language-toggle";
+import { APP_VERSION } from "@/lib/app-version";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getT } from "@/lib/i18n/server";
 import { CONTROLLER } from "@/lib/legal/controller";
@@ -64,7 +65,6 @@ import { createClient } from "@/lib/supabase/server";
  * legal deadline and a store reviewer who gets no answer rejects the app.
  */
 const SUPPORT_EMAIL = CONTROLLER.email;
-const APP_VERSION = "0.1.0";
 
 export default async function ProfilPage() {
   const supabase = await createClient();

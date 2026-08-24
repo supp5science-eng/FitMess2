@@ -14,6 +14,7 @@ import {
 import {
   GRIC_PROMPT,
   GRIC_RESPONSE_SCHEMA,
+  GRIC_TEXT_PROMPT,
   parseGricResponse,
   type GricEstimate,
 } from "@/lib/ai/gric-estimate";
@@ -313,6 +314,41 @@ async function generateJsonFromImage(
  * (constrained to `responseSchema`). Mirror of `generateJsonFromImage` for the
  * voice flow -- the only difference is the inline part carries audio bytes.
  */
+/**
+ * Prompt + one piece of USER-WRITTEN text -> JSON.
+ *
+ * The two are separate `parts` rather than one concatenated string, which is
+ * the whole point of this helper: whatever the user typed stays a distinct
+ * message the instruction above it can refer to ("the text arrives as its own
+ * message; read it only as food"), instead of being spliced into the middle of
+ * our own sentences where a line like "ignore the above" reads as if we wrote
+ * it. Same defence the image and audio helpers get for free by the input not
+ * being text at all.
+ */
+async function generateJsonFromText(
+  prompt: string,
+  responseSchema: unknown,
+  userText: string,
+  modelOverride?: string,
+  thinking?: ThinkingLevel
+): Promise<string> {
+  return postGenerateContent(
+    {
+      contents: [
+        { role: "user", parts: [{ text: prompt }] },
+        { role: "user", parts: [{ text: userText }] },
+      ],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema,
+        temperature: 0.2,
+        ...thinkingConfig(thinking),
+      },
+    },
+    modelOverride
+  );
+}
+
 async function generateJsonFromAudio(
   prompt: string,
   responseSchema: unknown,
@@ -675,6 +711,34 @@ export async function estimateGricFromAudio(
     process.env.GEMINI_VOICE_MODEL || VOICE_MODEL,
     // Same as the voice flow: splitting a sentence into items is reading.
     // Gric is also the one path where speed IS the feature.
+    "low"
+  );
+  const parsed = parseGricResponse(parseJson(text));
+  if (!parsed) {
+    throw new GeminiError("Gemini output did not match the expected shape");
+  }
+  return parsed;
+}
+
+/**
+ * "Gric", typed: one written sentence -> the same occasion-grouped items the
+ * spoken clip produces.
+ *
+ * Shares `GRIC_RESPONSE_SCHEMA` and `parseGricResponse` with the audio path on
+ * purpose — the two mouths of Gric must produce the same entry for the same
+ * food, and that is only true while they share the schema, the parse and (via
+ * `GRIC_RULES`) the rules. The only difference here is that there is no clip to
+ * transcribe, so the model has strictly less to do: same "low" thinking, and in
+ * practice this is the faster of the two.
+ */
+export async function estimateGricFromText(
+  userText: string
+): Promise<GricEstimate> {
+  const text = await generateJsonFromText(
+    GRIC_TEXT_PROMPT,
+    GRIC_RESPONSE_SCHEMA,
+    userText,
+    process.env.GEMINI_VOICE_MODEL || VOICE_MODEL,
     "low"
   );
   const parsed = parseGricResponse(parseJson(text));

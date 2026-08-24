@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Camera, Check, Loader2, Mic, Square, Undo2, X } from "lucide-react";
+import { ArrowUp, Camera, Check, Loader2, Mic, Square, Undo2, X } from "lucide-react";
 
 import { AiThinking } from "@/components/ai/ai-thinking";
 import { useT } from "@/components/i18n/locale-provider";
@@ -21,13 +21,30 @@ import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import type { FrequentSnack } from "@/lib/gric/frequent";
 import { groupByOccasion, occasionName } from "@/lib/gric/rows";
 import { cn } from "@/lib/utils";
-import { estimateGricAction, logGricAction } from "./actions";
+import {
+  estimateGricAction,
+  estimateGricTextAction,
+  logGricAction,
+} from "./actions";
 
 // "Gric" — the flow for food that never gets logged because logging it costs
 // more than the food is worth. Everything here follows from one rule: the user
 // should be able to finish without touching the screen a second time.
 //
-//   idle → recording → estimating → review → (auto) saving → done
+//   compose → (recording) → estimating → review → (auto) saving → done
+//
+// TWO WAYS IN, ONE BUTTON. Speaking is still the fast lane, and the composer is
+// built to say so: the microphone is the big pressed seal at the bottom and the
+// text field sits quiet behind a placeholder. But the moment a character is
+// typed, that same seal becomes the send button — one primary action in one
+// place, whichever way you came at it, rather than two competing buttons asking
+// you to choose a method before you have said anything.
+//
+// Typing is not a lesser path bolted on: it is the ONLY path in the three
+// situations where speaking fails outright — a denied or missing microphone, a
+// quiet room (a meeting, a sleeping child), and a loud one. Before this, all
+// three ended the feature; now they only change which control you reach for,
+// and both feed the same estimate, the same review screen and the same write.
 //
 // `review` is chips, not a form. Low-variance items commit themselves after a
 // short countdown; a single high-variance item (cake, burek, a sandwich)
@@ -49,6 +66,10 @@ type Phase =
   | "review"
   | "saving"
   | "done";
+
+/** Hard cap on the composer, mirrored by `MAX_TEXT_CHARS` on the server. A gric
+ * is a sentence; this is generous for one and short of a recipe. */
+const MAX_TEXT_CHARS = 400;
 
 /** Long enough to notice and stop it, short enough that doing nothing is the
  * fast path rather than a wait. */
@@ -92,10 +113,16 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
   const router = useRouter();
   const recordingRef = useRef<WavRecording | null>(null);
   const autoStopRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const textRef = useRef<HTMLTextAreaElement>(null);
+  // The live mic level is written straight onto this node's style as a CSS
+  // variable, never into React state: it updates every animation frame, and a
+  // 60 fps `setState` would re-render the whole flow for a decoration.
+  const haloRef = useRef<HTMLSpanElement>(null);
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [error, setError] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(0);
+  const [text, setText] = useState("");
 
   const [items, setItems] = useState<ReviewItem[]>([]);
   const [countdown, setCountdown] = useState<number | null>(null);
@@ -114,6 +141,34 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
     if (phase !== "recording") return;
     const id = setInterval(() => setSeconds((s) => s + 1), 1000);
     return () => clearInterval(id);
+  }, [phase]);
+
+  // Grow the composer to fit what is in it. The field has to sit in the optical
+  // middle of the screen and stay there as it wraps, which no fixed row count
+  // does: too few rows and a second line is clipped, too many and an empty
+  // composer leaves a hole under the placeholder. So it is measured — reset to
+  // `auto` first, because `scrollHeight` on an already-tall element only ever
+  // reports the height it currently has.
+  useEffect(() => {
+    const field = textRef.current;
+    if (!field) return;
+    field.style.height = "auto";
+    field.style.height = `${field.scrollHeight}px`;
+  }, [text]);
+
+  // Drive the level halo from the mic while recording. `level` is optional on
+  // the recorder (see `record-wav.ts`); without it the halo simply rests at
+  // zero and the button still reads as recording from its own pulse.
+  useEffect(() => {
+    if (phase !== "recording") return;
+    let frame = 0;
+    const paint = () => {
+      const level = recordingRef.current?.level?.() ?? 0;
+      haloRef.current?.style.setProperty("--gric-level", level.toFixed(3));
+      frame = requestAnimationFrame(paint);
+    };
+    frame = requestAnimationFrame(paint);
+    return () => cancelAnimationFrame(frame);
   }, [phase]);
 
   // Release the mic / clear timers if the user navigates away mid-recording.
@@ -146,6 +201,28 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
     setCountdown(null);
   }
 
+  /**
+   * What both inputs land on: the model's items become the review screen.
+   *
+   * Spoken and typed grics converge HERE rather than each building their own
+   * review state, so a change to how an estimate is turned into a screen can
+   * never apply to one of them and not the other.
+   */
+  function applyEstimate(stavke: GricListItem[]): void {
+    setItems(
+      stavke.map((base) => ({
+        base,
+        size: "normalno",
+        removed: false,
+        group: base.grupa,
+      }))
+    );
+    setPhase("review");
+    // Only pause for items whose portion genuinely varies. Everything else
+    // saves itself — that is the whole promise of the feature.
+    setCountdown(needsConfirmation(stavke) ? null : AUTOSAVE_SECONDS);
+  }
+
   async function startRecording() {
     setError(null);
     try {
@@ -154,9 +231,39 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
       setPhase("recording");
       autoStopRef.current = setTimeout(() => void stopRecording(), MAX_RECORDING_MS);
     } catch {
-      setError(t("dodaj.mic.denied"));
+      // A refused microphone used to end the feature. It no longer can: the
+      // composer is right there, so say what happened and put the cursor in it
+      // rather than leaving the user staring at a button that will not work.
+      setError(t("dodaj.gric.micUnavailable"));
       setPhase("idle");
+      textRef.current?.focus();
     }
+  }
+
+  /** Typed gric: the sentence goes to the model, the answer to the same review
+   * screen the microphone feeds. */
+  async function submitText() {
+    const value = text.trim();
+    if (value.length === 0) return;
+
+    setError(null);
+    setPhase("estimating");
+    const result = await estimateGricTextAction(value);
+    if (!result.ok) {
+      setError(result.error_sr);
+      setPhase("idle");
+      return;
+    }
+    if (result.data.stavke.length === 0) {
+      // The text is kept on purpose: "two coffees" that the model could not
+      // read as food is one word away from something it can, and retyping the
+      // whole sentence to find out is a worse deal than the snack.
+      setError(t("dodaj.gric.noFoodText"));
+      setPhase("idle");
+      textRef.current?.focus();
+      return;
+    }
+    applyEstimate(result.data.stavke);
   }
 
   async function stopRecording() {
@@ -195,17 +302,7 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
       return;
     }
 
-    const review: ReviewItem[] = stavke.map((base) => ({
-      base,
-      size: "normalno",
-      removed: false,
-      group: base.grupa,
-    }));
-    setItems(review);
-    setPhase("review");
-    // Only pause for items whose portion genuinely varies. Everything else
-    // saves itself — that is the whole promise of the feature.
-    setCountdown(needsConfirmation(stavke) ? null : AUTOSAVE_SECONDS);
+    applyEstimate(stavke);
   }
 
   async function save(source: ReviewItem[]) {
@@ -326,20 +423,30 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
     setItems([]);
     setCountdown(null);
     setError(null);
+    setText("");
     setPhase("idle");
   }
 
   return (
-    <main className="flex flex-1 flex-col gap-6 px-6 py-8">
-      <header className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          {t("dodaj.gric.title")}
-        </h1>
+    <main className="flex flex-1 flex-col gap-5 px-6 pb-8 pt-5">
+      {/* The way out is a mark in the corner, not a word competing with the
+          title: this screen has exactly one thing to say and one thing to
+          press, and "Otkaži" set as body text read like a third option. */}
+      <header className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            {t("dodaj.gric.eyebrow")}
+          </span>
+          <span className="text-sm text-muted-foreground">
+            {t("dodaj.gric.eyebrowHint")}
+          </span>
+        </div>
         <Link
           href="/danas"
-          className="text-sm font-medium text-muted-foreground hover:text-foreground"
+          aria-label={t("dodaj.cancel")}
+          className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border bg-card text-foreground"
         >
-          {t("dodaj.cancel")}
+          <X className="size-4" aria-hidden="true" />
         </Link>
       </header>
 
@@ -352,30 +459,53 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
         </p>
       ) : null}
 
-      {phase === "idle" ? (
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-col items-center gap-5 pt-4 text-center">
-            <button
-              type="button"
-              onClick={() => void startRecording()}
-              aria-label={t("dodaj.startRecording")}
-              className="flex size-28 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
-            >
-              <Mic className="size-11" aria-hidden="true" />
-            </button>
-            <div className="flex flex-col gap-1">
-              <span className="text-base font-medium text-foreground">
-                {t("dodaj.gric.prompt")}
-              </span>
-              <span className="text-sm text-muted-foreground">
-                {t("dodaj.gric.hint")}
-              </span>
-            </div>
+      {/* The composer. One region for the sentence, one seal for the action —
+          and the seal is the microphone until there is something typed to send,
+          so speaking stays the thing the screen is offering. */}
+      {phase === "idle" || phase === "recording" ? (
+        <div className="flex flex-1 flex-col gap-5">
+          <label htmlFor="gric-text" className="sr-only">
+            {t("dodaj.gric.prompt")}
+          </label>
+          {/* Centred in whatever space is left, so the sentence reads as the
+              subject of the screen rather than a field pinned under a heading
+              with a hole beneath it. */}
+          <div className="flex flex-1 items-center justify-center overflow-y-auto">
+            <textarea
+              id="gric-text"
+              ref={textRef}
+              value={text}
+              onChange={(event) =>
+                setText(event.target.value.slice(0, MAX_TEXT_CHARS))
+              }
+              onKeyDown={(event) => {
+                // Desktop convenience only. Plain Enter sends, Shift+Enter
+                // breaks a line; on a phone keyboard the return key inserts a
+                // newline as always and the seal below is the way to send.
+                if (
+                  event.key === "Enter" &&
+                  !event.shiftKey &&
+                  !event.nativeEvent.isComposing
+                ) {
+                  event.preventDefault();
+                  void submitText();
+                }
+              }}
+              readOnly={phase === "recording"}
+              maxLength={MAX_TEXT_CHARS}
+              rows={1}
+              enterKeyHint="send"
+              placeholder={t("dodaj.gric.placeholder")}
+              className="w-full resize-none overflow-hidden border-0 bg-transparent px-1 text-center text-3xl font-medium leading-snug text-foreground outline-none placeholder:text-foreground/25 focus:outline-none"
+            />
           </div>
 
-          {frequent.length > 0 ? (
-            <section className="flex flex-col gap-3">
-              <h2 className="text-sm font-medium text-muted-foreground">
+          {/* Shortcuts stay out of the way while the composer is in use: a
+              habit chip is a way to SKIP describing anything, so offering it
+              mid-sentence is offering to throw the sentence away. */}
+          {frequent.length > 0 && phase === "idle" && text.trim().length === 0 ? (
+            <section className="flex flex-col gap-2.5">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                 {t("dodaj.gric.again")}
               </h2>
               <div className="flex flex-wrap gap-2">
@@ -398,30 +528,86 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
               </p>
             </section>
           ) : null}
-        </div>
-      ) : null}
 
-      {phase === "recording" ? (
-        <div className="flex flex-col items-center gap-6 py-6 text-center">
-          <button
-            type="button"
-            onClick={() => void stopRecording()}
-            aria-label={t("dodaj.stopRecording")}
-            className="flex size-28 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-[0_8px_30px_rgba(0,0,0,0.35)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px animate-pulse"
-          >
-            <Square className="size-10 fill-current" aria-hidden="true" />
-          </button>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col items-center gap-3 pt-1">
+            <div className="relative flex items-center justify-center">
+              {/* The level halo: a ring of ink that breathes with how loudly
+                  the mic is actually hearing you. It answers the one question a
+                  recording screen has to answer — "is this working?" — which a
+                  timer alone never does, since a timer counts up just as
+                  happily into a muted microphone. Driven by a CSS variable set
+                  each frame (see the effect above).
+
+                  It is the RICHER signal, never the only one: `level` is
+                  optional on the recorder, so where it is missing the halo
+                  simply rests at zero and the stop button's own pulse still
+                  says the screen is listening. */}
+              {phase === "recording" ? (
+                <span
+                  ref={haloRef}
+                  aria-hidden="true"
+                  style={{
+                    transform:
+                      "scale(calc(1 + var(--gric-level, 0) * 0.45))",
+                    opacity: "calc(0.25 + var(--gric-level, 0) * 0.55)",
+                  }}
+                  className="pointer-events-none absolute size-28 rounded-full bg-primary/25 transition-[transform,opacity] duration-75"
+                />
+              ) : null}
+
+              {phase === "recording" ? (
+                <button
+                  type="button"
+                  onClick={() => void stopRecording()}
+                  aria-label={t("dodaj.stopRecording")}
+                  className="liquid-glass relative flex size-24 animate-pulse items-center justify-center rounded-full bg-destructive text-primary-foreground shadow-[0_3px_0_0_color-mix(in_srgb,var(--ink)_35%,transparent)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
+                >
+                  <Square className="size-8 fill-current" aria-hidden="true" />
+                </button>
+              ) : text.trim().length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => void submitText()}
+                  aria-label={t("dodaj.gric.send")}
+                  className="liquid-glass relative flex size-24 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_3px_0_0_color-mix(in_srgb,var(--ink)_35%,transparent)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
+                >
+                  <ArrowUp className="size-10" aria-hidden="true" />
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void startRecording()}
+                  aria-label={t("dodaj.startRecording")}
+                  className="liquid-glass relative flex size-24 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-[0_3px_0_0_color-mix(in_srgb,var(--ink)_35%,transparent)] transition-transform focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 active:translate-y-px"
+                >
+                  <Mic className="size-10" aria-hidden="true" />
+                </button>
+              )}
+            </div>
+
             <span
-              className="text-lg font-semibold tabular-nums text-foreground"
+              className="text-center text-sm text-muted-foreground"
               aria-live="polite"
             >
-              {formatSeconds(seconds)}
-            </span>
-            <span className="text-sm text-muted-foreground">
-              {t("dodaj.gric.listening")}
+              {phase === "recording" ? (
+                <span className="font-semibold tabular-nums text-foreground">
+                  {formatSeconds(seconds)}
+                </span>
+              ) : null}
+              {phase === "recording" ? " · " : null}
+              {phase === "recording"
+                ? t("dodaj.gric.listening")
+                : text.trim().length > 0
+                  ? t("dodaj.gric.sendHint")
+                  : t("dodaj.gric.micHint")}
             </span>
           </div>
+
+          {phase === "idle" && text.trim().length === 0 ? (
+            <p className="text-center text-xs leading-relaxed text-muted-foreground">
+              {t("dodaj.gric.hint")}
+            </p>
+          ) : null}
         </div>
       ) : null}
 
@@ -498,7 +684,11 @@ export function GricFlow({ frequent }: { frequent: FrequentSnack[] }) {
               disabled={phase === "saving"}
               className="text-center text-sm font-medium text-muted-foreground hover:text-foreground disabled:opacity-60"
             >
-              {t("dodaj.recordAgain")}
+              {/* Not "Snimi ponovo" (the shared key the photo/voice flows use):
+                  this entry may well have been typed, and offering to re-record
+                  something nobody recorded is the screen telling the user they
+                  did the wrong thing. */}
+              {t("dodaj.gric.startOver")}
             </button>
           )}
 

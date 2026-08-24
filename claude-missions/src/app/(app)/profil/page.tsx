@@ -1,6 +1,7 @@
 import {
   Bell,
   BookOpen,
+  CircleUserRound,
   Download,
   FileText,
   Footprints,
@@ -112,6 +113,16 @@ export default async function ProfilPage() {
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.group.goal")}>
+        {/* Points at the onboarding route rather than a `/profil/*` page of its
+            own: that screen already IS "your klon" -- it shows the existing one
+            with "Napravi ponovo", and falls back to the picker when there is
+            none. A second copy would be two screens to keep in step for no gain. */}
+        <SettingsLinkRow
+          href="/onboarding/klon"
+          icon={CircleUserRound}
+          label={t("settings.klon")}
+          description={t("settings.klon.desc")}
+        />
         <SettingsLinkRow
           href="/profil/cilj"
           icon={Target}

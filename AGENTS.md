@@ -69,6 +69,22 @@ Add a new migration in `supabase/migrations/` (mirror the existing header‑comm
 two are kept in sync manually. Apply migrations to Supabase via the dashboard SQL
 editor, the Supabase CLI, or the Management API.
 
+## Feature notes worth reading before touching them
+
+Some features carry a decision history that is expensive to rediscover. Those
+live in `claude-missions/docs/`:
+
+- [`docs/klon.md`](./claude-missions/docs/klon.md) — the avatar klon (photos in,
+  drawn character out). **Read it before touching anything under
+  `src/lib/avatar/`, `src/app/klon`, `src/app/api/klon`, or the klon gate in
+  `route-protection.ts`.** It carries what is still unfinished, the switch that
+  turns the feature on, and six traps already paid for once.
+- [`docs/naplata.md`](./claude-missions/docs/naplata.md) — billing state and the
+  two mistakes not to repeat.
+- [`docs/prijava-sa-google.md`](./claude-missions/docs/prijava-sa-google.md),
+  [`docs/prijava-sa-apple.md`](./claude-missions/docs/prijava-sa-apple.md) — auth
+  provider setup.
+
 ## How this repo was built
 
 FitMess was generated with the **Claude Missions** multi‑agent workflow; its

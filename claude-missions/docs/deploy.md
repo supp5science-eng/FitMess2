@@ -70,6 +70,7 @@ code or Vercel config is needed for that behavior.
    | `GEMINI_MODEL` | Production + Preview |
    | `GEMINI_MEAL_MODEL` | Production + Preview (optional — blank uses the built-in default) |
    | `GEMINI_IMAGE_MODEL` | Production + Preview (optional — the avatar klon's image model) |
+   | `KLON_OBAVEZAN` | Production + Preview (optional — set to `false` to open the mandatory klon gate without a deploy) |
    | `GOOGLE_SITE_VERIFICATION` | Production only (optional — Search Console token) |
    | `GOOGLE_CLIENT_ID` | Production + Preview |
    | `GOOGLE_CLIENT_SECRET` | Production only (server-only secret) |

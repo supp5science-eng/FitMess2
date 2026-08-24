@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isCrawlerPath } from "@/lib/device/is-crawler";
 import { decidePhoneGate } from "@/lib/device/phone-gate";
 import { isNativeAppUserAgent } from "@/lib/device/native";
+import { isKlonRequired } from "@/lib/avatar/klon-gate";
 import { hasClearedPhonePrompt, PHONE_PROMPT_COOKIE } from "@/lib/auth/phone-prompt";
 import {
   decideRouteAccess,
@@ -156,7 +157,11 @@ export async function middleware(request: NextRequest) {
     isEmailVerified: verified,
     isOnboarded: onboarded,
     hasPhone: phonePromptCleared,
-    hasKlon,
+    // The switch is read HERE rather than inside `decideRouteAccess`, which
+    // stays a pure function of its inputs -- that is what makes its redirect
+    // matrix testable without an environment. Off => the gate is told everyone
+    // already has a klon, which is exactly what "stop redirecting" means.
+    hasKlon: isKlonRequired() ? hasKlon : true,
     // Only ever changes the answer for `/`: the shell's start URL is the site
     // root, and a store app must not open on the marketing landing page.
     isNativeShell: isNativeAppUserAgent(userAgent),

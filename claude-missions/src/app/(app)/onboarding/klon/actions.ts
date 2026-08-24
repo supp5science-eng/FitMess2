@@ -1,8 +1,7 @@
 "use server";
 
 import {
-  aiErrorSr,
-  CLONE_NO_IMAGE_ERROR_SR,
+  cloneErrorSr,
   generateAvatarClone,
   type InlineImage,
 } from "@/lib/ai/gemini";
@@ -112,7 +111,7 @@ export async function createCloneAction(
     console.error("[klon] generation failed:", err);
     return {
       ok: false,
-      error_sr: aiErrorSr(err, CLONE_NO_IMAGE_ERROR_SR),
+      error_sr: cloneErrorSr(err),
     };
   }
 

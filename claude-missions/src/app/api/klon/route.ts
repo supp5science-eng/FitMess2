@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 
 import {
-  aiErrorSr,
-  CLONE_NO_IMAGE_ERROR_SR,
+  cloneErrorSr,
   generateAvatarClone,
   type InlineImage,
 } from "@/lib/ai/gemini";
@@ -117,7 +116,7 @@ export async function POST(request: Request) {
   } catch (err) {
     console.error("[klon] public generation failed:", err);
     return NextResponse.json(
-      { ok: false, error_sr: aiErrorSr(err, CLONE_NO_IMAGE_ERROR_SR) },
+      { ok: false, error_sr: cloneErrorSr(err) },
       { status: 502 }
     );
   }

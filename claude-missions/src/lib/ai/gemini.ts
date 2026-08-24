@@ -222,6 +222,66 @@ interface GeminiResponse {
  * and the HTTP/empty-body error handling shared by every caller below (the
  * vision estimators AND the Lofi chat). Throws `GeminiError` on any failure.
  */
+/**
+ * One POST to a model endpoint, with the API key presented BOTH ways.
+ *
+ * Classic AI Studio keys (`AIza…`) travel as the `?key=` query parameter, which
+ * is what this file has always used. Newer credentials (`AQ.…`) are rejected
+ * that way and are only accepted as an `x-goog-api-key` header -- and the
+ * rejection is an indistinguishable `400 API_KEY_INVALID`, i.e. it looks
+ * exactly like a bad key rather than a badly-presented one. That cost an
+ * afternoon of chasing a key that was fine.
+ *
+ * So: try the query form first (unchanged behaviour for every key that already
+ * works -- this must not disturb the meal/label/voice flows that are live), and
+ * retry once with the header ONLY when the answer was specifically "your key is
+ * invalid". Any other failure is returned as-is; a retry would just spend the
+ * quota twice.
+ */
+async function postToModel(
+  model: string,
+  apiKey: string,
+  body: unknown,
+  timeoutMs: number
+): Promise<Response> {
+  const url = `${API_BASE}/${model}:generateContent`;
+
+  async function send(useHeader: boolean): Promise<Response> {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(
+        useHeader ? url : `${url}?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(useHeader ? { "x-goog-api-key": apiKey } : {}),
+          },
+          body: JSON.stringify(body),
+          signal: controller.signal,
+        }
+      );
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
+  const first = await send(false);
+  if (first.status !== 400) return first;
+
+  // Peek at the body to tell "key presented wrong" apart from "request wrong".
+  // `clone()` so the caller still gets an unread body if we hand this one back.
+  const detail = await first
+    .clone()
+    .text()
+    .catch(() => "");
+  if (!detail.includes("API_KEY_INVALID")) return first;
+
+  console.info("[gemini] key rejected as ?key=, retrying as x-goog-api-key");
+  return send(true);
+}
+
 async function postGenerateContent(
   body: unknown,
   modelOverride?: string
@@ -230,27 +290,16 @@ async function postGenerateContent(
   if (!apiKey) throw new GeminiError("GEMINI_API_KEY is not set");
 
   const model = modelOverride || process.env.GEMINI_MODEL || DEFAULT_MODEL;
-  const url = `${API_BASE}/${model}:generateContent?key=${apiKey}`;
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
   let response: Response;
   try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+    response = await postToModel(model, apiKey, body, REQUEST_TIMEOUT_MS);
   } catch (err) {
     throw new GeminiError(
       err instanceof Error && err.name === "AbortError"
         ? "Gemini request timed out"
         : `Gemini request failed: ${String(err)}`
     );
-  } finally {
-    clearTimeout(timeout);
   }
 
   if (!response.ok) {
@@ -813,6 +862,32 @@ export const CLONE_NO_IMAGE_ERROR_SR =
   "Nismo uspeli da nacrtamo lik sa ovih slika. Probaj sa drugim slikama — najbolje rade jasne, dobro osvetljene, gde si sam na slici.";
 
 /**
+ * The Serbian sentence for a failed klon.
+ *
+ * Split out from `aiErrorSr` because the klon has a failure mode the logging
+ * flows do not: it can fail for reasons that have NOTHING to do with the
+ * photos, and the default message ("try different photos") then sends someone
+ * to re-shoot twenty pictures against a wall that is ours, not theirs. A model
+ * id that does not exist on this key, or a key the API rejects, is a
+ * configuration problem and has to say so -- to the user plainly, and to us in
+ * the logs precisely.
+ */
+export function cloneErrorSr(err: unknown): string {
+  if (isQuotaError(err)) return AI_BUSY_ERROR_SR;
+
+  if (err instanceof GeminiError) {
+    // 404: the configured image model does not exist on this key (a rename, a
+    // typo in GEMINI_IMAGE_MODEL, or a preview model that was withdrawn).
+    // 400 + API_KEY_INVALID: the key itself was refused, both ways.
+    if (err.status === 404 || err.message.includes("API_KEY_INVALID")) {
+      return "Crtanje trenutno ne radi kod nas — nije do tvojih slika. Radimo na tome, probaj kasnije.";
+    }
+  }
+
+  return CLONE_NO_IMAGE_ERROR_SR;
+}
+
+/**
  * Image sibling of `postGenerateContent`: same transport, same key, same
  * timeout and error handling, but it digs the PICTURE out of the response
  * instead of the text.
@@ -830,29 +905,18 @@ async function postGenerateImage(
   if (!apiKey) throw new GeminiError("GEMINI_API_KEY is not set");
 
   const model = modelOverride || process.env.GEMINI_IMAGE_MODEL || IMAGE_MODEL;
-  const url = `${API_BASE}/${model}:generateContent?key=${apiKey}`;
-
-  const controller = new AbortController();
-  // Drawing takes far longer than reading -- the shared 45s ceiling times out
-  // on a perfectly healthy image request.
-  const timeout = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS);
 
   let response: Response;
   try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      signal: controller.signal,
-    });
+    // Drawing takes far longer than reading -- the shared 45s ceiling times out
+    // on a perfectly healthy image request.
+    response = await postToModel(model, apiKey, body, IMAGE_TIMEOUT_MS);
   } catch (err) {
     throw new GeminiError(
       err instanceof Error && err.name === "AbortError"
         ? "Gemini image request timed out"
         : `Gemini image request failed: ${String(err)}`
     );
-  } finally {
-    clearTimeout(timeout);
   }
 
   if (!response.ok) {

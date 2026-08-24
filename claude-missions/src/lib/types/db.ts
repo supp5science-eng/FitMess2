@@ -915,6 +915,52 @@ export interface Database {
           },
         ];
       };
+      /**
+       * 0033: one generated avatar ("klon") per user. Built from 5-20 photos
+       * that are NEVER stored -- only the drawing that came back is.
+       */
+      avatar_clones: {
+        Row: {
+          /** PK + FK to auth.users(id), ON DELETE CASCADE. */
+          user_id: string;
+          /** The generated character, base64 (no `data:` prefix). */
+          image_base64: string;
+          mime_type: string;
+          /** Which art-direction constant drew it (`CLONE_PROMPT_VERSION`). */
+          prompt_version: string;
+          /** How many photos went in. Quality signal, never shown. */
+          source_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          image_base64: string;
+          mime_type?: string;
+          prompt_version: string;
+          source_count: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          image_base64?: string;
+          mime_type?: string;
+          prompt_version?: string;
+          source_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "avatar_clones_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       meal_photos: {
         Row: {
           /** PK + FK to public.logs(id); one photo per log, ON DELETE CASCADE. */

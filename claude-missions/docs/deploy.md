@@ -68,6 +68,9 @@ code or Vercel config is needed for that behavior.
    | `SUPABASE_SECRET_KEY` | Production only (server-only secret) |
    | `GEMINI_API_KEY` | Production only (server-only secret) |
    | `GEMINI_MODEL` | Production + Preview |
+   | `GEMINI_MEAL_MODEL` | Production + Preview (optional — blank uses the built-in default) |
+   | `GEMINI_IMAGE_MODEL` | Production + Preview (optional — the avatar klon's image model) |
+   | `GOOGLE_SITE_VERIFICATION` | Production only (optional — Search Console token) |
    | `GOOGLE_CLIENT_ID` | Production + Preview |
    | `GOOGLE_CLIENT_SECRET` | Production only (server-only secret) |
    | `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Production + Preview (browser key — restrict by HTTP referrer) |

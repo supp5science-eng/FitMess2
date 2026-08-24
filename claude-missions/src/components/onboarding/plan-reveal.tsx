@@ -41,7 +41,6 @@ const OUTRO_MS = 900;
 // carries the just-computed daily target across the hard navigation so the
 // dashboard can play the "ring hand-off" intro (matching loading cover, then
 // a ghost ring that glides into the real daily ring) with zero seam.
-const INTRO_COOKIE = "fm_intro";
 // One-shot flag for the post-onboarding "install FitMess" overlay on /danas
 // (see `components/pwa/install-overlay.tsx`, which consumes it).
 const INSTALL_COOKIE = "fm_install";
@@ -174,38 +173,39 @@ export function PlanReveal({
   // `onboarded_at` was set -- i.e. the middleware's bounce back to
   // `/onboarding`. A full request re-runs the middleware against the now
   // fully-onboarded profile, so the user actually lands on the dashboard.
-  // Just before leaving we drop a short-lived cookie carrying the target so
-  // `/danas` can continue the ring hand-off seamlessly (skipped under reduced
-  // motion -- the dashboard then just appears), and clear the stashed pre-auth
-  // answers now that they live on the account.
+  // We clear the stashed pre-auth answers now that they live on the account.
+  // (The short-lived `fm_intro` cookie that used to continue the ring on
+  // `/danas` is gone -- the next screen is the avatar, see below.)
   useEffect(() => {
     if (!persist || !animationDone || saveState !== "done") return;
     const enter = setTimeout(() => setLeaving(true), 0);
     const leave = setTimeout(() => {
       clearPendingOnboarding();
-      if (!reduced) {
-        try {
-          document.cookie = `${INTRO_COOKIE}=${target}; path=/; max-age=60; samesite=lax`;
-        } catch {
-          // A blocked cookie only means no intro animation -- never a blocked
-          // navigation, so we still hand off below.
-        }
-      }
+      // The ring hand-off to `/danas` is deliberately NOT armed any more: the
+      // next screen is `/onboarding/klon`, and `fm_intro` lives 60 seconds --
+      // by the time someone has picked twenty photos it would be long gone, and
+      // if they skipped in five it would replay a ring they left two screens
+      // ago. The dashboard just appears instead, exactly as it already does
+      // under reduced motion.
       try {
         // Unlike the intro, the install offer is wanted under reduced motion
         // too (the overlay renders a static poster there). Consumed one-shot
-        // by `InstallOverlay` on /danas.
+        // by `InstallOverlay` on /danas. Ten minutes is long enough to survive
+        // the klon detour below.
         document.cookie = `${INSTALL_COOKIE}=1; path=/; max-age=600; samesite=lax`;
       } catch {
         // No cookie -> no install offer; never a blocked navigation.
       }
-      window.location.assign("/danas");
+      // Avatar first, dashboard second -- see `finish-and-redirect.tsx`, which
+      // does the same for the (far more common) hand-off path. The klon screen
+      // is skippable and its "Preskoči za sad" lands on /danas.
+      window.location.assign("/onboarding/klon");
     }, outroMs);
     return () => {
       clearTimeout(enter);
       clearTimeout(leave);
     };
-  }, [persist, animationDone, saveState, outroMs, reduced, target]);
+  }, [persist, animationDone, saveState, outroMs]);
 
   function retry() {
     setSaveError(undefined);

@@ -93,7 +93,19 @@ const MEAL_MODEL = "gemini-3.6-flash";
 // Voice logging ("Reci obrok"). Same reasoning as MEAL_MODEL -- Flash, and for
 // this flow speed is the feature. Overridable via `GEMINI_VOICE_MODEL`.
 const VOICE_MODEL = "gemini-3.6-flash";
+// Avatar klon ("Nano Banana Pro" -- Google's image model). This is the ONLY
+// place in the app that asks a model to DRAW rather than to read, so it is the
+// only one that needs an image-capable model; every other constant above is a
+// vision/text model and cannot return pixels. Overridable via
+// `GEMINI_IMAGE_MODEL`, following the same "model choice is config, not code"
+// rule as the rest of this file -- image model ids move fast, and a rename
+// must not need a deploy of new code.
+const IMAGE_MODEL = "gemini-3-pro-image-preview";
 const REQUEST_TIMEOUT_MS = 45_000;
+// Drawing a person from twenty photos is a different order of work than reading
+// one plate of food: measured well past the 45s above, and a timeout here costs
+// the user the whole upload.
+const IMAGE_TIMEOUT_MS = 180_000;
 
 /**
  * Any failure talking to Gemini. Carries the HTTP `status` when there was one,
@@ -176,6 +188,13 @@ interface GeminiResponse {
          * `postGenerateContent`).
          */
         thought?: boolean;
+        /**
+         * Image bytes, on a response from an image model. Google returns these
+         * in the SAME `parts` array as text -- an image answer is usually a
+         * short sentence part PLUS this one, which is why the image path below
+         * searches the array instead of reading `parts[0]`.
+         */
+        inlineData?: { mimeType?: string; data?: string };
       }[];
     };
   }[];
@@ -705,4 +724,136 @@ export async function estimateLabelFromImage(
     throw new GeminiError("Gemini output did not match the expected shape");
   }
   return parsed.data;
+}
+
+/* ------------------------------------------------------------------ */
+/* Avatar klon -- the one call that asks for a picture back            */
+/* ------------------------------------------------------------------ */
+
+/** One image on its way in or out of the model. Base64 without a `data:` prefix. */
+export type InlineImage = { base64: string; mimeType: string };
+
+/**
+ * Shown when the model answered but drew nothing. In practice this is a safety
+ * refusal (a photo it would not render a person from), and the honest thing is
+ * to say the photos are the problem without accusing the user of anything.
+ */
+export const CLONE_NO_IMAGE_ERROR_SR =
+  "Nismo uspeli da nacrtamo lik sa ovih slika. Probaj sa drugim slikama — najbolje rade jasne, dobro osvetljene, gde si sam na slici.";
+
+/**
+ * Image sibling of `postGenerateContent`: same transport, same key, same
+ * timeout and error handling, but it digs the PICTURE out of the response
+ * instead of the text.
+ *
+ * It cannot reuse `postGenerateContent`, which joins the text parts and throws
+ * on an empty string -- on an image answer the text part is decoration ("Evo
+ * lika!") and the payload is `inlineData`. Sharing the function would mean
+ * either throwing away the image or teaching every text caller about pixels.
+ */
+async function postGenerateImage(
+  body: unknown,
+  modelOverride?: string
+): Promise<InlineImage> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new GeminiError("GEMINI_API_KEY is not set");
+
+  const model = modelOverride || process.env.GEMINI_IMAGE_MODEL || IMAGE_MODEL;
+  const url = `${API_BASE}/${model}:generateContent?key=${apiKey}`;
+
+  const controller = new AbortController();
+  // Drawing takes far longer than reading -- the shared 45s ceiling times out
+  // on a perfectly healthy image request.
+  const timeout = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    throw new GeminiError(
+      err instanceof Error && err.name === "AbortError"
+        ? "Gemini image request timed out"
+        : `Gemini image request failed: ${String(err)}`
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new GeminiError(
+      `Gemini ${response.status}: ${detail.slice(0, 300)}`,
+      response.status
+    );
+  }
+
+  const json = (await response.json()) as GeminiResponse;
+
+  const usage = json.usageMetadata;
+  if (usage) {
+    console.info(
+      "[gemini] usage:",
+      JSON.stringify({
+        model,
+        in: usage.promptTokenCount ?? 0,
+        out: usage.candidatesTokenCount ?? 0,
+        thoughts: usage.thoughtsTokenCount ?? 0,
+        total: usage.totalTokenCount ?? 0,
+      })
+    );
+  }
+
+  const image = (json.candidates?.[0]?.content?.parts ?? []).find(
+    (part) => part.thought !== true && part.inlineData?.data
+  )?.inlineData;
+
+  if (!image?.data) throw new GeminiError("Gemini returned no image");
+  return { base64: image.data, mimeType: image.mimeType || "image/png" };
+}
+
+/**
+ * The klon: 5-20 photos of one person in, one drawn character out.
+ *
+ * Every photo goes in as its own inline part, all under a single `user` turn,
+ * with the instruction FIRST. Order matters more than it looks: the prompt sets
+ * up "these are all the same person" before the model has seen an image, which
+ * is what stops it from reading a batch of shots as a group photo of several
+ * people and drawing a stranger.
+ *
+ * Temperature is high-ish on purpose and is NOT a knob to turn down for
+ * consistency. Consistency here comes from the template text
+ * (`src/lib/avatar/clone-prompt.ts`), which is identical for every user; a low
+ * temperature on an image model buys stiff, lifeless drawings without making
+ * two users' klons any more alike.
+ */
+export async function generateAvatarClone(
+  photos: readonly InlineImage[],
+  prompt: string
+): Promise<InlineImage> {
+  return postGenerateImage({
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: prompt },
+          ...photos.map((photo) => ({
+            inline_data: { mime_type: photo.mimeType, data: photo.base64 },
+          })),
+        ],
+      },
+    ],
+    generationConfig: {
+      // BOTH modalities, not `["IMAGE"]`: the image models answer with a short
+      // sentence alongside the picture and reject a request that forbids it.
+      // The sentence is dropped above.
+      responseModalities: ["TEXT", "IMAGE"],
+      imageConfig: { aspectRatio: "3:4" },
+      temperature: 0.9,
+    },
+  });
 }

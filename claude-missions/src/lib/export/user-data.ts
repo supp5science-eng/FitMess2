@@ -184,6 +184,7 @@ const USER_OWNED_TABLES: readonly UserOwnedTableConfig[] = [
 const PROFILE_LABEL_SR = "profil (lični podaci i podešavanja)";
 const RULES_LABEL_SR = "navike";
 const MEAL_PHOTOS_LABEL_SR = "slike obroka (podaci o slikama, bez same slike)";
+const KLON_LABEL_SR = "tvoj klon (sam crtež)";
 
 /** A table listed above that hasn't been migrated onto this environment yet must
  * not cost the user their whole export -- that section is reported as
@@ -278,6 +279,40 @@ async function loadMealPhotoMetadata(
 }
 
 /**
+ * The klon, INCLUDING the picture -- the opposite call to the one made for meal
+ * photos just above, and for the opposite reasons.
+ *
+ * A meal photo is one of hundreds, lives about a day, and its useful content
+ * (the nutrition) survives on the log row, so shipping the bytes would bloat
+ * the file for nothing. A klon is exactly one image, it is permanent, and the
+ * picture IS the data -- an export that described it without handing it over
+ * would be a portability right that ports nothing.
+ *
+ * The source photos it was drawn from are not here because they are nowhere:
+ * they are discarded the moment the drawing comes back (see
+ * `0033_avatar_clones.sql`).
+ */
+async function loadKlon(
+  supabase: SupabaseClient<Database>,
+  userId: string
+): Promise<{ row: unknown | null; missing: boolean }> {
+  const { data, error } = await supabase
+    .from("avatar_clones")
+    .select("image_base64, mime_type, prompt_version, created_at, updated_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (error) {
+    if (isMissingTable(error)) return { row: null, missing: true };
+    throw new ExportReadError(
+      `Failed to read avatar_clones for export: ${error.message}`
+    );
+  }
+
+  return { row: data ?? null, missing: false };
+}
+
+/**
  * Builds the complete GDPR export object for `userId`. `supabase` MUST be a
  * session-bound (RLS) client already scoped to `userId` -- this function
  * never elevates privileges and never accepts an admin client, and every
@@ -328,6 +363,16 @@ export async function collectUserExport(
     includedLabels.push(MEAL_PHOTOS_LABEL_SR);
   }
 
+  const klon = await loadKlon(supabase, userId);
+  if (klon.missing) {
+    missingSections.push(KLON_LABEL_SR);
+  } else {
+    // Absent (never drawn one) is not the same as unavailable: `null` is the
+    // honest answer and belongs in the file, not in `missing_sections`.
+    sections.klon = klon.row;
+    includedLabels.push(KLON_LABEL_SR);
+  }
+
   const missingNote =
     missingSections.length > 0
       ? ` Nedostupno u ovom izvozu: ${missingSections.join(", ")}.`
@@ -339,7 +384,8 @@ export async function collectUserExport(
       `Ovaj izvoz sadrži sledeće kategorije tvojih podataka: ${includedLabels.join(", ")}. ` +
       "Ne sadrži podatke drugih korisnika. Same slike obroka nisu uključene jer se " +
       "automatski brišu otprilike dan po unosu — podaci o obroku (kalorije i makroi) " +
-      "ostaju u dnevnim unosima." +
+      "ostaju u dnevnim unosima. Tvoj klon je uključen kao sam crtež; slike koje " +
+      "si poslao da bi se nacrtao nisu, jer se nigde ne čuvaju." +
       missingNote,
     missing_sections: missingSections,
     account,

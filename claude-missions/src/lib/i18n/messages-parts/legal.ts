@@ -51,6 +51,9 @@ export const legalMessages = {
     "legal.privacy.collect.media.h": "Fotografije i glas",
     "legal.privacy.collect.media.body":
       "Kad slikaš obrok, deklaraciju ili izgovoriš šta si jeo, ta slika odnosno snimak ide na obradu veštačkoj inteligenciji da bi se procenile kalorije. Snimci glasa se ne čuvaju — obrade se i odbace. Fotografija obroka se privremeno čuva uz taj unos (oko jedan dan) da bismo mogli da ti prikažemo karticu obroka, pa se automatski briše.",
+    "legal.privacy.collect.klon.h": "Slike lica (tvoj klon)",
+    "legal.privacy.collect.klon.body":
+      "Na samom početku, pre nego što napraviš nalog, tražimo od 5 do 20 tvojih slika da bismo nacrtali tvog klona — lik koji te predstavlja u aplikaciji. Te slike se ne čuvaju nigde: pošalju se na obradu, lik se nacrta, i one se odbace istog trenutka. Ne ostaju ni kod nas ni kod Google-a. Ostaje samo crtež. Dok nemaš nalog, crtež stoji isključivo u tvom pregledaču, na tvom uređaju; kad se prijaviš, veže se za tvoj nalog i tada ga vidiš na svim uređajima. Klon je neophodan da bi se aplikacija koristila.",
     "legal.privacy.collect.tech.h": "Tehnički podaci",
     "legal.privacy.collect.tech.body":
       "Kolačići neophodni za rad (prijava, izabrani jezik, tema), i zabeleška kada si prvi put stigao do pojedinih koraka u aplikaciji — to koristimo da vidimo gde ljudi zapinju. Ako uključiš podsetnike, čuvamo i oznaku tvog uređaja da bismo mogli da pošaljemo notifikaciju. Nemamo Google Analytics, Facebook piksel, ni bilo koji reklamni ili analitički SDK trećih lica.",
@@ -77,7 +80,7 @@ export const legalMessages = {
     "legal.privacy.share.vercel":
       "Vercel — server koji isporučuje aplikaciju.",
     "legal.privacy.share.google":
-      "Google (Gemini API) — procena kalorija sa fotografije, deklaracije i glasa. Slika odnosno snimak ne ide sa tvog telefona pravo Google-u: prvo stiže na naš server, i on je prosleđuje Gemini-ju uz samu sliku i pitanje — bez tvog imena, email adrese ili oznake naloga, tako da Google ne zna čija je. Koristimo plaćeni nivo usluge, kod koga se poslati sadržaj ne koristi za obučavanje Google-ovih modela. Google obradi sliku i vrati procenu; kod sebe je ne zadržava kao tvoj sadržaj niti je pravi trajnu kopiju za nas. Jedina kopija koja negde ostane je ona kod nas — mala sličica uz taj obrok, oko jedan dan (vidi „Koliko dugo čuvamo“). Snimak glasa ne ostaje ni kod nas ni kod njih.",
+      "Google (Gemini API) — procena kalorija sa fotografije, deklaracije i glasa. Slika odnosno snimak ne ide sa tvog telefona pravo Google-u: prvo stiže na naš server, i on je prosleđuje Gemini-ju uz samu sliku i pitanje — bez tvog imena, email adrese ili oznake naloga, tako da Google ne zna čija je. Koristimo plaćeni nivo usluge, kod koga se poslati sadržaj ne koristi za obučavanje Google-ovih modela. Google obradi sliku i vrati procenu; kod sebe je ne zadržava kao tvoj sadržaj niti je pravi trajnu kopiju za nas. Jedina kopija koja negde ostane je ona kod nas — mala sličica uz taj obrok, oko jedan dan (vidi „Koliko dugo čuvamo“). Snimak glasa ne ostaje ni kod nas ni kod njih. Isti put prolaze i slike koje pošalješ za pravljenje klona: stižu na naš server, on ih prosleđuje Google-u da nacrta lik, i odbacuju se čim lik stigne — nijedna od njih se ne čuva, ni kod nas ni kod Google-a.",
     "legal.privacy.share.resend":
       "Resend — slanje email poruka (potvrda naloga, promena lozinke).",
     "legal.privacy.share.never":
@@ -95,6 +98,8 @@ export const legalMessages = {
     "legal.privacy.keep.photos":
       "Fotografije obroka — oko jedan dan, pa se brišu automatski.",
     "legal.privacy.keep.voice": "Snimci glasa — ne čuvaju se uopšte.",
+    "legal.privacy.keep.klon":
+      "Slike lica koje si poslao za klona — ne čuvaju se uopšte. Sam klon (crtež) — dok ne obrišeš nalog.",
     "legal.privacy.keep.delete":
       "Kad obrišeš nalog — sve nestaje odmah. U rezervnim kopijama baze podaci mogu da ostanu najviše 30 dana, dok se te kopije ne prepišu.",
 
@@ -269,6 +274,9 @@ export const legalMessages = {
     "legal.privacy.collect.media.h": "Photos and voice",
     "legal.privacy.collect.media.body":
       "When you photograph a meal or a label, or say out loud what you ate, that image or recording is sent for AI processing to estimate the calories. Voice recordings are not kept — they are processed and discarded. A meal photo is kept briefly alongside that entry (about one day) so we can show you its card, then deleted automatically.",
+    "legal.privacy.collect.klon.h": "Face photos (your klon)",
+    "legal.privacy.collect.klon.body":
+      "At the very start, before you create an account, we ask for 5 to 20 photos of you so we can draw your klon — the character that represents you in the app. Those photos are not stored anywhere: they are sent for processing, the character is drawn, and they are discarded at that moment. They stay neither with us nor with Google. Only the drawing remains. Until you have an account the drawing lives solely in your own browser, on your device; when you sign in it is attached to your account and follows you across devices. A klon is required in order to use the app.",
     "legal.privacy.collect.tech.h": "Technical data",
     "legal.privacy.collect.tech.body":
       "Cookies the app cannot work without (sign-in, chosen language, chosen theme), and a record of when you first reached certain steps in the app — which we use to see where people get stuck. If you turn on reminders, we also store a device token so we can send the notification. We have no Google Analytics, no Facebook pixel, and no third-party advertising or analytics SDK of any kind.",
@@ -294,7 +302,7 @@ export const legalMessages = {
       "Supabase — the database and account sign-in. Your data physically sits on servers in Ireland (European Union).",
     "legal.privacy.share.vercel": "Vercel — the server that delivers the app.",
     "legal.privacy.share.google":
-      "Google (Gemini API) — calorie estimation from photos, labels and voice. The image or recording does not go from your phone straight to Google: it reaches our server first, and our server forwards it to Gemini together with the question — with no name, email address or account identifier attached, so Google cannot tell whose it is. We use the paid tier, on which submitted content is not used to train Google's models. Google processes the image and returns an estimate; it does not keep it as your content afterwards, and makes no lasting copy on our behalf. The only copy that stays anywhere is ours — a small thumbnail beside that meal, for about a day (see “How long we keep things”). Voice recordings stay neither with us nor with them.",
+      "Google (Gemini API) — calorie estimation from photos, labels and voice. The image or recording does not go from your phone straight to Google: it reaches our server first, and our server forwards it to Gemini together with the question — with no name, email address or account identifier attached, so Google cannot tell whose it is. We use the paid tier, on which submitted content is not used to train Google's models. Google processes the image and returns an estimate; it does not keep it as your content afterwards, and makes no lasting copy on our behalf. The only copy that stays anywhere is ours — a small thumbnail beside that meal, for about a day (see “How long we keep things”). Voice recordings stay neither with us nor with them. The photos you send to have your klon drawn take the same route: they reach our server, it forwards them to Google to draw the character, and they are discarded the moment it comes back — none of them is kept, by us or by Google.",
     "legal.privacy.share.resend":
       "Resend — sending email (account confirmation, password reset).",
     "legal.privacy.share.never":
@@ -312,6 +320,8 @@ export const legalMessages = {
     "legal.privacy.keep.photos":
       "Meal photos — about one day, then deleted automatically.",
     "legal.privacy.keep.voice": "Voice recordings — not stored at all.",
+    "legal.privacy.keep.klon":
+      "Face photos you sent for your klon — not stored at all. The klon itself (the drawing) — until you delete your account.",
     "legal.privacy.keep.delete":
       "When you delete your account — everything goes immediately. Data may survive in database backups for at most 30 days, until those backups are overwritten.",
 

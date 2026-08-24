@@ -11,8 +11,11 @@ import { wordmarkLetterColors } from "@/lib/brand/wordmark";
  *
  * Rendered with `next/og` (no extra dependency) using system-styled markup
  * only — no remote font fetch — so the build stays hermetic and fast. The
- * palette mirrors the app's dark surface (`#0a0c0b`) and the calorie-ring
- * green accent.
+ * palette is the app's "Gravira" plate: the cream paper (`--paper`,
+ * `#f5e9cd`) carrying the ultramarine ink (`--ink`, `#1c1b8f`), with the
+ * halftone screen printed across it as a repeating dot grid — `next/og` has
+ * no CSS mask, so the stipple is laid on flat and kept faint enough to sit
+ * behind the type.
  */
 export const runtime = "edge";
 
@@ -22,7 +25,7 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 const MESS_LETTERS = ["M", "e", "s", "s"];
-const MESS_COLORS = wordmarkLetterColors(MESS_LETTERS.length, "dark");
+const MESS_COLORS = wordmarkLetterColors(MESS_LETTERS.length, "paper");
 
 export default function OpengraphImage() {
   return new ImageResponse(
@@ -34,10 +37,12 @@ export default function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background:
-            "radial-gradient(120% 120% at 100% 0%, #12241a 0%, #0a0c0b 55%)",
+          backgroundColor: "#f5e9cd",
+          backgroundImage:
+            "radial-gradient(circle at 1px 1px, rgba(28,27,143,0.16) 1px, transparent 1.6px), radial-gradient(120% 120% at 100% 0%, rgba(47,44,230,0.14) 0%, transparent 58%)",
+          backgroundSize: "10px 10px, 100% 100%",
           padding: "72px 80px",
-          color: "#f5f7f5",
+          color: "#1c1b8f",
           fontFamily: "sans-serif",
         }}
       >
@@ -47,22 +52,22 @@ export default function OpengraphImage() {
             style={{
               width: 64,
               height: 64,
-              borderRadius: 20,
-              background: "#54d17a",
+              borderRadius: 16,
+              background: "#2f2ce6",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               fontSize: 40,
               fontWeight: 800,
-              color: "#0a0c0b",
+              color: "#fdf7e4",
             }}
           >
             F
           </div>
           {/* "Mess" in the pear's shell gradient, one letter at a time --
               `next/og` renders flat fills, so the shimmer is sampled per
-              letter (same trick as the PDF report). Dark stops: this card
-              sits on the app's dark surface. */}
+              letter (same trick as the PDF report). Paper stops: this card
+              is printed on the cream ground. */}
           <div
             style={{
               display: "flex",
@@ -97,7 +102,7 @@ export default function OpengraphImage() {
             style={{
               fontSize: 34,
               lineHeight: 1.3,
-              color: "#a7b3ab",
+              color: "#5654b4",
               maxWidth: 820,
             }}
           >
@@ -112,7 +117,7 @@ export default function OpengraphImage() {
             alignItems: "center",
             fontSize: 30,
             fontWeight: 600,
-            color: "#54d17a",
+            color: "#2f2ce6",
           }}
         >
           fitmess.app

@@ -107,7 +107,7 @@ export function StepGoalForm({
                   onChange={(e) => setCustomGoal(Number(e.target.value))}
                   data-testid="step-goal-select"
                   // 16px text so iOS Safari doesn't zoom the page on focus.
-                  className="h-12 w-full appearance-none rounded-xl border border-input bg-transparent pl-4 pr-10 text-base text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+                  className="h-12 w-full appearance-none rounded-xl border border-input bg-transparent pl-4 pr-10 text-base text-foreground outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
                 >
                   {options.map((option) => (
                     <option key={option} value={option}>

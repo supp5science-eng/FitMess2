@@ -150,8 +150,8 @@ export function positionForTimeframe(
  * sweet spot) → red (too aggressive). So the color itself tells the story as
  * the user rotates: yellow = meh, green = ideal, red = punishing. */
 const RING_SLOW_RGB = [193, 155, 42]; // "trula žuta"
-const RING_REC_RGB = [22, 163, 74]; // green (#16A34A)
-const RING_FAST_RGB = [225, 73, 63]; // red (#E1493F)
+const RING_REC_RGB = [44, 122, 88]; // sage (#2C7A58, `--macro-protein`)
+const RING_FAST_RGB = [192, 80, 40]; // terracotta (#C05028, `--macro-fat`)
 
 /**
  * The dial color for a continuous position `t` ∈ [0,1]: olive-yellow at the

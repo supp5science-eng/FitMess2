@@ -35,43 +35,44 @@ import { cn } from "@/lib/utils";
 // nego..." line, never red-alarm shaming, matching the never-red posture the
 // overshoot copy on the ring established.
 
-/** Per-nutrient colour + icon. Chosen to stay distinct from the other home
- * tiles (kcal amber, steps violet, water sky) so nothing reads as a duplicate. */
+/** Per-nutrient colour + icon, off the `--mark-*` tokens so the four tiles
+ * stay distinct from each other AND from the other home tiles (steps plum,
+ * water steel) without any of them leaving the plate's palette. */
 const MICRO_STYLE: Record<
   MicroKey,
   { icon: React.ReactNode; text: string; chip: string; track: string; from: string; to: string }
 > = {
   fiber: {
     icon: <Wheat className="size-4" aria-hidden="true" />,
-    text: "text-emerald-500",
-    chip: "bg-emerald-500/15",
-    track: "text-emerald-500/15",
-    from: "#6ee7b7",
-    to: "#10b981",
+    text: "text-mark-fiber",
+    chip: "bg-mark-fiber/15",
+    track: "text-mark-fiber/15",
+    from: "#4fa87d",
+    to: "#2c7a58",
   },
   sugar: {
     icon: <Candy className="size-4" aria-hidden="true" />,
-    text: "text-pink-500",
-    chip: "bg-pink-500/15",
-    track: "text-pink-500/15",
-    from: "#f9a8d4",
-    to: "#ec4899",
+    text: "text-mark-sugar",
+    chip: "bg-mark-sugar/15",
+    track: "text-mark-sugar/15",
+    from: "#c95f96",
+    to: "#a83a72",
   },
   sodium: {
     icon: <Soup className="size-4" aria-hidden="true" />,
-    text: "text-sky-500",
-    chip: "bg-sky-500/15",
-    track: "text-sky-500/15",
-    from: "#7dd3fc",
-    to: "#0ea5e9",
+    text: "text-mark-sodium",
+    chip: "bg-mark-sodium/15",
+    track: "text-mark-sodium/15",
+    from: "#4e97b8",
+    to: "#2c6e8f",
   },
   satFat: {
     icon: <Beef className="size-4" aria-hidden="true" />,
-    text: "text-amber-500",
-    chip: "bg-amber-500/15",
-    track: "text-amber-500/15",
-    from: "#fcd34d",
-    to: "#f59e0b",
+    text: "text-mark-satfat",
+    chip: "bg-mark-satfat/15",
+    track: "text-mark-satfat/15",
+    from: "#c99a3c",
+    to: "#9a7112",
   },
 };
 

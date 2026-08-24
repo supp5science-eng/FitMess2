@@ -25,10 +25,6 @@ export const onboardingMessages = {
     "onboarding.name.hint": "Ovako će ti se FitMess obraćati.",
 
     // Theme-choice screen
-    "onboarding.theme.kicker": "Još samo izgled",
-    "onboarding.theme.title": "Svetla ili tamna?",
-    "onboarding.theme.hint": "Uvek možeš da promeniš kasnije u podešavanjima.",
-    "onboarding.theme.groupAria": "Izgled aplikacije",
 
     // Commit screen
     "onboarding.commit.readyTitle": "Sve je spremno",
@@ -143,10 +139,6 @@ export const onboardingMessages = {
     "onboarding.name.hint": "This is how FitMess will address you.",
 
     // Theme-choice screen
-    "onboarding.theme.kicker": "Just the look now",
-    "onboarding.theme.title": "Light or dark?",
-    "onboarding.theme.hint": "You can always change it later in settings.",
-    "onboarding.theme.groupAria": "App appearance",
 
     // Commit screen
     "onboarding.commit.readyTitle": "Everything's ready",

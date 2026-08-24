@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 // that names its day and its litres in the shared read-out, so a short bar is
 // answerable ("Utorak — 0,75 L, 30% cilja") instead of merely visible.
 
-const SKY = "#38BDF8"; // sky-400, matching the /danas water button accent
+const SKY = "#1A6D92"; // `--mark-water`, matching the /danas water button
 
 // Ring geometry.
 const RING = 108;

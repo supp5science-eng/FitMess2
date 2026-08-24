@@ -7,10 +7,10 @@
  * browser), so it is borrowed from the launch-video workspace:
  *
  *   set NODE_PATH=C:\FitMess2\fitmesslaunchvideo\launch-video\node_modules
- *   node scripts/store/capture-screens.cjs --theme=light
+ *   node scripts/store/capture-screens.cjs
  *
- * Flags: --url=<origin> (default https://fitmess.app), --theme=light|dark,
- *        --out=<dir> (default store/raw/<theme>).
+ * Flags: --url=<origin> (default https://fitmess.app),
+ *        --out=<dir> (default store/raw).
  *
  * Three things this has to work around, all learned the hard way:
  *
@@ -43,8 +43,9 @@ const arg = (name, fallback) => {
 };
 
 const ORIGIN = arg("url", "https://fitmess.app");
-const THEME = arg("theme", "light");
-const OUT = path.resolve(arg("out", path.join("store", "raw", THEME)));
+// No `--theme`: the app has exactly one look now (see `globals.css`), so
+// there is nothing to select and nothing to seed a cookie with.
+const OUT = path.resolve(arg("out", path.join("store", "raw")));
 
 const DEMO = {
   email: "supp5science+fitmess-demo@gmail.com",
@@ -170,9 +171,6 @@ async function main() {
     locale: "sr-RS",
     timezoneId: "Europe/Belgrade",
   });
-  await context.addCookies([
-    { name: "fm_theme", value: THEME, url: ORIGIN },
-  ]);
   // The dev overlay is not part of the product.
   await context.addInitScript(() => {
     const style = document.createElement("style");

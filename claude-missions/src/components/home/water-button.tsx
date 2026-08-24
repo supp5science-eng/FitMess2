@@ -46,9 +46,9 @@ const PRESETS: { ml: number; labelKey: string; sub: string; icon: typeof GlassWa
 
 /** The sky arc, light -> dark (the "Voda" accent, mirroring Koraci's violet). */
 const WATER_GRADIENT: [string, string, string] = [
-  "#7dd3fc",
-  "#38bdf8",
-  "#0ea5e9",
+  "#4e9fc4",
+  "#2b86ad",
+  "#1a6d92",
 ];
 
 interface VodaResponseBody {

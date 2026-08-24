@@ -23,11 +23,11 @@
   background:
     radial-gradient(
       120% 90% at 50% 6%,
-      color-mix(in srgb, var(--brand, #17d1a8) 13%, transparent),
+      color-mix(in srgb, var(--brand, #2f2ce6) 13%, transparent),
       transparent 62%
     ),
     var(--card, rgba(255, 255, 255, 0.04));
-  border: 1px solid color-mix(in srgb, var(--brand, #17d1a8) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--brand, #2f2ce6) 22%, transparent);
 }
 
 .sg-svg {
@@ -39,7 +39,7 @@
 /* --- the table, plate and food ------------------------------------------- */
 
 .sg-table {
-  stroke: color-mix(in srgb, var(--foreground, #fff) 14%, transparent);
+  stroke: color-mix(in srgb, var(--foreground, #1c1b8f) 14%, transparent);
   stroke-width: 2;
   stroke-linecap: round;
 }
@@ -47,38 +47,39 @@
 /* Rim and well drawn separately so it reads as a real plate with a lip, not
    a flat disc. */
 .sg-plate-rim {
-  fill: color-mix(in srgb, var(--foreground, #fff) 10%, transparent);
-  stroke: color-mix(in srgb, var(--foreground, #fff) 38%, transparent);
+  fill: color-mix(in srgb, var(--foreground, #1c1b8f) 10%, transparent);
+  stroke: color-mix(in srgb, var(--foreground, #1c1b8f) 38%, transparent);
   stroke-width: 2.5;
 }
 .sg-plate-well {
-  fill: color-mix(in srgb, var(--foreground, #fff) 6%, transparent);
-  stroke: color-mix(in srgb, var(--foreground, #fff) 20%, transparent);
+  fill: color-mix(in srgb, var(--foreground, #1c1b8f) 6%, transparent);
+  stroke: color-mix(in srgb, var(--foreground, #1c1b8f) 20%, transparent);
   stroke-width: 1.5;
 }
 
-/* The app's macro colours, so the food reads as food and stays on-brand. */
+/* The app's macro colours, straight off the theme tokens, so the food reads as
+   food and stays on-brand as the palette moves. */
 .sg-food-meat {
-  fill: #f9745f;
+  fill: var(--macro-fat, #c05028);
 }
 .sg-food-side {
-  fill: #f2c14e;
+  fill: var(--macro-carbs, #9a7112);
 }
 .sg-food-greens {
-  fill: #45c78d;
+  fill: var(--macro-protein, #2c7a58);
 }
 
 /* Shaded side walls that give the food thickness on the angled scene —
    darkened versions of the same three colours. They rise as the camera swings
    down, so the payoff of the second angle is literally visible. */
 .sg-wall-meat {
-  fill: color-mix(in srgb, #f9745f 62%, #000);
+  fill: color-mix(in srgb, var(--macro-fat, #c05028) 62%, #000);
 }
 .sg-wall-side {
-  fill: color-mix(in srgb, #f2c14e 62%, #000);
+  fill: color-mix(in srgb, var(--macro-carbs, #9a7112) 62%, #000);
 }
 .sg-wall-greens {
-  fill: color-mix(in srgb, #45c78d 62%, #000);
+  fill: color-mix(in srgb, var(--macro-protein, #2c7a58) 62%, #000);
 }
 .sg-height {
   transform-box: view-box;
@@ -108,8 +109,8 @@
 /* Solid fork, drawn to read as cutlery at a glance: a soft metallic fill with
    a hairline edge so tines and handle stay crisp on both themes. */
 .sg-fork-part {
-  fill: color-mix(in srgb, var(--foreground, #fff) 66%, transparent);
-  stroke: color-mix(in srgb, var(--foreground, #fff) 82%, transparent);
+  fill: color-mix(in srgb, var(--foreground, #1c1b8f) 66%, transparent);
+  stroke: color-mix(in srgb, var(--foreground, #1c1b8f) 82%, transparent);
   stroke-width: 0.6;
 }
 
@@ -149,39 +150,39 @@
 /* --- the camera ---------------------------------------------------------- */
 
 .sg-phone-body {
-  fill: var(--foreground, #fff);
+  fill: var(--foreground, #1c1b8f);
 }
 .sg-phone-screen {
-  fill: color-mix(in srgb, var(--card, #14181a) 88%, var(--foreground, #fff));
+  fill: color-mix(in srgb, var(--card, #fdf7e4) 88%, var(--foreground, #1c1b8f));
 }
 .sg-phone-lens {
-  fill: var(--brand, #17d1a8);
-  stroke: var(--card, #14181a);
+  fill: var(--brand, #2f2ce6);
+  stroke: var(--card, #fdf7e4);
   stroke-width: 1.5;
 }
 /* The cone is what actually communicates "this is where it's looking". */
 .sg-cone {
-  fill: var(--brand, #17d1a8);
+  fill: var(--brand, #2f2ce6);
   opacity: 0.16;
 }
 
 /* --- angle guides -------------------------------------------------------- */
 
 .sg-ref {
-  stroke: color-mix(in srgb, var(--foreground, #fff) 30%, transparent);
+  stroke: color-mix(in srgb, var(--foreground, #1c1b8f) 30%, transparent);
   stroke-width: 1.5;
   stroke-dasharray: 4 6;
 }
 .sg-arc {
   fill: none;
-  stroke: var(--brand, #17d1a8);
+  stroke: var(--brand, #2f2ce6);
   stroke-width: 2.5;
   stroke-linecap: round;
   stroke-dasharray: 90;
   animation: sg-draw 5s ease-in-out infinite;
 }
 .sg-label {
-  fill: var(--brand, #17d1a8);
+  fill: var(--brand, #2f2ce6);
   font-size: 15px;
   font-weight: 800;
   letter-spacing: 0.02em;
@@ -275,7 +276,7 @@
 /* Shutter flash when the shot lands. Brand teal rather than white: a white
    flash is invisible on the light theme's white card. */
 .sg-flash {
-  fill: var(--brand, #17d1a8);
+  fill: var(--brand, #2f2ce6);
   opacity: 0;
   animation: sg-flash 5s ease-in-out infinite;
 }

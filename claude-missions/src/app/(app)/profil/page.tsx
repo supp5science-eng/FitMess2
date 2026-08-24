@@ -1,4 +1,3 @@
-import { cookies } from "next/headers";
 import {
   Bell,
   BookOpen,
@@ -13,7 +12,6 @@ import {
   ScrollText,
   Shield,
   SlidersHorizontal,
-  SunMoon,
   Target,
   Trash2,
   User,
@@ -29,21 +27,19 @@ import {
   SettingsInfoRow,
   SettingsLinkRow,
 } from "@/components/settings/settings-row";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LanguageToggle } from "@/components/settings/language-toggle";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getT } from "@/lib/i18n/server";
 import { CONTROLLER } from "@/lib/legal/controller";
 import { createClient } from "@/lib/supabase/server";
-import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
 
 /**
  * `/profil` -- the "Podešavanja" (Settings) screen.
  *
  * Redesigned (2026-07-19) from a flat stack of buttons into grouped,
- * iOS-style settings sections (`SettingsGroup` + `SettingsLinkRow`), all
- * theme-token styled so it renders in both the dark and the (in-progress)
- * light theme. Server Component: identity/email come from the locally
+ * iOS-style settings sections (`SettingsGroup` + `SettingsLinkRow`), styled
+ * entirely from the app's theme tokens rather than inline colour. Server
+ * Component: identity/email come from the locally
  * verified access token (`getCurrentUser`, no Auth round trip); a single
  * own-row `profiles` read (RLS `profiles_select_own`) fetches `is_admin` (to
  * decide whether to show the Admin link) and `phone` (shown/edited in the
@@ -86,8 +82,6 @@ export default async function ProfilPage() {
     phone = profile?.phone ?? null;
   }
 
-  const cookieStore = await cookies();
-  const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
   const { t, locale } = await getT();
 
   return (
@@ -151,11 +145,6 @@ export default async function ProfilPage() {
       </SettingsGroup>
 
       <SettingsGroup title={t("settings.group.app")}>
-        <SettingsInfoRow
-          icon={SunMoon}
-          label={t("settings.appearance")}
-          trailing={<ThemeToggle initialTheme={theme} />}
-        />
         <SettingsInfoRow
           icon={Languages}
           label={t("settings.language")}

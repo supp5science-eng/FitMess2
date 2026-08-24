@@ -1,9 +1,9 @@
 /*
  * Post-onboarding "install FitMess" overlay (`install-overlay.tsx`).
  *
- * Namespaced `.pwi-*`. Runs INSIDE the authenticated app (always dark), so
- * colors come from the theme tokens per the repo rule — no inline hex except
- * where a token genuinely doesn't exist (pure white/black glints).
+ * Namespaced `.pwi-*`. Runs INSIDE the authenticated app, so colors come from
+ * the theme tokens per the repo rule — the one inline pair left is the mini
+ * phone's chassis, which is a drawn object rather than a UI surface.
  *
  * Motion design: the overlay rises over the fresh dashboard with a soft
  * spring, the app icon lands with ripple halos, copy and the demo stagger in,
@@ -192,7 +192,9 @@
   aspect-ratio: 9 / 18;
   border-radius: 20px;
   padding: 5px;
-  background: linear-gradient(165deg, #2a3a35, #05100d);
+  /* The mini phone's chassis. Drawn in the plate's ink rather than in a
+     realistic dark metal: it is an illustration on this paper, not a photo. */
+  background: linear-gradient(165deg, #2f2ce6, #15139c);
   box-shadow: 0 16px 30px -16px rgba(0, 0, 0, 0.7);
 }
 .pwi-notch {

@@ -3,7 +3,7 @@
  * two stores accept, at their exact required pixel sizes.
  *
  *   set NODE_PATH=C:\FitMess2\fitmesslaunchvideo\launch-video\node_modules
- *   node scripts/store/compose-screenshots.cjs --theme=light
+ *   node scripts/store/compose-screenshots.cjs
  *
  * Why a browser and not an image library: the headline is set in Archivo Black
  * and DM Sans, the same two faces the app uses. Compositing text with `sharp`
@@ -23,8 +23,7 @@ const arg = (name, fallback) => {
   return hit ? hit.slice(name.length + 3) : fallback;
 };
 
-const THEME = arg("theme", "light");
-const RAW = path.resolve(arg("raw", path.join("store", "raw", THEME)));
+const RAW = path.resolve(arg("raw", path.join("store", "raw")));
 const OUT = path.resolve(arg("out", path.join("store", "screenshots")));
 
 /**

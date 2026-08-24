@@ -53,7 +53,7 @@ export const legalMessages = {
       "Kad slikaš obrok, deklaraciju ili izgovoriš šta si jeo, ta slika odnosno snimak ide na obradu veštačkoj inteligenciji da bi se procenile kalorije. Snimci glasa se ne čuvaju — obrade se i odbace. Fotografija obroka se privremeno čuva uz taj unos (oko jedan dan) da bismo mogli da ti prikažemo karticu obroka, pa se automatski briše.",
     "legal.privacy.collect.tech.h": "Tehnički podaci",
     "legal.privacy.collect.tech.body":
-      "Kolačići neophodni za rad (prijava, izabrani jezik, tema), i zabeleška kada si prvi put stigao do pojedinih koraka u aplikaciji — to koristimo da vidimo gde ljudi zapinju. Ako uključiš podsetnike, čuvamo i oznaku tvog uređaja da bismo mogli da pošaljemo notifikaciju. Nemamo Google Analytics, Facebook piksel, ni bilo koji reklamni ili analitički SDK trećih lica.",
+      "Kolačići neophodni za rad (prijava, izabrani jezik), i zabeleška kada si prvi put stigao do pojedinih koraka u aplikaciji — to koristimo da vidimo gde ljudi zapinju. Ako uključiš podsetnike, čuvamo i oznaku tvog uređaja da bismo mogli da pošaljemo notifikaciju. Nemamo Google Analytics, Facebook piksel, ni bilo koji reklamni ili analitički SDK trećih lica.",
 
     "legal.privacy.why.h": "Zašto i po kom osnovu",
     "legal.privacy.why.contract":
@@ -114,7 +114,7 @@ export const legalMessages = {
 
     "legal.privacy.cookies.h": "Kolačići",
     "legal.privacy.cookies.body":
-      "Koristimo samo one bez kojih aplikacija ne radi: kolačić prijave, izabrani jezik, izabranu temu i oznaku da si prošao početno podešavanje. Nema kolačića za praćenje i zato nema ni banera koji te za njih pita.",
+      "Koristimo samo one bez kojih aplikacija ne radi: kolačić prijave, izabrani jezik i oznaku da si prošao početno podešavanje. Nema kolačića za praćenje i zato nema ni banera koji te za njih pita.",
 
     "legal.privacy.security.h": "Bezbednost",
     "legal.privacy.security.body":
@@ -271,7 +271,7 @@ export const legalMessages = {
       "When you photograph a meal or a label, or say out loud what you ate, that image or recording is sent for AI processing to estimate the calories. Voice recordings are not kept — they are processed and discarded. A meal photo is kept briefly alongside that entry (about one day) so we can show you its card, then deleted automatically.",
     "legal.privacy.collect.tech.h": "Technical data",
     "legal.privacy.collect.tech.body":
-      "Cookies the app cannot work without (sign-in, chosen language, chosen theme), and a record of when you first reached certain steps in the app — which we use to see where people get stuck. If you turn on reminders, we also store a device token so we can send the notification. We have no Google Analytics, no Facebook pixel, and no third-party advertising or analytics SDK of any kind.",
+      "Cookies the app cannot work without (sign-in, chosen language), and a record of when you first reached certain steps in the app — which we use to see where people get stuck. If you turn on reminders, we also store a device token so we can send the notification. We have no Google Analytics, no Facebook pixel, and no third-party advertising or analytics SDK of any kind.",
 
     "legal.privacy.why.h": "Why, and on what legal basis",
     "legal.privacy.why.contract":
@@ -330,7 +330,7 @@ export const legalMessages = {
 
     "legal.privacy.cookies.h": "Cookies",
     "legal.privacy.cookies.body":
-      "We use only the ones the app cannot work without: the sign-in cookie, your chosen language, your chosen theme, and a marker that you have finished initial setup. There are no tracking cookies, which is why there is no banner asking you about them.",
+      "We use only the ones the app cannot work without: the sign-in cookie, your chosen language, and a marker that you have finished initial setup. There are no tracking cookies, which is why there is no banner asking you about them.",
 
     "legal.privacy.security.h": "Security",
     "legal.privacy.security.body":

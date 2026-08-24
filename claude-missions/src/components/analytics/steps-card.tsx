@@ -22,7 +22,7 @@ import { formatSteps, type StepsDay, type StepsWeek } from "@/lib/steps/steps-we
 // "which day was that tall one, and how many steps was it?" is one tap instead
 // of guesswork. Nothing else about the card became interactive.
 
-const LINE = "#22C55E"; // green-500
+const LINE = "#5F43A0"; // `--mark-steps`, matching the /danas steps tile
 
 const VB_W = 320;
 const VB_H = 92;

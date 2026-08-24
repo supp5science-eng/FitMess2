@@ -10,9 +10,10 @@
  * carry the pearl gradient the wordmark always carries — a `background-clip`
  * trick no image library does for free.
  *
- * The gradient stops are copied from `--wordmark-grad` (dark theme) in
- * `src/app/globals.css`. If that ever changes, change it here too; there is no
- * way to import a CSS custom property into a standalone page.
+ * The palette is copied from `src/app/globals.css`: the cream `--background`
+ * with the halftone screen over it, and the `--wordmark-grad` stops for
+ * "Mess". If either changes, change it here too; there is no way to import a
+ * CSS custom property into a standalone page.
  *
  * Play crops this graphic on some surfaces, so nothing that matters may sit in
  * the outer eighth of the canvas.
@@ -34,10 +35,12 @@ const html = (markDataUri) => `<!doctype html>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
     width: ${WIDTH}px; height: ${HEIGHT}px; overflow: hidden;
-    background: #0a0c0b;
+    background: #f5e9cd;
     background-image:
-      radial-gradient(70% 120% at 78% 50%, rgba(69,199,141,0.22) 0%, rgba(10,12,11,0) 65%),
-      radial-gradient(60% 100% at 12% 30%, rgba(64,140,190,0.18) 0%, rgba(10,12,11,0) 62%);
+      radial-gradient(circle at 1px 1px, rgba(28,27,143,0.15) 1px, transparent 1.6px),
+      radial-gradient(70% 120% at 78% 50%, rgba(47,44,230,0.16) 0%, rgba(245,233,205,0) 65%),
+      radial-gradient(60% 100% at 12% 30%, rgba(47,44,230,0.10) 0%, rgba(245,233,205,0) 62%);
+    background-size: 9px 9px, 100% 100%, 100% 100%;
     display: flex; align-items: center; gap: 44px;
     padding: 0 96px;
   }
@@ -45,17 +48,17 @@ const html = (markDataUri) => `<!doctype html>
   .mark img { width: 100%; height: 100%; object-fit: contain; }
   .word {
     font-family: "Archivo Black", system-ui, sans-serif;
-    font-size: 92px; line-height: 1; color: #ffffff; letter-spacing: -0.015em;
+    font-size: 92px; line-height: 1; color: #1c1b8f; letter-spacing: -0.015em;
   }
-  /* "Mess" is never flat — same pearl sweep as the in-app wordmark. */
+  /* "Mess" is never flat — same overprint sweep as the in-app wordmark. */
   .mess {
-    background-image: linear-gradient(112deg, #26ddb6 0%, #35d3cc 22%, #ecc766 40%, #57a8ee 62%, #40d98c 83%, #63dd76 100%);
+    background-image: linear-gradient(112deg, #2f2ce6 0%, #4b3fd8 24%, #b5761f 48%, #3a37d1 74%, #15139c 100%);
     -webkit-background-clip: text; background-clip: text;
     -webkit-text-fill-color: transparent; color: transparent;
   }
   .tag {
     font-family: "DM Sans", system-ui, sans-serif;
-    font-size: 34px; line-height: 1.3; color: rgba(255,255,255,0.66);
+    font-size: 34px; line-height: 1.3; color: #5654b4;
     margin-top: 18px;
   }
 </style></head>

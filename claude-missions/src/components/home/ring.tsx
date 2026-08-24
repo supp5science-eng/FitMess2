@@ -48,8 +48,10 @@ const RADIUS = 82;
 const STROKE = 18;
 
 // The second lap (drawn on top of the closed first lap once over the limit) is
-// a dark red, so the overshoot arc reads clearly against the brand gradient.
-const OVERSHOOT_STROKE = "#991b1b";
+// a deep terracotta -- the plate's warm ink at full strength, so the overshoot
+// arc reads clearly against the ultramarine gradient without ever becoming the
+// punitive red the zero-shame rule forbids.
+const OVERSHOOT_STROKE = "#8a3a1c";
 
 interface MetricSpec {
   value: number;

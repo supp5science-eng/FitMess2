@@ -17,14 +17,17 @@ import "./landing.css";
  * short, app-styled feature showcase hints at what's inside, then a closing
  * CTA. Kept intentionally brief.
  *
- * The page is LIGHT, like the app itself (`DEFAULT_THEME` in
- * `lib/theme/theme.ts` is `"light"`): the `.lp` root carries `.light`, so
- * `bg-card` / `text-foreground` / `--primary` / the macro colours resolve to
- * the real app tokens (globals.css), and the cards reuse the same
+ * The page is printed on the app's own cream plate: the `.lp` root carries
+ * `.light` (the app has ONE theme now, and that class is what a subtree pins
+ * it with), so `bg-card` / `text-foreground` / `--primary` / the macro colours
+ * resolve to the real app tokens (globals.css), and the cards reuse the same
  * `rounded-2xl border-border bg-card` surface the authenticated screens use.
- * So the landing reads as the same product, not a separate marketing skin —
- * and its white ground is the same white the hero film was rendered on, so the
- * video has no visible edges.
+ * So the landing reads as the same product, not a separate marketing skin.
+ *
+ * The hero film was rendered on WHITE, though, and this page is cream — it is
+ * printed onto the paper with `mix-blend-mode: multiply` rather than pasted
+ * over it, which is what keeps it from drawing a white box (see `.lp-video`
+ * in `landing.css`).
  *
  * There is NO "install the app" CTA here — the whole onboarding
  * (questionnaire → plan) runs on the web first, and the PWA install prompt
@@ -186,8 +189,9 @@ function StoreRow({
 }
 
 /** The showcase features. `tint` uses the app's own accent + macro palette
- * (globals.css dark tokens) so the row doubles as a peek at the product's
- * visual language: primary teal, carbs green, protein coral, fat amber. */
+ * (the `--primary` / `--macro-*` tokens in globals.css) so the row doubles as
+ * a peek at the product's visual language: the plate's ultramarine, then the
+ * three earthy macro inks. */
 const FEATURES: {
   icon: React.ReactNode;
   tint: string;
@@ -196,25 +200,25 @@ const FEATURES: {
 }[] = [
   {
     icon: <IconPlan />,
-    tint: "#17d1a8",
+    tint: "#2f2ce6",
     titleKey: "app.landing.feature.plan.title",
     bodyKey: "app.landing.feature.plan.body",
   },
   {
     icon: <IconLog />,
-    tint: "#45c78d",
+    tint: "#2c7a58",
     titleKey: "app.landing.feature.log.title",
     bodyKey: "app.landing.feature.log.body",
   },
   {
     icon: <IconToday />,
-    tint: "#f9745f",
+    tint: "#c05028",
     titleKey: "app.landing.feature.ring.title",
     bodyKey: "app.landing.feature.ring.body",
   },
   {
     icon: <IconWeek />,
-    tint: "#f2c14e",
+    tint: "#9a7112",
     titleKey: "app.landing.feature.week.title",
     bodyKey: "app.landing.feature.week.body",
   },

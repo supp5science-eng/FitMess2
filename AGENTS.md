@@ -37,7 +37,13 @@ the repo root is the build workspace.
 - **Serbian, zero‑shame copy.** sr‑Latn, informal, calm. Never punitive red for
   going over — over‑target uses a warm accent (`--chart-5`), never `--destructive`.
 - **Theme tokens, not hex.** Colors come from CSS custom properties in
-  `app/globals.css` (`--primary`, `--card`, `--macro-*`, `--brand`, …). Don't inline hex.
+  `app/globals.css` (`--primary`, `--card`, `--macro-*`, `--mark-*`, `--brand`, …).
+  Don't inline hex.
+- **ONE theme — "Gravira".** Ultramarine ink (`--ink` / `--primary`) on cream paper
+  (`--paper` / `--background`), with a halftone stipple ground (`.app-aurora`,
+  `.fm-halftone`) and a letterpress card lift (`.fm-lift`) instead of soft
+  shadows. There is no dark palette, no `dark:` variant and no theme cookie —
+  `src/app/theme.test.ts` fails the build if one comes back.
 - **Cards use the shared `components/ui/card.tsx`** on the `bg-card` surface.
 - **Server is the source of truth.** Client mutations POST to `app/api/*`, then
   `router.refresh()` — server components re‑read and re‑render.

@@ -36,10 +36,12 @@
  *    flat icon is what its adaptive mask expects anyway.
  *
  * 1b. **The splash is not the icon's colour.** The icon is always dark, but the
- *    app's default theme is LIGHT (`DEFAULT_THEME` in `src/lib/theme/theme.ts`,
- *    `--background: #ffffff`). A splash painted the icon's black would flash
- *    white the moment the site loads for most users, so the splash follows the
- *    system appearance and matches `--background` on each side.
+ *    app itself is printed on cream (`--background: #f5e9cd` in
+ *    `globals.css` — one theme, no dark variant since 2026-08-24). A splash
+ *    painted the icon's black would flash cream the moment the site loads, so
+ *    the light splash matches `--background` exactly. The `-dark` splash is
+ *    kept only because the native shells still ask for a dark-appearance
+ *    asset; nothing in the web app can reach it.
  *
  * 2. **Android crops the adaptive foreground to a circle.** Only the middle
  *    ~66% of the canvas survives on a round launcher, so the foreground pear is
@@ -73,8 +75,9 @@ const ANDROID_RES = path.join(root, "android/app/src/main/res");
  *  manifest. The icon, the splash and the first painted pixel of the site all
  *  need to be this exact value or the launch flickers. */
 const GROUND = { r: 10, g: 12, b: 11, alpha: 1 }; // #0a0c0b
-/** `--background` on the default light theme — what the site paints first. */
-const GROUND_LIGHT = { r: 255, g: 255, b: 255, alpha: 1 }; // #ffffff
+/** `--background` — the cream paper the site paints first. Keep in step with
+ *  `globals.css` and with `themeColor` in `src/app/layout.tsx`. */
+const GROUND_LIGHT = { r: 245, g: 233, b: 205, alpha: 1 }; // #f5e9cd
 
 /** Fraction of the icon canvas the pear's height fills. iOS shows the icon
  *  whole (rounded corners only), so it can run tall; Android's circular crop

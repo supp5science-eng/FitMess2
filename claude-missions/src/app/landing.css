@@ -7,34 +7,38 @@
  * the whole onboarding runs on the web and the PWA install prompt only shows
  * at the very end.
  *
- * WHITE, like the app itself (`DEFAULT_THEME` is light) and like the hero
- * film, which was rendered on a white/pastel ground. Those two facts are one
- * decision: the video carries its own phone mockup floating on white, so the
- * page around it has to be the same white or the film sits in a visible box.
+ * CREAM, like the app itself ("Gravira", 2026-08-24): the page is the same
+ * printed sheet, and the copy and CTA are the same two inks.
+ *
+ * The hero film is the one hard problem here. It was rendered on a WHITE
+ * ground, so dropping it onto cream would draw a bright rectangle exactly
+ * where the full-bleed treatment is trying not to have one. It is handled the
+ * way a printer would: `mix-blend-mode: multiply` on the video (see
+ * `.lp-video`), which makes its white ground vanish into the paper and prints
+ * only the film's darker pixels onto it. Do not "fix" a white box behind the
+ * film by putting a white panel back — re-check the blend mode instead.
  *
  * Below the hero the page scrolls into a short, app-styled feature showcase +
  * a closing CTA. Those sections use the app's own design tokens (bg-card,
- * text-foreground, --primary, macro colours) via Tailwind utilities — the
- * `.lp` root carries `.light` so the app's light theme resolves even for a
- * visitor whose device theme is dark — rather than the bespoke marketing
- * variables below, so the landing reads as the same product as the app.
+ * text-foreground, --primary, macro colours) via Tailwind utilities rather
+ * than the bespoke marketing variables below, so the landing reads as the
+ * same product as the app.
  */
 
 .lp {
-  --ground: #ffffff;
-  --ink: #0a0c0b;
-  --paper: #ffffff;
-  --ink-soft: #646b6f;
-  --teal: #17d1a8;
-  --teal-bright: #12a886;
+  --ground: #f5e9cd;
+  --ink: #1c1b8f;
+  --paper: #fdf7e4;
+  --ink-soft: #5654b4;
+  --accent: #2f2ce6;
+  --accent-bright: #15139c;
   --font: var(--font-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   font-family: var(--font);
   background: var(--ground);
   color: var(--ink);
-  /* The landing pins light regardless of the `fm_theme` cookie on <html>, so
-     it must pin the UA colour scheme too — otherwise scrollbars and form
-     chrome stay dark around a white page. */
+  /* Pin the UA colour scheme so scrollbars and form chrome stay in the
+     paper's world on a device whose system setting is dark. */
   color-scheme: light;
   min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
@@ -48,7 +52,7 @@
 }
 
 .lp :focus-visible {
-  outline: 2.5px solid var(--teal);
+  outline: 2.5px solid var(--accent);
   outline-offset: 3px;
   border-radius: 6px;
 }
@@ -85,9 +89,8 @@
 }
 
 /* ---------- Hero film ----------
-   NO frame, no shadow, no rounded card: the film already carries its own
-   phone mockup on the same white this page uses, so any chrome around it
-   would draw a box where the design intends none. `contain` guarantees the
+   NO frame, no shadow, no rounded card: any chrome around it would draw a box
+   where the design intends none. `contain` guarantees the
    9:16 master is never cropped (its intro text cards run edge to edge) — and
    because the letterbox is the page's own white, it is invisible. */
 .lp-video {
@@ -116,11 +119,21 @@
   object-fit: contain;
   background: transparent;
   /*
-   * Feathered edges. The film's ground is white but carries soft pastel
-   * washes (mint / periwinkle / peach) that run into its corners — against
-   * the page's pure white those washes end in a straight line, drawing the
-   * video's bounding box exactly where the full-bleed treatment is trying not
-   * to have one. Two gradients intersected fade all four sides out.
+   * Overprint. The film was rendered on WHITE, and this page is cream, so the
+   * film is printed onto the paper instead of pasted over it: `multiply`
+   * keeps a pixel only to the extent that it is DARKER than the ground, so
+   * pure white becomes fully transparent and the phone mockup lands on the
+   * paper with no rectangle around it. It also warms the film's pastel washes
+   * into the palette for free, which is exactly the second ink pass this
+   * design is imitating.
+   */
+  mix-blend-mode: multiply;
+  /*
+   * Feathered edges, kept on top of the blend. The film's soft pastel washes
+   * (mint / periwinkle / peach) still reach its corners and, being darker
+   * than the paper, still survive `multiply` — so without this they would end
+   * in a straight line and redraw the bounding box the blend just removed.
+   * Two gradients intersected fade all four sides out.
    *
    * The insets are deliberately asymmetric: the device mockup sits around
    * 34–74% horizontally but starts ~6% from the top, so the sides can fade
@@ -166,9 +179,9 @@
   margin-bottom: -6px;
   padding: 6px 13px;
   border-radius: 999px;
-  border: 1px solid rgba(18, 168, 134, 0.3);
-  background: rgba(18, 168, 134, 0.08);
-  color: var(--teal-bright);
+  border: 1px solid rgba(47, 44, 230, 0.32);
+  background: rgba(47, 44, 230, 0.09);
+  color: var(--accent-bright);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.13em;
@@ -183,12 +196,12 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--teal-bright);
+  background: var(--accent-bright);
   animation: lp-badge-pulse 2.6s ease-out infinite;
 }
 @keyframes lp-badge-pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(18, 168, 134, 0.45); }
-  70% { opacity: 0.75; box-shadow: 0 0 0 5px rgba(18, 168, 134, 0); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(47, 44, 230, 0.45); }
+  70% { opacity: 0.75; box-shadow: 0 0 0 5px rgba(47, 44, 230, 0); }
 }
 
 /* ---------- Title ---------- */
@@ -223,21 +236,21 @@
   width: 100%;
   height: 64px;
   border-radius: 999px;
-  /* Near-black on white — the same inversion the app's light theme makes
-     (`--primary` is black in light, teal in dark), so the landing's primary
-     action and the app's primary buttons are the same button. */
-  background: var(--ink);
+  /* The plate's ultramarine on paper — the same fill as `--primary` in the
+     app, so the landing's primary action and the app's primary buttons are
+     the same button. The shadow is the letterpress offset, not a soft drop. */
+  background: var(--accent);
   color: var(--paper);
   font-size: 18px;
   font-weight: 700;
   letter-spacing: -0.01em;
   text-decoration: none;
-  box-shadow: 0 12px 26px -14px rgba(10, 12, 11, 0.55);
+  box-shadow: 0 3px 0 0 rgba(21, 19, 156, 0.45);
   transition: transform 0.12s ease, box-shadow 0.2s ease;
 }
 .lp-start:hover {
   transform: translateY(-1px);
-  box-shadow: 0 16px 32px -14px rgba(10, 12, 11, 0.6);
+  box-shadow: 0 4px 0 0 rgba(21, 19, 156, 0.5);
 }
 .lp-start:active {
   transform: scale(0.99);

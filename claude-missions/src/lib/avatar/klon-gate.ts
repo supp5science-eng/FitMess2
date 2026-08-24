@@ -1,27 +1,32 @@
 /**
  * The switch that decides whether a missing klon closes the app.
  *
- * The klon gate is the only wall in this app that stands in front of a
- * FIRST-TIME visitor and depends on someone else's service staying up. That
- * combination is what this file exists for. When the drawing screen moved to
- * the front of the funnel (landing -> "Kreni" -> `/klon` -> `/upitnik`), the
- * blast radius of a Gemini outage changed shape: before, a failure annoyed
- * people who already had accounts; now it closes the door on every new one.
+ * The product decision is that every account has a klon (2026-08-24). This file
+ * is about WHEN that rule may start being enforced, which is a different
+ * question, and the reason it defaults to OFF:
  *
- * So the wall gets an off switch that lives in the environment, not in code:
- * set `KLON_OBAVEZAN=false` in Vercel and the gate stops redirecting within a
- * minute, with no deploy, no build and no code review at 3am. Everything else
- * about the feature keeps working -- the screen still draws klons, still saves
- * them, still sits first in the funnel. Only the "and you may not pass without
- * one" part goes quiet.
+ * 1. NOT ONE EXISTING ACCOUNT HAS A KLON. The gate does not distinguish new
+ *    users from old ones -- it asks `profiles.klon_at IS NULL`, and for every
+ *    account that predates this feature the answer is yes. Enforced on the
+ *    deploy that ships it, the rule would lock the entire existing user base
+ *    out of the app until each of them drew one. A rule that is correct for
+ *    tomorrow's users must not be applied retroactively to today's.
  *
- * DEFAULT IS ON, and deliberately so: the product decision is that every
- * account has a klon (2026-08-24), and a switch that defaults to off would
- * quietly undo that the first time someone forgot to set a variable. It takes
- * the exact string "false" to open the gate -- a typo, an empty value, or an
- * unset variable all mean "mandatory", because the failure that costs less is
- * the one where the rule still holds.
+ * 2. The screen is now FIRST in the funnel and depends on someone else's
+ *    service staying up. Enforcing before a single klon has been drawn against
+ *    the live model means betting the whole front door on an untested call.
+ *
+ * So enforcement is opt-in: set `KLON_OBAVEZAN=true` in the environment once
+ * the klon has actually been drawn end-to-end in production. It takes effect
+ * within a minute, with no deploy -- and can be switched back just as fast if
+ * the image model has a bad day.
+ *
+ * Everything else works regardless: the screen draws, saves, and sits first in
+ * the funnel either way. Only "and you may not pass without one" is gated on
+ * this. When it is off, the landing CTA steps back to `/upitnik` too (see
+ * `src/app/page.tsx`) -- sending every visitor at a wall we are not yet ready
+ * to enforce would be the worst of both.
  */
 export function isKlonRequired(): boolean {
-  return process.env.KLON_OBAVEZAN !== "false";
+  return process.env.KLON_OBAVEZAN === "true";
 }

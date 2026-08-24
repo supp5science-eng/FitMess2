@@ -227,12 +227,12 @@ const FEATURES: {
 ];
 
 export default async function LandingPage() {
-  // Where "Započni" goes. Normally the avatar screen, which hands off to the
-  // questionnaire itself. But when `KLON_OBAVEZAN=false` turns the klon gate
-  // off -- the switch that exists for the day the image model is down -- the
-  // CTA has to step back to `/upitnik` too. Killing the wall while still
-  // sending every new visitor at a screen that cannot draw would swap a locked
-  // door for a broken one, which is not an improvement.
+  // Where "Započni" goes. The avatar screen once the klon is switched on
+  // (`KLON_OBAVEZAN=true`), which hands off to the questionnaire itself;
+  // straight to the questionnaire until then. The two move together on purpose:
+  // sending every visitor at a screen we are not yet enforcing -- and have not
+  // yet proven against the live model -- would swap a locked door for a broken
+  // one. See `@/lib/avatar/klon-gate`.
   const startHref = isKlonRequired() ? "/klon" : "/upitnik";
   const { t } = await getT();
   return (

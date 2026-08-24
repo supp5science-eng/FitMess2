@@ -23,25 +23,24 @@ describe("root landing page (F001 scaffold smoke test + FitMess landing)", () =>
     ).toBeInTheDocument();
   });
 
-  // The CTA now opens the AVATAR screen, not the questionnaire: the klon is
-  // what the product is worth showing, so it goes first and hands off to
-  // `/upitnik` itself (product decision, 2026-08-24).
-  it("test_landing_leads_with_get_started_to_the_klon_screen", async () => {
+  // Until the klon is switched on (`KLON_OBAVEZAN=true`), the CTA keeps going
+  // where it always went. Sending every visitor at a wall we are not yet
+  // enforcing would be the worst of both.
+  it("test_landing_leads_with_get_started_to_the_questionnaire_by_default", async () => {
     render(await Home());
     const start = screen.getByRole("link", { name: /Započni/i });
-    expect(start).toHaveAttribute("href", "/klon");
+    expect(start).toHaveAttribute("href", "/upitnik");
   });
 
-  it("falls back to the questionnaire when the klon gate is switched off", async () => {
-    // `KLON_OBAVEZAN=false` is the switch for the day the image model is down.
-    // It must move the CTA too: killing the wall while still sending every new
-    // visitor at a screen that cannot draw swaps a locked door for a broken one.
+  it("leads to the klon screen once the klon is switched on", async () => {
+    // The klon is what the product is worth showing, so once it is enforced it
+    // goes first and hands off to `/upitnik` itself.
     const original = process.env.KLON_OBAVEZAN;
-    process.env.KLON_OBAVEZAN = "false";
+    process.env.KLON_OBAVEZAN = "true";
     try {
       render(await Home());
       const start = screen.getByRole("link", { name: /Započni/i });
-      expect(start).toHaveAttribute("href", "/upitnik");
+      expect(start).toHaveAttribute("href", "/klon");
     } finally {
       if (original === undefined) delete process.env.KLON_OBAVEZAN;
       else process.env.KLON_OBAVEZAN = original;

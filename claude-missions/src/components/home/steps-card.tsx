@@ -45,9 +45,9 @@ const PRESETS: { steps: number; labelKey: string; sub: string; emoji: string }[]
 
 /** The violet arc, light -> dark (matches the "Koraci" accent used elsewhere). */
 const STEPS_GRADIENT: [string, string, string] = [
-  "#a78bfa",
-  "#8b5cf6",
-  "#6366f1",
+  "#8b74c4",
+  "#6f56ad",
+  "#5f43a0",
 ];
 
 interface KoraciResponseBody {

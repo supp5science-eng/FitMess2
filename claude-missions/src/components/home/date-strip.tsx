@@ -186,9 +186,9 @@ function DayCellInner({
         className={cn(
           "text-xs font-medium",
           cell.isToday
-            ? // Today's weekday sits in a brand-teal chip, like the
-              // highlighted weekday in the reference design.
-              "rounded-full bg-[color:var(--brand)] px-2 py-0.5 font-semibold text-[#04231c]"
+            ? // Today's weekday sits in a solid ink chip -- the one reversed
+              // mark on the strip, cream type on the brand ultramarine.
+              "rounded-full bg-[color:var(--brand)] px-2 py-0.5 font-semibold text-[color:var(--primary-foreground)]"
             : cell.isFuture || cell.isBeforeStart
               ? "text-foreground/30"
               : selected

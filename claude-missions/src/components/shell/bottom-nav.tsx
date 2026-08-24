@@ -13,12 +13,11 @@ import { cn } from "@/lib/utils";
  * F005: bottom navigation. Three Serbian tabs; plain `next/link` anchors are
  * natively keyboard-reachable (Tab / Shift+Tab, activate with Enter).
  *
- * Rendered as a floating dark frosted-glass pill (see `AppNavBar`), always
- * visible over scrolling content. `liquid-glass` adds the top-edge gloss on
- * the pill itself; on top of that a single **sliding "liquid glass" lens**
- * (the `.nav-glass` element) morphs from tab to tab as you switch sections —
- * the Apple "Liquid Glass" feel from the reference: one frosted bubble that
- * animates to the active tab instead of just recolouring an icon.
+ * Rendered as a floating paper pill inside an ink hairline (see `AppNavBar`),
+ * always visible over scrolling content. `liquid-glass` lays the halftone
+ * overprint on the pill itself; on top of that a single **sliding lens** (the
+ * `.nav-glass` element) travels from tab to tab as you switch sections — one
+ * pressed cartouche that moves, rather than an icon that merely recolours.
  *
  * Positioning is measured (not percentage-guessed) so the lens sits exactly
  * over the active tab regardless of the pill's padding/gaps, and re-measures
@@ -110,7 +109,7 @@ export function BottomNav() {
     <nav
       ref={navRef}
       aria-label="Glavna navigacija"
-      className="liquid-glass pointer-events-auto relative flex flex-1 items-stretch justify-around gap-0.5 rounded-full border border-border bg-card/80 px-1.5 py-2 shadow-[0_8px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+      className="liquid-glass pointer-events-auto relative flex flex-1 items-stretch justify-around gap-0.5 rounded-full border border-ink/45 bg-card/85 px-1.5 py-2 shadow-[0_3px_0_-1px_color-mix(in_srgb,var(--ink)_25%,transparent)] backdrop-blur-xl"
     >
       {/* Sliding liquid-glass lens behind the active tab (decorative). */}
       <span

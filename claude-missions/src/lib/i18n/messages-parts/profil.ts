@@ -31,9 +31,6 @@ export const profilMessages = {
     "profil.goal.previewHint": "Unesi ciljnu težinu i rok da vidiš novi plan.",
     "profil.goal.saved": "Cilj je sačuvan. Plan je preračunat.",
 
-    // Izgled (/profil/izgled)
-    "profil.appearance.desc": "Izaberi svetlu ili tamnu temu. Primenjuje se odmah.",
-    "profil.appearance.theme": "Tema",
 
     // Cilj koraka (/profil/koraci)
     "profil.steps.subtitle": "Koliko koraka dnevno ti brojimo kao pun dan.",
@@ -170,8 +167,6 @@ export const profilMessages = {
     "profil.goal.previewHint": "Enter a target weight and timeframe to see your new plan.",
     "profil.goal.saved": "Goal saved. Your plan has been recalculated.",
 
-    "profil.appearance.desc": "Pick a light or dark theme. It applies right away.",
-    "profil.appearance.theme": "Theme",
 
     "profil.steps.subtitle": "How many steps a day count as a full day for you.",
     "profil.steps.originTitle": "Where did 10,000 steps even come from?",

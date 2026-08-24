@@ -187,7 +187,7 @@ export function AvatarFigure({
           return (
             <Shape
               key={`patika${s}`}
-              color="#F2F3F5"
+              color="#FDF7E4"
               d={
                 `M ${r(x0)} ${r(yT)}` +
                 ` L ${r(x1)} ${r(yT)}` +

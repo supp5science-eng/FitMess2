@@ -29,11 +29,17 @@ Font.register({ family: PDF_FONT_FAMILY, fonts: PDF_FONT_SOURCES });
 // disabling hyphenation keeps Serbian words intact.
 Font.registerHyphenationCallback((word) => [word]);
 
-const BRAND = "#17d1a8";
-const INK = "#14181a";
-const MUTED = "#6b7280";
-const LINE = "#e5e7eb";
-const ZEBRA = "#f7f8f8";
+// The app's "Gravira" inks, in the concrete hex `@react-pdf/renderer` needs
+// (it cannot read CSS custom properties). The PAGE deliberately stays white
+// rather than taking the app's cream ground: this is a GDPR data export --
+// a document someone may print, and a full-bleed cream would cost them a
+// cartridge for no gain. Everything printed ON that page is the app's ink, so
+// the export still reads as FitMess.
+const BRAND = "#2f2ce6";
+const INK = "#1c1b8f";
+const MUTED = "#5654b4";
+const LINE = "#dcd3f0";
+const ZEBRA = "#faf4e6";
 
 const styles = StyleSheet.create({
   page: {
@@ -89,9 +95,9 @@ const styles = StyleSheet.create({
   warning: {
     fontSize: 8.5,
     color: INK,
-    backgroundColor: "#fff7ed",
+    backgroundColor: "#fbf1dc",
     borderLeftWidth: 2,
-    borderLeftColor: "#f59e0b",
+    borderLeftColor: "#b5761f",
     padding: 6,
     marginBottom: 10,
   },
@@ -216,7 +222,7 @@ function Table({ table }: { table: ReportTable }) {
  * used because this lands on white paper.
  */
 const MESS_LETTERS = ["M", "e", "s", "s"];
-const MESS_COLORS = wordmarkLetterColors(MESS_LETTERS.length, "light");
+const MESS_COLORS = wordmarkLetterColors(MESS_LETTERS.length, "paper");
 
 function WordmarkAccent() {
   return (

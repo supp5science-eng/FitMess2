@@ -3,15 +3,18 @@
 import { useEffect, useRef } from "react";
 
 /** Festive palette that pops on the dark success overlay. */
+// Confetti in the plate's own inks rather than a rainbow: the two
+// ultramarines carry it, the ochre/terracotta/sage give it enough variation to
+// read as a scatter, and nothing on screen suddenly belongs to another palette.
 const COLORS = [
-  "#ef4444",
-  "#f97316",
-  "#f59e0b",
-  "#22c55e",
-  "#14b8a6",
-  "#3b82f6",
-  "#a855f7",
-  "#ec4899",
+  "#2f2ce6",
+  "#6b69ff",
+  "#15139c",
+  "#b5761f",
+  "#d9963a",
+  "#c05028",
+  "#2c7a58",
+  "#5f43a0",
 ];
 
 interface Particle {

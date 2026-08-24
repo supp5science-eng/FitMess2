@@ -88,7 +88,7 @@ export const homeExtraMessages = {
     "home.addSheet.meal": "Slikaj obrok",
     "home.addSheet.mealDesc": "Jedna slika i gotovo",
     "home.addSheet.badge.fastest": "NAJBRŽE",
-    "home.addSheet.gricDesc": "Sitnice — reci ih sve odjednom, bez slikanja",
+    "home.addSheet.gricDesc": "Sitnice — reci ili napiši sve odjednom, bez slikanja",
     "home.addSheet.label": "Slikaj deklaraciju",
 
     // Date strip
@@ -99,7 +99,7 @@ export const homeExtraMessages = {
     "home.dateStrip.logged": "{date} — uneo si obrok",
 
     // Gric button
-    "home.gric.desc": "Reci šta si grickao — bez slikanja",
+    "home.gric.desc": "Reci ili napiši šta si grickao",
 
     // Health score card
     "home.health.title": "Ocena zdravosti",
@@ -224,7 +224,7 @@ export const homeExtraMessages = {
     "home.addSheet.meal": "Photograph a meal",
     "home.addSheet.mealDesc": "One photo and you're done",
     "home.addSheet.badge.fastest": "FASTEST",
-    "home.addSheet.gricDesc": "Little bites — say them all at once, no photos",
+    "home.addSheet.gricDesc": "Little bites — say or type them all at once, no photos",
     "home.addSheet.label": "Photograph a label",
 
     // Date strip
@@ -235,7 +235,7 @@ export const homeExtraMessages = {
     "home.dateStrip.logged": "{date} — you logged a meal",
 
     // Gric button
-    "home.gric.desc": "Say what you snacked on — no photos",
+    "home.gric.desc": "Say or type what you snacked on",
 
     // Health score card
     "home.health.title": "Health score",

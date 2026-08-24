@@ -70,7 +70,7 @@ export function SelectField({
             onChange(Number.isNaN(parsed) ? null : parsed);
           }}
           className={cn(
-            "h-10 w-full min-w-0 appearance-none rounded-lg border border-input bg-transparent pl-3 pr-9 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:bg-input/30",
+            "h-10 w-full min-w-0 appearance-none rounded-lg border border-input bg-transparent pl-3 pr-9 text-base outline-none transition-colors focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20",
             value === null && "text-muted-foreground"
           )}
         >

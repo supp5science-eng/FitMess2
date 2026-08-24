@@ -41,25 +41,25 @@ const STYLE: Record<
   { color: string; icon: React.ReactNode; chip: string; text: string }
 > = {
   fiber: {
-    color: "#10b981",
+    color: "#2c7a58",
     icon: <Wheat className="size-4" aria-hidden="true" />,
     chip: "bg-emerald-500/15",
     text: "text-emerald-500",
   },
   sugar: {
-    color: "#ec4899",
+    color: "#a83a72",
     icon: <Candy className="size-4" aria-hidden="true" />,
     chip: "bg-pink-500/15",
     text: "text-pink-500",
   },
   sodium: {
-    color: "#0ea5e9",
+    color: "#2c6e8f",
     icon: <Soup className="size-4" aria-hidden="true" />,
     chip: "bg-sky-500/15",
     text: "text-sky-500",
   },
   satFat: {
-    color: "#f59e0b",
+    color: "#9a7112",
     icon: <Beef className="size-4" aria-hidden="true" />,
     chip: "bg-amber-500/15",
     text: "text-amber-500",
@@ -80,8 +80,9 @@ function tabLabel(key: MicroKey, t: TFunction): string {
   }
 }
 
-/** The calm amber used for a day/average past a ceiling. */
-const OVER = "#f59e0b";
+/** The calm ochre used for a day/average past a ceiling — the plate's warm
+ * second ink (`--chart-5`), never the error colour. */
+const OVER = "#b5761f";
 
 const CHART_HEIGHT = 132; // px
 

@@ -2,19 +2,27 @@
 
 import { z } from "zod";
 
-import { aiErrorSr, estimateGricFromAudio } from "@/lib/ai/gemini";
+import {
+  aiErrorSr,
+  estimateGricFromAudio,
+  estimateGricFromText,
+} from "@/lib/ai/gemini";
 import type { GricEstimate } from "@/lib/ai/gric-estimate";
 import { chargeAiEstimate } from "@/lib/ai/quota";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { buildGricRows } from "@/lib/gric/rows";
 import { createClient } from "@/lib/supabase/server";
 
-// Server actions for "Gric" (quick spoken logging of small stuff). The clip is
-// sent to Gemini here so the API key never reaches the client, and the
-// confirmed items are written as ordinary one-off log rows (`food_id: null`,
-// method 'meal') — the same shape the photo and voice flows produce, so the
-// home screen, Analitika and the retention job all handle them with no changes
-// and no migration.
+// Server actions for "Gric" (quick logging of small stuff, spoken OR typed).
+// The clip / sentence is sent to Gemini here so the API key never reaches the
+// client, and the confirmed items are written as ordinary one-off log rows
+// (`food_id: null`, method 'meal') — the same shape the photo and voice flows
+// produce, so the home screen, Analitika and the retention job all handle them
+// with no changes and no migration.
+//
+// The two estimate actions differ ONLY in what they hand the model. Everything
+// after that — the parse, the review screen, the write — is one path, because
+// what a gric IS does not depend on whether it was said or typed.
 //
 // Items are written per EATING OCCASION, not per item: what was eaten together
 // becomes one row with its parts in `logs.components` (see
@@ -24,14 +32,30 @@ import { createClient } from "@/lib/supabase/server";
 
 const MAX_AUDIO_BYTES = 8 * 1024 * 1024; // 8 MB (16 kHz mono WAV clips are tiny)
 
+/** A gric is a sentence, not an essay — and the model is told the same. Long
+ * enough for "jaja, slanina i hleb, a pre toga jabuka", short enough that a
+ * pasted recipe cannot become a model call. */
+const MAX_TEXT_CHARS = 400;
+
 export type GricEstimateResult =
   | { ok: true; data: GricEstimate }
   | { ok: false; error_sr: string };
 
-export async function estimateGricAction(
-  formData: FormData
-): Promise<GricEstimateResult> {
-  // Auth-gate before touching the paid audio API.
+/**
+ * Session + daily-allowance gate, run before either estimate touches the paid
+ * model. Returns the failure to hand straight back to the client, or `null`
+ * when the caller may proceed.
+ *
+ * One user action = one charge against the free daily allowance, taken here
+ * rather than inside `gemini.ts` because a single action can make two model
+ * calls and "five a day" has to mean five meals. Typing instead of speaking is
+ * the same action and costs the same one charge — otherwise the cheaper input
+ * would quietly become the way to get around the allowance. Enforcement is OFF
+ * today; this call is what measures demand (see `@/lib/ai/quota`).
+ */
+async function gateEstimate(): Promise<
+  { ok: false; error_sr: string } | null
+> {
   const supabase = await createClient();
   const userId = await getCurrentUserId(supabase);
   if (!userId) {
@@ -41,13 +65,17 @@ export async function estimateGricAction(
     };
   }
 
-  // One user action = one charge against the free daily allowance, taken here
-  // rather than inside `gemini.ts` because a single action can make two model
-  // calls and "five a day" has to mean five meals. Enforcement is OFF today --
-  // this call is what measures demand (see `@/lib/ai/quota`).
   const quota = await chargeAiEstimate(supabase, userId);
   if (!quota.ok) return { ok: false, error_sr: quota.error_sr };
+  return null;
+}
 
+/** Spoken gric: a WAV clip -> occasion-grouped items. */
+export async function estimateGricAction(
+  formData: FormData
+): Promise<GricEstimateResult> {
+  // Shape first, allowance second. A clip that could never reach the model
+  // must not spend one of the day's estimates on its way to being rejected.
   const file = formData.get("audio");
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error_sr: "Nema snimka. Reci šta si gricnuo pa pokušaj ponovo." };
@@ -55,6 +83,9 @@ export async function estimateGricAction(
   if (file.size > MAX_AUDIO_BYTES) {
     return { ok: false, error_sr: "Snimak je predugačak. Pokušaj ponovo, kraće." };
   }
+
+  const denied = await gateEstimate();
+  if (denied) return denied;
 
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
   const mimeType = file.type || "audio/wav";
@@ -67,6 +98,45 @@ export async function estimateGricAction(
     return {
       ok: false,
       error_sr: aiErrorSr(err, "Nismo uspeli da razumemo snimak. Pokušaj ponovo."),
+    };
+  }
+}
+
+/**
+ * Typed gric: one written sentence -> the same occasion-grouped items.
+ *
+ * Trimmed and length-checked here rather than trusted from the client: the
+ * textarea caps its own length for the user's benefit, but that cap is a UI
+ * courtesy and this is the boundary.
+ */
+export async function estimateGricTextAction(
+  input: string
+): Promise<GricEstimateResult> {
+  const text = typeof input === "string" ? input.trim() : "";
+  if (text.length === 0) {
+    return {
+      ok: false,
+      error_sr: "Napiši šta si pojeo pa pokušaj ponovo.",
+    };
+  }
+  if (text.length > MAX_TEXT_CHARS) {
+    return {
+      ok: false,
+      error_sr: "Predugačak opis. Skrati ga na jednu rečenicu pa pokušaj ponovo.",
+    };
+  }
+
+  const denied = await gateEstimate();
+  if (denied) return denied;
+
+  try {
+    const data = await estimateGricFromText(text);
+    return { ok: true, data };
+  } catch (err) {
+    console.error("[gric] text estimate failed:", err);
+    return {
+      ok: false,
+      error_sr: aiErrorSr(err, "Nismo uspeli da razumemo unos. Pokušaj ponovo."),
     };
   }
 }

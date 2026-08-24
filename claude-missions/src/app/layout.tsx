@@ -10,7 +10,6 @@ import { HapticProvider } from "@/components/pwa/haptic-provider";
 import { OfflineNotice } from "@/components/pwa/offline-notice";
 import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 import { LOCALE_COOKIE, resolveLocale } from "@/lib/i18n/locale";
-import { resolveTheme, THEME_COOKIE } from "@/lib/theme/theme";
 
 // F005: single app-wide typeface, loaded via next/font (self-hosted, no
 // layout shift) and applied through the --font-sans CSS variable that
@@ -144,31 +143,27 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
-// Theme-color (PWA status-bar tint) follows the chosen theme -- read per
-// request from the same cookie the root layout uses.
-export async function generateViewport(): Promise<Viewport> {
-  const cookieStore = await cookies();
-  const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
-  return {
-    themeColor: theme === "light" ? "#ffffff" : "#0a0c0b",
-    width: "device-width",
-    initialScale: 1,
-    // iOS PWA: let content extend into the notch/home-indicator area; the
-    // `env(safe-area-inset-*)` paddings below keep UI clear of them.
-    viewportFit: "cover",
-  };
-}
+// Theme-color (PWA status-bar tint). A CONSTANT now: the app has exactly one
+// theme -- the cream "papir" ground (`--background` in globals.css) -- so the
+// status bar can be pinned at build time instead of being resolved per request
+// from a theme cookie that no longer exists. Keep this hex in step with
+// `--background`; it is the one place the token has to be duplicated, because
+// the browser reads it from the document head before any stylesheet lands.
+export const viewport: Viewport = {
+  themeColor: "#f5e9cd",
+  width: "device-width",
+  initialScale: 1,
+  // iOS PWA: let content extend into the notch/home-indicator area; the
+  // `env(safe-area-inset-*)` paddings below keep UI clear of them.
+  viewportFit: "cover",
+};
 
 export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // The chosen theme is server-rendered onto <html> so there is no flash of
-  // the wrong theme on first paint. Anyone without a cookie gets the default
-  // (light).
   const cookieStore = await cookies();
-  const theme = resolveTheme(cookieStore.get(THEME_COOKIE)?.value);
   const locale = resolveLocale(cookieStore.get(LOCALE_COOKIE)?.value);
   // The onboarding ring hand-off drops `fm_intro` just before landing on
   // `/danas`; while it's present the launch splash yields to that animation.
@@ -188,10 +183,15 @@ export default async function RootLayout({
   preload("/brand/fitmess-icon.png", { as: "image", fetchPriority: "high" });
 
   return (
+    /* `light` is still written onto <html> even though it is the only theme
+       left: a few standalone surfaces (the marketing landing's `.lp light`
+       subtree, the desktop gate) pin the palette on themselves, and the class
+       is what they pin. Keeping it here means those selectors keep resolving
+       against the same one theme instead of quietly matching nothing. */
     <html
       lang={locale}
-      className={`${theme} ${inter.variable} ${archivoBlack.variable} ${poppins.variable} h-full antialiased`}
-      style={{ colorScheme: theme }}
+      className={`light ${inter.variable} ${archivoBlack.variable} ${poppins.variable} h-full antialiased`}
+      style={{ colorScheme: "light" }}
     >
       <body className="min-h-full">
         <LocaleProvider locale={locale}>

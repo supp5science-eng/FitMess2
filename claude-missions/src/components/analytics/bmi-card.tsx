@@ -12,10 +12,10 @@ import { getT } from "@/lib/i18n/server";
 // in light and dark. `adjective` agrees with feminine "težina" for the headline
 // sentence; `legend` is the zone name shown under the bar.
 const ZONES = [
-  { key: "under", color: "#5B8DEF", range: "<18,5" },
-  { key: "healthy", color: "#22B573", range: "18,5–24,9" },
-  { key: "over", color: "#E0B252", range: "25,0–29,9" },
-  { key: "obese", color: "#E0685E", range: ">30,0" },
+  { key: "under", color: "#3F5FA8", range: "<18,5" },
+  { key: "healthy", color: "#2C7A58", range: "18,5–24,9" },
+  { key: "over", color: "#B5761F", range: "25,0–29,9" },
+  { key: "obese", color: "#C05028", range: ">30,0" },
 ] as const;
 
 // Visual scale for the bar/marker: BMI 15..40. Segment widths and the marker

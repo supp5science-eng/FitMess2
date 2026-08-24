@@ -12,10 +12,14 @@ import { useT } from "@/components/i18n/locale-provider";
  * serve is "my hands are full and I can't be bothered", which does not survive
  * opening a menu and choosing a method.
  *
- * A plain link, not a sheet — the flow (`/dodaj/gric`) needs a microphone and a
- * full screen for the result chips, and the whole point is that the first tap
+ * A plain link, not a sheet — the flow (`/dodaj/gric`) wants a full screen for
+ * its composer and result chips, and the whole point is that the first tap
  * lands you straight in it. Rendered only for TODAY: the flow writes rows at
  * `now()`, so it has nothing to offer while browsing an earlier day.
+ *
+ * The icon stays a microphone even though the flow now also takes typed text:
+ * speaking is still the fast lane the feature is built around, and this row has
+ * to promise the fastest thing it does, not enumerate its inputs.
  */
 export function GricButton() {
   const { t } = useT();

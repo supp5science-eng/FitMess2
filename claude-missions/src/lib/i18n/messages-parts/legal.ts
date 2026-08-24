@@ -56,7 +56,7 @@ export const legalMessages = {
       "Na samom početku, pre nego što napraviš nalog, tražimo od 5 do 20 tvojih slika da bismo nacrtali tvog klona — lik koji te predstavlja u aplikaciji. Te slike se ne čuvaju nigde: pošalju se na obradu, lik se nacrta, i one se odbace istog trenutka. Ne ostaju ni kod nas ni kod Google-a. Ostaje samo crtež. Dok nemaš nalog, crtež stoji isključivo u tvom pregledaču, na tvom uređaju; kad se prijaviš, veže se za tvoj nalog i tada ga vidiš na svim uređajima. Klon je neophodan da bi se aplikacija koristila.",
     "legal.privacy.collect.tech.h": "Tehnički podaci",
     "legal.privacy.collect.tech.body":
-      "Kolačići neophodni za rad (prijava, izabrani jezik, tema), i zabeleška kada si prvi put stigao do pojedinih koraka u aplikaciji — to koristimo da vidimo gde ljudi zapinju. Ako uključiš podsetnike, čuvamo i oznaku tvog uređaja da bismo mogli da pošaljemo notifikaciju. Nemamo Google Analytics, Facebook piksel, ni bilo koji reklamni ili analitički SDK trećih lica.",
+      "Kolačići neophodni za rad (prijava, izabrani jezik), i zabeleška kada si prvi put stigao do pojedinih koraka u aplikaciji — to koristimo da vidimo gde ljudi zapinju. Ako uključiš podsetnike, čuvamo i oznaku tvog uređaja da bismo mogli da pošaljemo notifikaciju. Nemamo Google Analytics, Facebook piksel, ni bilo koji reklamni ili analitički SDK trećih lica.",
 
     "legal.privacy.why.h": "Zašto i po kom osnovu",
     "legal.privacy.why.contract":
@@ -119,7 +119,7 @@ export const legalMessages = {
 
     "legal.privacy.cookies.h": "Kolačići",
     "legal.privacy.cookies.body":
-      "Koristimo samo one bez kojih aplikacija ne radi: kolačić prijave, izabrani jezik, izabranu temu i oznaku da si prošao početno podešavanje. Nema kolačića za praćenje i zato nema ni banera koji te za njih pita.",
+      "Koristimo samo one bez kojih aplikacija ne radi: kolačić prijave, izabrani jezik i oznaku da si prošao početno podešavanje. Nema kolačića za praćenje i zato nema ni banera koji te za njih pita.",
 
     "legal.privacy.security.h": "Bezbednost",
     "legal.privacy.security.body":
@@ -279,7 +279,7 @@ export const legalMessages = {
       "At the very start, before you create an account, we ask for 5 to 20 photos of you so we can draw your klon — the character that represents you in the app. Those photos are not stored anywhere: they are sent for processing, the character is drawn, and they are discarded at that moment. They stay neither with us nor with Google. Only the drawing remains. Until you have an account the drawing lives solely in your own browser, on your device; when you sign in it is attached to your account and follows you across devices. A klon is required in order to use the app.",
     "legal.privacy.collect.tech.h": "Technical data",
     "legal.privacy.collect.tech.body":
-      "Cookies the app cannot work without (sign-in, chosen language, chosen theme), and a record of when you first reached certain steps in the app — which we use to see where people get stuck. If you turn on reminders, we also store a device token so we can send the notification. We have no Google Analytics, no Facebook pixel, and no third-party advertising or analytics SDK of any kind.",
+      "Cookies the app cannot work without (sign-in, chosen language), and a record of when you first reached certain steps in the app — which we use to see where people get stuck. If you turn on reminders, we also store a device token so we can send the notification. We have no Google Analytics, no Facebook pixel, and no third-party advertising or analytics SDK of any kind.",
 
     "legal.privacy.why.h": "Why, and on what legal basis",
     "legal.privacy.why.contract":
@@ -340,7 +340,7 @@ export const legalMessages = {
 
     "legal.privacy.cookies.h": "Cookies",
     "legal.privacy.cookies.body":
-      "We use only the ones the app cannot work without: the sign-in cookie, your chosen language, your chosen theme, and a marker that you have finished initial setup. There are no tracking cookies, which is why there is no banner asking you about them.",
+      "We use only the ones the app cannot work without: the sign-in cookie, your chosen language, and a marker that you have finished initial setup. There are no tracking cookies, which is why there is no banner asking you about them.",
 
     "legal.privacy.security.h": "Security",
     "legal.privacy.security.body":

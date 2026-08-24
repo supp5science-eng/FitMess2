@@ -2,8 +2,9 @@
  * The "Mess" accent of the FitMess lockup, as data.
  *
  * On screen this is a CSS gradient (`--wordmark-grad` + `.fm-wordmark-accent`
- * in `src/app/globals.css`) sampled from the pear logo's iridescent shell --
- * teal → gold → blue → green. Two renderers can't use CSS at all:
+ * in `src/app/globals.css`): the "Gravira" overprint -- ultramarine drifting
+ * through indigo into a single ochre pass and back into deep ink. Two
+ * renderers can't use CSS at all:
  *
  *  - the PDF report (`@react-pdf/renderer` has no gradient text, only a solid
  *    `color` per `<Text>`), and
@@ -16,24 +17,32 @@
  * this one is the same palette in a form JS can read.
  */
 
-/** Light surfaces (white paper, the desktop gate): deeper, saturated tones. */
-export const WORDMARK_STOPS_LIGHT = [
-  "#0e9c82",
-  "#1b9ca0",
-  "#b9862c",
-  "#2c7cbe",
-  "#18915f",
-  "#2f9a50",
+/**
+ * Printed ON PAPER -- the cream surfaces (the app, the PDF report, the share
+ * cards). Deep, saturated inks, because they have to hold their own against a
+ * light ground.
+ */
+export const WORDMARK_STOPS_ON_PAPER = [
+  "#2f2ce6",
+  "#3b32d6",
+  "#7a5aa8",
+  "#b5761f",
+  "#3a37d1",
+  "#15139c",
 ] as const;
 
-/** Dark surfaces (the app shell, the share card): brighter shell tones. */
-export const WORDMARK_STOPS_DARK = [
-  "#26ddb6",
-  "#35d3cc",
-  "#ecc766",
-  "#57a8ee",
-  "#40d98c",
-  "#63dd76",
+/**
+ * Printed ON INK -- the few surfaces that reverse the plate and run cream
+ * type over a solid ultramarine field. Same walk through the gradient, lifted
+ * so it reads against the ink instead of disappearing into it.
+ */
+export const WORDMARK_STOPS_ON_INK = [
+  "#8f8dff",
+  "#a79eff",
+  "#c9a86a",
+  "#e8c98a",
+  "#9d9bff",
+  "#7d7bf5",
 ] as const;
 
 /**
@@ -46,9 +55,10 @@ export const WORDMARK_STOPS_DARK = [
  */
 export function wordmarkLetterColors(
   length: number,
-  theme: "light" | "dark" = "light"
+  surface: "paper" | "ink" = "paper"
 ): string[] {
-  const stops = theme === "dark" ? WORDMARK_STOPS_DARK : WORDMARK_STOPS_LIGHT;
+  const stops =
+    surface === "ink" ? WORDMARK_STOPS_ON_INK : WORDMARK_STOPS_ON_PAPER;
   if (length <= 0) return [];
   if (length === 1) return [stops[0]];
 

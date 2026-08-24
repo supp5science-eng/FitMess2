@@ -31,12 +31,13 @@ phone — desktop shows a QR to hand off)
 - ⚖️ **Weight tracking** — record your weight in a tap; the chart plots the
   smoothed trend (not scary daily noise) and how far you are from your goal.
 - ⚙️ **Settings & privacy** (`/profil`) — goal, personal data, eating rules,
-  appearance (dark/light), plus GDPR‑style **data export** and account deletion.
+  plus GDPR‑style **data export** and account deletion.
 - 🤖 **FitMess Agent** (`/agent`) — a conversational logging assistant, coming
   soon.
 
 Everything is in Serbian (sr‑Latn), informal *"ti"*, mobile‑first at 375px, and
-light by default (dark is a one‑tap switch in Settings).
+printed in one theme — **"Gravira"**: a vivid ultramarine ink on warm cream
+paper, with a halftone stipple ground. There is no light/dark switch.
 
 ---
 
@@ -87,7 +88,7 @@ claude-missions/
 
 | Table | What it holds |
 |---|---|
-| `profiles` | body stats, activity, goal, eating rules, theme |
+| `profiles` | body stats, activity, goal, eating rules |
 | `targets` | daily/weekly kcal + macro targets, goal weight (newest wins) |
 | `foods` | shared, crowd‑sourced food catalog (per‑100g macros, barcodes) |
 | `logs` | user meal entries (macros snapshotted at log time) |

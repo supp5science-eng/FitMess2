@@ -32,22 +32,21 @@ export async function DesktopGate() {
     type: "svg",
     margin: 0,
     width: 200,
-    color: { dark: "#0a0a0a", light: "#ffffff" },
+    // Ink on paper, like everything else -- 12:1 contrast, well inside
+    // what a scanner needs.
+    color: { dark: "#1c1b8f", light: "#fdf7e4" },
     errorCorrectionLevel: "M",
   });
 
   return (
     <main
-      className={`${body.className} relative flex min-h-dvh w-full items-center justify-center overflow-hidden px-6 py-12`}
+      className={`${body.className} fm-halftone relative flex min-h-dvh w-full items-center justify-center overflow-hidden px-6 py-12`}
       style={{
-        // Faint brand tint on white -- derived from the brand accent so this
-        // standalone light surface stays on-brand (it renders outside `.dark`,
-        // where `--primary` would be black).
-        backgroundColor: "color-mix(in oklab, var(--brand) 4%, #ffffff)",
-        // Fine dot-grid pattern in a faint brand accent.
-        backgroundImage:
-          "radial-gradient(color-mix(in oklab, var(--brand) 12%, transparent) 1px, transparent 1.4px)",
-        backgroundSize: "22px 22px",
+        // The app's paper, with a faint wash of the brand ink over it.
+        backgroundColor: "color-mix(in oklab, var(--brand) 4%, var(--paper))",
+        // The stipple comes from `.fm-halftone` on the class list below, so
+        // this gate is screened at the same pitch as the app itself rather
+        // than at a second, hand-rolled one.
       }}
     >
       {/* Soft blurred brand-accent glows for depth (decorative). */}

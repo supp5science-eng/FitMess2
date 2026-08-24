@@ -28,7 +28,7 @@ import type {
 // is the number that explains the slope. An untracked day says so instead of
 // pretending the flat stretch was a choice.
 
-const LINE = "#8B7CF6"; // violet accent, matching the reference design
+const LINE = "#3A37D1"; // the plate's indigo, a step off `--primary`
 
 const VB_W = 320;
 const VB_H = 92;

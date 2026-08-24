@@ -31,9 +31,10 @@ const CY = 50;
 const RADIUS = 42;
 const STROKE = 8;
 
-// The over-budget second lap (drawn on top of a full first lap), a deep red so
-// the overshoot reads clearly against the brand gradient.
-const OVERSHOOT_STROKE = "#991b1b";
+// The over-budget second lap (drawn on top of a full first lap), a deep
+// terracotta so the overshoot reads clearly against the ultramarine gradient
+// -- warm, not punitive (same value as the calorie ring's).
+const OVERSHOOT_STROKE = "#8a3a1c";
 
 export function IntakeConfluence({
   consumedKcal,

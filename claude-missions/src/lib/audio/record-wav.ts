@@ -14,6 +14,17 @@ export interface WavRecording {
   stop: () => Promise<Blob>;
   /** Abort without producing a blob (releases the mic). */
   cancel: () => void;
+  /**
+   * Current input loudness, 0..1, for drawing a live level meter.
+   *
+   * OPTIONAL on purpose: it needs a live `AudioContext` + `AnalyserNode` on the
+   * capture stream, which is one more thing that can fail (an autoplay-policy
+   * refusal, a browser without the API) on a path whose entire job is to not
+   * get in the way. When it is missing the caller must still record perfectly
+   * — it only loses the meter, so treat `undefined` as "no meter", never as an
+   * error, and never let a failure here abort a recording.
+   */
+  level?: () => number;
 }
 
 const TARGET_SAMPLE_RATE = 16_000;
@@ -31,13 +42,17 @@ export async function startWavRecording(): Promise<WavRecording> {
   const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
   const recorder = new MediaRecorder(stream);
   const chunks: Blob[] = [];
+  const meter = attachMeter(stream);
 
   recorder.ondataavailable = (event) => {
     if (event.data.size > 0) chunks.push(event.data);
   };
   recorder.start();
 
-  const releaseMic = () => stream.getTracks().forEach((track) => track.stop());
+  const releaseMic = () => {
+    meter?.close();
+    stream.getTracks().forEach((track) => track.stop());
+  };
 
   return {
     stop: () =>
@@ -64,7 +79,69 @@ export async function startWavRecording(): Promise<WavRecording> {
       }
       releaseMic();
     },
+    level: meter?.level,
   };
+}
+
+/**
+ * Taps the capture stream with an `AnalyserNode` so the UI can show how loud
+ * the mic is hearing you.
+ *
+ * Reads the TIME-DOMAIN buffer and returns its RMS, not the frequency data: a
+ * level meter is asking "how loud", and RMS over the waveform is that question
+ * answered directly, without an FFT the answer would only have to be summed
+ * back out of.
+ *
+ * Returns `null` if anything at all goes wrong — a browser with no
+ * `AudioContext`, a context refused by an autoplay policy. The recording is
+ * unaffected either way; this node only listens alongside `MediaRecorder`.
+ */
+function attachMeter(
+  stream: MediaStream
+): { level: () => number; close: () => void } | null {
+  const AudioCtx =
+    window.AudioContext ||
+    (window as unknown as { webkitAudioContext?: typeof AudioContext })
+      .webkitAudioContext;
+  if (!AudioCtx) return null;
+
+  try {
+    const ctx = new AudioCtx();
+    const analyser = ctx.createAnalyser();
+    // Small window: the meter should track syllables, not settle into an
+    // average of the whole sentence.
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.6;
+    ctx.createMediaStreamSource(stream).connect(analyser);
+    // Deliberately NOT connected to `ctx.destination` -- routing the mic to the
+    // speakers is a feedback loop, and the analyser runs without an output.
+
+    const samples = new Uint8Array(analyser.fftSize);
+    let closed = false;
+
+    return {
+      level: () => {
+        if (closed) return 0;
+        analyser.getByteTimeDomainData(samples);
+        let sum = 0;
+        for (const sample of samples) {
+          // 128 is silence in the unsigned byte encoding.
+          const centred = (sample - 128) / 128;
+          sum += centred * centred;
+        }
+        // Speech RMS sits around 0.05-0.25, so the raw value would barely move
+        // the meter. The x4 maps a normal speaking voice across most of the
+        // range and the clamp keeps a shout from overflowing it.
+        return Math.min(1, Math.sqrt(sum / samples.length) * 4);
+      },
+      close: () => {
+        closed = true;
+        void ctx.close();
+      },
+    };
+  } catch {
+    return null;
+  }
 }
 
 /** Decode any recorded container and re-encode it as a mono 16 kHz WAV. */

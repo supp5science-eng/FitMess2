@@ -37,18 +37,22 @@ export function toCardFormat(value: string | null | undefined): CardFormat {
 }
 
 /** The app's macro accent trio (dark-theme hex, mirroring `--macro-*` in
- * `globals.css`). Concrete hex because satori can't read CSS variables; the
- * card always sits on a dark scrim, so the dark-theme values are the right
- * ones. This trio IS part of the recognizable signature (PRD §2.2).
+ * `globals.css`). Concrete hex because satori can't read CSS variables.
+ * This trio IS part of the recognizable signature (PRD §2.2).
  *
- * Green protein / yellow carbs / red fat -- copied value-for-value from the
- * `.dark` block of `globals.css`, so a shared card and the macro bars on
+ * Green protein / yellow carbs / red fat -- the SAME three hues as
+ * `--macro-*` in `globals.css`, so a shared card and the macro bars on
  * `/danas` read as the same three colours. (They used to be rotated here,
- * which made a card silently disagree with the app it came from.) */
+ * which made a card silently disagree with the app it came from.)
+ *
+ * They are LIFTED versions of those tokens, though, and deliberately so: the
+ * app prints its macros deep because they sit on cream paper, while this card
+ * always sits on a dark scrim over a photo, where the deep values would go
+ * invisible. Same hue, different ground -- if you change one, change both. */
 export const MACRO_COLORS = {
-  protein: "#45c78d",
-  carbs: "#f2c14e",
-  fat: "#f9745f",
+  protein: "#5fb392",
+  carbs: "#d3a63f",
+  fat: "#e07c58",
 } as const;
 
 /** One macro as the card renders it: a colored dot, a whole-gram value, a label. */

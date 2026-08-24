@@ -169,8 +169,11 @@ describe("AS-051: every logging method is a real, single-tap-reachable link once
       "href",
       "/dodaj/gric"
     );
+    // The row has to promise BOTH ways in: Gric takes a spoken clip or a typed
+    // sentence (2026-08-24), and a menu that only mentions speaking is a menu
+    // that hides the path for anyone who cannot.
     expect(screen.getByTestId("add-sheet-desc-gric")).toHaveTextContent(
-      "Sitnice — reci ih sve odjednom, bez slikanja"
+      "Sitnice — reci ili napiši sve odjednom, bez slikanja"
     );
   });
 

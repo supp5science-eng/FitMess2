@@ -74,7 +74,7 @@ export function HealthScoreCard({ score }: { score: HealthScore }) {
             backgroundImage:
               score.fillFraction >= 0.55
                 ? "linear-gradient(90deg, var(--gauge-grad-1), var(--gauge-grad-3))"
-                : "linear-gradient(90deg, #fbbf24, #f59e0b)",
+                : "linear-gradient(90deg, var(--streak-1), var(--chart-5))",
           }}
         />
       </div>

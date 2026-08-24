@@ -2,8 +2,6 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -23,10 +21,27 @@
   --color-chart-2: var(--chart-2);
   --color-chart-1: var(--chart-1);
   /* Macro accents (protein/fat/carbs) -- themed, so `bg-macro-*` /
-     `text-macro-*` utilities exist and dark/light each get the right shade. */
+     `text-macro-*` utilities exist. */
   --color-macro-protein: var(--macro-protein);
   --color-macro-fat: var(--macro-fat);
   --color-macro-carbs: var(--macro-carbs);
+  /* Feature marks (water/steps/fiber/…) -- the second-tier accents the home
+     and analytics tiles are told apart by. Themed like the macros, so a tile
+     writes `text-mark-water` / `bg-mark-water/15` instead of reaching for a
+     stock Tailwind palette colour that knows nothing about this plate. */
+  --color-mark-water: var(--mark-water);
+  --color-mark-steps: var(--mark-steps);
+  --color-mark-fiber: var(--mark-fiber);
+  --color-mark-sugar: var(--mark-sugar);
+  --color-mark-sodium: var(--mark-sodium);
+  --color-mark-satfat: var(--mark-satfat);
+  /* Papir / mastilo -- the two colours the whole app is printed in, exposed
+     as utilities (`bg-paper`, `text-ink`, `border-ink`, …) for the few places
+     that need the raw duotone rather than a semantic role. */
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-ink: var(--ink);
+  --color-ink-bright: var(--ink-bright);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -53,209 +68,185 @@
 }
 
 /*
- * The `.light` selector rides along with `:root` so light can also be pinned
- * on a SUBTREE, whatever the device-wide theme on `<html>` is. The marketing
- * landing (`.lp light`) is the one place that does it: its hero film is
- * rendered on white, so the page must stay light even for a visitor whose
- * `fm_theme` cookie says dark. An own declaration always beats an inherited
- * one, so `.light` on the subtree root wins over `.dark` on `<html>`.
+ * ============================================================
+ *  FitMess "Gravira" — plavo mastilo na krem papiru.
+ * ============================================================
+ *
+ * ONE theme. The old light/dark pair was retired (2026-08-24): the app is now
+ * a single printed surface — a warm cream paper (`--paper`) carrying a vivid
+ * ultramarine ink (`--ink` / `--ink-bright`), the duotone of an engraved
+ * plate. There is no `.dark` block, no `fm_theme` cookie and no appearance
+ * switch; `lib/theme/theme.ts` is gone. If you are tempted to add a second
+ * palette, add a token to THIS one instead.
+ *
+ * The `.light` selector rides along with `:root` purely for backwards
+ * compatibility: the marketing landing (`.lp light`) pins the palette on a
+ * SUBTREE, and a handful of standalone surfaces do the same. Both selectors
+ * resolve to the same one theme, so pinning is now a no-op that costs nothing.
+ *
+ * Reading the palette:
+ *   --paper / --paper-raised   the two cream grounds (page, raised card)
+ *   --ink                      the deep ink every glyph and rule is drawn in
+ *   --ink-bright               the vivid ultramarine of the reference plate;
+ *                              this is `--primary` — buttons, ring, gauge
+ *   macro / streak / chart-5   the ONLY warm marks, kept earthy (sage,
+ *                              terracotta, ochre) so they read as a second
+ *                              ink pass rather than as a different product
+ *
+ * The engraved character itself lives further down as utilities: `.fm-lift`
+ * (a hard letterpress offset, not a soft drop shadow), `.app-aurora` (the
+ * halftone stipple ground) and `.fm-halftone`.
  */
 .light,
 :root {
-  /*
-   * LIGHT THEME (the app default -- `DEFAULT_THEME` in `lib/theme/theme.ts`;
-   * `.dark` below is the opt-in).
-   * The accent here is BLACK, not the dark theme's teal: primary buttons,
-   * the calorie gauge, active nav, focus ring -- every `--primary` touchpoint
-   * -- render near-black on white (per product decision: "in the white theme
-   * the buttons are black; in dark they're the teal/greenish accent"). Clean
-   * neutral surfaces; the macro colours (coral/amber/green) are set per-mark
-   * and read fine on white.
-   */
-  --background: #ffffff;
-  --foreground: #0a0c0b;
-  --card: #ffffff;
-  --card-foreground: #0a0c0b;
-  --popover: #ffffff;
-  --popover-foreground: #0a0c0b;
-  --primary: #0a0c0b;
-  --primary-foreground: #ffffff;
-  --secondary: #f4f5f5;
-  --secondary-foreground: #0a0c0b;
-  --muted: #f1f2f3;
-  --muted-foreground: #646b6f;
-  --accent: #f1f2f3;
-  --accent-foreground: #0a0c0b;
-  --destructive: #d64545;
-  --border: #e5e7e9;
-  --input: #e2e5e7;
-  --ring: #0a0c0b;
-  /* Calorie-gauge fill: light blue in both themes (per product request). */
-  --gauge: #38bdf8;
-  /* Calorie-ring gradient + track (ring.tsx, date-strip.tsx). LIGHT theme:
-     azure (sky→deep blue) — the brand pear gradient washed out on white, so
-     the ring gets its own clean "health blue" here (2026-07-24 product
-     decision); actions stay black, progress reads blue. DARK keeps the brand
-     gradient. */
-  --gauge-grad-1: #4cc3f7;
-  --gauge-grad-2: #0ea5e9;
-  --gauge-grad-3: #0a6fae;
-  --gauge-track: color-mix(in srgb, #0ea5e9 14%, transparent);
-  /* Niz (streak) accent -- a warm amber->orange, its own thing beside the
-     teal/violet/sky feature accents. LIGHT theme DEEPENS it (orange-500/600):
-     the pale amber that pops on the dark ground washes out on white, so the
-     arc, dots and hint get a richer orange that holds its contrast here. Same
-     per-theme approach as `--gauge-grad-*` above. */
-  --streak-1: #fb923c;
-  --streak-2: #f97316;
-  --streak-3: #ea580c;
-  --streak-accent: #ea580c;
-  --streak-soft: color-mix(in srgb, #ea580c 14%, transparent);
-  --streak-line: color-mix(in srgb, #ea580c 55%, transparent);
-  --streak-glow: rgba(234, 88, 12, 0.28);
-  --chart-1: #0a0c0b;
-  --chart-2: #646b6f;
-  --chart-3: #8a9095;
-  --chart-4: #b0b5b9;
-  --chart-5: #c9a24b;
-  /* Macro accents, LIGHT theme. Logical mapping: protein = green, fat = red,
-     carbs = yellow (darkened from the dark-theme values so they keep enough
-     contrast on white -- the dark values wash out there). */
-  --macro-protein: #1f9e69;
-  --macro-fat: #d95540;
-  --macro-carbs: #c98a1b;
-  /* Brand accent -- the app's teal, theme-INDEPENDENT (mirrors the dark
-     theme's --primary). Used by standalone light surfaces outside `.dark`
-     that must still read as "FitMess" (e.g. the desktop gate wordmark),
-     where `--primary` would be black. Defined once in :root so it applies in
-     both themes. */
-  --brand: #17d1a8;
-  /* Sedef (paua-shell) wordmark gradient for "Mess" -- the logo's own
-     iridescent teal/gold/blue/green. LIGHT theme uses deeper, more saturated
-     tones so it stays legible on white (it's large display type, so a touch of
-     the shell's low-contrast shimmer is fine). */
-  --wordmark-grad: linear-gradient(
-    112deg,
-    #0e9c82 0%,
-    #1b9ca0 22%,
-    #b9862c 40%,
-    #2c7cbe 62%,
-    #18915f 83%,
-    #2f9a50 100%
-  );
-  --radius: 1.25rem;
-  /* Floating-card lift (light). The soft, large, low-opacity shadow that makes
-     the home cards read as HOVERING over the aurora ground -- the "sve lebdi"
-     brief. Themed (see `.dark` below) and applied via the `.fm-lift` utility,
-     so cards never inline a raw shadow. */
-  --fm-lift:
-    0 1px 2px rgba(16, 24, 40, 0.04),
-    0 10px 26px -12px rgba(16, 24, 40, 0.16);
-  /* Ring "oblak" (glass cloud) tokens, LIGHT. A whisper of sky at the top
-     fading to the card white, a soft brand-blue bloom behind the ring, and a
-     white top sheen -- so the calorie cloud reads as its own aesthetic glass
-     surface, not a plain white box. Themed below for dark. */
-  --cloud-top: rgba(224, 242, 254, 0.5);
-  --cloud-bloom: rgba(14, 165, 233, 0.1);
-  --cloud-sheen: rgba(255, 255, 255, 0.6);
-  --sidebar: #fafafa;
-  --sidebar-foreground: #0a0c0b;
-  --sidebar-primary: #0a0c0b;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #f1f2f3;
-  --sidebar-accent-foreground: #0a0c0b;
-  --sidebar-border: #e5e7e9;
-  --sidebar-ring: #0a0c0b;
-}
+  /* --- The two printing inks --------------------------------------- */
+  --paper: #f5e9cd;
+  --paper-raised: #fdf7e4;
+  --ink: #1c1b8f;
+  --ink-bright: #2f2ce6;
 
-/*
- * FitMess dark theme — the opt-in look (light is the default; see
- * `DEFAULT_THEME`). A near-black ground with a single teal/mint accent
- * (MacroFactor-inspired), matching the auth screens (`auth.css`), so the
- * product feels like one continuous world from sign-in → app.
- */
-.dark {
-  --background: #0a0c0b;
-  --foreground: #f3f7f5;
-  --card: #14181a;
-  --card-foreground: #f3f7f5;
-  --popover: #14181a;
-  --popover-foreground: #f3f7f5;
-  --primary: #17d1a8;
-  --primary-foreground: #04231c;
-  --secondary: #191e20;
-  --secondary-foreground: #f3f7f5;
-  --muted: #191e20;
-  --muted-foreground: #a6b0ab;
-  --accent: #12241f;
-  --accent-foreground: #9ff0dd;
-  --destructive: #f2726b;
-  --border: rgba(255, 255, 255, 0.1);
-  --input: rgba(255, 255, 255, 0.14);
-  --ring: #17d1a8;
-  /* Sedef wordmark gradient, DARK theme -- brighter shell tones so the
-     iridescence pops against the near-black ground. */
+  /* --- Semantic surfaces ------------------------------------------- */
+  --background: #f5e9cd;
+  --foreground: #1c1b8f;
+  --card: #fdf7e4;
+  --card-foreground: #1c1b8f;
+  --popover: #fdf7e4;
+  --popover-foreground: #1c1b8f;
+  /* The primary action is the plate's brightest ultramarine, on paper-white
+     type -- the single loudest thing on any screen. */
+  --primary: #2f2ce6;
+  --primary-foreground: #fdf7e4;
+  --secondary: #ecdcb6;
+  --secondary-foreground: #1c1b8f;
+  --muted: #eddfba;
+  --muted-foreground: #5654b4;
+  --accent: #e6d5ac;
+  --accent-foreground: #1c1b8f;
+  /* Errors are a brick/terracotta, never a screen red: this palette has no
+     pure red in it and a fire-engine one would look like a foreign object.
+     (Zero-shame rule stands -- going OVER target still uses `--chart-5`.) */
+  --destructive: #b03a20;
+  /* Rules and hairlines are INK at low alpha, never a grey: on cream, grey
+     reads as dirt. Everything that draws a line on this paper is the same
+     blue, just thinner. */
+  --border: color-mix(in srgb, #1c1b8f 20%, transparent);
+  --input: color-mix(in srgb, #1c1b8f 30%, transparent);
+  --ring: #2f2ce6;
+
+  /* --- Calorie gauge / ring ---------------------------------------- */
+  /* The ring is the app's centrepiece, so it is drawn in the plate's own
+     ultramarine range: bright at the start of the arc, deep at the end. */
+  --gauge: #2f2ce6;
+  --gauge-grad-1: #6b69ff;
+  --gauge-grad-2: #2f2ce6;
+  --gauge-grad-3: #15139c;
+  --gauge-track: color-mix(in srgb, #1c1b8f 11%, transparent);
+
+  /* --- Niz (streak) ------------------------------------------------- */
+  /* The one deliberately WARM accent -- a second, ochre ink pass over the
+     blue plate, so a streak reads as its own thing without leaving the
+     printed world. */
+  --streak-1: #d9963a;
+  --streak-2: #c2731f;
+  --streak-3: #9c5312;
+  --streak-accent: #b5651a;
+  --streak-soft: color-mix(in srgb, #b5651a 16%, transparent);
+  --streak-line: color-mix(in srgb, #b5651a 55%, transparent);
+  --streak-glow: rgba(181, 101, 26, 0.26);
+
+  /* --- Charts ------------------------------------------------------- */
+  /* A single ink ramp: dense → faint, the way an engraver gets four values
+     out of one plate by thinning the hatch. `--chart-5` stays the warm
+     over-target mark (never `--destructive`). */
+  --chart-1: #2f2ce6;
+  --chart-2: #5654b4;
+  --chart-3: #8583c2;
+  --chart-4: #a6a3c4;
+  --chart-5: #b5761f;
+
+  /* --- Macros ------------------------------------------------------- */
+  /* Still three DISTINCT hues (protein/fat/carbs must be told apart at a
+     glance), but pulled into the engraving's earth range -- sage, terracotta,
+     ochre -- so they sit beside the ultramarine instead of fighting it. */
+  --macro-protein: #2c7a58;
+  --macro-fat: #c05028;
+  --macro-carbs: #9a7112;
+
+  /* --- Feature marks ------------------------------------------------
+     Water, steps and the four micronutrients each need to be told apart at a
+     glance, so they get their own hue -- but every one of them is mixed down
+     into the engraving's range (steel, plum, sage, mulberry, slate, ochre)
+     rather than taken from a stock UI palette, and every one clears 4.5:1 on
+     the raised paper so the number beside the mark is readable, not just the
+     mark. Two of them deliberately REUSE a macro ink: fibre is the same sage
+     as protein and saturated fat the same ochre as carbs, because in both
+     cases the tile is talking about the same nutrient family. */
+  --mark-water: #1a6d92;
+  --mark-steps: #5f43a0;
+  --mark-fiber: #2c7a58;
+  --mark-sugar: #a83a72;
+  --mark-sodium: #2c6e8f;
+  --mark-satfat: #9a7112;
+
+  /* --- Brand -------------------------------------------------------- */
+  /* The wordmark accent. Theme-independent by history; now simply the ink. */
+  --brand: #2f2ce6;
+  /* "Mess" in the lockup: an overprint gradient -- ultramarine drifting
+     through indigo into a single ochre pass and back. Same two inks as the
+     rest of the plate, so the logo can't read as a sticker from another app. */
   --wordmark-grad: linear-gradient(
     112deg,
-    #26ddb6 0%,
-    #35d3cc 22%,
-    #ecc766 40%,
-    #57a8ee 62%,
-    #40d98c 83%,
-    #63dd76 100%
+    #2f2ce6 0%,
+    #4b3fd8 24%,
+    #b5761f 48%,
+    #3a37d1 74%,
+    #15139c 100%
   );
-  /* Dark theme keeps the teal accent on the gauge (same as the + button). */
-  --gauge: #17d1a8;
-  /* Calorie-ring gradient, DARK theme: the brand-logo pear gradient
-     (teal→mint→blue), unchanged — only the light theme re-colours the ring. */
-  --gauge-grad-1: #3ee6bf;
-  --gauge-grad-2: #17d1a8;
-  --gauge-grad-3: #2a9fd1;
-  --gauge-track: color-mix(in srgb, #17d1a8 18%, transparent);
-  /* Niz (streak) accent, DARK theme: the brighter amber->orange that pops on
-     the near-black ground. */
-  --streak-1: #fbbf24;
-  --streak-2: #fb923c;
-  --streak-3: #f97316;
-  --streak-accent: #fb923c;
-  --streak-soft: color-mix(in srgb, #f97316 18%, transparent);
-  --streak-line: color-mix(in srgb, #fb923c 55%, transparent);
-  --streak-glow: rgba(249, 115, 22, 0.4);
-  --chart-1: #17d1a8;
-  --chart-2: #6fd9c4;
-  --chart-3: #a6b0ab;
-  --chart-4: #6e7873;
-  --chart-5: #c9a24b;
-  /* Macro accents, DARK theme. Logical mapping: protein = green, fat = red,
-     carbs = yellow (driven by tokens so components never inline hex). */
-  --macro-protein: #45c78d;
-  --macro-fat: #f9745f;
-  --macro-carbs: #f2c14e;
-  /* Floating-card lift (dark). A deeper, softer shadow so the raised cards
-     separate from the near-black ground without a hard edge. */
+
+  /* Crisper than the old 20px pill-everything radius: a printed card has a
+     corner, not a bubble. Pills (`rounded-full`) are unaffected. */
+  --radius: 0.75rem;
+
+  /* --- Letterpress lift --------------------------------------------
+     Replaces the old soft "floating" drop shadow. A printed card does not
+     hover; it is pressed into the sheet, so the card sits on a HARD ink
+     offset (no blur) with only a whisper of falloff underneath. Applied via
+     `.fm-lift` so a card never inlines a raw shadow. */
   --fm-lift:
-    0 1px 2px rgba(0, 0, 0, 0.4),
-    0 14px 34px -14px rgba(0, 0, 0, 0.55);
-  /* Ring "oblak" tokens, DARK. A faint lift off the near-black ground, a teal
-     bloom behind the ring, and a soft top sheen. */
-  --cloud-top: rgba(40, 48, 52, 0.6);
-  --cloud-bloom: rgba(23, 209, 168, 0.13);
-  --cloud-sheen: rgba(255, 255, 255, 0.12);
-  --sidebar: #0f1413;
-  --sidebar-foreground: #f3f7f5;
-  --sidebar-primary: #17d1a8;
-  --sidebar-primary-foreground: #04231c;
-  --sidebar-accent: #191e20;
-  --sidebar-accent-foreground: #f3f7f5;
-  --sidebar-border: rgba(255, 255, 255, 0.1);
-  --sidebar-ring: #17d1a8;
+    0 3px 0 -1px color-mix(in srgb, #1c1b8f 14%, transparent),
+    0 10px 18px -16px color-mix(in srgb, #1c1b8f 55%, transparent);
+
+  /* --- Ring "oblak" -------------------------------------------------
+     The calorie ring's own panel: a faint ink wash at the top fading into the
+     raised paper, an ultramarine bloom behind the arc, and a paper-white
+     sheen along the top edge. */
+  --cloud-top: rgba(47, 44, 230, 0.05);
+  --cloud-bloom: rgba(47, 44, 230, 0.11);
+  --cloud-sheen: rgba(255, 252, 240, 0.75);
+
+  /* --- Halftone -----------------------------------------------------
+     The stipple that gives the ground its engraved texture. `--halftone-dot`
+     is the ink of a single dot; `--halftone-size` the grid pitch. Tuning
+     either changes the texture everywhere at once (`.app-aurora`,
+     `.fm-halftone`, the button overprint). */
+  --halftone-dot: color-mix(in srgb, #1c1b8f 30%, transparent);
+  --halftone-size: 7px;
+
+  --sidebar: #f2e4c2;
+  --sidebar-foreground: #1c1b8f;
+  --sidebar-primary: #2f2ce6;
+  --sidebar-primary-foreground: #fdf7e4;
+  --sidebar-accent: #e6d5ac;
+  --sidebar-accent-foreground: #1c1b8f;
+  --sidebar-border: color-mix(in srgb, #1c1b8f 20%, transparent);
+  --sidebar-ring: #2f2ce6;
 }
 
 /* ---------------------------------------------------------------------
-   Sedef wordmark accent -- paints "Mess" in the FitMess lockup with the
-   logo's iridescent pear gradient (`--wordmark-grad`, themed above). Falls
-   back to the flat brand teal where `background-clip: text` isn't supported,
-   so the word is never invisible. -------------------------------------- */
+   Wordmark accent -- paints "Mess" in the FitMess lockup with the overprint
+   gradient (`--wordmark-grad`). Falls back to the flat brand ink where
+   `background-clip: text` isn't supported, so the word is never invisible.
+   -------------------------------------------------------------------- */
 .fm-wordmark-accent {
   color: var(--brand);
 }
@@ -288,6 +279,11 @@
   }
   html {
     @apply font-sans;
+    /* ONE theme, and it is a light one. Pinned so the UA paints scrollbars,
+       form chrome and the overscroll gutter in the paper's world even on a
+       device whose system setting is dark -- there is no dark palette left
+       for it to fall back to. */
+    color-scheme: light;
     /* iOS: keep our own type scale (no auto text inflation on rotate) and
        drop the grey tap flash on every tap. */
     -webkit-text-size-adjust: 100%;
@@ -304,10 +300,10 @@
    OWN background colour.
 
    `var(--background)` is the whole trick: it is the exact colour the body paints
-   on the first frame, so the gap before app-splash.css loads is invisible (no
-   white-then-brand flash) -- on the default light theme this reads as a clean
-   white launch, in dark mode as the dark ground. Only the splash element carries
-   this class, so it is inert whenever the splash isn't mounted. */
+   on the first frame, so the gap before app-splash.css loads is invisible -- the
+   launch reads as a clean sheet of paper, never a white flash. Only the splash
+   element carries this class, so it is inert whenever the splash isn't
+   mounted. */
 .fm-splash {
   position: fixed;
   inset: 0;
@@ -319,16 +315,17 @@
 }
 
 /* ---------------------------------------------------------------------
-   Liquid glass — "boja + glass sjaj".
-   Layers an Apple-style glossy glass sheen ON TOP of a button's existing
-   fill (teal, white, destructive…) without touching its background colour,
-   so text/icon contrast stays exactly as before. The gloss lives on a
-   ::before with z-index:-1, so it paints above the fill but BELOW the label
-   (crisp text), and `border-radius: inherit` makes it hug any shape (pill,
-   rounded-lg, circle). No overflow:hidden -> focus rings are never clipped.
-   The pseudo carries its own box-shadow (top lit edge + border sheen +
-   bottom inner shade) so it never clobbers a host's own box-shadow (the
-   auth teal glow / landing drop stay intact). Apply to any filled button.
+   Overprint — what "liquid glass" became.
+   The old rule layered an Apple-style wet gloss on every filled button. On a
+   printed plate that is the one thing that cannot happen: ink is matte. So the
+   class name stays (it is applied in a dozen components) but the treatment is
+   now a PRINT one -- a fine halftone dot screen over the fill, a paper-light
+   top edge, and a hairline of the fill's own darker ink around the shape.
+   The texture lives on a ::before with z-index:-1, so it paints above the fill
+   but BELOW the label (crisp text), and `border-radius: inherit` makes it hug
+   any shape (pill, rounded-lg, circle). No overflow:hidden -> focus rings are
+   never clipped. The pseudo carries its own box-shadow so it never clobbers a
+   host's own box-shadow.
    --------------------------------------------------------------------- */
 .liquid-glass {
   position: relative;
@@ -341,79 +338,76 @@
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.42) 0%,
-    rgba(255, 255, 255, 0.14) 26%,
-    rgba(255, 255, 255, 0.02) 50%,
-    rgba(255, 255, 255, 0) 62%
-  );
+  /* A 3px dot screen at very low alpha (the overprint) sitting on a short
+     paper-light wash off the top edge. */
+  background-image:
+    radial-gradient(
+      circle,
+      rgba(255, 252, 240, 0.16) 0.5px,
+      transparent 0.9px
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 252, 240, 0.22) 0%,
+      rgba(255, 252, 240, 0.06) 34%,
+      rgba(255, 252, 240, 0) 62%
+    );
+  background-size: 3px 3px, 100% 100%;
   box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    inset 0 -14px 22px -18px rgba(0, 0, 0, 0.6);
+    inset 0 1px 0 0 rgba(255, 252, 240, 0.3),
+    inset 0 0 0 1px rgba(28, 27, 143, 0.14),
+    inset 0 -10px 16px -16px rgba(21, 19, 156, 0.55);
   transition: opacity 0.2s ease, background 0.2s ease;
 }
-/* A touch more gloss on hover, and a subtle press-down on active — layered
-   on top of whatever motion the host button already defines. */
+/* Hover inks a touch heavier; press pulls the screen back like a lighter
+   impression. */
 .liquid-glass:hover::before {
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.52) 0%,
-    rgba(255, 255, 255, 0.18) 26%,
-    rgba(255, 255, 255, 0.03) 50%,
-    rgba(255, 255, 255, 0) 62%
-  );
+  background-image:
+    radial-gradient(
+      circle,
+      rgba(255, 252, 240, 0.22) 0.5px,
+      transparent 0.9px
+    ),
+    linear-gradient(
+      to bottom,
+      rgba(255, 252, 240, 0.3) 0%,
+      rgba(255, 252, 240, 0.09) 34%,
+      rgba(255, 252, 240, 0) 62%
+    );
 }
 .liquid-glass:active::before {
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
 /* ---------------------------------------------------------------------
-   Bottom-nav sliding "liquid glass" indicator — the frosted lens that
-   morphs from tab to tab as you switch sections (Apple "Liquid Glass"
-   feel). Appearance only; the slide motion + reduced-motion handling live
-   inline in `BottomNav` so the transition can be enabled only after the
-   first measured position (no slide-in on load). Layered translucent gloss +
-   blur read it as glass on the dark pill, and a masked conic-gradient rim
-   gives the subtle chromatic (rainbow) edge from the reference. ------- */
+   Bottom-nav sliding lens — the mark that travels from tab to tab as you
+   switch sections. Was a frosted glass bubble with a chromatic rim; it is
+   now a PRESSED one: raised paper inside a solid ink hairline, with the same
+   halftone screen as the ground so it reads as part of the same plate.
+   Appearance only; the slide motion + reduced-motion handling live inline in
+   `BottomNav`. ------------------------------------------------------- */
 .nav-glass {
   border-radius: 9999px;
-  background: linear-gradient(
-    to bottom,
-    rgba(255, 255, 255, 0.24) 0%,
-    rgba(255, 255, 255, 0.1) 42%,
-    rgba(255, 255, 255, 0.04) 100%
+  background-color: color-mix(in srgb, var(--paper-raised) 80%, transparent);
+  background-image: radial-gradient(
+    circle,
+    var(--halftone-dot) 0.6px,
+    transparent 1px
   );
-  backdrop-filter: blur(7px) saturate(1.5);
-  -webkit-backdrop-filter: blur(7px) saturate(1.5);
+  background-size: var(--halftone-size) var(--halftone-size);
   box-shadow:
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.55),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.14),
-    inset 0 -10px 16px -12px rgba(0, 0, 0, 0.5),
-    0 6px 18px -6px rgba(0, 0, 0, 0.45);
+    inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 55%, transparent),
+    0 2px 0 -1px color-mix(in srgb, var(--ink) 22%, transparent);
 }
-/* Chromatic dispersion rim — a thin conic rainbow masked to the border only. */
+/* The old conic rainbow rim is deliberately gone: a two-ink plate has no
+   dispersion. What replaces it is a second, tighter hairline -- the double
+   rule an engraver draws around a cartouche. */
 .nav-glass::after {
   content: "";
   position: absolute;
-  inset: 0;
+  inset: 2.5px;
   border-radius: inherit;
-  padding: 1px;
-  background: conic-gradient(
-    from 210deg,
-    rgba(255, 90, 170, 0.55),
-    rgba(90, 200, 255, 0.55),
-    rgba(120, 255, 190, 0.5),
-    rgba(255, 225, 120, 0.55),
-    rgba(255, 90, 170, 0.55)
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.5;
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
   pointer-events: none;
 }
 
@@ -428,11 +422,6 @@
    Tailwind's utility layer; the shared transition also keeps the common
    colour/background hover-and-active fades smooth. Reduced-motion aware, and
    disabled controls never move. --------------------------------------- */
-/* The pressed state applies ALWAYS (even under reduced-motion, where it just
-   snaps instead of easing) so a tap always registers. iOS Safari only fires
-   :active while a touch listener exists on the page — <HapticProvider> adds a
-   passive `touchstart` listener precisely to enable this. A combined
-   scale-down + slight dim reads clearly as "pressed" even on tiny controls. */
 button:active,
 a:active,
 [role="button"]:active,
@@ -440,8 +429,8 @@ summary:active {
   transform: scale(0.94);
   filter: brightness(0.9);
 }
-/* Bottom-nav tabs ("4 sekcije") get a touch more travel so switching
-   sections has an unmistakable press. */
+/* Bottom-nav tabs ("sekcije") get a touch more travel so switching sections
+   has an unmistakable press. */
 nav[aria-label="Glavna navigacija"] a:active {
   transform: scale(0.88);
 }
@@ -484,10 +473,10 @@ a[aria-disabled="true"]:active,
 /* ---------------------------------------------------------------------
    Onboarding selection "pop" — the questionnaire's tactile confirmation.
    When a radio option becomes selected, its indicator (the dot / check)
-   springs in with a slight overshoot for a Cal-AI-style "locked it in"
-   feel. Applied via `.onb-pop` on the indicator, which mounts only on
-   selection so it fires exactly once per pick. Motion-safe only —
-   reduced-motion users get the selected state with no animation. -------- */
+   springs in with a slight overshoot for a "locked it in" feel. Applied via
+   `.onb-pop` on the indicator, which mounts only on selection so it fires
+   exactly once per pick. Motion-safe only — reduced-motion users get the
+   selected state with no animation. -------------------------------------- */
 @keyframes onb-pop {
   0% {
     transform: scale(0.2);
@@ -632,22 +621,22 @@ a[aria-disabled="true"]:active,
 }
 
 /* ---------------------------------------------------------------------
-   Floating-card lift — the soft, diffuse shadow that lifts the home cards
-   off the aurora ground so the dashboard reads as "lebdi" (Cal-AI-style
-   floating). Value is themed (`--fm-lift` per theme above), so a card only
-   ever writes `.fm-lift` and never an inline/hex shadow (the "theme tokens,
-   not hex" rule). Pairs with the strengthened aurora below: crisp cards +
-   a softly-coloured ground = the sense of hovering. -------------------- */
+   Letterpress lift — the hard ink offset under a raised card. Value is the
+   `--fm-lift` token above, so a card only ever writes `.fm-lift` and never an
+   inline/hex shadow (the "theme tokens, not hex" rule). Deliberately almost
+   blur-free: on this plate a card is PRESSED into the sheet, it does not
+   hover over it. -------------------------------------------------------- */
 .fm-lift {
   box-shadow: var(--fm-lift);
 }
 
 /* ---------------------------------------------------------------------
-   Ring "oblak" — the calorie ring's own glass cloud (2026-07-29). A soft
-   vertical wash (sky→card), a brand-tinted bloom behind the ring, and a top
-   sheen, so the centrepiece reads as an aesthetic glass surface rather than a
-   plain panel. All colours are themed tokens (`--cloud-*`), never inline hex.
-   `overflow:hidden` keeps the bloom/sheen inside the rounded shape. -------- */
+   Ring "oblak" — the calorie ring's own panel. A faint ink wash falling into
+   the raised paper, an ultramarine bloom behind the arc, and a paper-white
+   sheen along the top edge, so the centrepiece reads as its own pressed sheet
+   rather than a plain box. All colours are `--cloud-*` tokens, never inline
+   hex. `overflow:hidden` keeps the bloom and the sheen inside the rounded
+   shape. -------------------------------------------------------------- */
 .fm-cloud {
   background: linear-gradient(180deg, var(--cloud-top), var(--card) 46%);
   border: 1px solid var(--border);
@@ -677,10 +666,42 @@ a[aria-disabled="true"]:active,
 }
 
 /* ---------------------------------------------------------------------
+   Halftone — the stipple that makes a surface read as engraved rather than
+   filled. One dot grid at the shared pitch, in the shared dot ink, so every
+   textured surface in the app is screened at the same frequency: change
+   `--halftone-dot` or `--halftone-size` and the whole plate re-screens at
+   once.
+
+   It paints the element's own background, so it belongs on a GROUND — a page
+   or a panel — and never on a small surface that carries body copy at close
+   range, where a 7px grid buzzes under the type. `.app-aurora` is the same
+   screen with a mask that thins it out through the middle band; reach for
+   that one whenever the content sits directly on top. ------------------ */
+.fm-halftone {
+  background-image: radial-gradient(
+    circle,
+    var(--halftone-dot) 0.9px,
+    transparent 1.15px
+  );
+  background-size: var(--halftone-size) var(--halftone-size);
+}
+
+/* ---------------------------------------------------------------------
+   Engraved rule — the double hairline an engraver draws under a heading.
+   Applied to a bare element (usually an empty `<span aria-hidden>`); it is
+   1px of solid ink over 1px of gap over 1px of thinner ink. ---------- */
+.fm-rule {
+  height: 3px;
+  border-top: 1px solid color-mix(in srgb, var(--ink) 55%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--ink) 22%, transparent);
+  background: transparent;
+}
+
+/* ---------------------------------------------------------------------
    Calorie-ring motion, kept deliberately subtle. The arc eases when the
-   Potrošeno/Preostalo toggle resizes it (`.fm-arc`); a soft brand-gradient halo
-   behind it breathes slowly (`.fm-ring-glow`) — the one ambient touch left after
-   the old "Slivanje" threads were removed. Both collapse under reduced-motion.
+   Potrošeno/Preostalo toggle resizes it (`.fm-arc`); a soft ink-gradient halo
+   behind it breathes slowly (`.fm-ring-glow`). Both collapse under
+   reduced-motion.
    ------------------------------------------------------------------------ */
 @keyframes fm-ring-glow {
   0%,
@@ -727,38 +748,42 @@ a[aria-disabled="true"]:active,
 }
 
 /*
- * App aurora — a wash of the FitMess sedef palette behind all content. The
- * screens were a clean white/near-black; this keeps that calm but stops it
- * reading as EMPTY — teal/gold/blue/green bloom softly across the column
- * (the "prozirna šarena boja" brief). Rendered as a fixed backdrop under the
- * content (see AppShell), so cards and text sit cleanly on top; the colour
- * ever only shows in the negative space between the floating cards.
+ * The ground — a halftone plate, not a wash.
  *
- * Strengthened 2026-07-29 (~+40% alpha + wider blooms): with the home content
- * now on raised `.fm-lift` cards, the ground needed enough colour to actually
- * read BETWEEN them — that gap is where the "floating" comes from. Still calm
- * and zero-shame; it is a whisper, not a gradient hero.
+ * This layer replaces the old iridescent "aurora" (five soft radial blooms in
+ * teal/gold/blue/green). It is the single strongest carrier of the engraved
+ * look, so it is worth understanding rather than tweaking blind:
  *
- * Same iridescent stops as `--wordmark-grad`: light theme uses the deeper,
- * saturated tones so they read on white; dark theme uses the brighter shell
- * tones at a lower alpha so they glow without muddying the near-black ground.
+ * 1. ONE dot grid at `--halftone-size` pitch, in `--halftone-dot` ink. Flat,
+ *    even, no colour variation -- exactly what a stipple screen is.
+ * 2. The APPARENT density variation comes from the mask, not from the dots.
+ *    Two radial gradients, one anchored top and one bottom, are UNIONED
+ *    (`mask-composite: add`), so the screen is dense along the top and bottom
+ *    edges of the column and clears out through the middle band -- the same
+ *    reading as the reference plate, where the stipple crowds the foliage and
+ *    opens up into the sky.
+ * 3. The middle band is where the content sits, so the texture is at its
+ *    faintest exactly where text and cards are. That is the whole reason for
+ *    the mask: a flat, un-masked screen behind a paragraph is unreadable.
+ *
+ * Rendered as a fixed backdrop UNDER the content (see `AppShell`), decorative
+ * and inert. The texture only ever shows in the negative space between the
+ * pressed cards.
  */
 .app-aurora {
-  background-image:
-    radial-gradient(46% 36% at 4% 1%, rgba(14, 156, 130, 0.22), transparent 72%),
-    radial-gradient(48% 36% at 99% 9%, rgba(185, 134, 44, 0.19), transparent 72%),
-    radial-gradient(52% 40% at 0% 98%, rgba(44, 124, 190, 0.21), transparent 72%),
-    radial-gradient(54% 40% at 100% 100%, rgba(47, 154, 80, 0.22), transparent 72%),
-    /* A soft bloom through the middle so the centre never reads empty -- kept
-       the faintest of them all, so it fills the space without shouting. */
-    radial-gradient(64% 46% at 50% 44%, rgba(23, 168, 150, 0.11), transparent 70%);
-}
-
-.dark .app-aurora {
-  background-image:
-    radial-gradient(46% 36% at 4% 1%, rgba(38, 221, 182, 0.14), transparent 72%),
-    radial-gradient(48% 36% at 99% 9%, rgba(236, 199, 102, 0.11), transparent 72%),
-    radial-gradient(52% 40% at 0% 98%, rgba(87, 168, 238, 0.14), transparent 72%),
-    radial-gradient(54% 40% at 100% 100%, rgba(99, 217, 118, 0.14), transparent 72%),
-    radial-gradient(64% 46% at 50% 44%, rgba(40, 217, 182, 0.07), transparent 70%);
+  background-image: radial-gradient(
+    circle,
+    var(--halftone-dot) 0.9px,
+    transparent 1.15px
+  );
+  background-size: var(--halftone-size) var(--halftone-size);
+  -webkit-mask-image:
+    radial-gradient(125% 62% at 50% 0%, #000 0%, transparent 66%),
+    radial-gradient(125% 58% at 50% 100%, #000 0%, transparent 62%);
+  -webkit-mask-composite: source-over;
+  mask-image:
+    radial-gradient(125% 62% at 50% 0%, #000 0%, transparent 66%),
+    radial-gradient(125% 58% at 50% 100%, #000 0%, transparent 62%);
+  mask-composite: add;
+  opacity: 0.85;
 }

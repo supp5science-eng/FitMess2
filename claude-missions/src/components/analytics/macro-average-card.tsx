@@ -334,7 +334,7 @@ function DayBar({
 
 function ChangeBadge({ pct }: { pct: number }) {
   const down = pct < 0;
-  const color = down ? "#E0685E" : "#22B573";
+  const color = down ? "#C05028" : "#2C7A58";
   const arrow = down ? "↓" : "↑";
   const sign = pct > 0 ? "+" : "";
   return (

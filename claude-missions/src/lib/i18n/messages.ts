@@ -51,7 +51,6 @@ const sr = {
   "settings.habits": "Navike",
   "settings.habits.desc": "Čekiraj dnevne navike i prati niz",
   "settings.group.app": "Aplikacija",
-  "settings.appearance": "Izgled",
   "settings.language": "Jezik",
   "settings.reminders": "Podsetnici",
   "settings.reminders.desc": "Javimo se ako dan prođe bez ijednog unosa",
@@ -73,10 +72,6 @@ const sr = {
   "settings.disclaimer.body":
     "Ovo je alat za praćenje ishrane. Kalorije, makronutrijenti i AI procene su informativni i mogu da odstupe od stvarnih vrednosti. Ne postavljamo dijagnozu i ne zamenjujemo lekara ni nutricionistu — pre veće promene ishrane, a obavezno ako imaš zdravstveno stanje, pitaj svog lekara.",
   "settings.disclaimer.more": "Pročitaj uslove korišćenja",
-
-  // Theme toggle (Appearance)
-  "theme.light": "Svetla",
-  "theme.dark": "Tamna",
 
   // Home (/danas)
   "home.dailyIntake": "Dnevni unos",
@@ -144,7 +139,6 @@ const en: Record<MessageKey, string> = {
   "settings.habits": "Habits",
   "settings.habits.desc": "Check off daily habits and keep your streak",
   "settings.group.app": "App",
-  "settings.appearance": "Appearance",
   "settings.language": "Language",
   "settings.reminders": "Reminders",
   "settings.reminders.desc": "We'll nudge you if a day goes by with nothing logged",
@@ -166,8 +160,6 @@ const en: Record<MessageKey, string> = {
     "This is a food-tracking tool. Calories, macronutrients and AI estimates are informational and can differ from the real values. We do not diagnose and we do not replace a doctor or a dietitian — before any major change to your diet, and always if you have a medical condition, ask your doctor.",
   "settings.disclaimer.more": "Read the terms of use",
 
-  "theme.light": "Light",
-  "theme.dark": "Dark",
 
   "home.dailyIntake": "Daily intake",
   "home.mealsToday": "Meals today",

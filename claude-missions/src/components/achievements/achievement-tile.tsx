@@ -55,12 +55,12 @@ export const CATEGORY_STYLE: Record<
   },
   voda: {
     icon: Droplet,
-    accent: "#38bdf8",
+    accent: "#1a6d92",
     soft: "rgba(56, 189, 248, 0.15)",
   },
   koraci: {
     icon: Footprints,
-    accent: "#8b5cf6",
+    accent: "#5f43a0",
     soft: "rgba(139, 92, 246, 0.15)",
   },
 };

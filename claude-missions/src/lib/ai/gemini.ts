@@ -93,13 +93,20 @@ const MEAL_MODEL = "gemini-3.6-flash";
 // Voice logging ("Reci obrok"). Same reasoning as MEAL_MODEL -- Flash, and for
 // this flow speed is the feature. Overridable via `GEMINI_VOICE_MODEL`.
 const VOICE_MODEL = "gemini-3.6-flash";
-// Avatar klon ("Nano Banana Pro" -- Google's image model). This is the ONLY
-// place in the app that asks a model to DRAW rather than to read, so it is the
-// only one that needs an image-capable model; every other constant above is a
-// vision/text model and cannot return pixels. Overridable via
-// `GEMINI_IMAGE_MODEL`, following the same "model choice is config, not code"
-// rule as the rest of this file -- image model ids move fast, and a rename
-// must not need a deploy of new code.
+// Avatar klon. NANO BANANA PRO, and that is a product requirement, not a
+// default to tune: it is the model whose likeness and instruction-following the
+// whole klon feature was designed around. The cheaper image models drift off
+// the template -- different framing, different line weight, a background that
+// wanders -- and the template holding still for every user IS the feature (see
+// `@/lib/avatar/clone-prompt`).
+//
+// This is also the ONLY place in the app that asks a model to DRAW rather than
+// to read; every other constant above is a vision/text model and cannot return
+// pixels at all.
+//
+// `GEMINI_IMAGE_MODEL` exists to CORRECT this id (Google renames preview models
+// without warning), never to downgrade it to a Flash image model. If a klon
+// suddenly looks nothing like the others, check that variable first.
 const IMAGE_MODEL = "gemini-3-pro-image-preview";
 const REQUEST_TIMEOUT_MS = 45_000;
 // Drawing a person from twenty photos is a different order of work than reading

@@ -13,9 +13,12 @@ import { createClient } from "@/lib/supabase/server";
  * "not onboarded yet" redirect, so a finished user can still open it to redo
  * their klon without the middleware bouncing them.
  *
- * Deliberately skippable. A wall made of twenty selfies between someone and the
- * app they just installed would cost more users than the avatar can be worth;
- * "Preskoči za sad" goes straight to `/danas`.
+ * MANDATORY: no klon, no app. But it rarely asks for photos, because the klon
+ * is normally drawn on the PUBLIC `/klon` screen before registration -- the
+ * component's first move is to look for that stashed drawing and attach it to
+ * the account. This route is the backstop for an account that arrived without
+ * one: a Google sign-in straight from `/prijava`, a cleared browser, a failed
+ * upload.
  */
 export const metadata: Metadata = {
   title: "Tvoj klon",
@@ -41,7 +44,7 @@ export default async function KlonPage() {
 
   return (
     <main data-testid="klon" className="flex flex-1 flex-col">
-      <KlonScreen initialDataUrl={initialDataUrl} />
+      <KlonScreen mode="nalog" initialDataUrl={initialDataUrl} />
     </main>
   );
 }

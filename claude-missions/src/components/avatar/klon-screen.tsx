@@ -1,11 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { createCloneAction } from "@/app/(app)/onboarding/klon/actions";
 import { signOutAction } from "@/app/(app)/actions";
+import { createCloneAction } from "@/app/(app)/onboarding/klon/actions";
 import { downscaleImage } from "@/lib/image/downscale";
+import {
+  clearStashedKlon,
+  readStashedKlon,
+  stashKlon,
+} from "@/lib/avatar/klon-stash";
 import {
   checkPhotoCount,
   MAX_CLONE_PHOTOS,
@@ -13,43 +18,53 @@ import {
 } from "@/lib/avatar/clone-prompt";
 
 /**
- * `/onboarding/klon` -- pick 5-20 photos, get your klon.
+ * The avatar screen. One component, two places it runs:
  *
- * MANDATORY (product decision, 2026-08-24): there is no "Preskoči". The
- * middleware keeps an onboarded user without a klon on this route and nowhere
- * else (`@/lib/auth/route-protection`), so the only ways off this screen are a
- * finished klon and the sign-out below. The sign-out is not a loophole -- it is
- * the difference between a mandatory step and an account nobody can get out of
- * when the drawing keeps failing.
+ * - `mode="javni"` -- `/klon`, the FIRST screen of the funnel (landing ->
+ *   "Kreni" -> here -> `/upitnik`). No account exists, so the drawing is kept
+ *   in the visitor's own browser (`@/lib/avatar/klon-stash`) and nothing is
+ *   stored server-side. Continues into the questionnaire.
+ * - `mode="nalog"` -- `/onboarding/klon`, behind auth. Writes the klon to the
+ *   account, and is the MANDATORY gate: no klon, no app. Its first move is to
+ *   look for a klon stashed by the public screen, so the common path never asks
+ *   for photos a second time.
  *
  * Beyond collecting files the screen has one job: make it obvious, before a
- * single photo is picked, that the photos are not kept. That sentence is not
- * fine print here, it is the reason someone hands over twenty pictures of their
- * own face to an app they installed ten minutes ago.
+ * single photo is picked, that the photos are not kept.
  *
- * Every file is downscaled in the browser before it is sent -- the same
- * `downscaleImage` the meal-photo flow uses, but SMALLER than that flow asks
- * for, and the number matters. Twenty originals off a modern phone is an 80 MB+
- * upload; more to the point, Server Actions cap the whole request at 10 MB
- * (`next.config.ts`), and a request over that is rejected BEFORE the action
- * runs -- the exact silent-spinner failure that cap's comment was written
- * about. At 768px a batch of twenty lands around 2-3 MB, well inside it, and
- * the model draws a face from 768px as well as it does from 1280.
+ * Every file is downscaled in the browser first -- the same `downscaleImage`
+ * the meal-photo flow uses, but SMALLER, and the number matters. Twenty
+ * originals off a modern phone is an 80MB+ upload; more to the point, the
+ * authenticated path goes through a Server Action, and those cap the whole
+ * request at 10MB (`next.config.ts`) -- over that the request is rejected
+ * BEFORE the action runs, the silent-spinner failure that cap's comment was
+ * written about. At 768px twenty photos land around 2-3MB, and the model draws
+ * a face from 768px as well as it does from 1280.
  */
 
-/** Long edge, per photo. See the note above -- this is a request-size budget,
- * not a quality setting. */
+/** Long edge, per photo. A request-size budget, not a quality setting. */
 const CLONE_MAX_DIM = 768;
 const CLONE_QUALITY = 0.8;
 
 type Stage =
   | { kind: "pick" }
   | { kind: "working" }
+  /** `saved` means "it is on the account", so it is always false on `/klon`. */
   | { kind: "done"; dataUrl: string; saved: boolean };
 
 type Picked = { id: string; file: File; url: string };
 
-export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
+type Result =
+  | { ok: true; dataUrl: string; saved: boolean }
+  | { ok: false; error_sr: string };
+
+export function KlonScreen({
+  mode,
+  initialDataUrl,
+}: {
+  mode: "javni" | "nalog";
+  initialDataUrl?: string;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<Picked[]>([]);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -58,6 +73,46 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
       ? { kind: "done", dataUrl: initialDataUrl, saved: true }
       : { kind: "pick" }
   );
+
+  // On the account screen, before asking for anything: the visitor may already
+  // have drawn their klon on `/klon`, before they had an account to put it on.
+  // Attaching it here is what makes the pre-auth flow whole -- without this the
+  // mandatory gate would ask a user who just waited two minutes to do it again.
+  useEffect(() => {
+    if (mode !== "nalog" || initialDataUrl) return;
+    let cancelled = false;
+
+    readStashedKlon().then(async (blob) => {
+      if (cancelled || !blob) return;
+      setStage({ kind: "working" });
+
+      const formData = new FormData();
+      formData.append("klon", blob, "klon.png");
+
+      try {
+        const response = await fetch("/api/klon/sacuvaj", {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) throw new Error(String(response.status));
+        // Only now: a stash cleared before the upload lands leaves the user
+        // with no klon and no way back to the one they waited for.
+        await clearStashedKlon();
+        // Hard navigation -- the gate was shut when the router cached /danas.
+        window.location.assign("/danas");
+      } catch {
+        if (cancelled) return;
+        // The picture is still stashed, so nothing was lost; fall back to
+        // asking for photos rather than stranding them on a spinner.
+        setError("Nismo uspeli da sačuvamo klona koga si napravio. Probaj ponovo.");
+        setStage({ kind: "pick" });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [mode, initialDataUrl]);
 
   function addFiles(list: FileList | null) {
     if (!list || list.length === 0) return;
@@ -88,6 +143,19 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
     });
   }
 
+  /** The public screen posts to a route handler; the account screen calls its
+   * server action. Same photos, same prompt -- only where the result may be
+   * written differs, which is the entire difference between the two modes. */
+  async function send(formData: FormData): Promise<Result> {
+    if (mode === "nalog") return createCloneAction(formData);
+
+    const response = await fetch("/api/klon", {
+      method: "POST",
+      body: formData,
+    });
+    return (await response.json()) as Result;
+  }
+
   async function submit() {
     const verdict = checkPhotoCount(picked.length);
     if (!verdict.ok) {
@@ -104,14 +172,14 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
       formData.append("slike", small, "slika.jpg");
     }
 
-    // A rejected action (body over the platform cap, connection dropped mid
+    // A rejected request (body over the platform cap, connection dropped mid
     // upload) throws rather than resolving. Without this catch the screen sits
     // on "Crtamo tvog klona..." forever with no way back.
-    let result;
+    let result: Result;
     try {
-      result = await createCloneAction(formData);
+      result = await send(formData);
     } catch (err) {
-      console.error("[klon] action failed:", err);
+      console.error("[klon] send failed:", err);
       setError("Slanje nije uspelo. Probaj sa manje slika ili na boljoj vezi.");
       setStage({ kind: "pick" });
       return;
@@ -122,10 +190,27 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
       setStage({ kind: "pick" });
       return;
     }
+
+    // Public mode: the server kept nothing, so the browser is the only copy.
+    // Stashed BEFORE the screen says "done" -- a visitor who taps Nastavi the
+    // instant it appears must not outrun the write.
+    if (mode === "javni") {
+      try {
+        const blob = await (await fetch(result.dataUrl)).blob();
+        await stashKlon(blob);
+      } catch (err) {
+        // Storage blocked (private mode, a locked-down browser). They still see
+        // their klon; they will just draw it again after signing up.
+        console.error("[klon] stash failed:", err);
+      }
+    }
+
     setStage({ kind: "done", dataUrl: result.dataUrl, saved: result.saved });
   }
 
   if (stage.kind === "done") {
+    const canContinue = mode === "javni" || stage.saved;
+
     return (
       <div className="flex flex-1 flex-col px-5 pb-8">
         <h1 className="pt-8 text-2xl font-semibold tracking-tight text-foreground">
@@ -144,7 +229,7 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
           className="mx-auto mt-6 w-full max-w-[280px] rounded-2xl bg-muted"
         />
 
-        {!stage.saved && (
+        {!canContinue && (
           <p role="alert" className="mt-4 text-center text-sm text-destructive">
             Nacrtali smo ga, ali nismo uspeli da ga sačuvamo. Probaj ponovo —
             bez sačuvanog klona ne možemo da te pustimo dalje.
@@ -152,25 +237,22 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
         )}
 
         <div className="mt-auto flex flex-col gap-2 pt-8">
-          {/* Only when the klon is really stored: `profiles.klon_at` is what the
-              middleware checks, so offering "Nastavi" on an unsaved klon would
-              send the user into a redirect that bounces straight back here. */}
-          {stage.saved && (
+          {canContinue && (
             <Button
               className="h-14 w-full rounded-full text-base font-semibold"
               onClick={() => {
-                // Hard navigation: the klon gate was open when the App Router
-                // cached /danas as a redirect back to this screen.
-                window.location.assign("/danas");
+                // Hard navigation on both paths: the klon gate's answer changed
+                // under the App Router's cached copy of the destination.
+                window.location.assign(mode === "javni" ? "/upitnik" : "/danas");
               }}
             >
               Nastavi
             </Button>
           )}
           <Button
-            variant={stage.saved ? "ghost" : "default"}
+            variant={canContinue ? "ghost" : "default"}
             className={
-              stage.saved
+              canContinue
                 ? "h-11 w-full rounded-full text-sm"
                 : "h-14 w-full rounded-full text-base font-semibold"
             }
@@ -179,7 +261,7 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
               setStage({ kind: "pick" });
             }}
           >
-            {stage.saved ? "Napravi ponovo" : "Probaj ponovo"}
+            {canContinue ? "Napravi ponovo" : "Probaj ponovo"}
           </Button>
         </div>
       </div>
@@ -276,17 +358,21 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
             Ovo traje do dva minuta. Ne zatvaraj ekran.
           </p>
         ) : (
-          // The only way off this screen other than finishing. Deliberately
-          // quiet -- it is an emergency exit, not an offer.
-          <form action={signOutAction}>
-            <Button
-              type="submit"
-              variant="ghost"
-              className="h-11 w-full rounded-full text-xs text-muted-foreground"
-            >
-              Odjavi se
-            </Button>
-          </form>
+          mode === "nalog" && (
+            // The only way off the mandatory screen other than finishing.
+            // Deliberately quiet -- an emergency exit, not an offer. Without it
+            // "obavezno" would mean an account nobody can get out of when the
+            // drawing keeps failing.
+            <form action={signOutAction}>
+              <Button
+                type="submit"
+                variant="ghost"
+                className="h-11 w-full rounded-full text-xs text-muted-foreground"
+              >
+                Odjavi se
+              </Button>
+            </form>
+          )
         )}
       </div>
     </div>

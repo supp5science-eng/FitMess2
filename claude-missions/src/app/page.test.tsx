@@ -23,10 +23,13 @@ describe("root landing page (F001 scaffold smoke test + FitMess landing)", () =>
     ).toBeInTheDocument();
   });
 
-  it("test_landing_leads_with_get_started_to_the_questionnaire", async () => {
+  // The CTA now opens the AVATAR screen, not the questionnaire: the klon is
+  // what the product is worth showing, so it goes first and hands off to
+  // `/upitnik` itself (product decision, 2026-08-24).
+  it("test_landing_leads_with_get_started_to_the_klon_screen", async () => {
     render(await Home());
     const start = screen.getByRole("link", { name: /Započni/i });
-    expect(start).toHaveAttribute("href", "/upitnik");
+    expect(start).toHaveAttribute("href", "/klon");
   });
 
   it("test_landing_offers_sign_in_for_returning_users", async () => {

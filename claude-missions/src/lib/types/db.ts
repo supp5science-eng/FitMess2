@@ -924,6 +924,33 @@ export interface Database {
        * 0033: one generated avatar ("klon") per user. Built from 5-20 photos
        * that are NEVER stored -- only the drawing that came back is.
        */
+      /**
+       * 0035: daily per-address spend cap for the PUBLIC klon endpoint.
+       * Server-writes only — RLS is on with NO policies, so no client can read
+       * or write it. Addresses are stored salted+hashed, never raw.
+       */
+      klon_ip_usage: {
+        Row: {
+          ip_hash: string;
+          /** Belgrade calendar day, supplied by the caller. */
+          day: string;
+          count: number;
+          created_at: string;
+        };
+        Insert: {
+          ip_hash: string;
+          day: string;
+          count?: number;
+          created_at?: string;
+        };
+        Update: {
+          ip_hash?: string;
+          day?: string;
+          count?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       avatar_clones: {
         Row: {
           /** PK + FK to auth.users(id), ON DELETE CASCADE. */
@@ -1113,6 +1140,19 @@ export interface Database {
           p_day: string;
         };
         Returns: { used: number; entitled: boolean }[];
+      };
+      /**
+       * 0035: increments and returns the daily drawing count for one HASHED
+       * address. The identifier is an argument here (unlike `consume_ai_quota`)
+       * because the public klon endpoint has no `auth.uid()` to charge — which
+       * is exactly why the cap exists. Server-only caller.
+       */
+      consume_klon_ip: {
+        Args: {
+          p_ip_hash: string;
+          p_day: string;
+        };
+        Returns: number;
       };
     };
     Enums: {

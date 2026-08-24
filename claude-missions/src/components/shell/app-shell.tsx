@@ -57,6 +57,9 @@ const FULL_BLEED_ROUTES = new Set([
 
 /** Full-bleed route prefixes, covering nested steps by prefix match:
  * - auth (`/prijava`, `/registracija/proveri-email`, ...)
+ * - klon (`/klon`): the public, pre-auth avatar screen -- the first thing a
+ *   visitor meets after "Kreni", before the questionnaire, and owned by nobody
+ *   with a bottom navigation yet.
  * - questionnaire (`/upitnik`): the public, pre-auth onboarding questionnaire
  *   + plan preview own the whole viewport, same as post-auth onboarding.
  * - onboarding (`/onboarding`, `/onboarding/pregled`): the questionnaire /
@@ -66,6 +69,7 @@ const FULL_BLEED_ROUTES = new Set([
 const FULL_BLEED_PREFIXES = [
   "/prijava",
   "/registracija",
+  "/klon",
   "/upitnik",
   "/onboarding",
   "/telefon",

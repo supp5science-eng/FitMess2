@@ -596,3 +596,34 @@ describe("the mandatory avatar klon gate", () => {
     ).toEqual({ action: "allow" });
   });
 });
+
+describe("the PUBLIC klon screen is never gated", () => {
+  // `/klon` is the first thing a visitor sees after "Kreni" -- before the
+  // questionnaire and before any account exists. A gate here would bounce every
+  // new visitor to the login screen, i.e. close the top of the funnel.
+  it.each(["/klon", "/api/klon", "/api/klon/sacuvaj"])(
+    "lets a signed-out visitor reach %s",
+    (pathname) => {
+      expect(
+        decideRouteAccess({
+          pathname,
+          isAuthenticated: false,
+          isEmailVerified: false,
+          isOnboarded: false,
+        })
+      ).toEqual({ action: "allow" });
+    }
+  );
+
+  it("stays reachable for a signed-in user who has no klon yet", () => {
+    expect(
+      decideRouteAccess({
+        pathname: "/klon",
+        isAuthenticated: true,
+        isEmailVerified: true,
+        isOnboarded: true,
+        hasKlon: false,
+      })
+    ).toEqual({ action: "allow" });
+  });
+});

@@ -90,6 +90,13 @@ export const PHONE_CAPTURE_PATH = "/telefon";
  * by an avatar).
  */
 export const KLON_PATH = "/onboarding/klon";
+/** The public, pre-auth avatar screen -- landing "Kreni" lands here, and it
+ * hands off to `/upitnik`. See `isPublicKlonPath`. */
+export const PUBLIC_KLON_PATH = "/klon";
+/** The route handler that screen posts to. Public for the same reason the page
+ * is -- it answers visitors who have no account yet -- and capped per address
+ * in its own handler, since `consume_ai_quota` has no user to charge. */
+export const PUBLIC_KLON_API_PATH = "/api/klon";
 /** Where a fully set-up visitor landing on an auth page is bounced to. */
 export const SIGNED_IN_HOME_PATH = "/danas";
 
@@ -121,6 +128,24 @@ export function isPasswordResetPath(pathname: string): boolean {
  * sub-route) -- the pages a signed-out visitor uses to authenticate. */
 export function isLoginOrSignupPath(pathname: string): boolean {
   return LOGIN_SIGNUP_PREFIXES.some((prefix) => matchesPrefix(pathname, prefix));
+}
+
+/**
+ * `/klon` -- the public, pre-auth avatar screen. The FIRST thing a visitor
+ * meets after "Kreni" on the landing page, before the questionnaire, so it is
+ * never gated: there is no account yet and the whole point is that there isn't
+ * one. Nothing it produces is stored server-side; the drawing lives in the
+ * visitor's own browser until they register (see `@/lib/avatar/klon-stash`).
+ *
+ * Distinct from `/onboarding/klon`, which is the same screen behind auth --
+ * that one is the mandatory gate for an account that somehow arrived without a
+ * klon (a Google sign-in straight to `/prijava`, a cleared browser).
+ */
+export function isPublicKlonPath(pathname: string): boolean {
+  return (
+    matchesPrefix(pathname, PUBLIC_KLON_PATH) ||
+    matchesPrefix(pathname, PUBLIC_KLON_API_PATH)
+  );
 }
 
 /** `/upitnik` -- the public, pre-auth onboarding questionnaire. Never gated:
@@ -174,7 +199,8 @@ export function isMachinePath(pathname: string): boolean {
 }
 
 /** Never gated regardless of auth/verification/onboarding state: the public
- * marketing landing page, the pre-auth `/upitnik` questionnaire, the
+ * marketing landing page, the pre-auth `/klon` avatar screen and `/upitnik`
+ * questionnaire, the
  * login/signup pages, the auth callback, the password-reset flow, and the
  * three legal documents.
  *
@@ -186,6 +212,7 @@ export function isMachinePath(pathname: string): boolean {
 export function isPublicPath(pathname: string): boolean {
   return (
     pathname === MARKETING_HOME_PATH ||
+    isPublicKlonPath(pathname) ||
     isQuestionnairePath(pathname) ||
     isLoginOrSignupPath(pathname) ||
     isAuthCallbackPath(pathname) ||

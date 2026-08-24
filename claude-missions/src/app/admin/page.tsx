@@ -38,6 +38,14 @@ export default async function AdminPage() {
       label: "Avatar lab",
       description: "Proba: lice se bira, telo se računa iz podataka",
     },
+    // Dijagnostika, ne feature -- isto bez i18n ključa. Postoji zato što se
+    // "koje modele naš ključ vidi" inače ne može proveriti bez terminala ili
+    // bez lepljenja tajne u adresnu liniju.
+    {
+      href: "/admin/modeli",
+      label: "Modeli",
+      description: "Šta naš Gemini ključ stvarno vidi",
+    },
   ] as const;
 
   return (

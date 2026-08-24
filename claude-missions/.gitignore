@@ -60,3 +60,7 @@ yarn-error.log*
 # machine without the project they do not exist at all, and on 13.08.2026 that
 # stopped the Play listing from being finished from a laptop. 20 MB once is
 # cheaper than a blocked store submission.
+
+# Local avatar-klon test photos + output. Never committed: every face on them
+# belongs to a real person.
+klon-proba/

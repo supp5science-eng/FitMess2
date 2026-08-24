@@ -43,6 +43,14 @@ export function PrivacyPolicy({ locale, t }: LegalDocumentProps) {
         <LegalText>{t("legal.privacy.collect.health.body")}</LegalText>
         <LegalSubheading>{t("legal.privacy.collect.media.h")}</LegalSubheading>
         <LegalText>{t("legal.privacy.collect.media.body")}</LegalText>
+        {/* Face photos get their OWN subheading rather than a sentence folded
+            into "Photos and voice" above. They are the most sensitive thing the
+            app asks for, they are asked for on the very first screen, and they
+            are the one upload a reader is most likely to want to check before
+            handing over -- burying that in a paragraph about meal photos would
+            be technically complete and practically dishonest. */}
+        <LegalSubheading>{t("legal.privacy.collect.klon.h")}</LegalSubheading>
+        <LegalText>{t("legal.privacy.collect.klon.body")}</LegalText>
         <LegalSubheading>{t("legal.privacy.collect.tech.h")}</LegalSubheading>
         <LegalText>{t("legal.privacy.collect.tech.body")}</LegalText>
       </LegalSection>
@@ -86,6 +94,7 @@ export function PrivacyPolicy({ locale, t }: LegalDocumentProps) {
             t("legal.privacy.keep.logs"),
             t("legal.privacy.keep.photos"),
             t("legal.privacy.keep.voice"),
+            t("legal.privacy.keep.klon"),
             t("legal.privacy.keep.delete"),
           ]}
         />

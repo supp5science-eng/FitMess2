@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { HeroVideo } from "@/components/landing/hero-video";
 import { getT } from "@/lib/i18n/server";
+import { isKlonRequired } from "@/lib/avatar/klon-gate";
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/device/stores";
 import type { MessageKey } from "@/lib/i18n/messages";
 
@@ -13,7 +14,8 @@ import "./landing.css";
  * The first screen stays deliberately minimal (Cal-AI-style): the FitMess
  * motion-graphics film playing full-bleed (see
  * `components/landing/hero-video.tsx`) — one bold line, and a single primary
- * action ("Započni" → `/upitnik`; "Prijavi se" → sign in). Below the fold a
+ * action ("Započni" → `/klon`, the avatar screen, which hands off
+ * to `/upitnik`; "Prijavi se" → sign in). Below the fold a
  * short, app-styled feature showcase hints at what's inside, then a closing
  * CTA. Kept intentionally brief.
  *
@@ -225,6 +227,13 @@ const FEATURES: {
 ];
 
 export default async function LandingPage() {
+  // Where "Započni" goes. The avatar screen once the klon is switched on
+  // (`KLON_OBAVEZAN=true`), which hands off to the questionnaire itself;
+  // straight to the questionnaire until then. The two move together on purpose:
+  // sending every visitor at a screen we are not yet enforcing -- and have not
+  // yet proven against the live model -- would swap a locked door for a broken
+  // one. See `@/lib/avatar/klon-gate`.
+  const startHref = isKlonRequired() ? "/klon" : "/upitnik";
   const { t } = await getT();
   return (
     <div className="lp light">
@@ -253,7 +262,7 @@ export default async function LandingPage() {
           <h1 className="lp-title">{t("app.landing.hero.title")}</h1>
 
           <div className="lp-cta">
-            <Link className="lp-start" href="/upitnik">
+            <Link className="lp-start" href={startHref}>
               {t("app.landing.hero.start")}
             </Link>
             <p className="lp-signin">
@@ -380,7 +389,7 @@ export default async function LandingPage() {
           <p className="lp-reveal mx-auto mb-6 mt-1 max-w-[34ch] text-sm leading-snug text-muted-foreground">
             {t("app.landing.close.body")}
           </p>
-          <Link className="lp-start" href="/upitnik">
+          <Link className="lp-start" href={startHref}>
             {t("app.landing.close.cta")}
           </Link>
         </section>

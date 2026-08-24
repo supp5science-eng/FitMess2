@@ -234,6 +234,19 @@ const DEFAULT_ROWS: Record<string, Record<string, unknown>[]> = {
 };
 
 /**
+ * The klon is the one export section read as a SINGLE row (`maybeSingle`),
+ * because there is exactly one per user -- so it needs its own double rather
+ * than the list-table one above, whose `eq()` resolves straight to `{ data }`.
+ */
+const KLON_ROW = {
+  image_base64: "iVBORw0KGgoAAAANSUhEUg==",
+  mime_type: "image/png",
+  prompt_version: "v1",
+  created_at: "2026-08-24T10:00:00.000Z",
+  updated_at: "2026-08-24T10:00:00.000Z",
+};
+
+/**
  * Generic table double: every list table answers `select(...).eq(...)`, so a
  * new entry in `USER_OWNED_TABLES` needs no new plumbing here -- only an
  * override when a test wants a specific failure.
@@ -276,8 +289,27 @@ function makeMockSupabase(options?: {
     };
   }
 
+  const klonOverride = options?.tables?.avatar_clones;
+  const klonResult = {
+    data: klonOverride?.data !== undefined ? klonOverride.data : KLON_ROW,
+    error: klonOverride?.error ?? null,
+  };
+  const klonMaybeSingle = vi.fn().mockResolvedValue(klonResult);
+  const klonEq = vi.fn((column: string, value: string) => {
+    eqCalls.avatar_clones = [
+      ...(eqCalls.avatar_clones ?? []),
+      [column, value] as [string, string],
+    ];
+    return { maybeSingle: klonMaybeSingle };
+  });
+  const klonSelect = vi.fn((columns: string) => {
+    selectedColumns.avatar_clones = columns;
+    return { eq: klonEq };
+  });
+
   const from = vi.fn((table: string) => {
     if (table === "profiles") return { select: profileSelect };
+    if (table === "avatar_clones") return { select: klonSelect };
     if (table in DEFAULT_ROWS) return tableDouble(table);
     throw new Error(`unexpected table in test double: ${table}`);
   });
@@ -489,5 +521,60 @@ describe("collectUserExport: failure behaviour", () => {
       // this message to the client (see route.integration.test.ts).
       expect(err).toBeInstanceOf(ExportReadError);
     }
+  });
+});
+
+describe("the klon in the export", () => {
+  it("ships the drawing itself, not just a description of it", async () => {
+    // The opposite call to meal photos, deliberately: there is exactly one
+    // klon, it is permanent, and the picture IS the data. An export that
+    // described it without handing it over would be a portability right that
+    // ports nothing.
+    const supabase = makeMockSupabase();
+    const result = await runExport(supabase);
+
+    expect(result.klon).toMatchObject({
+      image_base64: expect.any(String),
+      mime_type: "image/png",
+      prompt_version: "v1",
+    });
+  });
+
+  it("says a klon exists in the schema note", async () => {
+    const supabase = makeMockSupabase();
+    const result = await runExport(supabase);
+
+    expect(result.schema_note).toContain("klon");
+    // And is explicit that the source photos are absent because they were
+    // never kept -- not because the export left them out.
+    expect(result.schema_note).toMatch(/nisu[\s\S]*ne čuvaju/);
+  });
+
+  it("returns null for a user who has not drawn one, without calling it missing", async () => {
+    // Absent is not the same as unavailable. `null` is the honest answer and
+    // belongs in the file; `missing_sections` is for a table we could not read.
+    const supabase = makeMockSupabase({ tables: { avatar_clones: { data: null } } });
+    const result = await runExport(supabase);
+
+    expect(result.klon).toBeNull();
+    expect(result.missing_sections).not.toContain("tvoj klon (sam crtež)");
+  });
+
+  it("reports a missing avatar_clones table instead of failing the whole export", async () => {
+    const supabase = makeMockSupabase({
+      tables: {
+        avatar_clones: {
+          data: null,
+          error: {
+            message: 'relation "public.avatar_clones" does not exist',
+            code: "42P01",
+          },
+        },
+      },
+    });
+    const result = await runExport(supabase);
+
+    expect(result.missing_sections).toContain("tvoj klon (sam crtež)");
+    expect(result.account).toEqual({ id: "user-1", email: null });
   });
 });

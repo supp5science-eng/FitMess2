@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { isCrawlerPath } from "@/lib/device/is-crawler";
 import { decidePhoneGate } from "@/lib/device/phone-gate";
 import { isNativeAppUserAgent } from "@/lib/device/native";
+import { isKlonRequired } from "@/lib/avatar/klon-gate";
 import { hasClearedPhonePrompt, PHONE_PROMPT_COOKIE } from "@/lib/auth/phone-prompt";
 import {
   decideRouteAccess,
@@ -98,6 +99,10 @@ export async function middleware(request: NextRequest) {
   // "The phone ask has nothing left to do", NOT "this user has a phone number".
   // The two stopped being the same question when the number became optional.
   let phonePromptCleared = true;
+  // Whether the avatar klon has been drawn. Starts true so that the paths that
+  // never reach the profiles lookup (anonymous, unverified) are unaffected --
+  // the gate below only ever runs for a verified, onboarded user anyway.
+  let hasKlon = true;
   if (verified && claims) {
     // Fast path: if the gate cookie was issued to THIS user, both gates are
     // already permanently cleared -- skip the `profiles` round trip entirely.
@@ -105,14 +110,19 @@ export async function middleware(request: NextRequest) {
     if (gateHit) {
       onboarded = true;
       phonePromptCleared = true;
+      hasKlon = true;
     } else {
-      // One query fetches both the onboarding marker and the phone.
+      // One query fetches the onboarding marker, the phone, and the klon
+      // marker. `klon_at` is denormalized onto `profiles` for exactly this
+      // reason (0034): the klon gate runs on every navigation and must not
+      // make this query join a table whose rows carry a base64 PNG.
       const { data } = await supabase
         .from("profiles")
-        .select("onboarded_at, phone")
+        .select("onboarded_at, phone, klon_at")
         .eq("user_id", claims.sub)
         .maybeSingle();
       onboarded = Boolean(data?.onboarded_at);
+      hasKlon = Boolean(data?.klon_at);
       // Only OAuth users (Apple, Google) are shown the /telefon ask at all:
       // they never saw the signup form's optional phone field. The number is
       // NOT required -- see `@/lib/auth/phone-prompt` for why guideline
@@ -126,8 +136,10 @@ export async function middleware(request: NextRequest) {
       });
 
       // Cache the cleared-gates state so subsequent navigations take the fast
-      // path above. Bound to the user id; only set once BOTH gates pass.
-      if (onboarded && phonePromptCleared) {
+      // path above. Bound to the user id; only set once EVERY gate passes --
+      // the cookie asserts all three at once, so a user without a klon must
+      // not get one or the fast path would wave them straight through.
+      if (onboarded && phonePromptCleared && hasKlon) {
         response.cookies.set(GATE_COOKIE, claims.sub, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
@@ -145,6 +157,11 @@ export async function middleware(request: NextRequest) {
     isEmailVerified: verified,
     isOnboarded: onboarded,
     hasPhone: phonePromptCleared,
+    // The switch is read HERE rather than inside `decideRouteAccess`, which
+    // stays a pure function of its inputs -- that is what makes its redirect
+    // matrix testable without an environment. Off => the gate is told everyone
+    // already has a klon, which is exactly what "stop redirecting" means.
+    hasKlon: isKlonRequired() ? hasKlon : true,
     // Only ever changes the answer for `/`: the shell's start URL is the site
     // root, and a store app must not open on the marketing landing page.
     isNativeShell: isNativeAppUserAgent(userAgent),

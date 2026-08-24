@@ -49,9 +49,14 @@ export function FinishAndRedirect({ data }: { data: CompleteOnboardingData }) {
             // No cookie -> no install offer; never blocks navigation.
           }
           // Hard navigation so the middleware re-runs against the now
-          // fully-onboarded profile (onboarded_at set) and lets /danas through
-          // instead of bouncing back to /onboarding.
-          window.location.assign("/danas");
+          // fully-onboarded profile (onboarded_at set).
+          //
+          // The stop before /danas is `/onboarding/klon` -- building the avatar
+          // is the first thing a brand-new account does, while the "this is
+          // mine" feeling from the plan reveal is still warm. It is skippable
+          // and its "Preskoči za sad" lands on /danas, so this is one screen in
+          // the way, not a wall.
+          window.location.assign("/onboarding/klon");
         } else {
           setError(result.error_sr);
           setState("error");

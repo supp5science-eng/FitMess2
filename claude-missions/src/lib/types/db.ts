@@ -133,6 +133,9 @@ export interface Database {
           daily_step_goal?: number | null;
           is_admin: boolean;
           onboarded_at: string | null;
+          /** 0034: when the avatar klon was drawn. NULL holds the mandatory
+           * klon gate shut (see `@/lib/auth/route-protection`). */
+          klon_at: string | null;
           rules: EatingRuleJson[];
           created_at: string;
           updated_at: string;
@@ -149,6 +152,7 @@ export interface Database {
           daily_step_goal?: number | null;
           is_admin?: boolean;
           onboarded_at?: string | null;
+          klon_at?: string | null;
           rules?: EatingRuleJson[];
           created_at?: string;
           updated_at?: string;
@@ -165,6 +169,7 @@ export interface Database {
           daily_step_goal?: number | null;
           is_admin?: boolean;
           onboarded_at?: string | null;
+          klon_at?: string | null;
           rules?: EatingRuleJson[];
           created_at?: string;
           updated_at?: string;
@@ -915,6 +920,79 @@ export interface Database {
           },
         ];
       };
+      /**
+       * 0033: one generated avatar ("klon") per user. Built from 5-20 photos
+       * that are NEVER stored -- only the drawing that came back is.
+       */
+      /**
+       * 0035: daily per-address spend cap for the PUBLIC klon endpoint.
+       * Server-writes only — RLS is on with NO policies, so no client can read
+       * or write it. Addresses are stored salted+hashed, never raw.
+       */
+      klon_ip_usage: {
+        Row: {
+          ip_hash: string;
+          /** Belgrade calendar day, supplied by the caller. */
+          day: string;
+          count: number;
+          created_at: string;
+        };
+        Insert: {
+          ip_hash: string;
+          day: string;
+          count?: number;
+          created_at?: string;
+        };
+        Update: {
+          ip_hash?: string;
+          day?: string;
+          count?: number;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      avatar_clones: {
+        Row: {
+          /** PK + FK to auth.users(id), ON DELETE CASCADE. */
+          user_id: string;
+          /** The generated character, base64 (no `data:` prefix). */
+          image_base64: string;
+          mime_type: string;
+          /** Which art-direction constant drew it (`CLONE_PROMPT_VERSION`). */
+          prompt_version: string;
+          /** How many photos went in. Quality signal, never shown. */
+          source_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          image_base64: string;
+          mime_type?: string;
+          prompt_version: string;
+          source_count: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          user_id?: string;
+          image_base64?: string;
+          mime_type?: string;
+          prompt_version?: string;
+          source_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "avatar_clones_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: true;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       meal_photos: {
         Row: {
           /** PK + FK to public.logs(id); one photo per log, ON DELETE CASCADE. */
@@ -1062,6 +1140,19 @@ export interface Database {
           p_day: string;
         };
         Returns: { used: number; entitled: boolean }[];
+      };
+      /**
+       * 0035: increments and returns the daily drawing count for one HASHED
+       * address. The identifier is an argument here (unlike `consume_ai_quota`)
+       * because the public klon endpoint has no `auth.uid()` to charge — which
+       * is exactly why the cap exists. Server-only caller.
+       */
+      consume_klon_ip: {
+        Args: {
+          p_ip_hash: string;
+          p_day: string;
+        };
+        Returns: number;
       };
     };
     Enums: {

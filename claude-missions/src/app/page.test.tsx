@@ -32,6 +32,22 @@ describe("root landing page (F001 scaffold smoke test + FitMess landing)", () =>
     expect(start).toHaveAttribute("href", "/klon");
   });
 
+  it("falls back to the questionnaire when the klon gate is switched off", async () => {
+    // `KLON_OBAVEZAN=false` is the switch for the day the image model is down.
+    // It must move the CTA too: killing the wall while still sending every new
+    // visitor at a screen that cannot draw swaps a locked door for a broken one.
+    const original = process.env.KLON_OBAVEZAN;
+    process.env.KLON_OBAVEZAN = "false";
+    try {
+      render(await Home());
+      const start = screen.getByRole("link", { name: /Započni/i });
+      expect(start).toHaveAttribute("href", "/upitnik");
+    } finally {
+      if (original === undefined) delete process.env.KLON_OBAVEZAN;
+      else process.env.KLON_OBAVEZAN = original;
+    }
+  });
+
   it("test_landing_offers_sign_in_for_returning_users", async () => {
     render(await Home());
     const signIn = screen.getByRole("link", { name: /Prijavi se/i });

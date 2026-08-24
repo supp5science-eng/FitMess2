@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { HeroVideo } from "@/components/landing/hero-video";
 import { getT } from "@/lib/i18n/server";
+import { isKlonRequired } from "@/lib/avatar/klon-gate";
 import { APP_STORE_URL, PLAY_STORE_URL } from "@/lib/device/stores";
 import type { MessageKey } from "@/lib/i18n/messages";
 
@@ -226,6 +227,13 @@ const FEATURES: {
 ];
 
 export default async function LandingPage() {
+  // Where "Započni" goes. Normally the avatar screen, which hands off to the
+  // questionnaire itself. But when `KLON_OBAVEZAN=false` turns the klon gate
+  // off -- the switch that exists for the day the image model is down -- the
+  // CTA has to step back to `/upitnik` too. Killing the wall while still
+  // sending every new visitor at a screen that cannot draw would swap a locked
+  // door for a broken one, which is not an improvement.
+  const startHref = isKlonRequired() ? "/klon" : "/upitnik";
   const { t } = await getT();
   return (
     <div className="lp light">
@@ -254,7 +262,7 @@ export default async function LandingPage() {
           <h1 className="lp-title">{t("app.landing.hero.title")}</h1>
 
           <div className="lp-cta">
-            <Link className="lp-start" href="/klon">
+            <Link className="lp-start" href={startHref}>
               {t("app.landing.hero.start")}
             </Link>
             <p className="lp-signin">
@@ -381,7 +389,7 @@ export default async function LandingPage() {
           <p className="lp-reveal mx-auto mb-6 mt-1 max-w-[34ch] text-sm leading-snug text-muted-foreground">
             {t("app.landing.close.body")}
           </p>
-          <Link className="lp-start" href="/klon">
+          <Link className="lp-start" href={startHref}>
             {t("app.landing.close.cta")}
           </Link>
         </section>

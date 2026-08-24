@@ -2,12 +2,11 @@
 
 import {
   cloneErrorSr,
-  generateAvatarClone,
+  generateKlon,
   type InlineImage,
 } from "@/lib/ai/gemini";
 import { chargeAiEstimate } from "@/lib/ai/quota";
 import {
-  buildClonePrompt,
   checkPhotoCount,
   CLONE_PROMPT_VERSION,
   MAX_CLONE_PHOTOS,
@@ -106,7 +105,7 @@ export async function createCloneAction(
 
   let image: InlineImage;
   try {
-    image = await generateAvatarClone(photos, buildClonePrompt(photos.length));
+    image = await generateKlon(photos);
   } catch (err) {
     console.error("[klon] generation failed:", err);
     return {

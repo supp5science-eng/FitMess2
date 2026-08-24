@@ -50,6 +50,10 @@ import {
   type ReferenceObject,
 } from "@/lib/ai/prizma";
 import { reconcileEstimate } from "@/lib/ai/reconcile";
+import {
+  buildClonePrompt,
+  CLONE_PORTRAIT_PROMPT,
+} from "@/lib/avatar/clone-prompt";
 
 // Server-only Gemini client. We call the REST `generateContent` endpoint
 // directly (no SDK dependency -> no version churn, predictable on first
@@ -991,4 +995,67 @@ export async function generateAvatarClone(
       temperature: 0.9,
     },
   });
+}
+
+/**
+ * Step one of the klon: a plain photographic portrait, used as the identity
+ * reference for step two. See `CLONE_PORTRAIT_PROMPT` for why two calls beat
+ * one -- in short, the stylisation averages a face away unless it is told
+ * exactly which face it is looking at.
+ *
+ * Temperature is LOW here, the opposite of the character call. This request is
+ * not asking for a drawing with any life in it; it is asking for a faithful
+ * copy of features that already exist, and every degree of freedom it gets is
+ * a degree in which the nose can drift.
+ */
+async function generateReferencePortrait(
+  photos: readonly InlineImage[]
+): Promise<InlineImage> {
+  return postGenerateImage({
+    contents: [
+      {
+        role: "user",
+        parts: [
+          { text: CLONE_PORTRAIT_PROMPT },
+          ...photos.map((photo) => ({
+            inline_data: { mime_type: photo.mimeType, data: photo.base64 },
+          })),
+        ],
+      },
+    ],
+    generationConfig: {
+      responseModalities: ["TEXT", "IMAGE"],
+      imageConfig: { aspectRatio: "3:4" },
+      temperature: 0.35,
+    },
+  });
+}
+
+/**
+ * The klon, both steps: photos -> reference portrait -> character.
+ *
+ * This is what the screens call. The portrait is scaffolding -- it is never
+ * stored and never shown -- so a failure in step one must NOT fail the klon:
+ * we log it and draw from the photos alone, which is exactly the v1 behaviour
+ * and still produces a picture. Failing here would trade a weaker likeness for
+ * no klon at all.
+ *
+ * Cost and time both roughly double (two image calls, ~25-35s each). That is
+ * the price of a face that belongs to the person, measured on 24.08.2026
+ * against the same twelve photos.
+ */
+export async function generateKlon(
+  photos: readonly InlineImage[]
+): Promise<InlineImage> {
+  let reference: InlineImage | null = null;
+  try {
+    reference = await generateReferencePortrait(photos);
+  } catch (err) {
+    console.warn("[klon] reference portrait failed, drawing without it:", err);
+  }
+
+  return generateAvatarClone(
+    reference ? [...photos, reference] : photos,
+    buildClonePrompt(photos.length, reference !== null)
+  );
 }

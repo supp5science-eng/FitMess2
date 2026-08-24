@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 
 import {
   cloneErrorSr,
-  generateAvatarClone,
+  generateKlon,
   type InlineImage,
 } from "@/lib/ai/gemini";
 import {
-  buildClonePrompt,
   checkPhotoCount,
   MAX_CLONE_PHOTOS,
 } from "@/lib/avatar/clone-prompt";
@@ -102,10 +101,7 @@ export async function POST(request: Request) {
   );
 
   try {
-    const image = await generateAvatarClone(
-      photos,
-      buildClonePrompt(photos.length)
-    );
+    const image = await generateKlon(photos);
     return NextResponse.json({
       ok: true,
       dataUrl: `data:${image.mimeType};base64,${image.base64}`,

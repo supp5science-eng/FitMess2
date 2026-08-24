@@ -24,7 +24,7 @@
  * rewrite can find the klons drawn by the old one and offer them a re-draw
  * instead of silently leaving two art styles in the same app.
  */
-export const CLONE_PROMPT_VERSION = "v1";
+export const CLONE_PROMPT_VERSION = "v2";
 
 /**
  * How many photos the screen asks for.
@@ -55,15 +55,15 @@ export const MAX_CLONE_PHOTOS = 20;
  */
 const STYLE_TEMPLATE = `
 STIL (identičan za svakog korisnika -- ne menjaj ga ni po čemu):
-- Čista vektorska ilustracija, ravne boje, bez teksture i bez šrafure.
-- Debela, ujednačena tamna kontura oko svake forme; unutrašnje linije tanje.
-- Blaga stilizacija, prijateljska ali ne dečja: prepoznatljiv čovek, ne karikatura.
-- Bez gradijenata osim jednog vrlo blagog na koži; bez sjaja, bez odsjaja.
+- Stilizovan 3D lik kao iz moderne video igre: mek "toon" render, čiste
+  površine, blaga toplina kože, bez crne konture i bez fotografskih pora.
+- Lice ostaje VERNO osobi. Prepoznatljiv čovek, ne uopšten model.
+- Bez gradijenata osim onog koji nosi oblik; bez sjaja i odsjaja.
 
 KADAR (fiksan -- na njemu se kasnije crta odeća, pa mora da bude isti svaki put):
 - Cela figura, od temena do stopala, ništa nije odsečeno.
 - Frontalno, lice okrenuto pravo u gledaoca, težina na obe noge.
-- Ruke opušteno niz telo, blago odvojene od trupa, šake vidljive.
+- Ruke opuštene niz telo, blago odvojene od trupa, šake vidljive.
 - Figura centrirana, zauzima oko 85% visine slike, prazan prostor iznad glave.
 - Neutralan, miran izraz lica sa jedva primetnim osmehom.
 - Portretni format 3:4.
@@ -87,8 +87,9 @@ ODEĆA (privremena -- korisnik je kasnije bira, zato je sada namerno neutralna):
 - Odeću, pozadinu, osvetljenje, pozu, ugao i kadar sa slike.
 - Druge ljude, kućne ljubimce i predmete koji se na slikama zateknu.
 
-ISKRENO, BEZ RUGANJA:
+ISKRENO, BEZ RUGANJA I BEZ ULEPŠAVANJA:
 - Nacrtaj građu onakvu kakva jeste -- ni mršaviju ni krupniju nego što je.
+- Ne sužavaj lice, ne simetrizuj ga, ne popunjavaj usne, ne podmlađuj.
 - Nemoj preuveličavati nijedan deo tela, ni u jednom smeru.
 - Bez podsmeha, bez humora na račun osobe. Ovaj lik predstavlja korisnika u
   aplikaciji koju otvara svakog dana.
@@ -99,6 +100,44 @@ REZULTAT:
 `.trim();
 
 /**
+ * Step one of two: the reference portrait.
+ *
+ * Found the hard way on 24.08.2026. Asking for the finished character in one
+ * shot returns a stranger with the right haircut -- the stylisation averages
+ * the face away before any likeness lands. Asking FIRST for a plain
+ * photographic portrait, with beautification banned in so many words, produces
+ * a face that carries the person (it reproduced freckles). That portrait then
+ * rides along as the LAST image of step two, where the instruction is simply
+ * "the face is THIS face".
+ *
+ * The portrait never reaches the user. It is scaffolding for the second call
+ * and is dropped with the request -- like the source photos around it.
+ */
+export const CLONE_PORTRAIT_PROMPT = `
+Priloženo je više fotografija JEDNE ISTE OSOBE. Pogledaj ih sve zajedno i
+napravi jednu fotografiju te iste osobe -- studijski portret.
+
+CILJ JE VERNOST, NE LEPOTA. Ovo je referentna fotografija po kojoj se kasnije
+pravi lik, pa je svako odstupanje od stvarnog lica greška:
+- Ne ulepšavaj. Ne sužavaj nos, ne popunjavaj usne, ne simetrizuj lice.
+- Ne podmlađuj i ne stanjuj lice. Ne uklanjaj madeže, pege ni neravnine.
+- Zadrži tačno: širinu i liniju vilice, oblik brade, jagodice, razmak i oblik
+  očiju, oblik obrva, liniju kose i visinu čela, oblik i širinu nosa, debljinu
+  usana, oblik i položaj ušiju, dužinu vrata, ten kože.
+- Ako se osoba na fotografijama razlikuje po težini ili frizuri, uzmi ono
+  stanje koje se najčešće ponavlja.
+
+KADAR I SVETLO:
+- Glava i ramena, lice okrenuto pravo u objektiv, pogled u objektiv.
+- Neutralan izraz, usne opuštene i zatvorene, bez osmeha.
+- Ravnomerno meko studijsko svetlo sa obe strane, bez tvrdih senki.
+- Ravna, svetlo siva pozadina bez teksture. Bez kape i bez nakita.
+- Oštra fotografija, portretni objektiv, bez zamućenja pozadine.
+
+REZULTAT: tačno jedna fotografija jedne osobe. Bez teksta i okvira.
+`.trim();
+
+/**
  * The whole instruction sent with the photos.
  *
  * The photo count is stated to the model on purpose: told "these N images are
@@ -106,11 +145,22 @@ REZULTAT:
  * near-duplicates as several people -- which is the failure mode when the user
  * uploads five shots from one evening.
  */
-export function buildClonePrompt(photoCount: number): string {
+export function buildClonePrompt(
+  photoCount: number,
+  hasReferencePortrait = false
+): string {
   return [
     `Priloženo je ${photoCount} fotografija JEDNE ISTE OSOBE, snimljenih u`,
     `različitim prilikama. Pogledaj ih sve zajedno i izvedi kako ta osoba`,
     `zaista izgleda -- ne prepisuj nijednu pojedinačnu sliku.`,
+    ...(hasReferencePortrait
+      ? [
+          ``,
+          `POSLEDNJA priložena slika je referentni portret te iste osobe.`,
+          `Lice na liku mora da bude TO lice -- ista vilica, isti nos, iste`,
+          `oči, ista linija kose. Ostale fotografije služe samo za građu.`,
+        ]
+      : []),
     ``,
     `Nacrtaj tu osobu kao lik po šablonu ispod. Šablon je fiksan i važi za`,
     `svakog korisnika; jedino što se menja od osobe do osobe je sam lik.`,

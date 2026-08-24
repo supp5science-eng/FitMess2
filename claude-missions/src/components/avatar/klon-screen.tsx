@@ -44,6 +44,16 @@ import {
 
 /** Long edge, per photo. A request-size budget, not a quality setting. */
 const CLONE_MAX_DIM = 768;
+
+/**
+ * ...but a small batch gets more pixels, because the likeness lives in the
+ * face and the face is a fraction of a full-body shot. At 768px a face inside
+ * a standing photo is ~100px wide -- enough for "dark hair, glasses", not
+ * enough for a jaw. Twelve photos at 1024px land around 3MB, comfortably
+ * inside the same 10MB request budget that forced the cap in the first place.
+ */
+const CLONE_MAX_DIM_SMALL_BATCH = 1024;
+const SMALL_BATCH = 12;
 const CLONE_QUALITY = 0.8;
 
 type Stage =
@@ -167,8 +177,10 @@ export function KlonScreen({
     setStage({ kind: "working" });
 
     const formData = new FormData();
+    const maxDim =
+      picked.length <= SMALL_BATCH ? CLONE_MAX_DIM_SMALL_BATCH : CLONE_MAX_DIM;
     for (const item of picked) {
-      const small = await downscaleImage(item.file, CLONE_MAX_DIM, CLONE_QUALITY);
+      const small = await downscaleImage(item.file, maxDim, CLONE_QUALITY);
       formData.append("slike", small, "slika.jpg");
     }
 

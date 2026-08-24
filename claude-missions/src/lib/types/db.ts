@@ -133,6 +133,9 @@ export interface Database {
           daily_step_goal?: number | null;
           is_admin: boolean;
           onboarded_at: string | null;
+          /** 0034: when the avatar klon was drawn. NULL holds the mandatory
+           * klon gate shut (see `@/lib/auth/route-protection`). */
+          klon_at: string | null;
           rules: EatingRuleJson[];
           created_at: string;
           updated_at: string;
@@ -149,6 +152,7 @@ export interface Database {
           daily_step_goal?: number | null;
           is_admin?: boolean;
           onboarded_at?: string | null;
+          klon_at?: string | null;
           rules?: EatingRuleJson[];
           created_at?: string;
           updated_at?: string;
@@ -165,6 +169,7 @@ export interface Database {
           daily_step_goal?: number | null;
           is_admin?: boolean;
           onboarded_at?: string | null;
+          klon_at?: string | null;
           rules?: EatingRuleJson[];
           created_at?: string;
           updated_at?: string;

@@ -1,10 +1,10 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { createCloneAction } from "@/app/(app)/onboarding/klon/actions";
+import { signOutAction } from "@/app/(app)/actions";
 import { downscaleImage } from "@/lib/image/downscale";
 import {
   checkPhotoCount,
@@ -15,7 +15,14 @@ import {
 /**
  * `/onboarding/klon` -- pick 5-20 photos, get your klon.
  *
- * The screen has one job beyond collecting files: make it obvious, before a
+ * MANDATORY (product decision, 2026-08-24): there is no "Preskoči". The
+ * middleware keeps an onboarded user without a klon on this route and nowhere
+ * else (`@/lib/auth/route-protection`), so the only ways off this screen are a
+ * finished klon and the sign-out below. The sign-out is not a loophole -- it is
+ * the difference between a mandatory step and an account nobody can get out of
+ * when the drawing keeps failing.
+ *
+ * Beyond collecting files the screen has one job: make it obvious, before a
  * single photo is picked, that the photos are not kept. That sentence is not
  * fine print here, it is the reason someone hands over twenty pictures of their
  * own face to an app they installed ten minutes ago.
@@ -43,7 +50,6 @@ type Stage =
 type Picked = { id: string; file: File; url: string };
 
 export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
-  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const [picked, setPicked] = useState<Picked[]>([]);
   const [error, setError] = useState<string | undefined>(undefined);
@@ -139,28 +145,41 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
         />
 
         {!stage.saved && (
-          <p className="mt-4 text-center text-xs text-muted-foreground">
-            Nismo uspeli da ga sačuvamo — kad uđeš u app, napravi ga ponovo iz
-            Podešavanja.
+          <p role="alert" className="mt-4 text-center text-sm text-destructive">
+            Nacrtali smo ga, ali nismo uspeli da ga sačuvamo. Probaj ponovo —
+            bez sačuvanog klona ne možemo da te pustimo dalje.
           </p>
         )}
 
         <div className="mt-auto flex flex-col gap-2 pt-8">
+          {/* Only when the klon is really stored: `profiles.klon_at` is what the
+              middleware checks, so offering "Nastavi" on an unsaved klon would
+              send the user into a redirect that bounces straight back here. */}
+          {stage.saved && (
+            <Button
+              className="h-14 w-full rounded-full text-base font-semibold"
+              onClick={() => {
+                // Hard navigation: the klon gate was open when the App Router
+                // cached /danas as a redirect back to this screen.
+                window.location.assign("/danas");
+              }}
+            >
+              Nastavi
+            </Button>
+          )}
           <Button
-            className="h-14 w-full rounded-full text-base font-semibold"
-            onClick={() => router.push("/danas")}
-          >
-            Nastavi
-          </Button>
-          <Button
-            variant="ghost"
-            className="h-11 w-full rounded-full text-sm"
+            variant={stage.saved ? "ghost" : "default"}
+            className={
+              stage.saved
+                ? "h-11 w-full rounded-full text-sm"
+                : "h-14 w-full rounded-full text-base font-semibold"
+            }
             onClick={() => {
               setPicked([]);
               setStage({ kind: "pick" });
             }}
           >
-            Napravi ponovo
+            {stage.saved ? "Napravi ponovo" : "Probaj ponovo"}
           </Button>
         </div>
       </div>
@@ -257,13 +276,17 @@ export function KlonScreen({ initialDataUrl }: { initialDataUrl?: string }) {
             Ovo traje do dva minuta. Ne zatvaraj ekran.
           </p>
         ) : (
-          <Button
-            variant="ghost"
-            className="h-11 w-full rounded-full text-sm"
-            onClick={() => router.push("/danas")}
-          >
-            Preskoči za sad
-          </Button>
+          // The only way off this screen other than finishing. Deliberately
+          // quiet -- it is an emergency exit, not an offer.
+          <form action={signOutAction}>
+            <Button
+              type="submit"
+              variant="ghost"
+              className="h-11 w-full rounded-full text-xs text-muted-foreground"
+            >
+              Odjavi se
+            </Button>
+          </form>
         )}
       </div>
     </div>

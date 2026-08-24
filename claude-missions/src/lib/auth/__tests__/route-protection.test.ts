@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  KLON_PATH,
   ONBOARDING_PATH,
   PHONE_CAPTURE_PATH,
   SIGNED_IN_HOME_PATH,
@@ -507,6 +508,91 @@ describe("the native shell never opens on the marketing landing page", () => {
         isEmailVerified: true,
         isOnboarded: true,
       })
+    ).toEqual({ action: "allow" });
+  });
+});
+
+describe("the mandatory avatar klon gate", () => {
+  // A fully set-up user in every respect EXCEPT the klon. Every case below
+  // differs from this by one field, so what the gate does and does not catch
+  // stays readable.
+  const withoutKlon = {
+    isAuthenticated: true,
+    isEmailVerified: true,
+    isOnboarded: true,
+    hasPhone: true,
+    hasKlon: false,
+  };
+
+  it.each(PROTECTED_PATHS)(
+    "sends an onboarded user without a klon from %s to the klon screen",
+    (pathname) => {
+      expect(decideRouteAccess({ ...withoutKlon, pathname })).toEqual({
+        action: "redirect",
+        to: KLON_PATH,
+      });
+    }
+  );
+
+  it("lets the klon screen itself through, so the redirect cannot loop", () => {
+    expect(
+      decideRouteAccess({ ...withoutKlon, pathname: KLON_PATH })
+    ).toEqual({ action: "allow" });
+  });
+
+  it("keeps the user out of the rest of onboarding, not just out of the app", () => {
+    // The onboarding gate above allows all of `/onboarding`; this one must not
+    // -- a user who already answered the questionnaire has no business back in
+    // it, and letting them wander there is how a "mandatory" step gets skipped.
+    expect(
+      decideRouteAccess({ ...withoutKlon, pathname: ONBOARDING_PATH })
+    ).toEqual({ action: "redirect", to: KLON_PATH });
+  });
+
+  it.each([
+    "/privatnost",
+    "/uslovi",
+    "/brisanje-naloga",
+  ])("never blocks the legal document %s", (pathname) => {
+    // Play requires the deletion page to work for anyone, and a store reviewer
+    // must never meet a wall made of selfies. If this ever goes red, the app is
+    // one submission away from a rejection.
+    expect(decideRouteAccess({ ...withoutKlon, pathname })).toEqual({
+      action: "allow",
+    });
+  });
+
+  it("does not fire before onboarding is finished -- that gate goes first", () => {
+    expect(
+      decideRouteAccess({
+        ...withoutKlon,
+        isOnboarded: false,
+        pathname: "/danas",
+      })
+    ).toEqual({ action: "redirect", to: ONBOARDING_PATH });
+  });
+
+  it("does not fire for a signed-out visitor", () => {
+    expect(
+      decideRouteAccess({
+        ...withoutKlon,
+        isAuthenticated: false,
+        pathname: "/danas",
+      })
+    ).toEqual({ action: "redirect", to: SIGNED_OUT_REDIRECT_PATH });
+  });
+
+  it("lets a user WITH a klon straight through", () => {
+    expect(
+      decideRouteAccess({ ...withoutKlon, hasKlon: true, pathname: "/danas" })
+    ).toEqual({ action: "allow" });
+  });
+
+  it("defaults to 'has one', so every caller that predates the gate is unaffected", () => {
+    const noKlonField = { ...withoutKlon };
+    delete (noKlonField as { hasKlon?: boolean }).hasKlon;
+    expect(
+      decideRouteAccess({ ...noKlonField, pathname: "/danas" })
     ).toEqual({ action: "allow" });
   });
 });

@@ -16,6 +16,10 @@
  *     `/onboarding`. Onboarding routes themselves are exempt from this rule
  *     so visiting `/onboarding` while not yet onboarded never redirect-loops
  *     back to itself.
+ *   - Onboarded, `profiles.klon_at` still null -> `/onboarding/klon`, and
+ *     nothing but that route and the public/legal paths gets through until the
+ *     avatar exists. The one gate here that is a product decision rather than a
+ *     store or session requirement; see `KLON_PATH` for what it costs.
  *   - Auth pages (`/prijava`, `/registracija*`) and the `/auth/*` callback
  *     endpoint are never gated. Once a user is fully set up (verified +
  *     onboarded), landing on `/prijava` or `/registracija*` bounces them to
@@ -46,6 +50,14 @@ export type RouteProtectionInput = {
    * doesn't care (most unit tests) never trips the gate.
    */
   hasPhone?: boolean;
+  /**
+   * `profiles.klon_at IS NOT NULL` -- whether this user's avatar klon has been
+   * drawn. Unlike the phone ask above this one IS a wall (product decision):
+   * every account has a klon, no exceptions, because the avatar is what the
+   * whole product is going to be shown with. Optional + defaults to true so
+   * every existing caller and unit test keeps its old behaviour.
+   */
+  hasKlon?: boolean;
   /** `isNativeAppUserAgent(...)` -- whether this request comes from the
    * App Store / Play shell rather than a browser. Only changes the answer for
    * `/`; see the note at the top of `decideRouteAccess`. Optional + defaults
@@ -66,6 +78,18 @@ export const ONBOARDING_PATH = "/onboarding";
 /** Where a verified OAuth visitor who hasn't answered the optional phone ask
  * is sent once. Skippable — never a wall. */
 export const PHONE_CAPTURE_PATH = "/telefon";
+/**
+ * Where an onboarded visitor without an avatar klon is sent -- and kept until
+ * they have one. The one MANDATORY step in this file that isn't required by a
+ * store guideline or by the session being invalid; it is a product decision
+ * (2026-08-24), so it is worth writing down what it costs: a user whose klon
+ * fails to draw cannot reach the app at all. That is why the screen keeps a
+ * sign-out on it -- "mandatory" must not mean "an account nobody can get out
+ * of" -- and why the legal pages stay reachable from behind this gate (a store
+ * reviewer, and anyone who wants their account deleted, must never be blocked
+ * by an avatar).
+ */
+export const KLON_PATH = "/onboarding/klon";
 /** Where a fully set-up visitor landing on an auth page is bounced to. */
 export const SIGNED_IN_HOME_PATH = "/danas";
 
@@ -117,6 +141,12 @@ export function isAuthCallbackPath(pathname: string): boolean {
  * redirect so visiting it while not onboarded never loops back to itself. */
 export function isOnboardingPath(pathname: string): boolean {
   return matchesPrefix(pathname, ONBOARDING_PATH);
+}
+
+/** `/onboarding/klon` -- the avatar screen, exempt from the "no klon yet"
+ * redirect so visiting it without a klon never loops back to itself. */
+export function isKlonPath(pathname: string): boolean {
+  return matchesPrefix(pathname, KLON_PATH);
 }
 
 /** `/telefon` -- the phone-capture page, exempt from the "no phone yet"
@@ -175,6 +205,7 @@ export function decideRouteAccess(input: RouteProtectionInput): RouteDecision {
     isEmailVerified: verified,
     isOnboarded,
     hasPhone = true,
+    hasKlon = true,
     isNativeShell = false,
   } = input;
 
@@ -246,6 +277,23 @@ export function decideRouteAccess(input: RouteProtectionInput): RouteDecision {
     if (isOnboardingPath(pathname)) return { action: "allow" }; // no redirect loop
     if (isPublicPath(pathname)) return { action: "allow" };
     return { action: "redirect", to: ONBOARDING_PATH };
+  }
+
+  // 3.5. Onboarded, but the avatar klon hasn't been drawn yet. A WALL, not an
+  //    ask: the user goes to `/onboarding/klon` and stays there. Deliberately
+  //    narrower than the onboarding gate above -- only the klon route itself is
+  //    let through, not the rest of `/onboarding`, so nobody wanders back into
+  //    a questionnaire they already finished.
+  //
+  //    `isPublicPath` still passes, and that exemption is the important half:
+  //    it carries the three legal documents (privacy, terms, account deletion).
+  //    Play requires the deletion page to work without installing anything, and
+  //    a store reviewer must never meet a wall made of selfies -- see
+  //    `@/lib/legal/paths`.
+  if (!hasKlon) {
+    if (isKlonPath(pathname)) return { action: "allow" }; // no redirect loop
+    if (isPublicPath(pathname)) return { action: "allow" };
+    return { action: "redirect", to: KLON_PATH };
   }
 
   // 4. Fully set up: bounce away from the login/signup pages toward the

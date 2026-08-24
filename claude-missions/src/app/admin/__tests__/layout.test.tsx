@@ -33,6 +33,7 @@ function fakeProfile(overrides: Partial<Profile>): Profile {
     height_cm: null,
     weight_kg: null,
     activity_level: null,
+    klon_at: null,
     is_admin: true,
     onboarded_at: null,
     rules: [],

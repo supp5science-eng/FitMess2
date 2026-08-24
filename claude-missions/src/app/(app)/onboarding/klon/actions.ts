@@ -132,6 +132,27 @@ export async function createCloneAction(
 
   if (error) console.error("[klon] save failed:", error);
 
+  // The gate marker, and ONLY after the image actually landed. `profiles.klon_at`
+  // is what the middleware reads on every navigation (0034), so setting it for a
+  // klon that failed to store would open the app to a user who has no avatar --
+  // the one state the whole mandatory gate exists to prevent.
+  if (!error) {
+    const { error: markError } = await supabase
+      .from("profiles")
+      .update({ klon_at: new Date().toISOString() })
+      .eq("user_id", userId);
+    if (markError) {
+      console.error("[klon] gate marker failed:", markError);
+      // Image saved, gate still shut. Say so rather than sending the user into
+      // a redirect that will bounce them straight back here.
+      return {
+        ok: true,
+        dataUrl: `data:${image.mimeType};base64,${image.base64}`,
+        saved: false,
+      };
+    }
+  }
+
   return {
     ok: true,
     dataUrl: `data:${image.mimeType};base64,${image.base64}`,

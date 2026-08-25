@@ -4,6 +4,93 @@
 
 ---
 
+# 25.08.2026 — Prizma (Jarvis agent), AI tab, i dan velikog redizajna koji se vratio
+
+Jedan dug dan, tri poglavlja. Sve ispod je **na `main`** (vrh: `39dbb90`),
+svaki korak je mergovan i verifikovan (typecheck + build + testovi; jedini
+padovi su 11 zatečenih env-zavisnih testova koji padaju i bez ovih izmena).
+
+## Poglavlje 1: totalni redizajn „Žar" — urađen, pa POVUČEN isti dan
+
+- Jutarnja odluka: tamna crvena romantična tema, dva taba, žar/pepeo animacije.
+  Isporučene **dve verzije** (tamni bordo `2f55896`, pa otvorena crvena
+  `1d9af64` po iOS referenci) — vlasnikova presuda: „ništa mi se ne sviđa,
+  vrati staro".
+- **Vraćena Gravira** (`abde317`), pa doterana: papir je sada **čisto beo
+  `#ffffff`** (krem `#fdf9f0` se čitao žućkasto) — tokeni, theme-color,
+  manifest, OG slika (`140d4a8`). Nekadašnje tople nijanse su bela sa dahom
+  mastila.
+- ⚠️ Mapa starog dizajna: `docs/design-snapshot-2026-08-25-gravira.md`;
+  povratna tačka pre svega: `928169b`. Žar tema živi u istoriji
+  (`2f55896`…`1d9af64`) ako ikad zatreba.
+
+## Poglavlje 2: AI tab i orb
+
+- **Četvrti tab „AI"** (`/ai`, ruta zaštićena kao i sve) — na njemu je SAMO
+  agent. `8c01523`.
+- **Orb**: WebGL shader sfera (three.js, već u zavisnostima) — ultramarin
+  fluid sa domain-warped šumom, tamnim „venom" venama, stalnom rotacijom,
+  mekim topljenjem u papir (`ai-orb-canvas.tsx`, `bbb284a`). U nav-u se vrti
+  ISTI shader na 32px, bez teksta ispod (aria ostaje „AI") — `51e56cf`.
+  ~30fps kapa, reduced-motion → statičan frejm, bez WebGL-a → CSS fallback.
+
+## Poglavlje 3: Prizma — Jarvis v1 (`13cde90`)
+
+Vizija (vlasnik): **agent JE aplikacija**. Korisnik kaže šta hoće, Prizma
+donese ekran/akciju; na kraju ostaju samo AI + Postavke, ostali tabovi se gase
+kad v1/v2 sazru. Dizajn platno sa 4 stanja ekrana:
+https://claude.ai/code/artifact/2b7fd35b-2e50-43ba-8556-cc47fa1f9ce1
+
+Šta radi danas:
+- **Mir**: orb + lični pozdrav (ime iz `profiles.full_name`, doba dana po
+  Beogradu) + živo stanje („Do sada X kcal — ostalo ti je Y").
+- **Razgovor**: bez mehurića — korisnikova rečenica je tihi citat, odgovor
+  krupan tekst; **akcije kao kartice** („hoću da logujem obrok" → FM 2.7 /
+  Slikaj / Gric; tap otvara postojeći flow).
+- Bezbednost akcija: model bira samo **ID iz kataloga**
+  (`lib/ai/agent-actions.ts`, 9 navigacionih akcija), JSON šema +
+  zod; halucinirani ID se tiho odbaci, tekst dugmadi je naš (i18n).
+- Backend: `/api/ai/agent` → `generateAgentTurn` (Gemini, chat + JSON šema u
+  `gemini.ts`); činjenice dana se prepočitavaju server-side; kvota kao za
+  procene obroka.
+- **Preimenovanje**: stari flow „Prizma" je za korisnike sada **„FM 2.7"**
+  (AddSheet, kartica akcije, legal) — Prizma je samo agent. Interni
+  nazivi/rute nedirnuti. `39dbb90`.
+
+## 🔜 Sledeći koraci (dogovoreno, čeka dve stvari od vlasnika)
+
+1. **Prizmin mozak → Claude Opus 5** (`claude-opus-5`, zvanični
+   `@anthropic-ai/sdk`, strukturirani izlaz za reply+actions). Gemini ostaje
+   za slike/deklaracije/STT. Odluka pala jer je Gemini u chatu „glup";
+   fine-tuning NIJE plan — plan je bolji model + širi kontekst (nedelja,
+   adaptivni cilj, trening) + doteran prompt.
+   ⏳ Čeka: **Anthropic API ključ** (api.anthropic.com je već dozvoljen u
+   mrežnoj politici okruženja — može se testirati odavde čim ključ stigne).
+2. **Glas — ElevenLabs, muški, srpski.** Utvrđeno: srpski TTS ima samo
+   **Eleven v3**; Multilingual v2 / Flash v2.5 imaju hrvatski (testiraćemo da
+   li „hrvatski čita srpski" prolazi — brže i jeftinije). Arhitektura:
+   mikrofon → Gemini (audio direktno u model, kao Gric) → Prizma tekst →
+   ElevenLabs streaming po rečenicama; cilj ~2,5–4 s do prvog zvuka.
+   ⏳ Čeka dve stvari: (a) na ElevenLabs ključu **Restrict Key** trenutno sve
+   drži na No Access — treba Text to Speech=Access + Voices=Read (ili
+   isključiti restrikciju za test); (b) u mrežnoj politici Claude okruženja
+   dozvoliti **api.elevenlabs.io**. Ključ je sačuvan u `claude-missions/.env`
+   (gitignorisan; posle testa rotirati i staviti u produkcijski env).
+   Plan testa: isti tekst × (v3 srpski, Flash hrvatski) × 2 muška glasa →
+   MP3 + latencije, vlasnik bira uvom.
+3. **v2 Prizme** (posle glasa): mutirajuće akcije iz razgovora („obriši mi
+   ručak") uz izričitu potvrdu u chatu — katalog akcija je dizajniran da ih
+   primi.
+
+## ⚠️ Zamke za onoga ko nastavlja
+
+- `.light` klasa u `globals.css` je od redizajn-dana bila „legacy pin"; posle
+  vraćanja Gravire `.light, :root` su opet JEDNO — ne razdvajati bez potrebe.
+- `sessionStorage` ključ niti razgovora je `fm_agent_chat_v2` (v1 shape je
+  imao poruke bez akcija).
+- Testovi nav-a sada broje ČETIRI taba, AI tab se u testovima nalazi po
+  aria-label „AI".
+
 # 24.08.2026, 23:00 — dizajn: staklo, zvuk, verzija 2.0.1
 
 Radilo je više agenata odjednom u istom radnom stablu. Ovo je **dizajnerska

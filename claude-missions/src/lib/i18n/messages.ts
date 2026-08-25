@@ -27,15 +27,12 @@ import { treningMessages } from "@/lib/i18n/messages-parts/trening";
  * active locale falls back to Serbian, then to the key.
  */
 const sr = {
-  // Bottom navigation (redesign 2026-08-25: two tabs — AI + Profil; the old
-  // home/analytics keys stay because their screens still exist under the AI
-  // tab until the agent absorbs them)
-  "nav.ai": "AI",
+  // Bottom navigation
   "nav.home": "Početna",
   "nav.analytics": "Analitika",
   "nav.profile": "Profil",
 
-  // FitMess agent (AI tab chat, faza 2 redizajna)
+  // FitMess agent (AI chat na /danas)
   "agent.dock.cta": "Pitaj AI…",
   "agent.title": "FitMess AI",
   "agent.placeholder": "Pitaj bilo šta o svom danu…",
@@ -137,7 +134,6 @@ const sr = {
 export type MessageKey = keyof typeof sr;
 
 const en: Record<MessageKey, string> = {
-  "nav.ai": "AI",
   "nav.home": "Home",
   "nav.analytics": "Analytics",
   "nav.profile": "Profile",

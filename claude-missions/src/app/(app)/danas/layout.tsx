@@ -1,7 +1,5 @@
 import { Suspense } from "react";
 import { cookies } from "next/headers";
-import Link from "next/link";
-import { ChartColumnBig } from "lucide-react";
 
 import { DateStrip } from "@/components/home/date-strip";
 import { StreakPill } from "@/components/streak/streak-pill";
@@ -267,17 +265,6 @@ export default async function DanasLayout({
           >
             Fit<span className="fm-wordmark-accent">Mess</span>
           </h1>
-          {/* PRIVREMENO (redesign 2026-08-25): with the nav down to two tabs
-              (AI + Profil), Analitika has no tab of its own until the agent
-              screen absorbs it — this small header link keeps it reachable in
-              the meantime. Remove together with the agent-screen phase. */}
-          <Link
-            href="/analitika"
-            aria-label="Analitika"
-            className="ml-auto flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
-          >
-            <ChartColumnBig className="size-4.5" aria-hidden="true" />
-          </Link>
           {/* Streams in once the 400-day streak read lands, so it never holds
               up the wordmark or the date wheel. No fallback markup: an absent
               pill is already a valid state (a user with no streak), so a

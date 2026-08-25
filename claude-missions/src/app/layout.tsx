@@ -183,14 +183,15 @@ export default async function RootLayout({
   preload("/brand/fitmess-icon.png", { as: "image", fetchPriority: "high" });
 
   return (
-    /* Redesign 2026-08-25: the app's one theme is now "Žar" (dark ember) on
-       `:root`, so <html> no longer carries the `light` class — that class is
-       now the RETIRED Gravira palette, pinned only by the subtrees excluded
-       from the redesign (the marketing landing's `.lp light`, `/upitnik`). */
+    /* `light` is still written onto <html> even though it is the only theme
+       left: a few standalone surfaces (the marketing landing's `.lp light`
+       subtree, the desktop gate) pin the palette on themselves, and the class
+       is what they pin. Keeping it here means those selectors keep resolving
+       against the same one theme instead of quietly matching nothing. */
     <html
       lang={locale}
-      className={`${inter.variable} ${archivoBlack.variable} ${poppins.variable} h-full antialiased`}
-      style={{ colorScheme: "dark" }}
+      className={`light ${inter.variable} ${archivoBlack.variable} ${poppins.variable} h-full antialiased`}
+      style={{ colorScheme: "light" }}
     >
       <body className="min-h-full">
         <LocaleProvider locale={locale}>

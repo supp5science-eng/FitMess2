@@ -8,26 +8,26 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { ArrowUp, X } from "lucide-react";
+import { ArrowUp, Sparkles, X } from "lucide-react";
 
-import { AddSheet } from "@/components/home/add-sheet";
-import { EmberOrb } from "@/components/shell/ember-orb";
 import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
 /**
- * FitMess agent, faza 2 (2026-08-25): the AI tab's floating dock and chat.
+ * FitMess agent (2026-08-25): the AI chat on `/danas`.
  *
- * The dock is one row floating over the AI tab's content (positioned by
- * `AppShell`): a chat pill ("Pitaj AI…") that opens the conversation, and the
- * existing "+" (AddSheet) beside it — ask or log, the tab's two verbs, side
- * by side.
+ * One floating pill over the home screen's content ("Pitaj AI…", positioned
+ * by `AppShell`) opens a full-height chat sheet: conversation on top,
+ * quick-start chips while it is empty, an input row pinned to the bottom.
+ * Each send POSTs the running conversation to `/api/ai/agent`, which
+ * recomputes today's facts server-side (target, meals, water, profile) and
+ * asks Gemini for one reply — the model talks about stored numbers, it never
+ * invents them.
  *
- * The chat itself is a full-height sheet (portal to <body>, same overlay
- * pattern as `AddSheet`): conversation on top, quick-start chips while it is
- * empty, an input row pinned to the bottom. Each send POSTs the running
- * conversation to `/api/ai/agent`, which recomputes today's facts server-side
- * and asks Gemini for one reply.
+ * Styled entirely from the Gravira theme tokens (paper, ink, primary), so it
+ * sits on the engraved plate like everything else; the mark is a plain ink
+ * `Sparkles`, not a custom orb. (The 2026-08-25 "Žar" total redesign shipped
+ * and was reverted the same day — the owner kept exactly this feature.)
  *
  * The conversation lives in `sessionStorage` (per app session, per device) —
  * long-term memory is a later phase; v1 keeps the thread across screen hops
@@ -78,23 +78,23 @@ export function AgentDock() {
 
   return (
     <>
-      <div className="pointer-events-auto flex items-center gap-3">
-        {/* The chat pill: reads as an input, acts as a button. */}
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          data-testid="agent-dock-open"
-          aria-haspopup="dialog"
-          aria-expanded={isOpen}
-          className="liquid-glass flex h-14 flex-1 items-center gap-3 rounded-full border border-border bg-card/90 px-4 text-left shadow-[0_8px_30px_rgba(60,8,3,0.45)] backdrop-blur-xl focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          <EmberOrb className="size-7 shrink-0" />
-          <span className="truncate text-sm text-muted-foreground">
-            {t("agent.dock.cta")}
-          </span>
-        </button>
-        <AddSheet />
-      </div>
+      {/* The chat pill: reads as an input, acts as a button. Raised paper
+          inside an ink hairline, same grammar as the nav pill. */}
+      <button
+        type="button"
+        onClick={() => setIsOpen(true)}
+        data-testid="agent-dock-open"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        className="liquid-glass pointer-events-auto flex h-13 w-full items-center gap-3 rounded-full border border-ink/45 bg-card/90 px-4 text-left backdrop-blur-xl fm-lift focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+          <Sparkles className="size-4.5" aria-hidden="true" />
+        </span>
+        <span className="truncate text-sm text-muted-foreground">
+          {t("agent.dock.cta")}
+        </span>
+      </button>
 
       {isOpen ? <AgentChatSheet onClose={() => setIsOpen(false)} /> : null}
     </>
@@ -184,7 +184,9 @@ function AgentChatSheet({ onClose }: { onClose: () => void }) {
       <div className="mx-auto flex h-full w-full max-w-[430px] flex-col">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-border/70 px-5 py-4">
-          <EmberOrb className="size-8 shrink-0" />
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground">
+            <Sparkles className="size-5" aria-hidden="true" />
+          </span>
           <h2
             id="agent-chat-title"
             className="flex-1 text-lg font-semibold text-foreground"
@@ -292,7 +294,7 @@ function MessageBubble({
         "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
         isUser
           ? "self-end rounded-br-md bg-primary text-primary-foreground"
-          : "self-start rounded-bl-md border border-border bg-card text-foreground"
+          : "self-start rounded-bl-md border border-border bg-card text-foreground fm-lift"
       )}
     >
       {children}

@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { AgentDock } from "@/components/ai/agent-dock";
 import { AppNavBar } from "@/components/shell/app-nav-bar";
 import { AppSplash } from "@/components/shell/app-splash";
-import { EmberField } from "@/components/shell/ember-field";
 import { AccountsSync } from "@/components/auth/accounts-sync";
 import { InstallNudge } from "@/components/pwa/install-nudge";
 import { PushTapListener } from "@/components/native/push-tap-listener";
@@ -101,7 +100,7 @@ export function AppShell({
   introActive?: boolean;
 }) {
   const pathname = usePathname();
-  const isAgentTab =
+  const isAgentRoute =
     pathname === "/danas" || Boolean(pathname?.startsWith("/danas/"));
 
   if (pathname !== null && isFullBleed(pathname)) {
@@ -136,31 +135,25 @@ export function AppShell({
           aria-hidden="true"
           className="app-aurora pointer-events-none absolute inset-0 -z-10"
         />
-        {/* Ambient ember field: sparks and ash drifting behind all content
-            (decorative canvas; renders nothing under reduced motion). */}
-        <EmberField />
         {/* Content scrolls inside this region only; the nav below keeps its own
-            space, so nothing ever hides behind it. The wrapper is the anchor
-            for the AI tab's floating "+" — positioned against the VIEWPORT
-            region, not the scrolling page, so it never scrolls away. */}
+            space, so nothing ever hides behind it. The relative wrapper anchors
+            the agent chat pill, which floats over the VIEWPORT region (not the
+            scrolling page), so it never scrolls away. */}
         <div className="relative flex min-h-0 flex-1 flex-col">
           <div
             className={
               "flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain" +
-              // The AI tab floats the agent dock over this region; the extra
-              // scroll padding lets the last card clear it.
-              (isAgentTab ? " pb-24" : "")
+              // The dock floats over this region on /danas; the extra scroll
+              // padding lets the last card clear it.
+              (isAgentRoute ? " pb-20" : "")
             }
           >
             {children}
           </div>
-          {/* Agent dock, faza 2 (2026-08-25): the AI tab's two verbs — ask
-              (chat pill -> /api/ai/agent) and log (the "+" AddSheet, which
-              left the nav bar with the two-tab redesign) — floating over the
-              content. Mounted on /danas routes only — the same screen whose
-              empty state opens the sheet via `subscribeToAddSheetRequests`. */}
-          {isAgentTab ? (
-            <div className="pointer-events-none absolute inset-x-4 bottom-4 z-30">
+          {/* FitMess agent (2026-08-25): the chat pill lives on the home
+              screen only — the one screen whose data the agent talks about. */}
+          {isAgentRoute ? (
+            <div className="pointer-events-none absolute inset-x-5 bottom-4 z-30">
               <AgentDock />
             </div>
           ) : null}

@@ -1,14 +1,12 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-// Redesign 2026-08-25: the bottom nav renders TWO tabs (AI — the ember orb,
-// and Profil — the monogram bubble), marks the active one via aria-current
-// from the current pathname, and mounts the sliding liquid-glass lens. The
-// lens's exact pixel position is measured from the DOM at runtime (0 in
-// jsdom), so these tests assert structure/active-state, not geometry.
+// F005: the bottom nav renders three tabs, marks the active one via
+// aria-current from the current pathname, and mounts the sliding liquid-glass
+// lens. The lens's exact pixel position is measured from the DOM at runtime
+// (0 in jsdom), so these tests assert structure/active-state, not geometry.
 
 const pathnameMock = vi.fn<() => string>();
-
 vi.mock("next/navigation", () => ({
   usePathname: () => pathnameMock(),
 }));
@@ -20,30 +18,29 @@ describe("BottomNav", () => {
     pathnameMock.mockReset();
   });
 
-  it("renders both tabs as links", () => {
+  it("renders all three Serbian tabs as links", () => {
     pathnameMock.mockReturnValue("/danas");
     render(<BottomNav />);
 
-    for (const label of ["AI", "Profil"]) {
+    for (const label of ["Početna", "Analitika", "Profil"]) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 
   it("marks the current route's tab with aria-current=page", () => {
-    pathnameMock.mockReturnValue("/danas");
+    pathnameMock.mockReturnValue("/analitika");
     render(<BottomNav />);
 
-    expect(screen.getByRole("link", { name: "AI" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Analitika" })).toHaveAttribute(
       "aria-current",
       "page"
     );
-    expect(screen.getByRole("link", { name: "Profil" })).not.toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Početna" })).not.toHaveAttribute(
       "aria-current"
     );
   });
 
-  it("treats nested routes as active (e.g. /profil/...)", () => {
+  it("treats nested routes as active (e.g. /analitika/...)", () => {
     pathnameMock.mockReturnValue("/profil/cilj");
     render(<BottomNav />);
 
@@ -62,7 +59,7 @@ describe("BottomNav", () => {
     // No nav tab owns an /dodaj route -> the lens fades out.
     expect(lens).toHaveStyle({ opacity: "0" });
     // And nothing is marked active.
-    for (const label of ["AI", "Profil"]) {
+    for (const label of ["Početna", "Analitika", "Profil"]) {
       expect(screen.getByRole("link", { name: label })).not.toHaveAttribute(
         "aria-current"
       );

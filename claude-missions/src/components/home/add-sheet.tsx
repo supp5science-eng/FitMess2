@@ -167,8 +167,9 @@ export function AddSheet() {
 
   return (
     <>
-      {/* Inline "+" trigger -- positioned by the floating nav bar
-          (`AppNavBar`) beside the tab pill, not self-positioned. */}
+      {/* "+" trigger -- since the two-tab redesign (2026-08-25) it floats
+          over the AI tab's content, positioned by `AppShell`, not
+          self-positioned. */}
       <button
         type="button"
         onClick={open}

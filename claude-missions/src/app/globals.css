@@ -69,36 +69,162 @@
 
 /*
  * ============================================================
- *  FitMess "Gravira" — plavo mastilo na svetlom, toplom papiru.
+ *  FitMess "Žar" — usijana crvena na ugašenom, toplom mraku.
  * ============================================================
  *
- * ONE theme. The old light/dark pair was retired (2026-08-24): the app is now
- * a single printed surface — a pale warm paper (`--paper`) carrying a vivid
- * ultramarine ink (`--ink` / `--ink-bright`), the duotone of an engraved
- * plate. There is no `.dark` block, no `fm_theme` cookie and no appearance
- * switch; `lib/theme/theme.ts` is gone. If you are tempted to add a second
- * palette, add a token to THIS one instead.
- *
- * The `.light` selector rides along with `:root` purely for backwards
- * compatibility: the marketing landing (`.lp light`) pins the palette on a
- * SUBTREE, and a handful of standalone surfaces do the same. Both selectors
- * resolve to the same one theme, so pinning is now a no-op that costs nothing.
+ * The total redesign (2026-08-25): the app is now a dark, romantic ember
+ * room — a near-black maroon ground (`--paper`) carrying warm rose-cream
+ * "ink" (`--ink`) and one vivid ember red (`--ink-bright` / `--primary`).
+ * Think a candle-lit room, an Instagram "love" chat theme, sparks and ash
+ * drifting through a Japanese temple at dusk. The token NAMES are unchanged
+ * from the Gravira plate on purpose: every component already speaks in
+ * paper/ink/primary, so retheming is a value swap, not a rewrite.
  *
  * Reading the palette:
- *   --paper / --paper-raised   the page ground and the raised card (white)
- *   --ink                      the deep ink every glyph and rule is drawn in
- *   --ink-bright               the vivid ultramarine of the reference plate;
- *                              this is `--primary` — buttons, ring, gauge
- *   macro / streak / chart-5   the ONLY warm marks, kept earthy (sage,
- *                              terracotta, ochre) so they read as a second
- *                              ink pass rather than as a different product
+ *   --paper / --paper-raised   the dark ground and the raised dark card
+ *   --ink                      warm rose-cream — every glyph and hairline
+ *   --ink-bright               the vivid ember red; this is `--primary` —
+ *                              buttons, ring, gauge, the AI orb
+ *   streak / chart-5           gold — the fire's own second colour
+ *   macros / marks             brightened for the dark ground, kept far
+ *                              apart in hue so tiles read at a glance
  *
- * The engraved character itself lives further down as utilities: `.fm-lift`
- * (a hard letterpress offset, not a soft drop shadow), `.app-aurora` (the
- * halftone stipple ground) and `.fm-halftone`.
+ * `.light` below is NOT this theme: it is the retired "Gravira" palette
+ * (blue ink on warm paper), kept alive verbatim for the subtrees that pin
+ * it — the public questionnaire (`/upitnik`, excluded from the redesign by
+ * decision 2026-08-25) and the marketing landing (`.lp light`). Everything
+ * that does not pin `.light` gets the ember room.
+ *
+ * The ambient character lives further down as utilities: `.fm-lift`,
+ * `.app-aurora` (halftone + ember bloom), `.fm-ember-orb` (the AI tab's
+ * living orb) and the `EmberField` canvas (JS, `components/shell`).
  */
-.light,
 :root {
+  /* --- The two inks of the ember room ------------------------------ */
+  --paper: #1d0806;
+  --paper-raised: #2a100b;
+  --ink: #ffe9dd;
+  --ink-bright: #ff5a3c;
+
+  /* --- Semantic surfaces ------------------------------------------- */
+  --background: #1d0806;
+  --foreground: #ffe9dd;
+  --card: #2a100b;
+  --card-foreground: #ffe9dd;
+  --popover: #31130d;
+  --popover-foreground: #ffe9dd;
+  /* The primary action is the ember itself — the single hottest thing on
+     any screen — with near-black maroon type so it reads as light, not paint. */
+  --primary: #ff5a3c;
+  --primary-foreground: #2a0a04;
+  --secondary: #3a1710;
+  --secondary-foreground: #ffe9dd;
+  --muted: #33140e;
+  --muted-foreground: #d9a08d;
+  --accent: #40190f;
+  --accent-foreground: #ffe9dd;
+  /* Danger must NOT be the primary's ember orange-red: destructive is a
+     cooler crimson-rose, clearly a different temperature. */
+  --destructive: #ff4d6d;
+  /* Hairlines are the light ink at low alpha — embers' glow on an edge,
+     never a grey. */
+  --border: color-mix(in srgb, #ffe9dd 18%, transparent);
+  --input: color-mix(in srgb, #ffe9dd 28%, transparent);
+  --ring: #ff5a3c;
+
+  /* --- Calorie gauge / ring ---------------------------------------- */
+  /* The centrepiece burns: pale hot at the start of the arc, deep coal at
+     the end. */
+  --gauge: #ff5a3c;
+  --gauge-grad-1: #ffb28f;
+  --gauge-grad-2: #ff5a3c;
+  --gauge-grad-3: #c1210e;
+  --gauge-track: color-mix(in srgb, #ffe9dd 13%, transparent);
+
+  /* --- Niz (streak) ------------------------------------------------- */
+  /* Gold — the fire's own second colour, so the streak still reads as its
+     own thing without leaving the room. */
+  --streak-1: #ffc25e;
+  --streak-2: #f2a33c;
+  --streak-3: #d97f1c;
+  --streak-accent: #ffb14a;
+  --streak-soft: color-mix(in srgb, #ffc25e 14%, transparent);
+  --streak-line: color-mix(in srgb, #ffb14a 55%, transparent);
+  --streak-glow: rgba(255, 177, 74, 0.28);
+
+  /* --- Charts ------------------------------------------------------- */
+  /* One ember ramp, hot → cooling, plus the gold over-target mark
+     (`--chart-5` stays never-destructive: zero-shame rule). */
+  --chart-1: #ff6a4d;
+  --chart-2: #d97862;
+  --chart-3: #aa6353;
+  --chart-4: #7d5048;
+  --chart-5: #ffb14a;
+
+  /* --- Macros ------------------------------------------------------- */
+  /* Three DISTINCT hues, brightened to hold 4.5:1 on the dark card:
+     mint-sage / warm coral / gold. */
+  --macro-protein: #63c08f;
+  --macro-fat: #f07a55;
+  --macro-carbs: #e3b74e;
+
+  /* --- Feature marks ------------------------------------------------ */
+  --mark-water: #57b6dd;
+  --mark-steps: #a58cf2;
+  --mark-fiber: #63c08f;
+  --mark-sugar: #ef6fa5;
+  --mark-sodium: #6fa9c9;
+  --mark-satfat: #e3b74e;
+
+  /* --- Brand -------------------------------------------------------- */
+  --brand: #ff5a3c;
+  /* "Mess" in the lockup: ember drifting through gold and back into coal —
+     the same fire as the rest of the room. */
+  --wordmark-grad: linear-gradient(
+    112deg,
+    #ff5a3c 0%,
+    #ff7a4d 24%,
+    #ffb14a 48%,
+    #ff6242 74%,
+    #c1210e 100%
+  );
+
+  --radius: 0.75rem;
+
+  /* --- Lift ---------------------------------------------------------
+     On the dark ground a card is lit from within the room: a hard dark
+     offset below (depth) — the light edge comes from `--border`. */
+  --fm-lift:
+    0 3px 0 -1px rgba(0, 0, 0, 0.55),
+    0 12px 20px -16px rgba(0, 0, 0, 0.9);
+
+  /* --- Ring "oblak" ------------------------------------------------- */
+  --cloud-top: rgba(255, 90, 60, 0.07);
+  --cloud-bloom: rgba(255, 90, 60, 0.15);
+  --cloud-sheen: rgba(255, 233, 221, 0.09);
+
+  /* --- Halftone ----------------------------------------------------- */
+  --halftone-dot: color-mix(in srgb, #ffcbb5 11%, transparent);
+  --halftone-size: 7px;
+
+  --sidebar: #240d08;
+  --sidebar-foreground: #ffe9dd;
+  --sidebar-primary: #ff5a3c;
+  --sidebar-primary-foreground: #2a0a04;
+  --sidebar-accent: #40190f;
+  --sidebar-accent-foreground: #ffe9dd;
+  --sidebar-border: color-mix(in srgb, #ffe9dd 18%, transparent);
+  --sidebar-ring: #ff5a3c;
+}
+
+/*
+ * "Gravira" — the retired blue-ink-on-warm-paper plate, verbatim.
+ * Pinned by subtree where the redesign does not reach: the public
+ * questionnaire (`/upitnik`) and the marketing landing (`.lp light`).
+ * Do not evolve this palette; it exists to keep those surfaces stable.
+ */
+.light {
+  color-scheme: light;
   /* --- The two printing inks ---------------------------------------
      The paper is a WHISPER of warmth, not a colour. It was a full cream
      (#f5e9cd) at first, straight off the reference plate, and it was wrong:
@@ -297,11 +423,11 @@
   }
   html {
     @apply font-sans;
-    /* ONE theme, and it is a light one. Pinned so the UA paints scrollbars,
-       form chrome and the overscroll gutter in the paper's world even on a
-       device whose system setting is dark -- there is no dark palette left
-       for it to fall back to. */
-    color-scheme: light;
+    /* ONE theme, and it is a dark one ("Žar"). Pinned so the UA paints
+       scrollbars, form chrome and the overscroll gutter in the ember room
+       even on a device whose system setting is light. The `.light`-pinned
+       subtrees (upitnik, landing) re-pin `color-scheme: light` themselves. */
+    color-scheme: dark;
     /* iOS: keep our own type scale (no auto text inflation on rotate) and
        drop the grey tap flash on every tap. */
     -webkit-text-size-adjust: 100%;
@@ -439,7 +565,7 @@
       180deg,
       rgba(255, 252, 240, 0.26) 0%,
       rgba(255, 252, 240, 0.04) 46%,
-      rgba(10, 9, 60, 0.16) 100%
+      rgba(48, 8, 3, 0.2) 100%
     ),
     linear-gradient(
       180deg,
@@ -449,11 +575,11 @@
     );
   box-shadow:
     inset 0 1.5px 0 0 rgba(255, 252, 240, 0.55),
-    inset 0 -4px 10px -4px rgba(8, 7, 52, 0.62),
-    0 2px 0 0 color-mix(in srgb, var(--ink) 35%, transparent),
-    /* The glow is what makes a control read as lit rather than printed. Ink,
-       not black: a grey shadow on warm paper reads as dirt. */
-    0 8px 18px -10px rgba(21, 19, 156, 0.75);
+    inset 0 -4px 10px -4px rgba(40, 6, 2, 0.62),
+    0 2px 0 0 rgba(0, 0, 0, 0.4),
+    /* The glow is what makes a control read as lit rather than painted — in
+       the ember room a primary button genuinely GLOWS red into the dark. */
+    0 8px 20px -8px rgba(255, 74, 40, 0.55);
 }
 .liquid-glass.bg-destructive {
   background-image:
@@ -461,9 +587,9 @@
       180deg,
       rgba(255, 252, 240, 0.24) 0%,
       rgba(255, 252, 240, 0.04) 46%,
-      rgba(48, 12, 4, 0.18) 100%
+      rgba(52, 4, 14, 0.2) 100%
     ),
-    linear-gradient(180deg, #c9502f 0%, var(--destructive) 55%, #8a2c14 100%);
+    linear-gradient(180deg, #ff7d97 0%, var(--destructive) 55%, #b01e3f 100%);
 }
 
 /* The sweep rides on the existing halftone pseudo, as one more background
@@ -962,12 +1088,23 @@ a[aria-disabled="true"]:active,
  * pressed cards.
  */
 .app-aurora {
-  background-image: radial-gradient(
-    circle,
-    var(--halftone-dot) 0.9px,
-    transparent 1.15px
-  );
-  background-size: var(--halftone-size) var(--halftone-size);
+  /* The dot screen rides on two ember washes — a warm glow bleeding in from
+     the top and a deeper coal-red pooling at the bottom, like light from a
+     fire just out of frame. Both sit under the same mask as the dots, so the
+     middle band (where content lives) stays quiet. */
+  background-image:
+    radial-gradient(circle, var(--halftone-dot) 0.9px, transparent 1.15px),
+    radial-gradient(
+      120% 52% at 50% 0%,
+      rgba(255, 90, 60, 0.13),
+      transparent 62%
+    ),
+    radial-gradient(
+      120% 52% at 50% 100%,
+      rgba(193, 33, 14, 0.17),
+      transparent 62%
+    );
+  background-size: var(--halftone-size) var(--halftone-size), 100% 100%, 100% 100%;
   -webkit-mask-image:
     radial-gradient(125% 62% at 50% 0%, #000 0%, transparent 66%),
     radial-gradient(125% 58% at 50% 100%, #000 0%, transparent 62%);
@@ -977,4 +1114,107 @@ a[aria-disabled="true"]:active,
     radial-gradient(125% 58% at 50% 100%, #000 0%, transparent 62%);
   mask-composite: add;
   opacity: 0.85;
+}
+
+/* ---------------------------------------------------------------------
+   Ember orb — the AI tab's living mark (2026-08-25). A small molten sphere:
+   a deep coal base, two blurred magma blobs slowly kneading inside it, a hot
+   core, and a soft red glow into the dark. Pure CSS on three spans (see
+   `components/shell/ember-orb.tsx`), so it costs no canvas and no JS.
+   Everything animates `transform`/`opacity` only. Under reduced motion the
+   blobs stand still — the orb still reads as an ember, it just doesn't burn.
+   ------------------------------------------------------------------- */
+.fm-ember-orb {
+  position: relative;
+  display: block;
+  border-radius: 9999px;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 120% at 30% 25%, #ff8a5c 0%, #e63b1f 38%, #7c1206 78%, #4a0a03 100%);
+  box-shadow:
+    inset 0 1px 2px rgba(255, 214, 179, 0.55),
+    inset 0 -2px 4px rgba(30, 3, 1, 0.8),
+    0 0 10px 1px rgba(255, 74, 40, 0.45);
+}
+.fm-ember-orb-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(3px);
+  will-change: transform;
+}
+.fm-ember-orb-blob-a {
+  inset: -18% 22% 30% -20%;
+  background: radial-gradient(circle at 40% 40%, rgba(255, 177, 116, 0.95), rgba(255, 90, 60, 0) 70%);
+  animation: fm-orb-drift-a 5.2s ease-in-out infinite alternate;
+}
+.fm-ember-orb-blob-b {
+  inset: 34% -22% -22% 28%;
+  background: radial-gradient(circle at 60% 60%, rgba(120, 12, 3, 0.9), rgba(120, 12, 3, 0) 70%);
+  animation: fm-orb-drift-b 6.4s ease-in-out infinite alternate;
+}
+.fm-ember-orb-core {
+  position: absolute;
+  inset: 26% 30% 34% 24%;
+  border-radius: 9999px;
+  filter: blur(2px);
+  background: radial-gradient(circle, rgba(255, 236, 214, 0.9), rgba(255, 154, 96, 0.35) 55%, transparent 75%);
+  animation: fm-orb-flicker 3.1s ease-in-out infinite;
+}
+@keyframes fm-orb-drift-a {
+  from {
+    transform: translate3d(-6%, 4%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(14%, 16%, 0) scale(1.25);
+  }
+}
+@keyframes fm-orb-drift-b {
+  from {
+    transform: translate3d(8%, -6%, 0) scale(1.1);
+  }
+  to {
+    transform: translate3d(-12%, -18%, 0) scale(0.9);
+  }
+}
+@keyframes fm-orb-flicker {
+  0%,
+  100% {
+    opacity: 0.75;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
+  }
+}
+/* The ACTIVE tab's orb burns brighter — the lens slides under it and the
+   ember answers. Keyed on aria-current from the nav link. */
+a[aria-current="page"] .fm-ember-orb {
+  box-shadow:
+    inset 0 1px 2px rgba(255, 214, 179, 0.65),
+    inset 0 -2px 4px rgba(30, 3, 1, 0.8),
+    0 0 14px 2px rgba(255, 84, 46, 0.7);
+}
+@media (prefers-reduced-motion: reduce) {
+  .fm-ember-orb-blob,
+  .fm-ember-orb-core {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Monogram — the Profil tab's mark: the user's initial on a warm ember
+   gradient disc (the iOS contact-poster reading). Falls back to a generic
+   glyph when no account is remembered on the device. -------------------- */
+.fm-monogram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(150deg, #ffb28f 0%, #e6532f 55%, #8f1a09 100%);
+  color: #2a0a04;
+  font-weight: 700;
+  box-shadow:
+    inset 0 1px 1.5px rgba(255, 233, 221, 0.6),
+    inset 0 -2px 4px rgba(30, 3, 1, 0.45);
 }

@@ -3,36 +3,50 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ChartColumnBig, Home, Settings } from "lucide-react";
+import type { ReactNode } from "react";
 
+import { EmberOrb } from "@/components/shell/ember-orb";
+import { ProfileBubble } from "@/components/shell/profile-bubble";
 import { useT } from "@/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
 
 /**
- * F005: bottom navigation. Three Serbian tabs; plain `next/link` anchors are
- * natively keyboard-reachable (Tab / Shift+Tab, activate with Enter).
+ * Bottom navigation, redesign 2026-08-25: TWO tabs.
  *
- * Rendered as a floating paper pill inside an ink hairline (see `AppNavBar`),
- * always visible over scrolling content. `liquid-glass` lays the halftone
- * overprint on the pill itself; on top of that a single **sliding lens** (the
- * `.nav-glass` element) travels from tab to tab as you switch sections — one
- * pressed cartouche that moves, rather than an icon that merely recolours.
+ *   1. AI     (`/danas` for now) — the living ember orb. This tab will become
+ *             the agent screen that absorbs Danas + Analitika; until that
+ *             lands it opens the existing home dashboard.
+ *   2. Profil (`/profil`)        — the user "as themselves": monogram today,
+ *             photo/avatar when we store one (see `ProfileBubble`).
  *
- * Positioning is measured (not percentage-guessed) so the lens sits exactly
- * over the active tab regardless of the pill's padding/gaps, and re-measures
- * on resize. The slide transition is enabled only AFTER the first measured
- * position (`ready`) so the lens never slides in from the left on load, and
- * it collapses to a plain fade under `prefers-reduced-motion`.
+ * Plain `next/link` anchors are natively keyboard-reachable. The pill keeps
+ * the sliding-lens mechanic from the previous design: one pressed cartouche
+ * (`.nav-glass`) travels from tab to tab. Positioning is measured (not
+ * percentage-guessed) so the lens sits exactly over the active tab, and
+ * re-measures on resize. The slide transition is enabled only AFTER the
+ * first measured position (`ready`) so the lens never slides in from the
+ * left on load, and it collapses to a plain fade under
+ * `prefers-reduced-motion`.
+ *
+ * The "+" (AddSheet) is no longer part of the nav bar: logging now lives as
+ * a floating action on the AI tab itself (see `AppShell`).
  */
 const NAV_ITEMS: {
   href: string;
   labelKey: MessageKey;
-  icon: typeof Home;
+  renderIcon: () => ReactNode;
 }[] = [
-  { href: "/danas", labelKey: "nav.home", icon: Home },
-  { href: "/analitika", labelKey: "nav.analytics", icon: ChartColumnBig },
-  { href: "/profil", labelKey: "nav.profile", icon: Settings },
+  {
+    href: "/danas",
+    labelKey: "nav.ai",
+    renderIcon: () => <EmberOrb className="size-6" />,
+  },
+  {
+    href: "/profil",
+    labelKey: "nav.profile",
+    renderIcon: () => <ProfileBubble className="size-6" />,
+  },
 ];
 
 /** True when the user asked for reduced motion (kept live via matchMedia). */
@@ -126,7 +140,7 @@ export function BottomNav() {
         }}
       />
 
-      {NAV_ITEMS.map(({ href, labelKey, icon: Icon }, index) => {
+      {NAV_ITEMS.map(({ href, labelKey, renderIcon }, index) => {
         const isActive = index === activeIndex;
 
         return (
@@ -145,10 +159,10 @@ export function BottomNav() {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Icon className="size-5" aria-hidden="true" />
-            {/* Short labels (longest is "Analitika") at 10px + tight tracking
-                stay well inside the rounded glass lens, including near its
-                curved lower edge, down to 375px. */}
+            {renderIcon()}
+            {/* Short labels ("AI" / "Profil") at 10px + tight tracking stay
+                well inside the rounded glass lens, including near its curved
+                lower edge, down to 375px. */}
             <span className="max-w-full whitespace-nowrap text-[10px] leading-none tracking-tight">
               {t(labelKey)}
             </span>

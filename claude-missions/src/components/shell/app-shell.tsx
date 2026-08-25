@@ -3,8 +3,10 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
+import { AddSheet } from "@/components/home/add-sheet";
 import { AppNavBar } from "@/components/shell/app-nav-bar";
 import { AppSplash } from "@/components/shell/app-splash";
+import { EmberField } from "@/components/shell/ember-field";
 import { AccountsSync } from "@/components/auth/accounts-sync";
 import { InstallNudge } from "@/components/pwa/install-nudge";
 import { PushTapListener } from "@/components/native/push-tap-listener";
@@ -132,10 +134,26 @@ export function AppShell({
           aria-hidden="true"
           className="app-aurora pointer-events-none absolute inset-0 -z-10"
         />
+        {/* Ambient ember field: sparks and ash drifting behind all content
+            (decorative canvas; renders nothing under reduced motion). */}
+        <EmberField />
         {/* Content scrolls inside this region only; the nav below keeps its own
-            space, so nothing ever hides behind it. */}
-        <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain">
-          {children}
+            space, so nothing ever hides behind it. The wrapper is the anchor
+            for the AI tab's floating "+" — positioned against the VIEWPORT
+            region, not the scrolling page, so it never scrolls away. */}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain">
+            {children}
+          </div>
+          {/* Logging entry, redesign 2026-08-25: the "+" left the nav bar (two
+              tabs only) and floats over the AI tab's content instead. Mounted
+              on /danas routes only — the same screen whose empty state opens
+              this sheet via `subscribeToAddSheetRequests`. */}
+          {pathname === "/danas" || pathname?.startsWith("/danas/") ? (
+            <div className="absolute bottom-5 right-5 z-30">
+              <AddSheet />
+            </div>
+          ) : null}
         </div>
         <AppNavBar />
       </div>

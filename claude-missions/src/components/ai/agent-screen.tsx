@@ -10,6 +10,7 @@ import {
 import { ArrowUp } from "lucide-react";
 
 import { AiOrb } from "@/components/ai/ai-orb";
+import { AiOrbCanvas } from "@/components/ai/ai-orb-canvas";
 import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
@@ -144,7 +145,7 @@ export function AgentScreen() {
       {isEmpty ? (
         /* The empty tab IS the orb: centrepiece, one line, three chips. */
         <div className="flex flex-1 flex-col items-center justify-center gap-7 px-8 pb-6">
-          <AiOrb hero className="size-44" />
+          <AiOrbCanvas className="size-48" />
           <div className="flex flex-col items-center gap-2 text-center">
             <h1 className="text-lg font-semibold text-foreground">
               {t("agent.title")}

@@ -239,7 +239,7 @@ export function AgentScreen({
                   key={index}
                   className="max-w-[80%] self-end rounded-full border border-border/70 px-4 py-2 text-sm font-medium text-muted-foreground"
                 >
-                  „{message.text}"
+                  „{message.text}“
                 </div>
               ) : (
                 <div key={index} className="flex flex-col gap-3.5">

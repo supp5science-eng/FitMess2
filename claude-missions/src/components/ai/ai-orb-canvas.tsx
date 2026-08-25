@@ -133,7 +133,9 @@ export function AiOrbCanvas({ className }: { className?: string }) {
         powerPreference: "low-power",
       });
     } catch {
-      setWebglFailed(true);
+      // Deferred a tick so the fallback swap is its own render pass rather
+      // than a synchronous setState inside the effect body.
+      queueMicrotask(() => setWebglFailed(true));
       return;
     }
     renderer.setClearColor(0x000000, 0);

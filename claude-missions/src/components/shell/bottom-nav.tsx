@@ -6,7 +6,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ChartColumnBig, Home, Settings } from "lucide-react";
 
-import { AiOrb } from "@/components/ai/ai-orb";
+import { AiOrbCanvas } from "@/components/ai/ai-orb-canvas";
 import { useT } from "@/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,11 @@ const NAV_ITEMS: {
   href: string;
   labelKey: MessageKey;
   renderIcon: () => ReactNode;
+  /** The AI tab shows no text under its mark: the LIVE orb (the same WebGL
+   * swirl as the AI screen's centrepiece, always turning) uses the freed
+   * space to render bigger and denser. The label survives as the link's
+   * aria-label, so the tab still reads "AI" to assistive tech. */
+  hideLabel?: boolean;
 }[] = [
   {
     href: "/danas",
@@ -47,7 +52,8 @@ const NAV_ITEMS: {
   {
     href: "/ai",
     labelKey: "nav.ai",
-    renderIcon: () => <AiOrb className="size-5" />,
+    renderIcon: () => <AiOrbCanvas className="size-8" />,
+    hideLabel: true,
   },
   {
     href: "/profil",
@@ -147,7 +153,7 @@ export function BottomNav() {
         }}
       />
 
-      {NAV_ITEMS.map(({ href, labelKey, renderIcon }, index) => {
+      {NAV_ITEMS.map(({ href, labelKey, renderIcon, hideLabel }, index) => {
         const isActive = index === activeIndex;
 
         return (
@@ -158,8 +164,9 @@ export function BottomNav() {
               itemRefs.current[index] = el;
             }}
             aria-current={isActive ? "page" : undefined}
+            aria-label={hideLabel ? t(labelKey) : undefined}
             className={cn(
-              "relative z-10 flex min-w-0 flex-1 flex-col items-center gap-1 rounded-full px-0.5 py-1 font-medium transition-colors",
+              "relative z-10 flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-0.5 py-1 font-medium transition-colors",
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
               isActive
                 ? "text-primary"
@@ -169,10 +176,13 @@ export function BottomNav() {
             {renderIcon()}
             {/* Short labels (longest is "Analitika") at 10px + tight tracking
                 stay well inside the rounded glass lens, including near its
-                curved lower edge, down to 375px. */}
-            <span className="max-w-full whitespace-nowrap text-[10px] leading-none tracking-tight">
-              {t(labelKey)}
-            </span>
+                curved lower edge, down to 375px. The AI tab renders no label:
+                its orb IS the label, at full size (see NAV_ITEMS). */}
+            {hideLabel ? null : (
+              <span className="max-w-full whitespace-nowrap text-[10px] leading-none tracking-tight">
+                {t(labelKey)}
+              </span>
+            )}
           </Link>
         );
       })}

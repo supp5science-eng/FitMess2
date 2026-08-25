@@ -175,9 +175,16 @@ export function AiOrbCanvas({ className }: { className?: string }) {
       material.uniforms.uTime!.value = (now - start) / 1000;
       renderer.render(scene, camera);
     }
+    // ~30fps cap: for a slow fluid the eye can't tell, and with the orb now
+    // living in the bottom nav (visible on EVERY screen, always turning) the
+    // halved GPU duty cycle is what keeps it battery-polite.
+    let lastFrame = 0;
     function loop(now: number) {
       if (!running) return;
-      renderFrame(now);
+      if (now - lastFrame >= 33) {
+        lastFrame = now;
+        renderFrame(now);
+      }
       raf = requestAnimationFrame(loop);
     }
     function startLoop() {

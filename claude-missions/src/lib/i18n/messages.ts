@@ -35,6 +35,19 @@ const sr = {
   "nav.analytics": "Analitika",
   "nav.profile": "Profil",
 
+  // FitMess agent (AI tab chat, faza 2 redizajna)
+  "agent.dock.cta": "Pitaj AI…",
+  "agent.title": "FitMess AI",
+  "agent.placeholder": "Pitaj bilo šta o svom danu…",
+  "agent.send": "Pošalji",
+  "agent.thinking": "Razmišlja…",
+  "agent.error": "Nešto je zapelo. Probaj ponovo.",
+  "agent.empty":
+    "Tu sam za tvoj dan: šta si jeo, koliko ti je ostalo, šta dalje.",
+  "agent.chip.today": "Kako stojim danas?",
+  "agent.chip.dinner": "Šta da pojedem za večeru?",
+  "agent.chip.protein": "Da li unosim dovoljno proteina?",
+
   // Settings (/profil)
   "settings.title": "Podešavanja",
   "settings.group.account": "Nalog",
@@ -128,6 +141,17 @@ const en: Record<MessageKey, string> = {
   "nav.home": "Home",
   "nav.analytics": "Analytics",
   "nav.profile": "Profile",
+
+  "agent.dock.cta": "Ask AI…",
+  "agent.title": "FitMess AI",
+  "agent.placeholder": "Ask anything about your day…",
+  "agent.send": "Send",
+  "agent.thinking": "Thinking…",
+  "agent.error": "Something broke. Try again.",
+  "agent.empty": "I'm here for your day: what you ate, what's left, what's next.",
+  "agent.chip.today": "How am I doing today?",
+  "agent.chip.dinner": "What should I eat for dinner?",
+  "agent.chip.protein": "Am I getting enough protein?",
 
   "settings.title": "Settings",
   "settings.group.account": "Account",

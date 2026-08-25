@@ -29,9 +29,9 @@ const GLOBALS_CSS_PATH = path.resolve(HERE, "globals.css");
 const LAYOUT_TSX_PATH = path.resolve(HERE, "layout.tsx");
 const SRC_DIR = path.resolve(HERE, "..");
 
-const PAPER_HEX = "#1d0806";
-const INK_HEX = "#ffe9dd";
-const ACCENT_HEX = "#ff5a3c";
+const PAPER_HEX = "#a82c1c";
+const INK_HEX = "#fff1ea";
+const ACCENT_HEX = "#ffb85c";
 
 // The retired Gravira plate, frozen under `.light`.
 const LEGACY_PAPER_HEX = "#fdf9f0";
@@ -66,7 +66,7 @@ describe("Žar theme: dark ember room, one hot accent", () => {
     // now: primary is the ember red, with dark type on it so it reads as
     // light, not paint.)
     expect(rootBlock).toMatch(new RegExp(`--primary:\\s*${ACCENT_HEX}`));
-    expect(rootBlock).toMatch(/--primary-foreground:\s*#2a0a04/);
+    expect(rootBlock).toMatch(/--primary-foreground:\s*#4a0d05/);
   });
 
   it("test_theme_same_accent_hue_is_reused_for_ring_and_sidebar_primary_not_a_second_color", () => {

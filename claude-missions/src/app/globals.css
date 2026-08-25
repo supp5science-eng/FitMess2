@@ -69,16 +69,18 @@
 
 /*
  * ============================================================
- *  FitMess "Žar" — usijana crvena na ugašenom, toplom mraku.
+ *  FitMess "Žar" — otvorena, usijana crvena; zlato kao vatra.
  * ============================================================
  *
- * The total redesign (2026-08-25): the app is now a dark, romantic ember
- * room — a near-black maroon ground (`--paper`) carrying warm rose-cream
- * "ink" (`--ink`) and one vivid ember red (`--ink-bright` / `--primary`).
- * Think a candle-lit room, an Instagram "love" chat theme, sparks and ash
- * drifting through a Japanese temple at dusk. The token NAMES are unchanged
- * from the Gravira plate on purpose: every component already speaks in
- * paper/ink/primary, so retheming is a value swap, not a rewrite.
+ * The total redesign (2026-08-25, v2 same day): the app is a saturated RED
+ * room — the vivid warm red of an iOS contact poster / IG "love" chat
+ * (`--paper`), deeper red cards laid on it, warm white "ink" (`--ink`) and
+ * one golden fire accent (`--ink-bright` / `--primary`). Sparks and ash
+ * drift through it like embers around a temple at dusk. The token NAMES are
+ * unchanged from the Gravira plate on purpose: every component already
+ * speaks in paper/ink/primary, so retheming is a value swap, not a rewrite.
+ * (v1 was a near-black maroon; the owner's verdict was "to je mrak, ja hoću
+ * crvenu" — hence the open red.)
  *
  * Reading the palette:
  *   --paper / --paper-raised   the dark ground and the raised dark card
@@ -100,121 +102,128 @@
  * living orb) and the `EmberField` canvas (JS, `components/shell`).
  */
 :root {
-  /* --- The two inks of the ember room ------------------------------ */
-  --paper: #1d0806;
-  --paper-raised: #2a100b;
-  --ink: #ffe9dd;
-  --ink-bright: #ff5a3c;
+  /* --- The two inks of the red room -------------------------------- */
+  /* v2 (owner feedback 2026-08-25): v1's near-black maroon read as "some
+     dark theme", not as RED. The ground is now the saturated warm red of
+     the reference (iOS contact-poster / IG love chat) and the cards are a
+     deeper red laid on it — red on red, told apart by depth, with warm
+     white type. */
+  --paper: #a82c1c;
+  --paper-raised: #8f1d10;
+  --ink: #fff1ea;
+  --ink-bright: #ffb85c;
 
   /* --- Semantic surfaces ------------------------------------------- */
-  --background: #1d0806;
-  --foreground: #ffe9dd;
-  --card: #2a100b;
-  --card-foreground: #ffe9dd;
-  --popover: #31130d;
-  --popover-foreground: #ffe9dd;
-  /* The primary action is the ember itself — the single hottest thing on
-     any screen — with near-black maroon type so it reads as light, not paint. */
-  --primary: #ff5a3c;
-  --primary-foreground: #2a0a04;
-  --secondary: #3a1710;
-  --secondary-foreground: #ffe9dd;
-  --muted: #33140e;
-  --muted-foreground: #d9a08d;
-  --accent: #40190f;
-  --accent-foreground: #ffe9dd;
-  /* Danger must NOT be the primary's ember orange-red: destructive is a
-     cooler crimson-rose, clearly a different temperature. */
+  --background: #a82c1c;
+  --foreground: #fff1ea;
+  --card: #8f1d10;
+  --card-foreground: #fff1ea;
+  --popover: #7c150b;
+  --popover-foreground: #fff1ea;
+  /* On an all-red ground a red accent disappears — the one hue that pops
+     everywhere here is the fire's GOLD (the reference's peach-gold
+     monogram discs). Primary is amber with deep maroon type. */
+  --primary: #ffb85c;
+  --primary-foreground: #4a0d05;
+  --secondary: #7c150b;
+  --secondary-foreground: #fff1ea;
+  --muted: #992414;
+  --muted-foreground: #ffcdbd;
+  --accent: #b53b26;
+  --accent-foreground: #fff1ea;
+  /* Danger must NOT be the room's red or the primary's gold: destructive
+     is a cooler crimson-rose, clearly a different temperature. */
   --destructive: #ff4d6d;
-  /* Hairlines are the light ink at low alpha — embers' glow on an edge,
+  /* Hairlines are the light ink at low alpha — a warm glow on an edge,
      never a grey. */
-  --border: color-mix(in srgb, #ffe9dd 18%, transparent);
-  --input: color-mix(in srgb, #ffe9dd 28%, transparent);
-  --ring: #ff5a3c;
+  --border: color-mix(in srgb, #ffd9c9 30%, transparent);
+  --input: color-mix(in srgb, #ffd9c9 42%, transparent);
+  --ring: #ffb85c;
 
   /* --- Calorie gauge / ring ---------------------------------------- */
-  /* The centrepiece burns: pale hot at the start of the arc, deep coal at
-     the end. */
-  --gauge: #ff5a3c;
-  --gauge-grad-1: #ffb28f;
-  --gauge-grad-2: #ff5a3c;
-  --gauge-grad-3: #c1210e;
-  --gauge-track: color-mix(in srgb, #ffe9dd 13%, transparent);
+  /* The centrepiece is molten gold on red: pale hot at the start of the
+     arc, deep ember at the end. */
+  --gauge: #ffb14a;
+  --gauge-grad-1: #ffe3b0;
+  --gauge-grad-2: #ffb14a;
+  --gauge-grad-3: #ff7a2e;
+  --gauge-track: color-mix(in srgb, #fff1ea 22%, transparent);
 
   /* --- Niz (streak) ------------------------------------------------- */
-  /* Gold — the fire's own second colour, so the streak still reads as its
-     own thing without leaving the room. */
+  /* Gold was the streak's own colour on both previous plates; here the
+     whole accent system is gold, and the streak simply belongs to it. */
   --streak-1: #ffc25e;
   --streak-2: #f2a33c;
-  --streak-3: #d97f1c;
-  --streak-accent: #ffb14a;
-  --streak-soft: color-mix(in srgb, #ffc25e 14%, transparent);
-  --streak-line: color-mix(in srgb, #ffb14a 55%, transparent);
-  --streak-glow: rgba(255, 177, 74, 0.28);
+  --streak-3: #e08a1f;
+  --streak-accent: #ffc25e;
+  --streak-soft: color-mix(in srgb, #ffc25e 18%, transparent);
+  --streak-line: color-mix(in srgb, #ffc25e 60%, transparent);
+  --streak-glow: rgba(255, 194, 94, 0.32);
 
   /* --- Charts ------------------------------------------------------- */
-  /* One ember ramp, hot → cooling, plus the gold over-target mark
-     (`--chart-5` stays never-destructive: zero-shame rule). */
-  --chart-1: #ff6a4d;
-  --chart-2: #d97862;
-  --chart-3: #aa6353;
-  --chart-4: #7d5048;
-  --chart-5: #ffb14a;
+  /* One warm light-on-red ramp, dense → faint, plus the white-hot
+     over-target mark (`--chart-5` stays never-destructive: zero-shame
+     rule). */
+  --chart-1: #ffdba6;
+  --chart-2: #f7b183;
+  --chart-3: #d98866;
+  --chart-4: #b0644d;
+  --chart-5: #fff1ea;
 
   /* --- Macros ------------------------------------------------------- */
-  /* Three DISTINCT hues, brightened to hold 4.5:1 on the dark card:
-     mint-sage / warm coral / gold. */
-  --macro-protein: #63c08f;
-  --macro-fat: #f07a55;
-  --macro-carbs: #e3b74e;
+  /* Three DISTINCT hues, light enough to hold contrast on the red card:
+     mint / peach-coral / gold. */
+  --macro-protein: #8fdcae;
+  --macro-fat: #ff9b73;
+  --macro-carbs: #ffd97a;
 
   /* --- Feature marks ------------------------------------------------ */
-  --mark-water: #57b6dd;
-  --mark-steps: #a58cf2;
-  --mark-fiber: #63c08f;
-  --mark-sugar: #ef6fa5;
-  --mark-sodium: #6fa9c9;
-  --mark-satfat: #e3b74e;
+  --mark-water: #8fd4f0;
+  --mark-steps: #cdb4ff;
+  --mark-fiber: #8fdcae;
+  --mark-sugar: #ffa6c5;
+  --mark-sodium: #a3cde3;
+  --mark-satfat: #ffd97a;
 
   /* --- Brand -------------------------------------------------------- */
-  --brand: #ff5a3c;
-  /* "Mess" in the lockup: ember drifting through gold and back into coal —
-     the same fire as the rest of the room. */
+  --brand: #ffb85c;
+  /* "Mess" in the lockup: white heat drifting through gold into ember —
+     the fire the whole room is lit by. */
   --wordmark-grad: linear-gradient(
     112deg,
-    #ff5a3c 0%,
-    #ff7a4d 24%,
-    #ffb14a 48%,
-    #ff6242 74%,
-    #c1210e 100%
+    #fff1ea 0%,
+    #ffd9a8 28%,
+    #ffb14a 55%,
+    #ff8a4d 80%,
+    #ffc25e 100%
   );
 
   --radius: 0.75rem;
 
   /* --- Lift ---------------------------------------------------------
-     On the dark ground a card is lit from within the room: a hard dark
-     offset below (depth) — the light edge comes from `--border`. */
+     A card on the red ground sits in its own deep-red shadow; the light
+     edge comes from `--border`. */
   --fm-lift:
-    0 3px 0 -1px rgba(0, 0, 0, 0.55),
-    0 12px 20px -16px rgba(0, 0, 0, 0.9);
+    0 3px 0 -1px rgba(60, 8, 3, 0.5),
+    0 12px 20px -16px rgba(40, 5, 2, 0.85);
 
   /* --- Ring "oblak" ------------------------------------------------- */
-  --cloud-top: rgba(255, 90, 60, 0.07);
-  --cloud-bloom: rgba(255, 90, 60, 0.15);
-  --cloud-sheen: rgba(255, 233, 221, 0.09);
+  --cloud-top: rgba(255, 220, 190, 0.07);
+  --cloud-bloom: rgba(255, 177, 74, 0.16);
+  --cloud-sheen: rgba(255, 241, 234, 0.12);
 
   /* --- Halftone ----------------------------------------------------- */
-  --halftone-dot: color-mix(in srgb, #ffcbb5 11%, transparent);
+  --halftone-dot: color-mix(in srgb, #ffd9c9 12%, transparent);
   --halftone-size: 7px;
 
-  --sidebar: #240d08;
-  --sidebar-foreground: #ffe9dd;
-  --sidebar-primary: #ff5a3c;
-  --sidebar-primary-foreground: #2a0a04;
-  --sidebar-accent: #40190f;
-  --sidebar-accent-foreground: #ffe9dd;
-  --sidebar-border: color-mix(in srgb, #ffe9dd 18%, transparent);
-  --sidebar-ring: #ff5a3c;
+  --sidebar: #8f1d10;
+  --sidebar-foreground: #fff1ea;
+  --sidebar-primary: #ffb85c;
+  --sidebar-primary-foreground: #4a0d05;
+  --sidebar-accent: #b53b26;
+  --sidebar-accent-foreground: #fff1ea;
+  --sidebar-border: color-mix(in srgb, #ffd9c9 30%, transparent);
+  --sidebar-ring: #ffb85c;
 }
 
 /*
@@ -482,42 +491,30 @@
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  /* A 3px dot screen at very low alpha (the overprint) sitting on a short
-     paper-light wash off the top edge. */
-  background-image:
-    radial-gradient(
-      circle,
-      rgba(255, 252, 240, 0.16) 0.5px,
-      transparent 0.9px
-    ),
-    linear-gradient(
-      to bottom,
-      rgba(255, 252, 240, 0.22) 0%,
-      rgba(255, 252, 240, 0.06) 34%,
-      rgba(255, 252, 240, 0) 62%
-    );
-  background-size: 3px 3px, 100% 100%;
+  /* v2 (2026-08-25): the halftone dot screen is GONE — on the red room it
+     read as grain/dirt on every control. What remains is the clean iOS-glass
+     reading of the reference: a soft light wash off the top edge, a light
+     inner top line, and a whisper of depth at the bottom. */
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 241, 234, 0.2) 0%,
+    rgba(255, 241, 234, 0.05) 38%,
+    rgba(255, 241, 234, 0) 64%
+  );
   box-shadow:
-    inset 0 1px 0 0 rgba(255, 252, 240, 0.3),
-    inset 0 0 0 1px rgba(28, 27, 143, 0.14),
-    inset 0 -10px 16px -16px rgba(21, 19, 156, 0.55);
+    inset 0 1px 0 0 rgba(255, 241, 234, 0.32),
+    inset 0 0 0 1px rgba(255, 217, 201, 0.16),
+    inset 0 -10px 16px -16px rgba(60, 8, 3, 0.5);
   transition: opacity 0.2s ease, background 0.2s ease;
 }
-/* Hover inks a touch heavier; press pulls the screen back like a lighter
-   impression. */
+/* Hover lights the wash a touch; press pulls it back. */
 .liquid-glass:hover::before {
-  background-image:
-    radial-gradient(
-      circle,
-      rgba(255, 252, 240, 0.22) 0.5px,
-      transparent 0.9px
-    ),
-    linear-gradient(
-      to bottom,
-      rgba(255, 252, 240, 0.3) 0%,
-      rgba(255, 252, 240, 0.09) 34%,
-      rgba(255, 252, 240, 0) 62%
-    );
+  background-image: linear-gradient(
+    to bottom,
+    rgba(255, 241, 234, 0.28) 0%,
+    rgba(255, 241, 234, 0.08) 38%,
+    rgba(255, 241, 234, 0) 64%
+  );
 }
 .liquid-glass:active::before {
   opacity: 0.8;
@@ -557,15 +554,15 @@
 
 .liquid-glass.bg-primary,
 .liquid-glass.bg-destructive {
-  /* The ultramarine ramp is not invented here: `--gauge-grad-*` is the plate's
-     own bright-to-deep range, already used by the calorie ring. A button and
-     the ring are then lit by the same three inks. */
+  /* The gold ramp is not invented here: `--gauge-grad-*` is the room's own
+     pale-hot-to-ember range, already used by the calorie ring. A button and
+     the ring are then lit by the same fire. */
   background-image:
     linear-gradient(
       180deg,
-      rgba(255, 252, 240, 0.26) 0%,
-      rgba(255, 252, 240, 0.04) 46%,
-      rgba(48, 8, 3, 0.2) 100%
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0.05) 46%,
+      rgba(120, 50, 5, 0.16) 100%
     ),
     linear-gradient(
       180deg,
@@ -574,12 +571,12 @@
       var(--gauge-grad-3) 100%
     );
   box-shadow:
-    inset 0 1.5px 0 0 rgba(255, 252, 240, 0.55),
-    inset 0 -4px 10px -4px rgba(40, 6, 2, 0.62),
-    0 2px 0 0 rgba(0, 0, 0, 0.4),
-    /* The glow is what makes a control read as lit rather than painted — in
-       the ember room a primary button genuinely GLOWS red into the dark. */
-    0 8px 20px -8px rgba(255, 74, 40, 0.55);
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.6),
+    inset 0 -4px 10px -4px rgba(140, 60, 5, 0.5),
+    0 2px 0 0 rgba(70, 10, 4, 0.45),
+    /* The glow is what makes a control read as lit rather than painted —
+       a primary button glows warm gold into the red. */
+    0 8px 20px -8px rgba(255, 177, 74, 0.6);
 }
 .liquid-glass.bg-destructive {
   background-image:
@@ -613,16 +610,15 @@
       rgba(255, 255, 255, 0.1) 38%,
       transparent 68%
     ),
-    radial-gradient(circle, rgba(255, 252, 240, 0.14) 0.5px, transparent 0.9px),
     linear-gradient(
       to bottom,
-      rgba(255, 252, 240, 0.18) 0%,
-      rgba(255, 252, 240, 0.05) 34%,
-      rgba(255, 252, 240, 0) 62%
+      rgba(255, 241, 234, 0.16) 0%,
+      rgba(255, 241, 234, 0.04) 34%,
+      rgba(255, 241, 234, 0) 62%
     );
-  background-size: 260% 100%, 100% 100%, 3px 3px, 100% 100%;
-  background-position: var(--fm-sweep) 0, 0 0, 0 0, 0 0;
-  background-repeat: no-repeat, no-repeat, repeat, no-repeat;
+  background-size: 260% 100%, 100% 100%, 100% 100%;
+  background-position: var(--fm-sweep) 0, 0 0, 0 0;
+  background-repeat: no-repeat, no-repeat, no-repeat;
   /* No duration at rest, on purpose: the sweep is animated only INTO the
      pressed state (below). Given a duration here it would also animate on
      release, i.e. slide back across the button in reverse — one press, two
@@ -651,14 +647,16 @@
   padding: 1.5px;
   pointer-events: none;
   opacity: 0;
+  /* v2: the rainbow dispersion is gone — in the red room the rim is WARM
+     light caught on the button's edge (white heat into gold), matching the
+     reference's clean red-on-red controls. */
   background: conic-gradient(
     from 0deg,
-    #ff5b8a,
-    #ffd166,
-    #7dffb4,
-    #66d9ff,
-    #8b7dff,
-    #ff5b8a
+    #fff1ea,
+    #ffd9a8,
+    #ffc25e,
+    #ffe3b0,
+    #fff1ea
   );
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
@@ -1096,12 +1094,12 @@ a[aria-disabled="true"]:active,
     radial-gradient(circle, var(--halftone-dot) 0.9px, transparent 1.15px),
     radial-gradient(
       120% 52% at 50% 0%,
-      rgba(255, 90, 60, 0.13),
+      rgba(255, 210, 150, 0.12),
       transparent 62%
     ),
     radial-gradient(
       120% 52% at 50% 100%,
-      rgba(193, 33, 14, 0.17),
+      rgba(90, 12, 4, 0.28),
       transparent 62%
     );
   background-size: var(--halftone-size) var(--halftone-size), 100% 100%, 100% 100%;
@@ -1211,10 +1209,11 @@ a[aria-current="page"] .fm-ember-orb {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: linear-gradient(150deg, #ffb28f 0%, #e6532f 55%, #8f1a09 100%);
-  color: #2a0a04;
+  /* The reference's peach-gold monogram disc, so it pops on the red. */
+  background: linear-gradient(150deg, #ffe3c2 0%, #ffb14a 55%, #f28a1f 100%);
+  color: #4a0d05;
   font-weight: 700;
   box-shadow:
-    inset 0 1px 1.5px rgba(255, 233, 221, 0.6),
-    inset 0 -2px 4px rgba(30, 3, 1, 0.45);
+    inset 0 1px 1.5px rgba(255, 248, 240, 0.7),
+    inset 0 -2px 4px rgba(120, 50, 5, 0.4);
 }

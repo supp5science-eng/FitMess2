@@ -132,9 +132,9 @@ export function EmberField() {
           const flicker =
             p.alpha * (0.72 + 0.28 * Math.sin(t * p.aux + p.swayPhase));
           const glow = ctx.createRadialGradient(x, p.y, 0, x, p.y, p.r * 4);
-          glow.addColorStop(0, `rgba(255, 178, 143, ${flicker})`);
-          glow.addColorStop(0.45, `rgba(255, 90, 60, ${flicker * 0.5})`);
-          glow.addColorStop(1, "rgba(255, 90, 60, 0)");
+          glow.addColorStop(0, `rgba(255, 232, 190, ${flicker})`);
+          glow.addColorStop(0.45, `rgba(255, 177, 74, ${flicker * 0.55})`);
+          glow.addColorStop(1, "rgba(255, 177, 74, 0)");
           ctx.fillStyle = glow;
           ctx.beginPath();
           ctx.arc(x, p.y, p.r * 4, 0, Math.PI * 2);
@@ -144,7 +144,7 @@ export function EmberField() {
           ctx.save();
           ctx.translate(x, p.y);
           ctx.rotate(t * p.aux + p.swayPhase);
-          ctx.fillStyle = `rgba(217, 160, 141, ${p.alpha})`;
+          ctx.fillStyle = `rgba(70, 10, 4, ${p.alpha * 1.6})`;
           ctx.beginPath();
           ctx.ellipse(0, 0, p.r * 1.6, p.r * 0.7, 0, 0, Math.PI * 2);
           ctx.fill();

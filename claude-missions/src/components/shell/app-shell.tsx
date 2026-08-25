@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
-import { AddSheet } from "@/components/home/add-sheet";
+import { AgentDock } from "@/components/ai/agent-dock";
 import { AppNavBar } from "@/components/shell/app-nav-bar";
 import { AppSplash } from "@/components/shell/app-splash";
 import { EmberField } from "@/components/shell/ember-field";
@@ -101,6 +101,8 @@ export function AppShell({
   introActive?: boolean;
 }) {
   const pathname = usePathname();
+  const isAgentTab =
+    pathname === "/danas" || Boolean(pathname?.startsWith("/danas/"));
 
   if (pathname !== null && isFullBleed(pathname)) {
     return <>{children}</>;
@@ -142,16 +144,24 @@ export function AppShell({
             for the AI tab's floating "+" — positioned against the VIEWPORT
             region, not the scrolling page, so it never scrolls away. */}
         <div className="relative flex min-h-0 flex-1 flex-col">
-          <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain">
+          <div
+            className={
+              "flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain" +
+              // The AI tab floats the agent dock over this region; the extra
+              // scroll padding lets the last card clear it.
+              (isAgentTab ? " pb-24" : "")
+            }
+          >
             {children}
           </div>
-          {/* Logging entry, redesign 2026-08-25: the "+" left the nav bar (two
-              tabs only) and floats over the AI tab's content instead. Mounted
-              on /danas routes only — the same screen whose empty state opens
-              this sheet via `subscribeToAddSheetRequests`. */}
-          {pathname === "/danas" || pathname?.startsWith("/danas/") ? (
-            <div className="absolute bottom-5 right-5 z-30">
-              <AddSheet />
+          {/* Agent dock, faza 2 (2026-08-25): the AI tab's two verbs — ask
+              (chat pill -> /api/ai/agent) and log (the "+" AddSheet, which
+              left the nav bar with the two-tab redesign) — floating over the
+              content. Mounted on /danas routes only — the same screen whose
+              empty state opens the sheet via `subscribeToAddSheetRequests`. */}
+          {isAgentTab ? (
+            <div className="pointer-events-none absolute inset-x-4 bottom-4 z-30">
+              <AgentDock />
             </div>
           ) : null}
         </div>

@@ -17,6 +17,7 @@
     "backfill:micro": "tsx scripts/backfill-food-micro.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
     "@base-ui/react": "^1.6.0",
     "@capacitor/android": "^8.5.0",
     "@capacitor/core": "^8.5.0",

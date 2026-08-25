@@ -4,6 +4,34 @@
 
 ---
 
+# 25.08.2026, veče — Prizmin mozak je od danas Claude Opus 5 ✅
+
+Korak 1 sa jučerašnje liste je urađen i **živo testiran** (vlasnik dao Anthropic
+ključ u sesiji; mreža ka `api.anthropic.com` je već bila otvorena).
+
+- **Novi modul `src/lib/ai/claude.ts`**: zvanični `@anthropic-ai/sdk`
+  (v0.120.0), model `claude-opus-5`, strukturirani izlaz kroz
+  `output_config.format` (JSON šema). Gemini ostaje za SVE ostalo (slike,
+  deklaracije, STT) — ovaj modul postoji samo za agentov turn.
+- **Ruta `/api/ai/agent` bira mozak po ključu**: `ANTHROPIC_API_KEY` postoji →
+  Claude; ne postoji → stari Gemini put, netaknut. Produkcija bez ključa radi
+  kao do sada; ključ se dodaje u produkcijski env kad vlasnik odluči.
+- **Dve šeme, jedan sudija**: `AGENT_RESPONSE_JSON_SCHEMA` (standardni JSON
+  Schema, za Claude) pored Gemini-jeve uppercase varijante; oba izlaza i dalje
+  prolaze kroz isti `agentModelReplySchema` (halucinirana akcija se tiho
+  odbaci). Test čuva da obe šeme nabrajaju tačno katalog akcija.
+- ⚠️ Naučeno uživo: `output_config.format.schema` **odbija `maxItems`**
+  (HTTP 400) — kapa od 3 akcije živi u promptu i zodu, ne u šemi.
+- **Živi test** (pravi sistemski prompt, 3 scenarija): srpski topao i tačan,
+  računa preostale makroe bez greške (58 g proteina = 140−82), za logovanje
+  nudi `prizma_unos` prvo. Latencija 5,7–9 s po turnu uz `effort: "medium"` —
+  doterivati uvom kad se čuje u appu (opcije: `effort: "low"`, streaming).
+- 🔜 I dalje čeka: **ElevenLabs** — `api.elevenlabs.io` je i dalje blokiran u
+  mrežnoj politici okruženja, a ključ treba ponovo dostaviti (stari je nestao
+  sa kontejnerom; ionako je bio plan da se rotira).
+
+---
+
 # 25.08.2026 — Prizma (Jarvis agent), AI tab, i dan velikog redizajna koji se vratio
 
 Jedan dug dan, tri poglavlja. Sve ispod je **na `main`** (vrh: `39dbb90`),

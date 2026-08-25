@@ -3,12 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { AGENT_ACTIONS } from "@/lib/ai/agent-actions";
 import {
+  AGENT_RESPONSE_JSON_SCHEMA,
   AGENT_RESPONSE_SCHEMA,
   agentModelReplySchema,
   agentRequestSchema,
   buildAgentSystemPrompt,
   type AgentFacts,
 } from "@/lib/ai/agent-chat";
+import { generateAgentTurnClaude, hasClaudeKey } from "@/lib/ai/claude";
 import { aiErrorSr, generateAgentTurn } from "@/lib/ai/gemini";
 import { chargeAiEstimate } from "@/lib/ai/quota";
 import { getCurrentUserId } from "@/lib/auth/current-user";
@@ -27,7 +29,8 @@ import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
  * server recomputes today's facts from stored data (same posture as
  * `/api/plan-korekcija` and `/api/merenje/poruka`: a client-supplied number
  * is a client-supplied story), injects them into the persona prompt and asks
- * Gemini for one reply.
+ * the model for one reply — Claude Opus 5 when `ANTHROPIC_API_KEY` is
+ * deployed, Gemini as the fallback brain.
  *
  * Quota: each turn charges one AI estimate (`chargeAiEstimate`) — counting
  * is live, enforcement follows the global `ENFORCE_AI_LIMIT` switch, so the
@@ -135,11 +138,17 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    const raw = await generateAgentTurn(
-      buildAgentSystemPrompt(facts),
-      turns,
-      AGENT_RESPONSE_SCHEMA
-    );
+    // Brain selection (2026-08-25): Claude Opus 5 when the key is deployed,
+    // Gemini otherwise — so environments without the key (and any emergency
+    // key-pull) degrade to the old brain instead of a dead AI tab.
+    const systemPrompt = buildAgentSystemPrompt(facts);
+    const raw = hasClaudeKey()
+      ? await generateAgentTurnClaude(
+          systemPrompt,
+          turns,
+          AGENT_RESPONSE_JSON_SCHEMA
+        )
+      : await generateAgentTurn(systemPrompt, turns, AGENT_RESPONSE_SCHEMA);
     const parsed = agentModelReplySchema.safeParse(JSON.parse(raw));
     if (!parsed.success) {
       throw new Error("agent reply did not match the expected shape");
@@ -156,7 +165,7 @@ export async function POST(request: NextRequest) {
       actions,
     });
   } catch (err) {
-    console.error("[/api/ai/agent] Gemini call failed:", err);
+    console.error("[/api/ai/agent] model call failed:", err);
     return NextResponse.json(
       {
         ok: false,

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import { AGENT_ACTION_IDS } from "@/lib/ai/agent-actions";
 import {
+  AGENT_RESPONSE_JSON_SCHEMA,
+  AGENT_RESPONSE_SCHEMA,
   agentModelReplySchema,
   agentRequestSchema,
   buildAgentSystemPrompt,
@@ -103,6 +106,22 @@ describe("agent model reply schema", () => {
     expect(agentModelReplySchema.safeParse({ reply: "  " }).success).toBe(
       false
     );
+  });
+});
+
+describe("model response schemas", () => {
+  it("both dialects allow exactly the catalog's action ids", () => {
+    expect(AGENT_RESPONSE_SCHEMA.properties.actions.items.enum).toEqual([
+      ...AGENT_ACTION_IDS,
+    ]);
+    expect(AGENT_RESPONSE_JSON_SCHEMA.properties.actions.items.enum).toEqual([
+      ...AGENT_ACTION_IDS,
+    ]);
+  });
+
+  it("the Claude schema is strict JSON Schema: closed object, reply required", () => {
+    expect(AGENT_RESPONSE_JSON_SCHEMA.additionalProperties).toBe(false);
+    expect(AGENT_RESPONSE_JSON_SCHEMA.required).toEqual(["reply"]);
   });
 });
 

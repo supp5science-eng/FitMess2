@@ -69,6 +69,26 @@ export const AGENT_RESPONSE_SCHEMA = {
   propertyOrdering: ["reply", "actions"],
 } as const;
 
+/** The same contract as standard JSON Schema, for Claude's
+ * `output_config.format` — one schema per dialect because Gemini's uppercase
+ * variant is not valid JSON Schema and Claude rejects it. Both feed the same
+ * `agentModelReplySchema` parse, which stays the single arbiter. */
+export const AGENT_RESPONSE_JSON_SCHEMA = {
+  type: "object",
+  properties: {
+    reply: { type: "string" },
+    actions: {
+      type: "array",
+      // No `maxItems`: the API rejects it inside `output_config.format`
+      // (400, verified live 2026-08-25). The three-card cap lives in the
+      // prompt and in `agentModelReplySchema`, same as on the Gemini side.
+      items: { type: "string", enum: [...AGENT_ACTION_IDS] },
+    },
+  },
+  required: ["reply"],
+  additionalProperties: false,
+} as const;
+
 /** Everything the route computed about the user's day, ready to phrase. */
 export interface AgentFacts {
   /** The user's first name (from `profiles.full_name`), for the personal

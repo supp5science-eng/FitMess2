@@ -100,40 +100,34 @@
 .light,
 :root {
   /* --- The two printing inks ---------------------------------------
-     The paper is a WHISPER of warmth, not a colour. It was a full cream
-     (#f5e9cd) at first, straight off the reference plate, and it was wrong:
-     that is yellow at ~67% saturation, and a phone screen fills whole
-     unbroken fields with it where the reference only ever shows it in the
-     gaps between dense blue linework. Large and flat, it stopped reading as
-     "warm paper" and started reading as "paper that has gone off". The hue is
-     unchanged; the saturation is a quarter of what it was and the lightness
-     is up, which is the whole difference between warm and dirty.
-
-     The raised surface is now plain white on purpose: it gives the
-     ultramarine the maximum contrast it can get, and it is what makes a card
-     read as a fresh sheet laid on the ground rather than another shade of the
-     same stain. */
-  --paper: #fdf9f0;
+     PURE white paper (owner's call, 2026-08-25): the warm cream ground
+     (#fdf9f0, and #f5e9cd before it) read as "žućkasto" on real screens, so
+     the paper is now #ffffff, full stop. Ground and raised card share the
+     same white; a card is told apart by its ink hairline and the letterpress
+     lift, the way a printed sheet actually works. Every once-warm tint
+     (secondary/muted/accent) is now white with a whisper of the INK mixed
+     in, so the only two colours on the plate remain white and ultramarine. */
+  --paper: #ffffff;
   --paper-raised: #ffffff;
   --ink: #1c1b8f;
   --ink-bright: #2f2ce6;
 
   /* --- Semantic surfaces ------------------------------------------- */
-  --background: #fdf9f0;
+  --background: #ffffff;
   --foreground: #1c1b8f;
   --card: #ffffff;
   --card-foreground: #1c1b8f;
   --popover: #ffffff;
   --popover-foreground: #1c1b8f;
-  /* The primary action is the plate's brightest ultramarine, on paper-white
+  /* The primary action is the plate's brightest ultramarine, on white
      type -- the single loudest thing on any screen. */
   --primary: #2f2ce6;
-  --primary-foreground: #fdf9f0;
-  --secondary: #f4eee1;
+  --primary-foreground: #ffffff;
+  --secondary: #f1f2f9;
   --secondary-foreground: #1c1b8f;
-  --muted: #f6f1e6;
+  --muted: #f4f5fa;
   --muted-foreground: #5654b4;
-  --accent: #f1ebdc;
+  --accent: #edeff8;
   --accent-foreground: #1c1b8f;
   /* Errors are a brick/terracotta, never a screen red: this palette has no
      pure red in it and a fire-engine one would look like a foreign object.
@@ -240,7 +234,7 @@
      sheen along the top edge. */
   --cloud-top: rgba(47, 44, 230, 0.05);
   --cloud-bloom: rgba(47, 44, 230, 0.11);
-  --cloud-sheen: rgba(255, 252, 240, 0.75);
+  --cloud-sheen: rgba(255, 255, 255, 0.75);
 
   /* --- Halftone -----------------------------------------------------
      The stipple that gives the ground its engraved texture. `--halftone-dot`
@@ -250,11 +244,11 @@
   --halftone-dot: color-mix(in srgb, #1c1b8f 16%, transparent);
   --halftone-size: 7px;
 
-  --sidebar: #faf5ea;
+  --sidebar: #f7f8fc;
   --sidebar-foreground: #1c1b8f;
   --sidebar-primary: #2f2ce6;
-  --sidebar-primary-foreground: #fdf9f0;
-  --sidebar-accent: #f1ebdc;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #edeff8;
   --sidebar-accent-foreground: #1c1b8f;
   --sidebar-border: color-mix(in srgb, #1c1b8f 20%, transparent);
   --sidebar-ring: #2f2ce6;
@@ -361,18 +355,18 @@
   background-image:
     radial-gradient(
       circle,
-      rgba(255, 252, 240, 0.16) 0.5px,
+      rgba(255, 255, 255, 0.16) 0.5px,
       transparent 0.9px
     ),
     linear-gradient(
       to bottom,
-      rgba(255, 252, 240, 0.22) 0%,
-      rgba(255, 252, 240, 0.06) 34%,
-      rgba(255, 252, 240, 0) 62%
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0.06) 34%,
+      rgba(255, 255, 255, 0) 62%
     );
   background-size: 3px 3px, 100% 100%;
   box-shadow:
-    inset 0 1px 0 0 rgba(255, 252, 240, 0.3),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.3),
     inset 0 0 0 1px rgba(28, 27, 143, 0.14),
     inset 0 -10px 16px -16px rgba(21, 19, 156, 0.55);
   transition: opacity 0.2s ease, background 0.2s ease;
@@ -383,14 +377,14 @@
   background-image:
     radial-gradient(
       circle,
-      rgba(255, 252, 240, 0.22) 0.5px,
+      rgba(255, 255, 255, 0.22) 0.5px,
       transparent 0.9px
     ),
     linear-gradient(
       to bottom,
-      rgba(255, 252, 240, 0.3) 0%,
-      rgba(255, 252, 240, 0.09) 34%,
-      rgba(255, 252, 240, 0) 62%
+      rgba(255, 255, 255, 0.3) 0%,
+      rgba(255, 255, 255, 0.09) 34%,
+      rgba(255, 255, 255, 0) 62%
     );
 }
 .liquid-glass:active::before {
@@ -437,8 +431,8 @@
   background-image:
     linear-gradient(
       180deg,
-      rgba(255, 252, 240, 0.26) 0%,
-      rgba(255, 252, 240, 0.04) 46%,
+      rgba(255, 255, 255, 0.26) 0%,
+      rgba(255, 255, 255, 0.04) 46%,
       rgba(10, 9, 60, 0.16) 100%
     ),
     linear-gradient(
@@ -448,7 +442,7 @@
       var(--gauge-grad-3) 100%
     );
   box-shadow:
-    inset 0 1.5px 0 0 rgba(255, 252, 240, 0.55),
+    inset 0 1.5px 0 0 rgba(255, 255, 255, 0.55),
     inset 0 -4px 10px -4px rgba(8, 7, 52, 0.62),
     0 2px 0 0 color-mix(in srgb, var(--ink) 35%, transparent),
     /* The glow is what makes a control read as lit rather than printed. Ink,
@@ -459,8 +453,8 @@
   background-image:
     linear-gradient(
       180deg,
-      rgba(255, 252, 240, 0.24) 0%,
-      rgba(255, 252, 240, 0.04) 46%,
+      rgba(255, 255, 255, 0.24) 0%,
+      rgba(255, 255, 255, 0.04) 46%,
       rgba(48, 12, 4, 0.18) 100%
     ),
     linear-gradient(180deg, #c9502f 0%, var(--destructive) 55%, #8a2c14 100%);
@@ -487,12 +481,12 @@
       rgba(255, 255, 255, 0.1) 38%,
       transparent 68%
     ),
-    radial-gradient(circle, rgba(255, 252, 240, 0.14) 0.5px, transparent 0.9px),
+    radial-gradient(circle, rgba(255, 255, 255, 0.14) 0.5px, transparent 0.9px),
     linear-gradient(
       to bottom,
-      rgba(255, 252, 240, 0.18) 0%,
-      rgba(255, 252, 240, 0.05) 34%,
-      rgba(255, 252, 240, 0) 62%
+      rgba(255, 255, 255, 0.18) 0%,
+      rgba(255, 255, 255, 0.05) 34%,
+      rgba(255, 255, 255, 0) 62%
     );
   background-size: 260% 100%, 100% 100%, 3px 3px, 100% 100%;
   background-position: var(--fm-sweep) 0, 0 0, 0 0, 0 0;

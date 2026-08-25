@@ -24,7 +24,7 @@ const GLOBALS_CSS_PATH = path.resolve(HERE, "globals.css");
 const LAYOUT_TSX_PATH = path.resolve(HERE, "layout.tsx");
 const SRC_DIR = path.resolve(HERE, "..");
 
-const PAPER_HEX = "#fdf9f0";
+const PAPER_HEX = "#ffffff";
 const INK_HEX = "#1c1b8f";
 const ACCENT_HEX = "#2f2ce6";
 
@@ -53,7 +53,7 @@ describe("Gravira theme: warm paper, ultramarine ink", () => {
 
   it("test_theme_primary_is_the_bright_ultramarine_on_paper", () => {
     expect(rootBlock).toMatch(new RegExp(`--primary:\\s*${ACCENT_HEX}`));
-    expect(rootBlock).toMatch(/--primary-foreground:\s*#fdf9f0/);
+    expect(rootBlock).toMatch(/--primary-foreground:\s*#ffffff/);
   });
 
   it("test_theme_same_accent_hue_is_reused_for_ring_and_sidebar_primary_not_a_second_color", () => {

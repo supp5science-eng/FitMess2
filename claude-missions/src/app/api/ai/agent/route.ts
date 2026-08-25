@@ -1,12 +1,15 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { AGENT_ACTIONS } from "@/lib/ai/agent-actions";
 import {
+  AGENT_RESPONSE_SCHEMA,
+  agentModelReplySchema,
   agentRequestSchema,
   buildAgentSystemPrompt,
   type AgentFacts,
 } from "@/lib/ai/agent-chat";
-import { aiErrorSr, generateChatText } from "@/lib/ai/gemini";
+import { aiErrorSr, generateAgentTurn } from "@/lib/ai/gemini";
 import { chargeAiEstimate } from "@/lib/ai/quota";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { toBelgradeCalendarDay } from "@/lib/dates";
@@ -82,11 +85,20 @@ export async function POST(request: NextRequest) {
 
   // ---- Today's facts, straight from storage ------------------------------
   const now = new Date();
-  const [profile, todayResult, waterResult] = await Promise.all([
+  const [profile, todayResult, waterResult, nameResult] = await Promise.all([
     getDanasProfile(userId),
     getTodayData(supabase, userId),
     getWaterWeek(supabase, userId, now).catch(() => null),
+    // The personal register: the first name from `profiles.full_name`.
+    // A failed read degrades to the impersonal tone, never to an error.
+    supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", userId)
+      .maybeSingle(),
   ]);
+  const firstName =
+    nameResult?.data?.full_name?.trim().split(/\s+/)[0] ?? null;
 
   const logs = todayResult.data?.logs ?? [];
   const target = todayResult.data?.target ?? null;
@@ -100,6 +112,7 @@ export async function POST(request: NextRequest) {
   }
 
   const facts: AgentFacts = {
+    name: firstName || null,
     day: toBelgradeCalendarDay(now),
     goal: target?.goal ?? null,
     targetKcal: target?.daily_kcal ?? null,
@@ -122,8 +135,26 @@ export async function POST(request: NextRequest) {
   };
 
   try {
-    const reply = await generateChatText(buildAgentSystemPrompt(facts), turns);
-    return NextResponse.json({ ok: true, reply: reply.trim() });
+    const raw = await generateAgentTurn(
+      buildAgentSystemPrompt(facts),
+      turns,
+      AGENT_RESPONSE_SCHEMA
+    );
+    const parsed = agentModelReplySchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) {
+      throw new Error("agent reply did not match the expected shape");
+    }
+    // Ids -> concrete cards. The catalog is the single source of hrefs; the
+    // client renders titles/descriptions from i18n by id.
+    const actions = parsed.data.actions.map((id) => ({
+      id,
+      href: AGENT_ACTIONS[id].href,
+    }));
+    return NextResponse.json({
+      ok: true,
+      reply: parsed.data.reply,
+      actions,
+    });
   } catch (err) {
     console.error("[/api/ai/agent] Gemini call failed:", err);
     return NextResponse.json(

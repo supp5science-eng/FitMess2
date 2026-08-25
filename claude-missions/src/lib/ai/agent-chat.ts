@@ -1,5 +1,9 @@
 import { z } from "zod";
 
+import {
+  AGENT_ACTION_IDS,
+  describeAgentActions,
+} from "@/lib/ai/agent-actions";
 import type { GoalType } from "@/lib/types/db";
 
 /**
@@ -30,8 +34,46 @@ export const agentRequestSchema = z.object({
 
 export type AgentTurn = z.infer<typeof agentTurnSchema>;
 
+/**
+ * What Prizma's turn comes back as: the spoken reply plus up to three action
+ * ids from the catalog. Zod re-validates what Gemini returned (the response
+ * schema constrains it, but the parse is the contract) and an unknown id is
+ * DROPPED rather than failing the turn — a hallucinated action costs a card,
+ * never the answer.
+ */
+export const agentModelReplySchema = z.object({
+  reply: z.string().trim().min(1),
+  actions: z
+    .array(z.string())
+    .max(3)
+    .optional()
+    .transform((ids) =>
+      (ids ?? []).filter((id): id is (typeof AGENT_ACTION_IDS)[number] =>
+        (AGENT_ACTION_IDS as readonly string[]).includes(id)
+      )
+    ),
+});
+
+/** Gemini response schema for one Prizma turn (uppercase types, per the
+ * estimator convention in `gric-estimate.ts` and friends). */
+export const AGENT_RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    reply: { type: "STRING" },
+    actions: {
+      type: "ARRAY",
+      items: { type: "STRING", enum: [...AGENT_ACTION_IDS] },
+    },
+  },
+  required: ["reply"],
+  propertyOrdering: ["reply", "actions"],
+} as const;
+
 /** Everything the route computed about the user's day, ready to phrase. */
 export interface AgentFacts {
+  /** The user's first name (from `profiles.full_name`), for the personal
+   * register — `null` when they never gave one. */
+  name: string | null;
   /** Belgrade calendar day ("2026-08-25"). */
   day: string;
   goal: GoalType | null;
@@ -67,6 +109,7 @@ const GOAL_SR: Record<GoalType, string> = {
  * answer "nemam taj podatak" instead of hallucinating one. */
 export function formatAgentFacts(facts: AgentFacts): string {
   const lines: string[] = [];
+  if (facts.name) lines.push(`Ime korisnika: ${facts.name}`);
   lines.push(`Datum: ${facts.day}`);
   lines.push(`Cilj: ${facts.goal ? GOAL_SR[facts.goal] : "nije postavljen"}`);
   if (facts.targetKcal && facts.targetKcal > 0) {
@@ -112,17 +155,29 @@ export function formatAgentFacts(facts: AgentFacts): string {
 }
 
 /**
- * The persona + rules + fact sheet. Zero-shame is a hard rule here for the
- * same reason `--chart-5` is never `--destructive`: going over target gets
- * framed as information, never as failure.
+ * The persona + rules + action catalog + fact sheet. Zero-shame is a hard
+ * rule here for the same reason `--chart-5` is never `--destructive`: going
+ * over target gets framed as information, never as failure.
  */
 export function buildAgentSystemPrompt(facts: AgentFacts): string {
-  return `Ti si FitMess AI — lični trener ishrane u aplikaciji FitMess. Pričaš na srpskom (ijekavicu i latinicu korisnika prati), toplo, direktno i bez osuđivanja ("zero-shame": preskočen obrok ili prekoračenje NIKAD nije "greh" ni razlog za grižu savesti — jedan dan ne ruši nedelju).
+  return `Ti si Prizma — lični AI trener u aplikaciji FitMess. Korisnik NE navigira aplikacijom: kaže tebi šta hoće, ti odgovoriš i DONESEŠ mu pravu stvar kao akciju. Pričaš na srpskom (pismo i ton korisnika prati), toplo, direktno i bez osuđivanja ("zero-shame": preskočen obrok ili prekoračenje NIKAD nije "greh" ni razlog za grižu savesti — jedan dan ne ruši nedelju).
+
+LIČNI TON:
+- Ako znaš ime, povremeno oslovi korisnika po imenu — prirodno, ne u svakoj poruci.
+- Vezuj odgovore za NJEGOVE brojeve i cilj ("ostalo ti je 650", "proteini ti kasne"), nikad generičke fraze koje bi važile svakome.
+
+AKCIJE:
+Odgovaraš u JSON-u: "reply" (tvoj tekst) + opciono "actions" (do 3 id-ja iz kataloga).
+- Kad korisnikova poruka TRAŽI radnju (da loguje obrok, vidi analitiku, upiše težinu...), ponudi odgovarajuće akcije — NIKAD ne objašnjavaj gde se šta klikće i ne pominji tabove.
+- Za logovanje pravog obroka nudi prizma_unos prvo (najtačnije), pa slikaj_obrok i gric kao alternative.
+- Kad je poruka samo pitanje/razgovor, "actions" izostavi ili ostavi prazno. Akcija je ponuda, ne obaveza.
+Katalog:
+${describeAgentActions()}
 
 PRAVILA:
-- Odgovaraj kratko: 2-5 rečenica, bez lista osim kad korisnik traži plan/predloge.
+- "reply" kratko: 2-5 rečenica, bez lista osim kad korisnik traži plan/predloge.
 - Brojevi ispod su IZVOR ISTINE. Ne izmišljaj i ne preračunavaj tuđe brojeve; svoje predloge (npr. šta pojesti) slobodno proceni okvirno i reci da je procena.
-- Ako podatak ne postoji u listi, reci iskreno da ga još nemaš i predloži gde se unosi u aplikaciji.
+- Ako podatak ne postoji u listi, reci iskreno da ga još nemaš i ponudi akciju kojom se unosi.
 - Nisi lekar: za zdravstvene tegobe, lekove ili dijagnoze uputi na lekara, kratko i bez drame.
 - Ostani na temama: ishrana, obroci, voda, kretanje, plan, navike, podaci korisnika. Za sve ostalo reci da si tu za ishranu i dan korisnika.
 - Ako korisnik piše na engleskom, odgovori na engleskom.

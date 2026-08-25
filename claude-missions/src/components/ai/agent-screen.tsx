@@ -5,45 +5,75 @@ import {
   useRef,
   useState,
   type FormEvent,
-  type ReactNode,
 } from "react";
-import { ArrowUp } from "lucide-react";
+import Link from "next/link";
+import {
+  ArrowUp,
+  Camera,
+  ChartColumnBig,
+  Dumbbell,
+  FileText,
+  Home,
+  Mic,
+  Scale,
+  Settings,
+  Target,
+  type LucideIcon,
+} from "lucide-react";
 
-import { AiOrb } from "@/components/ai/ai-orb";
 import { AiOrbCanvas } from "@/components/ai/ai-orb-canvas";
+import type { AgentActionId } from "@/lib/ai/agent-actions";
 import { useT } from "@/components/i18n/locale-provider";
+import type { MessageKey } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
 
 /**
- * FitMess agent — the whole AI tab (2026-08-25). Nothing but the chat:
+ * Prizma — the whole AI tab (Jarvis v1, 2026-08-25, per the design canvas).
  *
- * - While the thread is empty, the screen is the ORB — the watercolour
- *   sphere floating on the paper (`AiOrb`, the same mark as the tab icon) —
- *   with one line of copy and the quick-start chips under it.
- * - Once messages exist, the conversation takes the screen (user turns in
- *   ultramarine, the agent's on raised paper) and the orb retires until the
- *   thread is cleared.
- * - The input row is pinned to the bottom of the tab, above the nav.
+ * The grammar, in one breath: the ORB is the center of the world while
+ * Prizma waits (big, with a personal greeting built from live data); once a
+ * conversation runs, the orb rises to the top small and the exchange takes
+ * the screen — the user's line as a QUIET quote, Prizma's answer as LARGE
+ * text (no chat bubbles), and under it the ACTION CARDS she brings when the
+ * message asked for a deed ("hoću da logujem obrok" → Prizma unos / Slikaj /
+ * Gric). Tapping a card opens the existing flow; Prizma never explains where
+ * to tap.
  *
- * Each send POSTs the running conversation to `/api/ai/agent`, which
- * recomputes today's facts server-side (target, meals, water, profile) and
- * asks Gemini for one reply — the model talks about stored numbers, it
- * never invents them.
- *
- * The thread lives in `sessionStorage` (per app session, per device) —
- * long-term memory is a later phase; v1 keeps the thread across screen hops
- * but starts fresh tomorrow.
+ * Actions arrive from `/api/ai/agent` as catalog ids; all copy and icons
+ * resolve client-side from i18n + the icon map below, so the model cannot
+ * write a button. The thread lives in `sessionStorage` (fresh tomorrow);
+ * voice input (Faza C) and mutating actions with confirmation (v2) are
+ * deliberately not here yet.
  */
+
+interface AgentAction {
+  id: AgentActionId;
+  href: string;
+}
 
 interface AgentMessage {
   role: "user" | "model";
   text: string;
+  actions?: AgentAction[];
 }
 
-const STORAGE_KEY = "fm_agent_chat_v1";
-/** How many trailing turns each request carries (context window discipline —
- * the server recomputes facts anyway, the model only needs recent thread). */
+const STORAGE_KEY = "fm_agent_chat_v2";
+/** How many trailing turns each request carries (the server recomputes facts
+ * anyway, the model only needs recent thread). Actions are client-side only
+ * and are stripped before sending. */
 const SENT_TURNS = 12;
+
+const ACTION_ICONS: Record<AgentActionId, LucideIcon> = {
+  prizma_unos: Target,
+  slikaj_obrok: Camera,
+  gric: Mic,
+  deklaracija: FileText,
+  trening: Dumbbell,
+  danas: Home,
+  analitika: ChartColumnBig,
+  merenje: Scale,
+  podesavanja: Settings,
+};
 
 function readStoredMessages(): AgentMessage[] {
   if (typeof window === "undefined") return [];
@@ -73,7 +103,15 @@ function storeMessages(messages: AgentMessage[]): void {
   }
 }
 
-export function AgentScreen() {
+export function AgentScreen({
+  greeting,
+  contextLine,
+}: {
+  /** "Dobro jutro, Marko." — composed server-side from the profile. */
+  greeting: string;
+  /** "Do sada 1.250 kcal — ostalo ti je 650." or null when unknown. */
+  contextLine: string | null;
+}) {
   const { t } = useT();
   const [messages, setMessages] = useState<AgentMessage[]>(readStoredMessages);
   const [draft, setDraft] = useState("");
@@ -81,9 +119,8 @@ export function AgentScreen() {
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
-  const isEmpty = messages.length === 0 && !isSending;
+  const isIdle = messages.length === 0 && !isSending;
 
-  // New message / thinking state -> keep the newest line in view.
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, isSending]);
@@ -104,17 +141,29 @@ export function AgentScreen() {
       const response = await fetch("/api/ai/agent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ turns: outgoing.slice(-SENT_TURNS) }),
+        body: JSON.stringify({
+          turns: outgoing
+            .slice(-SENT_TURNS)
+            .map(({ role, text: turnText }) => ({ role, text: turnText })),
+        }),
       });
-      const payload: { ok?: boolean; reply?: string; error_sr?: string } =
-        await response.json().catch(() => ({}));
+      const payload: {
+        ok?: boolean;
+        reply?: string;
+        actions?: AgentAction[];
+        error_sr?: string;
+      } = await response.json().catch(() => ({}));
       if (!response.ok || !payload.ok || !payload.reply) {
         setError(payload.error_sr ?? t("agent.error"));
         return;
       }
       const complete: AgentMessage[] = [
         ...outgoing,
-        { role: "model", text: payload.reply },
+        {
+          role: "model",
+          text: payload.reply,
+          actions: payload.actions?.length ? payload.actions : undefined,
+        },
       ];
       setMessages(complete);
       storeMessages(complete);
@@ -142,26 +191,27 @@ export function AgentScreen() {
       data-testid="agent-screen"
       aria-label={t("agent.title")}
     >
-      {isEmpty ? (
-        /* The empty tab IS the orb: centrepiece, one line, three chips. */
+      {isIdle ? (
+        /* MIR: the orb is the screen — greeting from live data, three quiet
+           hints. */
         <div className="flex flex-1 flex-col items-center justify-center gap-7 px-8 pb-6">
           <AiOrbCanvas className="size-48" />
-          <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-lg font-semibold text-foreground">
-              {t("agent.title")}
+          <div className="flex flex-col items-center gap-2.5 text-center">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+              {greeting}
             </h1>
-            <p className="max-w-[26ch] text-sm text-muted-foreground">
-              {t("agent.empty")}
+            <p className="max-w-[30ch] text-[15px] leading-relaxed text-muted-foreground">
+              {contextLine ?? t("agent.empty")}
             </p>
           </div>
-          <div className="flex flex-col items-stretch gap-2">
+          <div className="flex flex-wrap justify-center gap-2">
             {chips.map((chip) => (
               <button
                 key={chip.key}
                 type="button"
                 data-testid={`agent-chip-${chip.key}`}
                 onClick={() => void send(chip.label)}
-                className="rounded-full border border-border bg-card px-4 py-2.5 text-sm font-medium text-foreground fm-lift hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="rounded-full border border-border bg-card px-3.5 py-2.5 text-[13px] font-medium text-foreground fm-lift hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 {chip.label}
               </button>
@@ -174,34 +224,57 @@ export function AgentScreen() {
           ) : null}
         </div>
       ) : (
-        /* Conversation view: a small orb keeps watch in the header row. */
-        <div
-          ref={scrollRef}
-          className="flex flex-1 flex-col gap-3 overflow-y-auto overscroll-y-contain px-5 py-5"
-        >
-          {messages.map((message, index) => (
-            <MessageBubble key={index} role={message.role}>
-              {message.text}
-            </MessageBubble>
-          ))}
-          {isSending ? (
-            <div className="flex items-end gap-2 self-start">
-              <AiOrb className="size-7 shrink-0" />
-              <MessageBubble role="model">
-                <span className="animate-pulse">{t("agent.thinking")}</span>
-              </MessageBubble>
-            </div>
-          ) : null}
-          {error ? (
-            <p className="text-sm text-destructive" data-testid="agent-error">
-              {error}
-            </p>
-          ) : null}
-        </div>
+        /* RAZGOVOR: the orb rises small; the exchange takes the screen. */
+        <>
+          <div className="flex shrink-0 justify-center pt-4 pb-1">
+            <AiOrbCanvas className="size-16" />
+          </div>
+          <div
+            ref={scrollRef}
+            className="flex flex-1 flex-col gap-5 overflow-y-auto overscroll-y-contain px-7 py-4"
+          >
+            {messages.map((message, index) =>
+              message.role === "user" ? (
+                <div
+                  key={index}
+                  className="max-w-[80%] self-end rounded-full border border-border/70 px-4 py-2 text-sm font-medium text-muted-foreground"
+                >
+                  „{message.text}"
+                </div>
+              ) : (
+                <div key={index} className="flex flex-col gap-3.5">
+                  <p className="whitespace-pre-wrap text-[22px] font-semibold leading-snug tracking-tight text-foreground">
+                    {message.text}
+                  </p>
+                  {message.actions?.length ? (
+                    <div className="flex flex-col gap-2.5">
+                      {message.actions.map((action, actionIndex) => (
+                        <ActionCard
+                          key={action.id}
+                          action={action}
+                          highlighted={actionIndex === 0}
+                        />
+                      ))}
+                    </div>
+                  ) : null}
+                </div>
+              )
+            )}
+            {isSending ? (
+              <p className="animate-pulse text-[22px] font-semibold leading-snug tracking-tight text-muted-foreground">
+                {t("agent.thinking")}
+              </p>
+            ) : null}
+            {error ? (
+              <p className="text-sm text-destructive" data-testid="agent-error">
+                {error}
+              </p>
+            ) : null}
+          </div>
+        </>
       )}
 
-      {/* Input row, pinned to the tab's bottom edge (the nav sits below in
-          the shell's own row, so nothing ever overlaps). */}
+      {/* Input row, pinned above the nav. Voice (mikrofon) lands in Faza C. */}
       <form
         onSubmit={onSubmit}
         className="flex shrink-0 items-center gap-2.5 border-t border-border/70 bg-background px-5 py-3.5"
@@ -232,24 +305,56 @@ export function AgentScreen() {
   );
 }
 
-function MessageBubble({
-  role,
-  children,
+/** One brought-flow card: icon, i18n copy, chevron-free (the whole card is
+ * the tap). The first card in a group is the recommendation and carries the
+ * accent treatment (and, for Prizma unos, its badge). */
+function ActionCard({
+  action,
+  highlighted,
 }: {
-  role: "user" | "model";
-  children: ReactNode;
+  action: AgentAction;
+  highlighted: boolean;
 }) {
-  const isUser = role === "user";
+  const { t } = useT();
+  const Icon = ACTION_ICONS[action.id];
+  const badge =
+    action.id === "prizma_unos" ? t("agent.action.prizma_unos.badge") : null;
+
   return (
-    <div
+    <Link
+      href={action.href}
+      data-testid={`agent-action-${action.id}`}
       className={cn(
-        "max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed",
-        isUser
-          ? "self-end rounded-br-md bg-primary text-primary-foreground"
-          : "self-start rounded-bl-md border border-border bg-card text-foreground fm-lift"
+        "flex items-center gap-3.5 rounded-xl border p-4 text-left transition-colors fm-lift",
+        "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+        highlighted
+          ? "border-primary/60 bg-primary/[0.08]"
+          : "border-border bg-card hover:bg-muted"
       )}
     >
-      {children}
-    </div>
+      <span
+        className={cn(
+          "flex size-11 shrink-0 items-center justify-center rounded-lg",
+          highlighted
+            ? "liquid-glass bg-primary text-primary-foreground"
+            : "border border-border text-foreground"
+        )}
+      >
+        <Icon className="size-5" aria-hidden="true" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-[15px] font-bold text-foreground">
+          {t(`agent.action.${action.id}.title` as MessageKey)}
+        </span>
+        <span className="truncate text-[13px] text-muted-foreground">
+          {t(`agent.action.${action.id}.desc` as MessageKey)}
+        </span>
+      </span>
+      {badge && highlighted ? (
+        <span className="shrink-0 rounded-full border border-primary/50 bg-primary/15 px-2 py-1 text-[10px] font-bold tracking-wide text-primary">
+          {badge}
+        </span>
+      ) : null}
+    </Link>
   );
 }

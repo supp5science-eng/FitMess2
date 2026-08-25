@@ -494,6 +494,37 @@ export async function generateChatText(
   });
 }
 
+/**
+ * One Prizma agent turn (2026-08-25): the same multi-turn chat shape as
+ * `generateChatText`, but constrained to a JSON response schema — the reply
+ * text plus the action ids the agent wants to offer. Kept separate from the
+ * free-prose chat so neither caller has to carry the other's config.
+ * NEVER import this from a client component -- it reads `GEMINI_API_KEY`.
+ */
+export async function generateAgentTurn(
+  systemPrompt: string,
+  turns: ChatTurn[],
+  responseSchema: unknown
+): Promise<string> {
+  return postGenerateContent({
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: turns.map((turn) => ({
+      role: turn.role,
+      parts: [{ text: turn.text }],
+    })),
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema,
+      temperature: 0.6,
+      maxOutputTokens: 1000,
+      topP: 0.95,
+      // Same reasoning as the chat: the numbers are settled before the call,
+      // the job is picking words (and up to three action ids).
+      ...thinkingConfig("low"),
+    },
+  });
+}
+
 function parseJson(text: string): unknown {
   try {
     return JSON.parse(text);

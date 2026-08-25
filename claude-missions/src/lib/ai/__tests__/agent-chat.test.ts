@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  agentModelReplySchema,
   agentRequestSchema,
   buildAgentSystemPrompt,
   formatAgentFacts,
@@ -9,6 +10,7 @@ import {
 
 function makeFacts(overrides: Partial<AgentFacts> = {}): AgentFacts {
   return {
+    name: "Marko",
     day: "2026-08-25",
     goal: "lose",
     targetKcal: 1900,
@@ -56,13 +58,51 @@ describe("agent facts sheet", () => {
     expect(sheet).not.toContain("Voda danas");
   });
 
-  it("system prompt carries the zero-shame rule and the fact sheet", () => {
+  it("system prompt carries the Prizma persona, the action catalog and the zero-shame rule", () => {
     const prompt = buildAgentSystemPrompt(makeFacts());
+    expect(prompt).toContain("Ti si Prizma");
     expect(prompt).toContain("zero-shame");
     expect(prompt).toContain("IZVOR ISTINE");
     expect(prompt).toContain("Dnevni cilj: 1900 kcal");
+    expect(prompt).toContain("Ime korisnika: Marko");
+    // The action catalog rides in the prompt, ids included.
+    expect(prompt).toContain("prizma_unos");
+    expect(prompt).toContain("analitika");
     // Not a doctor -- the health hand-off must be in the standing rules.
     expect(prompt).toContain("Nisi lekar");
+  });
+});
+
+describe("agent model reply schema", () => {
+  it("accepts a reply with known action ids", () => {
+    const parsed = agentModelReplySchema.safeParse({
+      reply: "Može — otvaram Prizmu.",
+      actions: ["prizma_unos", "gric"],
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.actions).toEqual(["prizma_unos", "gric"]);
+    }
+  });
+
+  it("drops hallucinated action ids instead of failing the turn", () => {
+    const parsed = agentModelReplySchema.safeParse({
+      reply: "Evo.",
+      actions: ["prizma_unos", "otvori_bitcoin_kazino"],
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.actions).toEqual(["prizma_unos"]);
+    }
+  });
+
+  it("treats absent actions as an empty list and rejects an empty reply", () => {
+    const parsed = agentModelReplySchema.safeParse({ reply: "Zdravo!" });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) expect(parsed.data.actions).toEqual([]);
+    expect(agentModelReplySchema.safeParse({ reply: "  " }).success).toBe(
+      false
+    );
   });
 });
 

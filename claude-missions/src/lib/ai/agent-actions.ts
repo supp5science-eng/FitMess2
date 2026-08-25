@@ -46,7 +46,7 @@ export const AGENT_ACTIONS: Record<AgentActionId, AgentActionDef> = {
     titleKey: "agent.action.prizma_unos.title",
     descKey: "agent.action.prizma_unos.desc",
     promptHint:
-      "najtačniji unos obroka (dve fotke + pitanja) — prva ponuda kad korisnik hoće da loguje pravi obrok",
+      "FM 2.7 — najtačniji unos obroka (dve fotke + pitanja); prva ponuda kad korisnik hoće da loguje pravi obrok (i kad kaže 'otvori FM 2.7')",
   },
   slikaj_obrok: {
     id: "slikaj_obrok",

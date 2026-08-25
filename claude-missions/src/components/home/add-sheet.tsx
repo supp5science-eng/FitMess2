@@ -70,7 +70,10 @@ function buildOptions(t: TFunction): AddSheetOption[] {
     // leads the menu and carries a teal "NAJTAČNIJE" badge to draw people to it.
     {
       key: "najtacnije",
-      label: "Prizma",
+      // Renamed from "Prizma" (2026-08-25): "Prizma" is now the AI agent's
+      // name, and one product can't have two Prizmas. The flow itself is
+      // unchanged.
+      label: "FM 2.7",
       icon: Target,
       href: "/dodaj/najtacnije",
       // Says what you GET, not how it works -- the guided two-angle mechanic is

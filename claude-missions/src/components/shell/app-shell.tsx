@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
-import { AgentDock } from "@/components/ai/agent-dock";
 import { AppNavBar } from "@/components/shell/app-nav-bar";
 import { AppSplash } from "@/components/shell/app-splash";
 import { AccountsSync } from "@/components/auth/accounts-sync";
@@ -100,8 +99,6 @@ export function AppShell({
   introActive?: boolean;
 }) {
   const pathname = usePathname();
-  const isAgentRoute =
-    pathname === "/danas" || Boolean(pathname?.startsWith("/danas/"));
 
   if (pathname !== null && isFullBleed(pathname)) {
     return <>{children}</>;
@@ -136,27 +133,9 @@ export function AppShell({
           className="app-aurora pointer-events-none absolute inset-0 -z-10"
         />
         {/* Content scrolls inside this region only; the nav below keeps its own
-            space, so nothing ever hides behind it. The relative wrapper anchors
-            the agent chat pill, which floats over the VIEWPORT region (not the
-            scrolling page), so it never scrolls away. */}
-        <div className="relative flex min-h-0 flex-1 flex-col">
-          <div
-            className={
-              "flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain" +
-              // The dock floats over this region on /danas; the extra scroll
-              // padding lets the last card clear it.
-              (isAgentRoute ? " pb-20" : "")
-            }
-          >
-            {children}
-          </div>
-          {/* FitMess agent (2026-08-25): the chat pill lives on the home
-              screen only — the one screen whose data the agent talks about. */}
-          {isAgentRoute ? (
-            <div className="pointer-events-none absolute inset-x-5 bottom-4 z-30">
-              <AgentDock />
-            </div>
-          ) : null}
+            space, so nothing ever hides behind it. */}
+        <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain">
+          {children}
         </div>
         <AppNavBar />
       </div>

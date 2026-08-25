@@ -3,15 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { ChartColumnBig, Home, Settings } from "lucide-react";
 
+import { AiOrb } from "@/components/ai/ai-orb";
 import { useT } from "@/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
 
 /**
- * F005: bottom navigation. Three Serbian tabs; plain `next/link` anchors are
- * natively keyboard-reachable (Tab / Shift+Tab, activate with Enter).
+ * F005: bottom navigation. Four Serbian tabs (the AI tab joined 2026-08-25,
+ * marked by its watercolour orb rather than a lucide glyph); plain
+ * `next/link` anchors are natively keyboard-reachable (Tab / Shift+Tab,
+ * activate with Enter).
  *
  * Rendered as a floating paper pill inside an ink hairline (see `AppNavBar`),
  * always visible over scrolling content. `liquid-glass` lays the halftone
@@ -28,11 +32,28 @@ import { cn } from "@/lib/utils";
 const NAV_ITEMS: {
   href: string;
   labelKey: MessageKey;
-  icon: typeof Home;
+  renderIcon: () => ReactNode;
 }[] = [
-  { href: "/danas", labelKey: "nav.home", icon: Home },
-  { href: "/analitika", labelKey: "nav.analytics", icon: ChartColumnBig },
-  { href: "/profil", labelKey: "nav.profile", icon: Settings },
+  {
+    href: "/danas",
+    labelKey: "nav.home",
+    renderIcon: () => <Home className="size-5" aria-hidden="true" />,
+  },
+  {
+    href: "/analitika",
+    labelKey: "nav.analytics",
+    renderIcon: () => <ChartColumnBig className="size-5" aria-hidden="true" />,
+  },
+  {
+    href: "/ai",
+    labelKey: "nav.ai",
+    renderIcon: () => <AiOrb className="size-5" />,
+  },
+  {
+    href: "/profil",
+    labelKey: "nav.profile",
+    renderIcon: () => <Settings className="size-5" aria-hidden="true" />,
+  },
 ];
 
 /** True when the user asked for reduced motion (kept live via matchMedia). */
@@ -126,7 +147,7 @@ export function BottomNav() {
         }}
       />
 
-      {NAV_ITEMS.map(({ href, labelKey, icon: Icon }, index) => {
+      {NAV_ITEMS.map(({ href, labelKey, renderIcon }, index) => {
         const isActive = index === activeIndex;
 
         return (
@@ -145,7 +166,7 @@ export function BottomNav() {
                 : "text-muted-foreground hover:text-foreground"
             )}
           >
-            <Icon className="size-5" aria-hidden="true" />
+            {renderIcon()}
             {/* Short labels (longest is "Analitika") at 10px + tight tracking
                 stay well inside the rounded glass lens, including near its
                 curved lower edge, down to 375px. */}

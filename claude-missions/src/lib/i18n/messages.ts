@@ -30,6 +30,7 @@ const sr = {
   // Bottom navigation
   "nav.home": "Početna",
   "nav.analytics": "Analitika",
+  "nav.ai": "AI",
   "nav.profile": "Profil",
 
   // FitMess agent (AI chat na /danas)
@@ -136,6 +137,7 @@ export type MessageKey = keyof typeof sr;
 const en: Record<MessageKey, string> = {
   "nav.home": "Home",
   "nav.analytics": "Analytics",
+  "nav.ai": "AI",
   "nav.profile": "Profile",
 
   "agent.dock.cta": "Ask AI…",

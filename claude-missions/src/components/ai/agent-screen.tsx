@@ -25,6 +25,7 @@ import {
 
 import { transcribeVoiceAction } from "@/app/(app)/ai/actions";
 import { AiOrbCanvas, type AiOrbMode } from "@/components/ai/ai-orb-canvas";
+import { prizmaFont } from "@/components/ai/prizma-font";
 import type { AgentActionId } from "@/lib/ai/agent-actions";
 import { useT } from "@/components/i18n/locale-provider";
 import { playTtsBlob, type TtsPlayback } from "@/lib/audio/play-tts";
@@ -345,10 +346,20 @@ export function AgentScreen({
         <div className="flex flex-1 flex-col items-center justify-center gap-7 px-8 pb-6">
           <AiOrbCanvas className="size-48" mode={orbMode} getLevel={getLevel} />
           <div className="flex flex-col items-center gap-2.5 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1
+              className={cn(
+                prizmaFont.className,
+                "text-2xl font-bold tracking-tight text-foreground"
+              )}
+            >
               {greeting}
             </h1>
-            <p className="max-w-[30ch] text-[15px] leading-relaxed text-muted-foreground">
+            <p
+              className={cn(
+                prizmaFont.className,
+                "max-w-[30ch] text-[15px] leading-relaxed text-muted-foreground"
+              )}
+            >
               {contextLine ?? t("agent.empty")}
             </p>
           </div>
@@ -391,7 +402,12 @@ export function AgentScreen({
                 </div>
               ) : (
                 <div key={index} className="flex flex-col gap-3.5">
-                  <p className="whitespace-pre-wrap text-[22px] font-semibold leading-snug tracking-tight text-foreground">
+                  <p
+                    className={cn(
+                      prizmaFont.className,
+                      "whitespace-pre-wrap text-[22px] font-semibold leading-snug tracking-tight text-foreground"
+                    )}
+                  >
                     {message.text}
                   </p>
                   {message.actions?.length ? (
@@ -409,7 +425,12 @@ export function AgentScreen({
               )
             )}
             {isSending ? (
-              <p className="animate-pulse text-[22px] font-semibold leading-snug tracking-tight text-muted-foreground">
+              <p
+                className={cn(
+                  prizmaFont.className,
+                  "animate-pulse text-[22px] font-semibold leading-snug tracking-tight text-muted-foreground"
+                )}
+              >
                 {t("agent.thinking")}
               </p>
             ) : null}

@@ -841,6 +841,44 @@ export async function estimateGricFromAudio(
  * transcribe, so the model has strictly less to do: same "low" thinking, and in
  * practice this is the faster of the two.
  */
+/** What Prizma's ear is told: write down EXACTLY what was said, nothing else.
+ * The agent reasons over the transcript later — a transcriber that "helps" by
+ * cleaning up or answering is a broken microphone. */
+const TRANSCRIBE_PROMPT = `Zapiši TAČNO šta je izgovoreno na snimku, od reči do reči, na jeziku i pismu kojim je izgovoreno (očekuj srpski). Ne odgovaraj na pitanja sa snimka, ne prepričavaj, ne dodaj interpunkciju koja menja smisao. Ako se ništa razumljivo ne čuje, vrati prazan tekst.`;
+
+const TRANSCRIBE_RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: { text: { type: "STRING" } },
+  required: ["text"],
+} as const;
+
+/**
+ * Prizma's ear (2026-08-26): one spoken clip -> a verbatim transcript. The
+ * same audio-in-the-model posture as Gric (no separate STT service), but the
+ * output is the user's own sentence, because the AGENT decides what to do
+ * with it — this function must not.
+ * NEVER import this from a client component -- it reads `GEMINI_API_KEY`.
+ */
+export async function transcribeSpeech(
+  base64Audio: string,
+  mimeType: string
+): Promise<string> {
+  const text = await generateJsonFromAudio(
+    TRANSCRIBE_PROMPT,
+    TRANSCRIBE_RESPONSE_SCHEMA,
+    base64Audio,
+    mimeType,
+    process.env.GEMINI_VOICE_MODEL || VOICE_MODEL,
+    // Writing down a sentence is extraction — same "low" as the other ears.
+    "low"
+  );
+  const parsed = parseJson(text) as { text?: unknown };
+  if (typeof parsed?.text !== "string") {
+    throw new GeminiError("Gemini output did not match the expected shape");
+  }
+  return parsed.text.trim();
+}
+
 export async function estimateGricFromText(
   userText: string
 ): Promise<GricEstimate> {

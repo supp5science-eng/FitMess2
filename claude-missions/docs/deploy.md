@@ -66,9 +66,12 @@ code or Vercel config is needed for that behavior.
    | `NEXT_PUBLIC_SUPABASE_URL` | Production + Preview |
    | `SUPABASE_PUBLISHABLE_KEY` | Production + Preview |
    | `SUPABASE_SECRET_KEY` | Production only (server-only secret) |
+   | `ANTHROPIC_API_KEY` | Production only (server-only secret — Prizmin mozak na Claude Opus 5; prazno = agent pada nazad na Gemini) |
    | `GEMINI_API_KEY` | Production only (server-only secret) |
    | `GEMINI_MODEL` | Production + Preview |
    | `GEMINI_MEAL_MODEL` | Production + Preview (optional — blank uses the built-in default) |
+   | `GEMINI_VOICE_MODEL` | Production + Preview (optional — glasovne/tekstualne "uši": Gric i transkripcija za Prizmu; blank uses the built-in default) |
+   | `GEMINI_MICRO_MODEL` | Production + Preview (optional — mikronutrijenti; blank uses the built-in default) |
    | `GEMINI_IMAGE_MODEL` | Production + Preview (optional — the avatar klon's image model) |
    | `KLON_OBAVEZAN` | Production + Preview (optional — set to `true` to start enforcing the klon gate; OFF by default so shipping it never locks out existing accounts) |
    | `GOOGLE_SITE_VERIFICATION` | Production only (optional — Search Console token) |
@@ -86,6 +89,14 @@ code or Vercel config is needed for that behavior.
    | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Production + Preview |
    | `VAPID_PRIVATE_KEY` | Production only (server-only secret) |
    | `VAPID_SUBJECT` | Production + Preview |
+   | `APNS_KEY_P8` | Production only (server-only secret — ceo sadržaj .p8 ključa za APNs push) |
+   | `APNS_KEY_ID` | Production only (server-only secret) |
+   | `APNS_TEAM_ID` | Production only (server-only secret) |
+   | `APNS_BUNDLE_ID` | Production + Preview |
+   | `APNS_SANDBOX` | Preview only (`true` za TestFlight development tokene; na Produkciji prazno/`false`) |
+   | `FCM_SERVICE_ACCOUNT` | Production only (server-only secret — ceo JSON service account za Android push) |
+   | `CRON_SECRET` | Production only (server-only secret — Authorization za Vercel cron rute) |
+   | `NODE_ENV` | Not needed on Vercel — runtime ga postavlja sam; u `.env.example` stoji samo da spisak pokrije svaku `process.env` referencu iz koda |
    | `SUPABASE_ACCESS_TOKEN` | Not needed on Vercel — Supabase Management API PAT used only by workers/orchestrator during `/mission-run` for schema DDL; never required at app runtime |
    | `SUPABASE_PROJECT_REF` | Not needed on Vercel — same Management-API-only scope as `SUPABASE_ACCESS_TOKEN` above |
 

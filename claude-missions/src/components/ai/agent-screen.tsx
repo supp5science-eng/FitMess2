@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -17,13 +18,17 @@ import {
   Mic,
   Scale,
   Settings,
+  Square,
   Target,
   type LucideIcon,
 } from "lucide-react";
 
-import { AiOrbCanvas } from "@/components/ai/ai-orb-canvas";
+import { transcribeVoiceAction } from "@/app/(app)/ai/actions";
+import { AiOrbCanvas, type AiOrbMode } from "@/components/ai/ai-orb-canvas";
 import type { AgentActionId } from "@/lib/ai/agent-actions";
 import { useT } from "@/components/i18n/locale-provider";
+import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
+import { createSpeaker, type Speaker } from "@/lib/audio/speak";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
 
@@ -42,8 +47,16 @@ import { cn } from "@/lib/utils";
  * Actions arrive from `/api/ai/agent` as catalog ids; all copy and icons
  * resolve client-side from i18n + the icon map below, so the model cannot
  * write a button. The thread lives in `sessionStorage` (fresh tomorrow);
- * voice input (Faza C) and mutating actions with confirmation (v2) are
- * deliberately not here yet.
+ * mutating actions with confirmation (v2) are deliberately not here yet.
+ *
+ * VOICE (Faza C, 2026-08-26): the mic button records (mono 16 kHz WAV, same
+ * recorder as Gric), Gemini writes the sentence down (`transcribeVoiceAction`)
+ * and the transcript enters the SAME `send` path as typing — one
+ * conversation, whichever mouth it came from. A spoken turn is answered
+ * aloud through the system TTS (`speak.ts`; silent when the device has no
+ * ex-Yu voice). The orb is the face of all of it: it pulses on the user's
+ * live mic level while LISTENING, tightens while THINKING, and ripples on a
+ * speech envelope while SPEAKING — see `ai-orb-canvas.tsx`.
  */
 
 interface AgentAction {
@@ -117,7 +130,15 @@ export function AgentScreen({
   const [draft, setDraft] = useState("");
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Voice: "listening" while the mic runs, "transcribing" between stop and
+  // the transcript coming back; the agent turn itself is `isSending`.
+  const [voiceState, setVoiceState] = useState<
+    "idle" | "listening" | "transcribing"
+  >("idle");
+  const [isSpeaking, setIsSpeaking] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const recordingRef = useRef<WavRecording | null>(null);
+  const speakerRef = useRef<Speaker | null>(null);
 
   const isIdle = messages.length === 0 && !isSending;
 
@@ -125,7 +146,35 @@ export function AgentScreen({
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages, isSending]);
 
-  async function send(text: string) {
+  // Leaving the screen mid-recording or mid-sentence: release the mic and
+  // the mouth. A tab that keeps recording after unmount is a privacy bug.
+  useEffect(() => {
+    return () => {
+      recordingRef.current?.cancel();
+      recordingRef.current = null;
+      speakerRef.current?.stop();
+    };
+  }, []);
+
+  /** What the orb should be doing right now. Listening wins (the mic is
+   * live), then the wait for Prizma, then her speaking, then rest. */
+  const orbMode: AiOrbMode =
+    voiceState === "listening"
+      ? "listening"
+      : voiceState === "transcribing" || isSending
+        ? "thinking"
+        : isSpeaking
+          ? "speaking"
+          : "idle";
+
+  /** Live mic loudness for the orb — stable identity, reads through the ref
+   * so the canvas effect never rebuilds. */
+  const getLevel = useCallback(
+    () => recordingRef.current?.level?.() ?? 0,
+    []
+  );
+
+  async function send(text: string, options?: { spoken?: boolean }) {
     const clean = text.trim();
     if (!clean || isSending) return;
     setError(null);
@@ -167,6 +216,15 @@ export function AgentScreen({
       ];
       setMessages(complete);
       storeMessages(complete);
+      // Spoken in -> spoken out. `speak` returns false when the device has
+      // no ex-Yu voice; the reply then simply stays on screen, orb at rest.
+      if (options?.spoken) {
+        speakerRef.current ??= createSpeaker();
+        speakerRef.current.speak(payload.reply, {
+          onStart: () => setIsSpeaking(true),
+          onEnd: () => setIsSpeaking(false),
+        });
+      }
     } catch {
       setError(t("agent.error"));
     } finally {
@@ -177,6 +235,46 @@ export function AgentScreen({
   function onSubmit(event: FormEvent) {
     event.preventDefault();
     void send(draft);
+  }
+
+  /** Mic tap #1: open the ear. Must run inside the tap (permission prompt). */
+  async function startListening() {
+    if (voiceState !== "idle" || isSending) return;
+    speakerRef.current?.stop();
+    setIsSpeaking(false);
+    setError(null);
+    try {
+      recordingRef.current = await startWavRecording();
+      setVoiceState("listening");
+    } catch {
+      setError(t("agent.voice.mic"));
+    }
+  }
+
+  /** Mic tap #2: close the ear, write the sentence down, send it. */
+  async function stopListening() {
+    const recording = recordingRef.current;
+    if (!recording) return;
+    recordingRef.current = null;
+    setVoiceState("transcribing");
+    try {
+      const blob = await recording.stop();
+      const formData = new FormData();
+      formData.append(
+        "audio",
+        new File([blob], "prizma.wav", { type: "audio/wav" })
+      );
+      const result = await transcribeVoiceAction(formData);
+      if (!result.ok) {
+        setError(result.error_sr);
+        return;
+      }
+      await send(result.text, { spoken: true });
+    } catch {
+      setError(t("agent.voice.error"));
+    } finally {
+      setVoiceState("idle");
+    }
   }
 
   const chips: { key: string; label: string }[] = [
@@ -195,7 +293,7 @@ export function AgentScreen({
         /* MIR: the orb is the screen — greeting from live data, three quiet
            hints. */
         <div className="flex flex-1 flex-col items-center justify-center gap-7 px-8 pb-6">
-          <AiOrbCanvas className="size-48" />
+          <AiOrbCanvas className="size-48" mode={orbMode} getLevel={getLevel} />
           <div className="flex flex-col items-center gap-2.5 text-center">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">
               {greeting}
@@ -227,7 +325,7 @@ export function AgentScreen({
         /* RAZGOVOR: the orb rises small; the exchange takes the screen. */
         <>
           <div className="flex shrink-0 justify-center pt-4 pb-1">
-            <AiOrbCanvas className="size-16" />
+            <AiOrbCanvas className="size-16" mode={orbMode} getLevel={getLevel} />
           </div>
           <div
             ref={scrollRef}
@@ -274,22 +372,69 @@ export function AgentScreen({
         </>
       )}
 
-      {/* Input row, pinned above the nav. Voice (mikrofon) lands in Faza C. */}
+      {/* Input row, pinned above the nav. While the mic is live the text
+          field gives way to the listening pill; the mic button itself flips
+          into "send the clip". */}
       <form
         onSubmit={onSubmit}
         className="flex shrink-0 items-center gap-2.5 border-t border-border/70 bg-background px-5 py-3.5"
       >
-        <input
-          value={draft}
-          onChange={(event) => setDraft(event.target.value)}
-          placeholder={t("agent.placeholder")}
-          data-testid="agent-input"
-          maxLength={2000}
-          className="h-12 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        />
+        {voiceState === "listening" ? (
+          <div
+            data-testid="agent-listening"
+            className="flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full border border-primary/50 bg-primary/[0.06] px-4"
+          >
+            <span
+              className="size-2 shrink-0 animate-pulse rounded-full bg-primary"
+              aria-hidden="true"
+            />
+            <span className="truncate text-sm font-medium text-foreground">
+              {t("agent.listening")}
+            </span>
+          </div>
+        ) : (
+          <input
+            value={draft}
+            onChange={(event) => setDraft(event.target.value)}
+            placeholder={t("agent.placeholder")}
+            data-testid="agent-input"
+            maxLength={2000}
+            disabled={voiceState === "transcribing"}
+            className="h-12 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"
+          />
+        )}
+        <button
+          type="button"
+          onClick={() =>
+            voiceState === "listening"
+              ? void stopListening()
+              : void startListening()
+          }
+          disabled={voiceState === "transcribing" || isSending}
+          aria-label={
+            voiceState === "listening" ? t("agent.mic.stop") : t("agent.mic")
+          }
+          data-testid="agent-mic"
+          className={cn(
+            "flex size-12 shrink-0 items-center justify-center rounded-full",
+            "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "disabled:opacity-50",
+            voiceState === "listening"
+              ? "liquid-glass bg-primary text-primary-foreground"
+              : "border border-input bg-card text-foreground hover:bg-muted"
+          )}
+        >
+          {voiceState === "listening" ? (
+            <Square className="size-4 fill-current" aria-hidden="true" />
+          ) : (
+            <Mic className="size-5" aria-hidden="true" />
+          )}
+        </button>
         <button
           type="submit"
-          disabled={isSending || draft.trim().length === 0}
+          disabled={
+            isSending || voiceState !== "idle" || draft.trim().length === 0
+          }
           aria-label={t("agent.send")}
           data-testid="agent-send"
           className={cn(

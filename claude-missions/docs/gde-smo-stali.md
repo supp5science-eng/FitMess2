@@ -4,6 +4,61 @@
 
 ---
 
+# 26.08.2026 — Prizma priča: glasovni razgovor i orb koji živi uz njega ✅
+
+Vlasnikova želja: „da priča sa nama, ali interaktivno — swirl se pomera dok
+sluša i dok govori". ElevenLabs i dalje nema (mreža blokirana + ključ nikad
+nije stigao u sesiju), pa je isporučen dogovoreni most: **Gemini uši +
+sistemski TTS usta**, arhitektura spremna da ElevenLabs uskoči kao zamena
+usta.
+
+## Šta je novo
+
+- **Mikrofon u Prizmi** (`agent-screen.tsx`): dugme pored polja za kucanje;
+  snima istim rekorderom kao Gric (`record-wav.ts`, mono 16 kHz WAV + živi
+  nivo). Tap = slušam, tap = pošalji. Dok sluša, polje zameni „Slušam te…"
+  pilula.
+- **Transkripcija** = `transcribeSpeech` u `gemini.ts` (audio direktno u
+  model, doslovan zapis, bez interpretacije) + server akcija
+  `app/(app)/ai/actions.ts`. Transkript ulazi u ISTI `send` put kao kucanje —
+  jedan razgovor, ista istorija/kvota/kartice. Namerno se NE naplaćuje
+  posebno (jedna izgovorena poruka = jedna akcija = jedan charge, kao Gric).
+- **Prizma odgovara naglas** (`src/lib/audio/speak.ts`): Web Speech API,
+  izbor glasa sr → hr → bs (lokalni > default); ako uređaj NEMA nijedan
+  ex-Yu glas, ćuti umesto da čita srpski engleskim ustima. Kad stigne
+  ElevenLabs, menja se samo ovaj modul.
+- **Orb je Prizmino lice** (`ai-orb-canvas.tsx` v3): props `mode`
+  (idle/listening/thinking/speaking) + `getLevel`. SLUŠA → nadima se i
+  svetli na pravi nivo tvog glasa sa mikrofona; MISLI → vrtlog ubrza i
+  stegne; GOVORI → govorna envelopa (tri nesamerljive sinusoide — jedna
+  zvuči kao metronom) + talas kroz mastilo. Sve preko uniformi glatko
+  peglanih u JS-u.
+- ⚠️ **Šejder zamka za onog ko dira**: brzina rotacije NE sme da množi
+  `uTime` u šejderu (nagomilani ugao skoči pri promeni) — JS integriše
+  `uSpin += dt * rate` i šejder koristi taj sat. `speechSynthesis` nema
+  audio tap, pa su usta komponovana, ne merena.
+- **Popravljena dva čuvara koja su padala i na main-u**: `.env.example`
+  dopunjen sa SVIM referenciranim varijablama (ANTHROPIC_API_KEY, APNS_*,
+  FCM, CRON_SECRET, GEMINI_VOICE/MICRO_MODEL, NODE_ENV) → `AS_003` prolazi;
+  `docs/deploy.md` tabela dopunjena istim → `AS_007` prolazi.
+
+## Provereno
+
+Typecheck ✅, build ✅, lint bez novih grešaka (20 zatečenih u `.cjs`
+skriptama), testovi: +14 novih prolaze; padaju samo zatečeni — 4 env-zavisna
+`app-shell` + `micro-week-card` „names a tapped day" (pada i na čistom
+main-u, nije iz ovog kruga — čeka svoj).
+
+## ⚠️ Živi test glasa NIJE odrađen odavde
+
+U kontejneru nema nijednog važećeg ključa (stari Anthropic je 401 — rotiran
+jutros; novi Anthropic/ElevenLabs nikad nisu stigli u sesiju; Gemini ključ
+ovde ne postoji). Kod je verifikovan build/testovima; glas i orb se čuju/vide
+na lokalu ili produkciji, gde ključevi već stoje. Podsetnik: iPhone bočni
+prekidač za zvono gasi Web Audio/TTS — nije bug.
+
+---
+
 # 25.08.2026, veče — Prizmin mozak je od danas Claude Opus 5 ✅
 
 Korak 1 sa jučerašnje liste je urađen i **živo testiran** (vlasnik dao Anthropic

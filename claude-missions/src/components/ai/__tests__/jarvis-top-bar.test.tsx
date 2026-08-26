@@ -73,9 +73,11 @@ describe("JarvisTopBar — mode pill", () => {
 });
 
 describe("JarvisTopBar — pull to exit", () => {
-  it("test_a_tap_does_not_leave_the_screen", () => {
-    // The whole reason the exit is a gesture: this screen is one stray thumb
-    // away from the mode pill, and leaving mid-sentence is unrecoverable.
+  it("test_a_plain_tap_leaves_through_the_link", () => {
+    // An earlier cut made the pull the only way out, so leaving could never
+    // happen by accident. Pressed by a human it read as a dead button -- and
+    // "does nothing" is indistinguishable from "broken" on the only door this
+    // screen has. The link works; the pull is an accelerator, not a gate.
     render(<JarvisTopBar mode="voice" onModeChange={vi.fn()} />);
     const exit = exitButton();
 
@@ -84,21 +86,8 @@ describe("JarvisTopBar — pull to exit", () => {
     const click = new MouseEvent("click", { bubbles: true, cancelable: true });
     fireEvent(exit, click);
 
-    expect(push).not.toHaveBeenCalled();
-    // Cancelled outright rather than sniffed for `detail === 0`: WebKit
-    // reports 0 for touch-derived clicks as well, so that test would hand
-    // every iOS tap the exit it is supposed to withhold.
-    expect(click.defaultPrevented).toBe(true);
-  });
-
-  it("test_a_tap_hops_the_button_to_teach_the_gesture", () => {
-    render(<JarvisTopBar mode="voice" onModeChange={vi.fn()} />);
-    const exit = exitButton();
-
-    fireEvent(exit, pointer("pointerdown", 200));
-    fireEvent(exit, pointer("pointerup", 200));
-
-    expect(exit.dataset.nudge).toBe("true");
+    expect(click.defaultPrevented).toBe(false);
+    expect(exit).toHaveAttribute("href", "/danas");
   });
 
   it("test_a_complete_pull_leaves_for_the_dashboard", () => {
@@ -177,23 +166,25 @@ describe("JarvisTopBar — pull to exit", () => {
     expect(pull(exit)).toBe("0.000");
   });
 
-  it.each(["Enter", " "])(
-    "test_keyboard_activation_leaves_without_a_drag_on_%s",
-    (key) => {
-      // Keyboard and screen reader users have no drag available, so this path
-      // has to open the door on its own -- and it is decided on `keydown`,
-      // where the input device is a fact rather than something to infer.
-      render(<JarvisTopBar mode="voice" onModeChange={vi.fn()} />);
+  it("test_a_completed_pull_does_not_navigate_twice", () => {
+    // The click that trails a pull ending ON the button would repeat a trip
+    // the pointer handler already made.
+    render(<JarvisTopBar mode="voice" onModeChange={vi.fn()} />);
+    const exit = exitButton();
 
-      fireEvent.keyDown(exitButton(), { key });
+    pullUp(exit, PULL_EXIT_DISTANCE_PX);
+    fireEvent(exit, pointer("pointerup", 200 - PULL_EXIT_DISTANCE_PX));
+    const click = new MouseEvent("click", { bubbles: true, cancelable: true });
+    fireEvent(exit, click);
 
-      expect(push).toHaveBeenCalledWith("/danas");
-    }
-  );
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(click.defaultPrevented).toBe(true);
+  });
 
-  it("test_the_exit_still_has_a_real_href_behind_the_gesture", () => {
-    // Every handler above only exists once the screen has hydrated. Until it
-    // does, the plain link is the way out.
+  it("test_the_exit_is_a_real_link_for_keyboard_and_broken_hydration", () => {
+    // Keyboard and screen reader users have no drag available, and none of
+    // these handlers exist before the screen hydrates. Both fall back to the
+    // same plain href.
     render(<JarvisTopBar mode="voice" onModeChange={vi.fn()} />);
 
     expect(exitButton()).toHaveAttribute("href", "/danas");

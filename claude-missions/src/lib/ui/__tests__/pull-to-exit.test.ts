@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import {
   PULL_EXIT_DISTANCE_PX,
   isPullArmed,
-  isPullTap,
   pullProgress,
 } from "@/lib/ui/pull-to-exit";
 
@@ -56,22 +55,5 @@ describe("isPullArmed", () => {
   it("test_a_complete_pull_arms", () => {
     expect(isPullArmed(pullProgress(PULL_EXIT_DISTANCE_PX))).toBe(true);
     expect(isPullArmed(pullProgress(PULL_EXIT_DISTANCE_PX - 1))).toBe(false);
-  });
-});
-
-describe("isPullTap", () => {
-  it("test_a_thumb_that_barely_moved_still_counts_as_a_tap", () => {
-    // Nobody holds a 40px circle perfectly still. Classifying that jitter as
-    // an aborted pull would leave the tap unanswered, and a gesture-only
-    // control that does nothing when tapped reads as broken.
-    expect(isPullTap(pullProgress(0))).toBe(true);
-    expect(isPullTap(pullProgress(3))).toBe(true);
-  });
-
-  it("test_a_deliberate_pull_that_stopped_short_is_not_a_tap", () => {
-    // It already showed the user how far it got; it springs back in silence
-    // rather than adding a hop on top.
-    expect(isPullTap(pullProgress(PULL_EXIT_DISTANCE_PX / 2))).toBe(false);
-    expect(isPullTap(pullProgress(PULL_EXIT_DISTANCE_PX))).toBe(false);
   });
 });

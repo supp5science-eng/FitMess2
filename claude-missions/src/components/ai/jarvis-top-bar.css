@@ -98,29 +98,10 @@
   transition: opacity 200ms ease;
 }
 
-/* A tap on a control that only answers to a drag looks broken. Rather than
-   explain the gesture in a tooltip nobody opens, a tap performs a short
-   version of it — the button hops the way it would if you had pulled. */
-.jtb-exit[data-nudge="true"] {
-  animation: jtb-nudge 420ms cubic-bezier(0.34, 1.4, 0.5, 1);
-}
-
-@keyframes jtb-nudge {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  38% {
-    transform: translateY(-7px);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   /* The colour still ramps — it is the state, not decoration. Only the
      travel goes, since that is the part that moves. */
-  .jtb-exit,
-  .jtb-exit[data-nudge="true"] {
+  .jtb-exit {
     transform: none;
-    animation: none;
   }
 }

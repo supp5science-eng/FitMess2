@@ -7,7 +7,7 @@ import { AudioLines, ChevronUp, MessageSquare, Settings, X } from "lucide-react"
 
 import { useT } from "@/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/messages";
-import { isPullArmed, isPullTap, pullProgress } from "@/lib/ui/pull-to-exit";
+import { isPullArmed, pullProgress } from "@/lib/ui/pull-to-exit";
 import { cn } from "@/lib/utils";
 
 import "./jarvis-top-bar.css";
@@ -68,14 +68,15 @@ function usePrefersReducedMotion(): boolean {
 /**
  * Shared shape of the two round chrome buttons flanking the segments.
  *
- * `liquid-glass` + `jtb-round` instead of the `border` + `fm-lift` pair every
- * card here uses: the overprint lights the disc from the inside and the round
- * lift has no hard edge to read as a contact patch. `jarvis-top-bar.css`
- * carries the argument.
+ * Keeps the `border` every card here uses and drops only `fm-lift`: the hard
+ * offset was what made the circle read as squashed, the hairline was never the
+ * problem, and a white disc on white paper needs an edge to be a shape at all.
+ * `liquid-glass` + `jtb-round` then light it from the inside and lift it
+ * without drawing a contact patch — `jarvis-top-bar.css` carries that argument.
  */
 const ROUND_BUTTON_CLASS = cn(
   "jtb-round liquid-glass relative flex size-10 shrink-0 items-center justify-center",
-  "rounded-full bg-card text-foreground transition-colors",
+  "rounded-full border border-border bg-card text-foreground transition-colors",
   "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
 );
 
@@ -147,7 +148,11 @@ export function JarvisTopBar({
   return (
     <div
       data-testid="jarvis-top-bar"
-      className={cn("flex h-10 items-center gap-2", className)}
+      // `px-4` is not decoration: the bar had NO horizontal padding, so both
+      // round buttons sat flush against the edge of the app column while every
+      // other row on this screen (composer `px-4`, thread `px-5`) stands clear
+      // of it. A bordered button hid that; a borderless one bleeds off.
+      className={cn("flex h-10 items-center gap-2 px-4", className)}
     >
       <Link
         href="/profil"
@@ -230,17 +235,13 @@ export function JarvisTopBar({
  *   `--jtb-pull` custom property, once per pointer event; only the ARMED flip
  *   is state, because that is the only thing the markup changes (the icon, and
  *   what the live region says). Dragging re-renders nothing.
- * - **It is still an `<a href>`.** Keyboard and assistive tech have no drag
- *   available to them, so Enter/Space leaves directly — handled on `keydown`,
- *   which is a fact about the event rather than a guess about it. Clicks are
- *   cancelled outright: `MouseEvent.detail` looks like it could tell a tap
- *   from a keyboard activation, but WebKit reports `0` for touch-derived
- *   clicks too, so on the one platform this screen was built for the "clever"
- *   version would let a stray tap out. The href still carries the exit if
- *   hydration never happens, since none of these handlers exist until it does
- *   — which, for the only door on the screen, is worth keeping.
- * - **A tap answers.** It does not leave, but the button hops (`data-nudge`),
- *   which teaches the gesture at the moment someone tries the wrong one.
+ * - **A tap leaves too.** An earlier cut made the pull the ONLY way out, so
+ *   that leaving could never happen by accident. In the owner's hands that
+ *   read as a broken button, which is the worse failure by a distance: a
+ *   control that does nothing when pressed is indistinguishable from one that
+ *   is broken, and this is the only door on the screen. So the plain `<a href>`
+ *   works — tap, Enter, Space, or no hydration at all — and the pull is an
+ *   accelerator on top of it, not a gate in front of it.
  */
 function PullToExit(): React.JSX.Element {
   const { t } = useT();
@@ -250,15 +251,18 @@ function PullToExit(): React.JSX.Element {
   const startY = useRef<number | null>(null);
   /** Live progress, mirrored in a ref so pointerup can read it without state. */
   const progress = useRef(0);
+  /** Set when a completed pull already navigated, so the click it is followed
+   *  by does not navigate a second time. */
+  const consumed = useRef(false);
   const [armed, setArmed] = useState(false);
 
-  // `data-dragging` and `data-nudge` belong to the pointer handlers, and are
-  // deliberately not also declared in the JSX below: one attribute, one owner.
-  // (React leaves a constant literal alone on re-render, so declaring them
-  // would work today -- but it would read as though render owned them, and it
-  // would genuinely clobber the gesture the day either value became dynamic.)
-  // Absent, both read as their resting state in the stylesheet, which is
-  // exactly right for a button nobody is touching.
+  // `data-dragging` belongs to the pointer handlers, and is deliberately not
+  // also declared in the JSX below: one attribute, one owner. (React leaves a
+  // constant literal alone on re-render, so declaring it would work today --
+  // but it would read as though render owned it, and it would genuinely
+  // clobber the gesture the day the value became dynamic.) Absent, it reads as
+  // its resting state in the stylesheet, which is right for a button nobody is
+  // touching.
 
   function applyProgress(next: number) {
     progress.current = next;
@@ -270,8 +274,8 @@ function PullToExit(): React.JSX.Element {
 
   function handlePointerDown(event: React.PointerEvent<HTMLAnchorElement>) {
     startY.current = event.clientY;
+    consumed.current = false;
     event.currentTarget.dataset.dragging = "true";
-    event.currentTarget.dataset.nudge = "false";
     // Capture, or the drag dies the moment the finger leaves a 40px circle.
     if (typeof event.currentTarget.setPointerCapture === "function") {
       event.currentTarget.setPointerCapture(event.pointerId);
@@ -286,7 +290,6 @@ function PullToExit(): React.JSX.Element {
   function handlePointerEnd(event: React.PointerEvent<HTMLAnchorElement>) {
     if (startY.current === null) return;
     const leaving = isPullArmed(progress.current);
-    const tapped = isPullTap(progress.current);
 
     startY.current = null;
     event.currentTarget.dataset.dragging = "false";
@@ -295,9 +298,11 @@ function PullToExit(): React.JSX.Element {
     applyProgress(0);
 
     if (leaving) {
+      // A pull that ends off the button never produces a click, so the
+      // navigation has to happen here; the flag stops the click that DOES
+      // follow a pull ending on it from repeating the trip.
+      consumed.current = true;
       router.push(EXIT_HREF);
-    } else if (tapped) {
-      event.currentTarget.dataset.nudge = "true";
     }
   }
 
@@ -316,19 +321,12 @@ function PullToExit(): React.JSX.Element {
         onPointerUp={handlePointerEnd}
         onPointerCancel={handlePointerEnd}
         onClick={(event) => {
-          // Leaving is the gesture's job (or `onKeyDown`'s). A tap has already
-          // been answered with the hop, so the click itself does nothing.
-          event.preventDefault();
-        }}
-        onKeyDown={(event) => {
-          if (event.key !== "Enter" && event.key !== " ") return;
-          // Cancels the click the browser would synthesise next, so the exit
-          // fires once and through one path.
-          event.preventDefault();
-          router.push(EXIT_HREF);
-        }}
-        onAnimationEnd={(event) => {
-          event.currentTarget.dataset.nudge = "false";
+          // The ordinary link does the ordinary thing. The one exception is
+          // the click that trails a completed pull, which has already left.
+          if (consumed.current) {
+            consumed.current = false;
+            event.preventDefault();
+          }
         }}
       >
         {armed ? (

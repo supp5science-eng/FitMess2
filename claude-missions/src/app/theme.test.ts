@@ -120,3 +120,79 @@ describe("Shell safety nets", () => {
     expect(baseLayer).toMatch(/overflow-x-hidden/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Focus rings vs. the cascade.
+//
+// CSS layers are ordered, and an UNLAYERED rule outranks every layer — so a
+// plain `box-shadow` written at the top level of globals.css beats everything
+// Tailwind emits into its `utilities` layer, whatever the specificity. That is
+// not a specificity race we could win by adding a class; the ring simply never
+// gets to draw. It cost the app every keyboard focus ring on `.fm-lift` and on
+// `.liquid-glass` buttons (the shared `Button` puts `focus-visible:ring-3` on
+// all of its variants, and all of them are `.liquid-glass`).
+//
+// The fix is to hand the shadow to Tailwind's own `--tw-shadow` slot and keep
+// the five-slot composition, so a ring utility paints into `--tw-ring-shadow`
+// while the rule keeps both the cascade and its shadow. These tests guard that
+// shape for the classes that sit under focusable elements.
+
+/** Top-level rules of a stylesheet — the ones written outside any `@layer`,
+ * which therefore outrank all of Tailwind's utilities. Selector must start at
+ * column 0 and the block close with a `}` at column 0, which is how this file
+ * is formatted throughout. */
+function unlayeredRules(source: string): { selector: string; body: string }[] {
+  const rules: { selector: string; body: string }[] = [];
+  const pattern = /^([^@{}\s][^{}]*?)\{([^{}]*)\n\}/gm;
+  for (const match of source.matchAll(pattern)) {
+    // A rule is usually preceded by its comment block; drop it so a failure
+    // message names the selector rather than reciting a paragraph at us.
+    const selector = match[1]!.replace(/\/\*[\s\S]*?\*\//g, "").trim();
+    rules.push({ selector, body: match[2]! });
+  }
+  return rules;
+}
+
+/** Rules that can swallow a focus ring: unlayered, setting `box-shadow` on the
+ * element ITSELF (a `::before`/`::after` carries its own shadow and never
+ * touches the host's), on a class that focusable components actually wear. */
+function ringSwallowingRules(source: string) {
+  return unlayeredRules(source).filter(
+    (rule) =>
+      /\.(fm-lift|liquid-glass)\b/.test(rule.selector) &&
+      !/::(before|after)/.test(rule.selector) &&
+      /(^|\s|;)box-shadow\s*:/.test(rule.body)
+  );
+}
+
+describe("Focus rings survive the unlayered shadow rules", () => {
+  it("test_focus_ring_unlayered_shadow_rules_compose_with_the_tailwind_ring_slot", () => {
+    for (const rule of ringSwallowingRules(css)) {
+      // Its shadow must go through Tailwind's slots, not be written flat.
+      expect(
+        rule.body,
+        `"${rule.selector}" writes a bare box-shadow outside @layer, which ` +
+          `outranks Tailwind's utilities layer and kills focus-visible:ring-*`
+      ).toMatch(/var\(--tw-ring-shadow\)/);
+      expect(rule.body).toMatch(/--tw-shadow\s*:/);
+    }
+  });
+
+  it("test_focus_ring_the_two_classes_that_carry_shadows_are_actually_covered", () => {
+    // Guards the guard: if these rules are ever renamed away, the test above
+    // would pass vacuously over an empty list.
+    const selectors = ringSwallowingRules(css).map((r) => r.selector);
+    expect(selectors.some((s) => /\.fm-lift\b/.test(s))).toBe(true);
+    expect(selectors.some((s) => /\.liquid-glass\b/.test(s))).toBe(true);
+  });
+
+  it("test_focus_ring_guard_rejects_a_bare_box_shadow_on_those_classes", () => {
+    // And guards it the other way: prove the matcher CATCHES the shape this
+    // whole block exists to prevent, rather than merely accepting the fixed
+    // one. This is the exact code that shipped before the fix.
+    const regressed = `.fm-lift {\n  box-shadow: var(--fm-lift);\n}\n`;
+    const caught = ringSwallowingRules(regressed);
+    expect(caught).toHaveLength(1);
+    expect(caught[0]!.body).not.toMatch(/var\(--tw-ring-shadow\)/);
+  });
+});

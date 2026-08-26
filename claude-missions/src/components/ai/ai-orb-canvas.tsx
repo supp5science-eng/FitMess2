@@ -8,22 +8,33 @@ import { AiOrb } from "@/components/ai/ai-orb";
 /**
  * The AI orb, for real this time (2026-08-25 v2): a WebGL fragment-shader
  * sphere in the plate's own inks — a Siri-like living swirl. Domain-warped
- * fbm noise IS the fluid: two noise fields displace a third, dark "venom"
- * veins (ridged noise) carve through the ultramarine, and the whole field
- * spins continuously, faster near the core, so the sphere visibly ROTATES
- * rather than merely shimmering. Sphere shading (a top-left key light, a
- * pale rim, a soft melt into the paper at the silhouette) keeps it reading
- * as a glass ball sitting ON the white page, not a flat texture.
+ * fbm noise IS the fluid, dark "venom" veins (ridged noise) carve through
+ * the ultramarine, and sphere shading (a top-left key light, a soft melt
+ * into the paper at the silhouette) keeps it reading as a ball sitting ON
+ * the white page, not a flat texture.
  *
  * v3 (2026-08-26, glasovni razgovor): the orb is now Prizma's FACE. It takes
  * a `mode` and, while LISTENING, the live mic level (`getLevel`) — the swirl
  * swells and brightens on the user's own voice, THINKING tightens and speeds
- * the spin, SPEAKING pulses on a speech-like envelope with a ripple running
- * through the fluid. All of it rides three uniforms (energy / spin-clock /
+ * the flow, SPEAKING pulses on a speech-like envelope with a ripple running
+ * through the fluid. All of it rides three uniforms (energy / flow-clock /
  * speak) smoothed in JS, so states melt into each other instead of snapping.
- * The activity-scaled clock is integrated on the CPU (`spin += dt * rate`) —
+ * The activity-scaled clock is integrated on the CPU (`flow += dt * rate`) —
  * multiplying `uTime` by a changing rate in the shader would make the whole
- * fluid jump, because the accumulated angle rescales with it.
+ * fluid jump, because the accumulated phase rescales with it.
+ *
+ * v4 (2026-08-26): it was a wheel, not a liquid. v2/v3 spun the whole field
+ * about the centre, and a constant angular term is exactly what the eye
+ * reads as a texture on a turning disc. That term is GONE. The ink now
+ * boils in place: three chained domain warps, each drifting on its own
+ * current, pushed through a hard contrast curve so the colour settles into
+ * broad marbled pools threaded with hair-thin filaments. Two consequences
+ * fall out of that curve and are handled in the shader, not papered over:
+ * fbm's lowest octave wanders, which would swing the whole orb pale or
+ * near-black, so the field is high-passed against that exact octave; and
+ * the ink now burns out to PAPER WHITE across the last fifth of the radius
+ * instead of fading to a pale blue haze, so the roundings are a rim of
+ * light rather than a washed-out fringe.
  *
  * three.js is already a dependency (the 3D klon), so this is one
  * orthographic plane + ShaderMaterial — no model, no lights, one draw call.
@@ -51,9 +62,9 @@ const VERTEX_SHADER = /* glsl */ `
 const FRAGMENT_SHADER = /* glsl */ `
   precision highp float;
   uniform float uTime;
-  // The activity-scaled clock: equals uTime at rest, runs faster while the
-  // orb listens/thinks/speaks. Integrated CPU-side to stay continuous.
-  uniform float uSpin;
+  // The activity-scaled flow clock: equals uTime at rest, runs faster while
+  // the orb listens/thinks/speaks. Integrated CPU-side to stay continuous.
+  uniform float uFlow;
   // Live loudness 0..1 — the mic while listening, a speech envelope while
   // speaking, a quiet simmer while thinking.
   uniform float uEnergy;
@@ -87,58 +98,93 @@ const FRAGMENT_SHADER = /* glsl */ `
   }
 
   void main() {
-    // Centered coords; 2.15 leaves a soft margin for the silhouette melt.
-    vec2 p = (vUv - 0.5) * 2.15;
+    // Centered coords; 2.05 leaves the margin the silhouette melts into.
+    vec2 p = (vUv - 0.5) * 2.05;
     // Voice swell: the sphere grows into its margin as energy rises.
     p /= 1.0 + 0.10 * uEnergy;
     // A slow breath, so even the outline is never frozen; energy deepens it.
-    p *= 1.0 + (0.018 + 0.045 * uEnergy) * sin(uSpin * 0.7);
+    p *= 1.0 + (0.018 + 0.045 * uEnergy) * sin(uFlow * 0.7);
     float r = length(p);
 
-    // The ROTATION: a constant spin plus a swirl that tightens toward the
-    // core and slowly reverses, so the fluid shears instead of rotating as
-    // a solid disc. Both ride uSpin, so activity speeds the whole dance.
-    float ang = atan(p.y, p.x);
-    float swirl = (1.7 + 0.9 * uEnergy) * (1.0 - smoothstep(0.0, 1.1, r));
-    ang += uSpin * 0.22 + swirl * sin(uSpin * 0.35 + 1.2);
-    vec2 q = vec2(cos(ang), sin(ang)) * r;
-
-    // Domain-warped fbm — the fluid itself.
-    vec2 w = vec2(
-      fbm(q * 2.4 + uTime * 0.11),
-      fbm(q * 2.4 - uTime * 0.08 + 4.7)
+    // THE FLUID. Three chained domain warps: each layer's fbm displaces the
+    // sample point of the next, and every layer drifts on its own slow,
+    // incommensurate current. That is what makes the ink BOIL and curl in
+    // place — no angular term anywhere, because a constant spin reads as a
+    // texture on a turning wheel, not as a liquid (see the header).
+    float t = uFlow;
+    vec2 q = p * 1.05;
+    vec2 w1 = vec2(
+      fbm(q + vec2(0.00, 0.30) * t),
+      fbm(q + vec2(-0.26, 0.13) * t + 5.2)
     );
-    float f = fbm(q * 3.0 + 2.2 * w - uTime * 0.05);
+    vec2 w2 = vec2(
+      fbm(q + 3.1 * w1 + vec2(0.14, -0.22) * t + 1.7),
+      fbm(q + 3.1 * w1 + vec2(-0.17, -0.12) * t + 8.3)
+    );
+    vec2 fp = q + 4.2 * w2 + 0.09 * t;
+    // High-pass. fbm's lowest octave is half its amplitude, so left alone it
+    // walks the whole sphere bright or dark together and the contrast curve
+    // below turns that into a washed-out or near-black orb. Subtracting most
+    // of THAT EXACT octave — noise(fp) is the term fbm itself starts from —
+    // then rescaling to 0..1 pins the average while keeping enough of the big
+    // sweep for the ink to still pool in large pours.
+    float f = (fbm(fp) - 0.42 * noise(fp)) / 0.549;
     // While speaking, a ripple runs outward through the ink in speech rhythm.
     f += uSpeak * (0.04 + 0.09 * uEnergy) * sin(r * 22.0 - uTime * 6.5);
-    // Ridged noise -> the dark "venom" veins threading through the ink.
-    float veins = 1.0 - abs(2.0 * fbm(q * 4.2 + 3.0 * w + uTime * 0.06) - 1.0);
-    veins = pow(veins, 3.0);
+    // Marbling, not smoke: the field is pushed through a hard contrast curve
+    // so the ink settles into broad flat pools instead of an even haze, the
+    // way poured colour actually behaves.
+    f = smoothstep(0.30, 0.70, f);
+    // Ridged noise, twice: fat dark "venom" veins, and hair-thin bright
+    // filaments riding the same warp — the threads that read as marbling.
+    float ridge = 1.0 - abs(2.0 * fbm(q * 1.9 + 2.6 * w2 + 0.12 * t) - 1.0);
+    float veins = pow(ridge, 4.0);
+    float filament = pow(ridge, 30.0);
 
-    // The plate's inks: deep ink -> ultramarine -> periwinkle -> pale cyan.
-    vec3 deep = vec3(0.043, 0.039, 0.36);
-    vec3 ultra = vec3(0.184, 0.173, 0.902);
-    vec3 peri = vec3(0.42, 0.412, 1.0);
-    vec3 cyan = vec3(0.58, 0.82, 0.94);
-    vec3 col = mix(deep, ultra, smoothstep(0.12, 0.5, f));
-    col = mix(col, peri, smoothstep(0.45, 0.74, f));
-    col = mix(col, cyan, smoothstep(0.7, 0.95, f));
-    col = mix(col, deep * 0.7, veins * 0.6);
+    // The plate's inks. The floor is a deep but still SATURATED blue, never
+    // near-black: the true darks are spent on the veins alone, so a dark
+    // stretch of fluid reads as ink pooling, not as the orb switching off.
+    vec3 deep = vec3(0.086, 0.078, 0.55);
+    vec3 ultra = vec3(0.196, 0.184, 0.925);
+    vec3 peri = vec3(0.47, 0.46, 1.0);
+    vec3 pale = vec3(0.70, 0.88, 1.0);
+    vec3 col = mix(deep, ultra, smoothstep(0.08, 0.44, f));
+    col = mix(col, peri, smoothstep(0.62, 0.86, f));
+    col = mix(col, pale, smoothstep(0.88, 1.00, f));
+    col = mix(col, vec3(0.030, 0.027, 0.20), veins * 0.45);
+    col = mix(col, vec3(0.84, 0.90, 1.0), filament * 0.35);
 
     // Sphere shading: key light upper-left, a specular breath on top of it.
+    // Deliberately shallow — poured ink glows, it does not sit in shadow,
+    // and a heavy terminator would eat the white shoulder on the dark side.
     float z = sqrt(max(0.0, 1.0 - r * r));
     vec3 n = normalize(vec3(p, z + 0.32));
     float light = clamp(dot(n, normalize(vec3(-0.45, 0.55, 0.72))), 0.0, 1.0);
-    col *= 0.7 + 0.52 * light;
-    col += vec3(0.88, 0.93, 1.0) * pow(light, 6.0) * 0.32;
+    col *= 0.88 + 0.28 * light;
+    col += vec3(0.88, 0.93, 1.0) * pow(light, 6.0) * 0.28;
     // Loudness lights the ink from within.
     col *= 1.0 + 0.20 * uEnergy;
-    // Pale rim, so the edge catches the page's light before melting.
-    float rim = smoothstep(0.55, 1.0, r);
-    col = mix(col, vec3(0.64, 0.82, 0.97), rim * 0.42);
 
-    // Solid core, soft dissolve at the silhouette.
-    float alpha = 1.0 - smoothstep(0.85, 1.06, r);
+    // THE WHITE SHOULDER. The ink keeps its full saturation across the body
+    // and then burns out to paper-white over the last fifth of the radius,
+    // so the sphere is ringed in light instead of going pale and muddy at
+    // the edge. The fluid ruffles where the burnout starts (the same warp
+    // that draws the ink), so the ring breathes with the swirl instead of
+    // sitting on it like a decal.
+    float edge = 0.86 + 0.05 * (w2.x - 0.5) - 0.05 * uEnergy;
+    float wash = smoothstep(edge, 0.97, r);
+    col = mix(col, vec3(1.0), pow(wash, 0.55));
+    // ...and a band of light lives IN that shoulder, added rather than
+    // mixed, so the ink's own dark veins cannot punch holes in the ring.
+    float halo = exp(-pow((r - 0.94) / 0.065, 2.0));
+    col = min(vec3(1.0), col + halo * 0.55);
+
+    // The silhouette dissolves once the ink has already burnt to white, so
+    // the orb melts into the page with no grey fringe to give it away. The
+    // fade pulls inward by exactly what the voice swell pushed out, so a
+    // shouting user cannot inflate the sphere past the canvas and leave a
+    // straight cut across it.
+    float alpha = 1.0 - smoothstep(0.985 - 0.06 * uEnergy, 1.025 - 0.06 * uEnergy, r);
     gl_FragColor = vec4(col, alpha);
   }
 `;
@@ -208,7 +254,7 @@ export function AiOrbCanvas({
       fragmentShader: FRAGMENT_SHADER,
       uniforms: {
         uTime: { value: 0 },
-        uSpin: { value: 0 },
+        uFlow: { value: 0 },
         uEnergy: { value: 0 },
         uSpeak: { value: 0 },
       },
@@ -229,10 +275,10 @@ export function AiOrbCanvas({
     const start = performance.now();
 
     // Smoothed animation state (see the header): energy snaps up with the
-    // voice and releases slowly; activity/speak ease both ways; spin is the
+    // voice and releases slowly; activity/speak ease both ways; flow is the
     // integrated activity-scaled clock.
     let prevNow = start;
-    let spin = 12; // matches the reduced-motion still frame's mid-swirl phase
+    let flow = 12; // matches the reduced-motion still frame's mid-swirl phase
     let energy = 0;
     let activity = 0;
     let speak = 0;
@@ -274,10 +320,10 @@ export function AiOrbCanvas({
       energy += (targetEnergy - energy) * (targetEnergy > energy ? 0.5 : 0.12);
       activity += (targetActivity - activity) * 0.08;
       speak += (targetSpeak - speak) * 0.15;
-      spin += dt * (1 + 2.5 * activity);
+      flow += dt * (1 + 2.5 * activity);
 
       material.uniforms.uTime!.value = seconds;
-      material.uniforms.uSpin!.value = spin;
+      material.uniforms.uFlow!.value = flow;
       material.uniforms.uEnergy!.value = energy;
       material.uniforms.uSpeak!.value = speak;
       renderer.render(scene, camera);

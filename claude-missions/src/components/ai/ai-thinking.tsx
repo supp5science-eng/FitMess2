@@ -9,9 +9,9 @@ import "./ai-thinking.css";
 /**
  * The shared "AI razmišlja" loading animation — used everywhere the app is
  * waiting on a Gemini estimate (Prizma, Slikaj obrok, Reci obrok, Deklaracija).
- * A morphing brand-gradient orb under a rotating ring + pulsing haloes, with a
- * short status line that cycles through `lines` so the wait feels alive and
- * on-brand instead of a bare spinner. See `ai-thinking.css` for the motion.
+ * A morphing brand-gradient orb inside two counter-turning comet arcs, over a
+ * faint rail, with a short status line that cycles through `lines` so the wait
+ * feels alive and on-brand instead of a bare spinner. See `ai-thinking.css`.
  */
 
 export function AiThinking({
@@ -47,9 +47,13 @@ export function AiThinking({
   return (
     <div className={`ai-think ${className}`.trim()} role="status" aria-live="polite">
       <div className="ai-think-orb" aria-hidden="true">
-        <span className="ai-think-ring" />
-        <span className="ai-think-ring" />
-        <span className="ai-think-ring" />
+        {/* The rail the arcs travel on — without it a lone arc reads as a
+            broken circle rather than as something in motion. */}
+        <span className="ai-think-track" />
+        <span className="ai-think-arc ai-think-arc-outer" />
+        <span className="ai-think-arc ai-think-arc-inner" />
+        <span className="ai-think-halo" />
+        <span className="ai-think-halo" />
         <span className="ai-think-core" />
       </div>
 

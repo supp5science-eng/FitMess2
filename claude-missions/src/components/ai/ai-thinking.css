@@ -1,10 +1,22 @@
 /*
  * "AI razmišlja" — the shared premium loading animation for every place where
  * the app is waiting on a Gemini estimate (Prizma, Slikaj obrok, Reci obrok,
- * Deklaracija). A morphing, breathing brand-gradient blob under a rotating
- * conic ring and pulsing haloes, plus a shimmering indeterminate bar. Pure
+ * Deklaracija). A morphing, breathing brand-gradient blob inside two
+ * counter-turning comet arcs, plus a shimmering indeterminate bar. Pure
  * transform/opacity so it stays smooth on phones; fully theme-aware via the
  * app's CSS vars; collapses to a calm static state under reduced motion.
+ *
+ * THE ARC (2026-08-26). The old ring was one conic sweep masked into a band,
+ * which cuts both of its ends off SQUARE — the sweep just stopped mid-air and
+ * the circle read as broken, not as spinning. Now each arc is drawn twice:
+ *   · `::before` is the sweep, its tail dissolving to nothing (a comet tail
+ *     needs no cap — there is nothing left to cap), its head cut square at
+ *     `--ai-arc-head`;
+ *   · `::after` is a dot exactly one band wide, parked ON that head, which
+ *     turns the square cut into a round one.
+ * The dot rides the band's mid-radius via `transform-origin: 50%
+ * calc(var(--ai-arc-size) / 2)` — the arc's own centre — so it stays welded
+ * to the head at any size, thickness or head angle.
  */
 
 .ai-think {
@@ -17,58 +29,153 @@
 }
 
 .ai-think-orb {
+  /* Everything below derives from these two, so the whole spinner rescales
+     from one number. */
+  --ai-orb: 132px;
+  --ai-ink: var(--ink-bright, #2f2ce6);
+  --ai-ink-deep: var(--ink, #1c1b8f);
+
   position: relative;
-  width: 132px;
-  height: 132px;
+  width: var(--ai-orb);
+  height: var(--ai-orb);
   display: grid;
   place-items: center;
 }
 
-/* Rotating conic sweep, masked into a thin ring around the orb. */
+/* The bloom the whole thing sits in. This used to be a `box-shadow` on the
+   core, which Chromium paints as a rounded RECTANGLE whenever the radius is a
+   complex 8-value blob like the core's — a straight-edged grey band was
+   visible behind the bead on every phone. A radial gradient owes nothing to
+   the shape above it, so it stays a circle whatever the core morphs into. */
 .ai-think-orb::before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 50% 54%,
+    color-mix(in srgb, var(--ai-ink) 26%, transparent) 0%,
+    color-mix(in srgb, var(--ai-ink) 10%, transparent) 46%,
+    transparent 74%
+  );
+}
+
+/* The rail: a full, very faint circle the arcs travel on. */
+.ai-think-track {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 5px solid color-mix(in srgb, var(--ai-ink) 10%, transparent);
+}
+
+/* ---- The arcs -------------------------------------------------------- */
+
+.ai-think-arc {
+  --ai-arc-size: calc(var(--ai-orb) - 2 * var(--ai-arc-inset));
+
+  position: absolute;
+  inset: var(--ai-arc-inset);
+  border-radius: 50%;
+  animation: ai-spin var(--ai-arc-dur) cubic-bezier(0.62, 0.06, 0.36, 0.95)
+    infinite;
+  animation-direction: var(--ai-arc-dir, normal);
+}
+
+/* The sweep. The tail starts at a fully transparent shade of the INK (not the
+   keyword `transparent`, which some engines interpolate through grey) and the
+   ramp stops are expressed as fractions of the head, so one rule serves both
+   arcs however long each one is. */
+.ai-think-arc::before {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: 50%;
   background: conic-gradient(
-    from 0deg,
-    transparent 0 55%,
-    color-mix(in srgb, var(--brand, #2f2ce6) 35%, transparent) 72%,
-    var(--brand, #2f2ce6) 92%,
-    transparent 100%
+    from 0turn,
+    color-mix(in srgb, var(--ai-ink) 0%, transparent) 0turn,
+    color-mix(in srgb, var(--ai-ink) 22%, transparent)
+      calc(var(--ai-arc-head) * 0.45),
+    color-mix(in srgb, var(--ai-ink) 62%, transparent)
+      calc(var(--ai-arc-head) * 0.78),
+    var(--ai-arc-tip) var(--ai-arc-head),
+    transparent var(--ai-arc-head)
   );
-  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
-  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 5px));
-  animation: ai-spin 1.5s linear infinite;
+  -webkit-mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--ai-arc-w)),
+    #000 calc(100% - var(--ai-arc-w))
+  );
+  mask: radial-gradient(
+    farthest-side,
+    transparent calc(100% - var(--ai-arc-w)),
+    #000 calc(100% - var(--ai-arc-w))
+  );
 }
 
-/* Pulsing haloes that ripple outward, staggered. */
-.ai-think-ring {
+/* The round head cap: one band-wide dot rotated onto the head angle. */
+.ai-think-arc::after {
+  content: "";
   position: absolute;
-  inset: 8px;
+  top: 0;
+  left: 50%;
+  width: var(--ai-arc-w);
+  height: var(--ai-arc-w);
+  margin-left: calc(var(--ai-arc-w) / -2);
   border-radius: 50%;
-  border: 2px solid color-mix(in srgb, var(--brand, #2f2ce6) 55%, transparent);
-  animation: ai-ping 2.6s ease-out infinite;
-}
-.ai-think-ring:nth-child(2) {
-  animation-delay: 0.85s;
-}
-.ai-think-ring:nth-child(3) {
-  animation-delay: 1.7s;
+  background: var(--ai-arc-tip);
+  transform-origin: 50% calc(var(--ai-arc-size) / 2);
+  transform: rotate(var(--ai-arc-head));
+  box-shadow: 0 0 12px -2px color-mix(in srgb, var(--ai-arc-tip) 70%, transparent);
 }
 
-/* The living core: brand wordmark gradient, breathing + morphing + drifting. */
+.ai-think-arc-outer {
+  --ai-arc-inset: 0px;
+  --ai-arc-w: 5px;
+  --ai-arc-head: 0.62turn;
+  --ai-arc-tip: var(--ai-ink);
+  --ai-arc-dur: 1.85s;
+}
+
+/* Shorter, thinner, turning the other way and slower — two arcs at the same
+   speed read as one thick hoop; opposed ones read as depth. */
+.ai-think-arc-inner {
+  --ai-arc-inset: 12px;
+  --ai-arc-w: 3px;
+  --ai-arc-head: 0.3turn;
+  --ai-arc-tip: color-mix(in srgb, var(--ai-ink) 55%, var(--paper, #ffffff));
+  --ai-arc-dur: 2.9s;
+  --ai-arc-dir: reverse;
+}
+
+/* Pulsing haloes that ripple outward from the core, staggered. */
+.ai-think-halo {
+  position: absolute;
+  inset: 26px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--ai-ink) 40%, transparent);
+  animation: ai-ping 3s ease-out infinite;
+}
+.ai-think-halo:nth-of-type(2) {
+  animation-delay: 1.5s;
+}
+
+/* The living core: the plate's own duotone, breathing + morphing + drifting.
+   NOT `--wordmark-grad` — that gradient carries an ochre overprint pass which,
+   pooled into a 66px bead, reads as brown mud rather than as ink. Prizma's own
+   orb (`ai-orb-canvas`) is pale periwinkle -> ultramarine -> deep indigo, so
+   the wait wears the same face as the agent it is waiting on. */
 .ai-think-core {
   position: relative;
-  width: 72px;
-  height: 72px;
+  width: 66px;
+  height: 66px;
   border-radius: 42% 58% 54% 46% / 52% 46% 54% 48%;
-  background-image: var(
-    --wordmark-grad,
-    linear-gradient(135deg, #2f2ce6, #6b69ff 45%, #15139c)
+  background-image: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--ai-ink) 40%, var(--paper, #ffffff)) 0%,
+    var(--ai-ink) 46%,
+    var(--ai-ink-deep) 100%
   );
   background-size: 200% 200%;
-  box-shadow: 0 12px 34px -10px color-mix(in srgb, var(--brand, #2f2ce6) 65%, transparent);
   animation:
     ai-breathe 3s ease-in-out infinite,
     ai-morph 8s ease-in-out infinite,
@@ -116,11 +223,11 @@
 }
 @keyframes ai-ping {
   0% {
-    transform: scale(0.72);
-    opacity: 0.75;
+    transform: scale(0.82);
+    opacity: 0.55;
   }
   100% {
-    transform: scale(1.28);
+    transform: scale(1.5);
     opacity: 0;
   }
 }
@@ -170,8 +277,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ai-think-orb::before,
-  .ai-think-ring,
+  .ai-think-arc,
+  .ai-think-halo,
   .ai-think-core,
   .ai-think-bar > i,
   .ai-think-line {

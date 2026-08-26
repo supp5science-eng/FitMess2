@@ -35,7 +35,10 @@ import { playTtsBlob, type TtsPlayback } from "@/lib/audio/play-tts";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import { createSpeaker, type Speaker } from "@/lib/audio/speak";
 import type { MessageKey } from "@/lib/i18n/messages";
-import { useKeyboardInset } from "@/lib/ui/use-keyboard-inset";
+import {
+  KEYBOARD_ONLY_OFFSET,
+  useKeyboardInset,
+} from "@/lib/ui/use-keyboard-inset";
 import { cn } from "@/lib/utils";
 
 /**
@@ -162,11 +165,14 @@ export function AgentScreen({
     "idle" | "listening" | "transcribing"
   >("idle");
   const [isSpeaking, setIsSpeaking] = useState(false);
-  /** Which half of the screen is showing. Chat is the default on purpose:
-   * it is what this tab has always opened as, it needs no microphone
-   * permission to be useful, and it shows the thread the user left behind.
-   * Jarvis is one tap away and asks for the mic only when tapped. */
-  const [mode, setMode] = useState<JarvisMode>("chat");
+  /** Which half of the screen is showing. JARVIS is the default (owner's
+   * call, 2026-08-26): the screen is called Jarvis, the first segment in the
+   * top bar is Jarvis, and opening it on Chat made the name a label over
+   * somebody else's screen. Nothing is asked of the device by landing here —
+   * the microphone permission is still requested on the first TAP of the big
+   * button, never on arrival — and Chat is one tap away with its thread
+   * intact, since the thread lives in `sessionStorage`, not in the mode. */
+  const [mode, setMode] = useState<JarvisMode>("voice");
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const recordingRef = useRef<WavRecording | null>(null);
   const speakerRef = useRef<Speaker | null>(null);
@@ -408,12 +414,26 @@ export function AgentScreen({
           {isIdle ? (
             /* MIR: the orb is the screen — greeting from live data, three
                quiet hints. */
-            <div className="flex flex-1 flex-col items-center justify-center gap-7 px-8 pb-6">
-              <AiOrbCanvas
-                className="size-48"
-                mode={orbMode}
-                getLevel={getLevel}
-              />
+            <div
+              className={cn(
+                "flex flex-1 flex-col items-center justify-center px-8 pb-4",
+                keyboard.isOpen ? "gap-4" : "gap-7"
+              )}
+            >
+              {/* The orb steps out while the keyboard is up. A 192 px circle
+                  plus the greeting plus the chips do not fit in what is left
+                  of a phone screen once ~340 px of it is keys, and what got
+                  pushed off the top was the greeting — the one thing on this
+                  screen that is about the user. Typing is not a moment that
+                  needs the face; it comes back the instant the keyboard
+                  closes. */}
+              {keyboard.isOpen ? null : (
+                <AiOrbCanvas
+                  className="size-48"
+                  mode={orbMode}
+                  getLevel={getLevel}
+                />
+              )}
               <div className="flex flex-col items-center gap-2.5 text-center">
                 <h1
                   className={cn(
@@ -521,13 +541,21 @@ export function AgentScreen({
             </div>
           )}
 
-          {/* The composer rides the keyboard. `bottomOffset` is a CSS
-              expression, not a number that passes through React, so the card
-              tracks the keyboard slide frame by frame without re-rendering
-              the thread above it (see `useKeyboardInset`). */}
+          {/* The composer rides the keyboard, and sits FLUSH on it. The offset
+              is a CSS expression, not a number that passes through React, so
+              the card tracks the slide frame by frame without re-rendering the
+              thread above it (see `useKeyboardInset`).
+
+              `KEYBOARD_ONLY_OFFSET` rather than the hook's `bottomOffset`: the
+              chromeless column in `AppShell` already carries the home-indicator
+              clearance, and `bottomOffset` folds it in a second time. That is
+              what left a band of dead screen between this card and the keys —
+              the owner's "rupa izmedju chatboxa i tastature". The column's
+              padding now yields to the keyboard and this one is the keyboard
+              alone, so the two add up to exactly `max(safe, keyboard)`. */}
           <div
-            className="shrink-0 px-4 pt-2"
-            style={{ paddingBottom: keyboard.bottomOffset }}
+            className="shrink-0 px-4 pt-1.5"
+            style={{ paddingBottom: KEYBOARD_ONLY_OFFSET }}
           >
             <JarvisComposer
               value={draft}

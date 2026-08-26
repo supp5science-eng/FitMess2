@@ -4,6 +4,8 @@ import { cleanup, renderHook } from "@testing-library/react";
 
 import {
   KEYBOARD_BOTTOM_OFFSET,
+  KEYBOARD_ONLY_OFFSET,
+  KEYBOARD_SAFE_AREA_REMAINDER,
   KEYBOARD_INSET_VAR,
   measureKeyboardInset,
   useKeyboardInset,
@@ -176,6 +178,26 @@ describe("useKeyboardInset", () => {
       `max(env(safe-area-inset-bottom, 0px), var(${KEYBOARD_INSET_VAR}, 0px))`
     );
     expect(KEYBOARD_BOTTOM_OFFSET).not.toContain("+");
+  });
+
+  it("test_split_offsets_add_up_to_the_combined_one_and_never_double", () => {
+    // The other way to spend the same budget, for a composer whose COLUMN
+    // already carries the safe area (Jarvis: `AppShell`'s chromeless branch).
+    // The composer takes the keyboard alone, the column takes whatever is left
+    // of the safe area — so closed it is `safe + 0`, open it is `0 + keyboard`,
+    // and neither state pays for the home indicator twice. Getting this wrong
+    // is what parked the composer ~34px above the keys.
+    expect(KEYBOARD_ONLY_OFFSET).toBe(`var(${KEYBOARD_INSET_VAR}, 0px)`);
+    expect(KEYBOARD_ONLY_OFFSET).not.toContain("safe-area");
+
+    expect(KEYBOARD_SAFE_AREA_REMAINDER).toBe(
+      `max(calc(env(safe-area-inset-bottom, 0px) - var(${KEYBOARD_INSET_VAR}, 0px)), 0px)`
+    );
+    // Floored at zero, so an open keyboard taller than the safe area can never
+    // pull the column's padding negative.
+    expect(KEYBOARD_SAFE_AREA_REMAINDER).toContain("max(");
+    expect(KEYBOARD_SAFE_AREA_REMAINDER).toContain("0px)");
+    expect(KEYBOARD_SAFE_AREA_REMAINDER).not.toContain("+");
   });
 
   it("test_hook_reports_the_keyboard_once_it_settles", () => {

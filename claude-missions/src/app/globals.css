@@ -209,8 +209,14 @@
      coloured block, not as something being said. This is that same ink
      walked down to near-black -- it still carries the blue (it is not a
      neutral grey), so Prizma's prose stays on the plate while reading as
-     text. Deliberately NOT `--foreground`: nothing outside her answers may
-     use it. */
+     text. Deliberately NOT `--foreground`.
+
+     Its remit is SENTENCES IN THE CONVERSATION, both directions (widened
+     2026-08-26): her answers, and the one being typed at her in Jarvis's
+     composer. The argument above is the same on the way in -- a sentence
+     the user is still writing is prose, not a label -- and it is what the
+     composer's field is set in. Nothing outside that conversation may use
+     this ink. */
   --ai-prose: #191924;
 
   /* --- Brand -------------------------------------------------------- */

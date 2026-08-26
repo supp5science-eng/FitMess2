@@ -64,7 +64,7 @@ describe("agent facts sheet", () => {
 
   it("system prompt carries the Prizma persona, the action catalog and the zero-shame rule", () => {
     const prompt = buildAgentSystemPrompt(makeFacts());
-    expect(prompt).toContain("Ti si Prizma");
+    expect(prompt).toContain("Ti si Jarvis");
     expect(prompt).toContain("zero-shame");
     expect(prompt).toContain("IZVOR ISTINE");
     expect(prompt).toContain("Dnevni cilj: 1900 kcal");

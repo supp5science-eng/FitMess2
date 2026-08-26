@@ -4,15 +4,15 @@ import { useEffect, useRef } from "react";
 import { Mic, Square } from "lucide-react";
 
 import { AiOrbCanvas, type AiOrbMode } from "@/components/ai/ai-orb-canvas";
-import { prizmaProse, prizmaVoice } from "@/components/ai/prizma-font";
+import { jarvisProse, jarvisVoice } from "@/components/ai/jarvis-font";
 import { useT } from "@/components/i18n/locale-provider";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { cn } from "@/lib/utils";
 
-import "./prizma-voice-mode.css";
+import "./jarvis-voice-mode.css";
 
 /**
- * JARVIS — Prizma with the keyboard taken away (2026-08-26 redesign).
+ * JARVIS — Jarvis with the keyboard taken away (2026-08-26 redesign).
  *
  * The owner's brief was one sentence: "levo bude jarvis gde će biti samo
  * audio deo". So this screen has exactly three things on it — the orb, ONE
@@ -44,21 +44,21 @@ type VoicePhase =
   | "speaking";
 
 const PHASE_LINE: Record<VoicePhase, MessageKey> = {
-  idle: "prizma.voice.idle",
-  listening: "prizma.voice.listening",
-  transcribing: "prizma.voice.transcribing",
-  thinking: "prizma.voice.thinking",
-  speaking: "prizma.voice.speaking",
+  idle: "jarvis.voice.idle",
+  listening: "jarvis.voice.listening",
+  transcribing: "jarvis.voice.transcribing",
+  thinking: "jarvis.voice.thinking",
+  speaking: "jarvis.voice.speaking",
 };
 
 /** Only the two states the user can act on carry a second line. The three
  *  "wait a moment" states say nothing extra — waiting needs no instructions. */
 const PHASE_HINT: Partial<Record<VoicePhase, MessageKey>> = {
-  idle: "prizma.voice.idleHint",
-  listening: "prizma.voice.listeningHint",
+  idle: "jarvis.voice.idleHint",
+  listening: "jarvis.voice.listeningHint",
 };
 
-export function PrizmaVoiceMode({
+export function JarvisVoiceMode({
   orbMode,
   getLevel,
   voiceState,
@@ -75,11 +75,11 @@ export function PrizmaVoiceMode({
   voiceState: "idle" | "listening" | "transcribing";
   isSending: boolean;
   isSpeaking: boolean;
-  /** Poslednji Prizmin odgovor, ako ga ima — da se može i pročitati, ne samo čuti. */
+  /** Poslednji Jarvisov odgovor, ako ga ima — da se može i pročitati, ne samo čuti. */
   lastReply: string | null;
   /** Tap na veliki taster: počni slušanje, ili završi i pošalji. */
   onMicTap: () => void;
-  /** Tap dok Prizma govori — prekini je. */
+  /** Tap dok Jarvis govori — prekini je. */
   onInterrupt: () => void;
   error: string | null;
   className?: string;
@@ -87,7 +87,7 @@ export function PrizmaVoiceMode({
   const { t } = useT();
   const buttonRef = useRef<HTMLButtonElement | null>(null);
 
-  // What the user is doing outranks what Prizma is doing: if the ear is open
+  // What the user is doing outranks what Jarvis is doing: if the ear is open
   // we say "slušam" even while the previous answer is still finishing.
   const phase: VoicePhase =
     voiceState === "listening"
@@ -105,7 +105,7 @@ export function PrizmaVoiceMode({
 
   /**
    * The live ring. `getLevel()` is read every frame and written to
-   * `--pvm-level` on the button node — a ref, not state, so this costs one
+   * `--jv-level` on the button node — a ref, not state, so this costs one
    * style write per frame instead of a React render.
    *
    * Two details that are not decoration:
@@ -133,14 +133,14 @@ export function PrizmaVoiceMode({
       const raw = getLevel();
       const level = Number.isFinite(raw) ? Math.min(1, Math.max(0, raw)) : 0;
       smoothed += (level - smoothed) * (level > smoothed ? 0.45 : 0.12);
-      node.style.setProperty("--pvm-level", smoothed.toFixed(3));
+      node.style.setProperty("--jv-level", smoothed.toFixed(3));
       frame = requestAnimationFrame(tick);
     };
     frame = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(frame);
-      node.style.setProperty("--pvm-level", "0");
+      node.style.setProperty("--jv-level", "0");
     };
   }, [getLevel, isListening]);
 
@@ -153,7 +153,7 @@ export function PrizmaVoiceMode({
         "flex min-h-0 flex-1 flex-col items-center justify-between px-8 pt-6 pb-8",
         className
       )}
-      data-testid="prizma-voice-mode"
+      data-testid="jarvis-voice-mode"
       data-phase={phase}
     >
       {/* The orb sits in the middle of an empty screen and carries the whole
@@ -171,8 +171,8 @@ export function PrizmaVoiceMode({
           <p
             key={phase}
             className={cn(
-              prizmaVoice.className,
-              "pvm-line text-xl leading-tight font-semibold text-foreground"
+              jarvisVoice.className,
+              "jv-line text-xl leading-tight font-semibold text-foreground"
             )}
           >
             {line}
@@ -181,8 +181,8 @@ export function PrizmaVoiceMode({
             <p
               key={`${phase}-hint`}
               className={cn(
-                prizmaVoice.className,
-                "pvm-hint max-w-[28ch] text-[13px] leading-relaxed text-muted-foreground"
+                jarvisVoice.className,
+                "jv-hint max-w-[28ch] text-[13px] leading-relaxed text-muted-foreground"
               )}
             >
               {t(hintKey)}
@@ -196,8 +196,8 @@ export function PrizmaVoiceMode({
           <p
             key={lastReply}
             className={cn(
-              prizmaProse.className,
-              "pvm-reply line-clamp-3 max-w-[34ch] text-center text-[13px] leading-relaxed text-muted-foreground"
+              jarvisProse.className,
+              "jv-reply line-clamp-3 max-w-[34ch] text-center text-[13px] leading-relaxed text-muted-foreground"
             )}
           >
             {lastReply}
@@ -218,31 +218,31 @@ export function PrizmaVoiceMode({
         ref={buttonRef}
         type="button"
         onClick={isSpeaking ? onInterrupt : onMicTap}
-        // Interrupting has to stay live while she talks; only the two states
+        // Interrupting has to stay live while it talks; only the two states
         // where a tap has nothing to do are blocked.
         disabled={isBusy}
         aria-label={t(
           isSpeaking
-            ? "prizma.voice.interrupt"
+            ? "jarvis.voice.interrupt"
             : isListening
-              ? "prizma.voice.stop"
-              : "prizma.voice.start"
+              ? "jarvis.voice.stop"
+              : "jarvis.voice.start"
         )}
-        data-testid="prizma-voice-button"
+        data-testid="jarvis-voice-button"
         data-live={isListening ? "true" : "false"}
         data-idle={phase === "idle" ? "true" : "false"}
         className={cn(
-          "pvm-button relative flex size-20 shrink-0 items-center justify-center rounded-full",
+          "jv-button relative flex size-20 shrink-0 items-center justify-center rounded-full",
           "liquid-glass bg-primary text-primary-foreground fm-lift",
           "active:scale-95",
           "focus-visible:ring-ring/50 focus-visible:ring-3 focus-visible:outline-none",
           "disabled:opacity-50"
         )}
       >
-        <span className="pvm-halo" aria-hidden="true" />
-        <span className="pvm-halo pvm-halo-wide" aria-hidden="true" />
+        <span className="jv-halo" aria-hidden="true" />
+        <span className="jv-halo jv-halo-wide" aria-hidden="true" />
         {/* A filled stop square whenever a tap ENDS something — the open ear
-            or her sentence. The mic only shows when a tap would start one. */}
+            or its sentence. The mic only shows when a tap would start one. */}
         {isListening || isSpeaking ? (
           <Square className="size-6 fill-current" aria-hidden="true" />
         ) : (

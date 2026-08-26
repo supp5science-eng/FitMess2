@@ -22,13 +22,13 @@ import {
 
 import { transcribeVoiceAction } from "@/app/(app)/ai/actions";
 import { AiOrbCanvas, type AiOrbMode } from "@/components/ai/ai-orb-canvas";
-import { PrizmaComposer } from "@/components/ai/prizma-composer";
-import { prizmaProse, prizmaVoice } from "@/components/ai/prizma-font";
+import { JarvisComposer } from "@/components/ai/jarvis-composer";
+import { jarvisProse, jarvisVoice } from "@/components/ai/jarvis-font";
 import {
-  PrizmaTopBar,
-  type PrizmaMode,
-} from "@/components/ai/prizma-top-bar";
-import { PrizmaVoiceMode } from "@/components/ai/prizma-voice-mode";
+  JarvisTopBar,
+  type JarvisMode,
+} from "@/components/ai/jarvis-top-bar";
+import { JarvisVoiceMode } from "@/components/ai/jarvis-voice-mode";
 import type { AgentActionId } from "@/lib/ai/agent-actions";
 import { useT } from "@/components/i18n/locale-provider";
 import { playTtsBlob, type TtsPlayback } from "@/lib/audio/play-tts";
@@ -39,18 +39,18 @@ import { useKeyboardInset } from "@/lib/ui/use-keyboard-inset";
 import { cn } from "@/lib/utils";
 
 /**
- * Prizma — the whole AI tab (Jarvis v1, 2026-08-25, per the design canvas).
+ * Jarvis — the whole AI tab (Jarvis v1, 2026-08-25, per the design canvas).
  *
  * The grammar, in one breath: the ORB is the center of the world while
- * Prizma waits (big, with a personal greeting built from live data); once a
+ * Jarvis waits (big, with a personal greeting built from live data); once a
  * conversation runs it shrinks to a 32px status light at the top and the
- * exchange takes the screen — the user's line in a quiet tinted bubble, her
- * answer as plain prose, and under it the ACTION ROWS she brings when the
+ * exchange takes the screen — the user's line in a quiet tinted bubble, its
+ * answer as plain prose, and under it the ACTION ROWS it brings when the
  * message asked for a deed ("hoću da logujem obrok" → Prizma unos / Slikaj /
- * Gric). Tapping a row opens the existing flow; Prizma never explains where
+ * Gric). Tapping a row opens the existing flow; Jarvis never explains where
  * to tap.
  *
- * THE EXCHANGE (2026-08-26). The first cut of this screen set her answers at
+ * THE EXCHANGE (2026-08-26). The first cut of this screen set its answers at
  * 19px, hung the user's line in the air as a right-aligned quote, and gave
  * every brought flow a bordered, lifted, accent-filled card with a 44px icon
  * tile. On a 390px phone that reads as loud and unsorted: heading-sized prose
@@ -166,7 +166,7 @@ export function AgentScreen({
    * it is what this tab has always opened as, it needs no microphone
    * permission to be useful, and it shows the thread the user left behind.
    * Jarvis is one tap away and asks for the mic only when tapped. */
-  const [mode, setMode] = useState<PrizmaMode>("chat");
+  const [mode, setMode] = useState<JarvisMode>("chat");
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const recordingRef = useRef<WavRecording | null>(null);
   const speakerRef = useRef<Speaker | null>(null);
@@ -190,7 +190,7 @@ export function AgentScreen({
     };
   }, []);
 
-  /** Cut whatever Prizma is saying right now (both mouths). */
+  /** Cut whatever Jarvis is saying right now (both mouths). */
   function stopSpeaking() {
     playbackRef.current?.stop();
     playbackRef.current = null;
@@ -201,7 +201,7 @@ export function AgentScreen({
   /** Switching halves closes the ear and the mouth first. Jarvis and chat
    * share one recorder and one voice; leaving either running across a switch
    * is how the mic ends up open on a screen that no longer shows it. */
-  function changeMode(next: PrizmaMode) {
+  function changeMode(next: JarvisMode) {
     if (next === mode) return;
     recordingRef.current?.cancel();
     recordingRef.current = null;
@@ -211,13 +211,13 @@ export function AgentScreen({
     setMode(next);
   }
 
-  /** The last thing Prizma said — Jarvis shows it small under the orb so a
+  /** The last thing Jarvis said — Jarvis shows it small under the orb so a
    * spoken answer can also be read. */
   const lastReply =
     [...messages].reverse().find((m) => m.role === "model")?.text ?? null;
 
   /** What the orb should be doing right now. Listening wins (the mic is
-   * live), then the wait for Prizma, then her speaking, then rest. */
+   * live), then the wait for Jarvis, then its speaking, then rest. */
   const orbMode: AiOrbMode =
     voiceState === "listening"
       ? "listening"
@@ -293,7 +293,7 @@ export function AgentScreen({
     }
   }
 
-  /** Prizma says one reply aloud: ElevenLabs when deployed, system TTS
+  /** Jarvis says one reply aloud: ElevenLabs when deployed, system TTS
    * when not (or when the fetch/playback fails). Never throws — a voice
    * failure costs the sound, never the conversation on screen. */
   async function speakReply(reply: string) {
@@ -351,7 +351,7 @@ export function AgentScreen({
       const formData = new FormData();
       formData.append(
         "audio",
-        new File([blob], "prizma.wav", { type: "audio/wav" })
+        new File([blob], "jarvis.wav", { type: "audio/wav" })
       );
       const result = await transcribeVoiceAction(formData);
       if (!result.ok) {
@@ -385,10 +385,10 @@ export function AgentScreen({
       {/* The chrome this screen has instead of the bottom navigation: settings
           on the left, the two halves in the middle, the way out on the right.
           Without the last one there is no way off `/ai` in an installed PWA. */}
-      <PrizmaTopBar mode={mode} onModeChange={changeMode} />
+      <JarvisTopBar mode={mode} onModeChange={changeMode} />
 
       {mode === "voice" ? (
-        <PrizmaVoiceMode
+        <JarvisVoiceMode
           orbMode={orbMode}
           getLevel={getLevel}
           voiceState={voiceState}
@@ -417,7 +417,7 @@ export function AgentScreen({
               <div className="flex flex-col items-center gap-2.5 text-center">
                 <h1
                   className={cn(
-                    prizmaVoice.className,
+                    jarvisVoice.className,
                     "text-2xl font-bold tracking-tight text-foreground"
                   )}
                 >
@@ -425,7 +425,7 @@ export function AgentScreen({
                 </h1>
                 <p
                   className={cn(
-                    prizmaVoice.className,
+                    jarvisVoice.className,
                     "max-w-[30ch] text-[15px] leading-relaxed text-muted-foreground"
                   )}
                 >
@@ -478,7 +478,7 @@ export function AgentScreen({
                   <div key={index} className="flex flex-col">
                     <p
                       className={cn(
-                        prizmaProse.className,
+                        jarvisProse.className,
                         "text-[16px] leading-[1.62] whitespace-pre-wrap text-ai-prose"
                       )}
                     >
@@ -503,7 +503,7 @@ export function AgentScreen({
               {isSending ? (
                 <p
                   className={cn(
-                    prizmaProse.className,
+                    jarvisProse.className,
                     "animate-pulse text-[16px] leading-[1.62] text-muted-foreground"
                   )}
                 >
@@ -529,7 +529,7 @@ export function AgentScreen({
             className="shrink-0 px-4 pt-2"
             style={{ paddingBottom: keyboard.bottomOffset }}
           >
-            <PrizmaComposer
+            <JarvisComposer
               value={draft}
               onValueChange={setDraft}
               onSubmit={() => void send(draft)}

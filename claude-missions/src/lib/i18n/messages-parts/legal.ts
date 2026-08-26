@@ -166,7 +166,7 @@ export const legalMessages = {
 
     "legal.terms.price.h": "Cena",
     "legal.terms.price.body":
-      "Aplikacija je besplatna i trenutno bez ikakvog ograničenja. Kad uvedemo pretplatu, besplatan nivo ostaje — trajno, ne kao probni period: do {limit} AI procena dnevno (slikanje obroka, deklaracije, glas, FM 2.7), a unos hrane pretragom i sve ostalo ostaje neograničeno. Pretplata je za onoga ko želi više od toga. Cenu i uslove prikazaćemo jasno pre nego što bilo šta platiš — nikad se ništa ne naplaćuje bez potvrde. Naplata ide preko App Store-a odnosno Google Play-a, po njihovim pravilima; tamo pretplatu i otkazuješ i tamo tražiš povraćaj novca.",
+      "Aplikacija je besplatna i trenutno bez ikakvog ograničenja. Kad uvedemo pretplatu, besplatan nivo ostaje — trajno, ne kao probni period: do {limit} AI procena dnevno (slikanje obroka, deklaracije, glas, Prizma), a unos hrane pretragom i sve ostalo ostaje neograničeno. Pretplata je za onoga ko želi više od toga. Cenu i uslove prikazaćemo jasno pre nego što bilo šta platiš — nikad se ništa ne naplaćuje bez potvrde. Naplata ide preko App Store-a odnosno Google Play-a, po njihovim pravilima; tamo pretplatu i otkazuješ i tamo tražiš povraćaj novca.",
 
     "legal.terms.accuracy.h": "Tačnost brojeva i AI procena",
     "legal.terms.accuracy.body":
@@ -388,7 +388,7 @@ export const legalMessages = {
 
     "legal.terms.price.h": "Price",
     "legal.terms.price.body":
-      "The app is free and currently has no limit at all. When we introduce a subscription, the free tier stays — permanently, not as a trial period: up to {limit} AI estimates a day (meal photos, labels, voice, FM 2.7), while logging food by search and everything else stays unlimited. The subscription is for anyone who wants more than that. We will show the price and terms clearly before you pay anything — nothing is ever charged without confirmation. Payment runs through the App Store or Google Play under their rules; that is also where you cancel a subscription and request a refund.",
+      "The app is free and currently has no limit at all. When we introduce a subscription, the free tier stays — permanently, not as a trial period: up to {limit} AI estimates a day (meal photos, labels, voice, Prizma), while logging food by search and everything else stays unlimited. The subscription is for anyone who wants more than that. We will show the price and terms clearly before you pay anything — nothing is ever charged without confirmation. Payment runs through the App Store or Google Play under their rules; that is also where you cancel a subscription and request a refund.",
 
     "legal.terms.accuracy.h": "Accuracy of numbers and AI estimates",
     "legal.terms.accuracy.body":

@@ -42,7 +42,7 @@ export const agentRequestSchema = z.object({
 export type AgentTurn = z.infer<typeof agentTurnSchema>;
 
 /**
- * What Prizma's turn comes back as: the spoken reply, up to three action ids
+ * What Jarvis's turn comes back as: the spoken reply, up to three action ids
  * from the catalog, and — when the user just said what they ate — a MEAL DRAFT.
  * Zod re-validates what the model returned (the response schema constrains it,
  * but the parse is the contract) and an unknown id is DROPPED rather than
@@ -166,7 +166,7 @@ const DRAFT_SCHEMA_JSON = {
   additionalProperties: false,
 } as const;
 
-/** Gemini response schema for one Prizma turn (uppercase types, per the
+/** Gemini response schema for one Jarvis turn (uppercase types, per the
  * estimator convention in `gric-estimate.ts` and friends). */
 export const AGENT_RESPONSE_SCHEMA = {
   type: "OBJECT",
@@ -293,9 +293,9 @@ export function formatAgentFacts(facts: AgentFacts): string {
  *
  * Two things are load-bearing here and neither is decoration:
  *
- * 1. **The estimation rules are Gric's**, imported verbatim. Prizma is a third
+ * 1. **The estimation rules are Gric's**, imported verbatim. Jarvis is a third
  *    mouth for the same job, and if these rules were rewritten here a "šaka
- *    semenki" would weigh one thing said to Prizma and another said to Gric —
+ *    semenki" would weigh one thing said to Jarvis and another said to Gric —
  *    the day's total would depend on which screen the user was on.
  * 2. **She may propose, never announce.** The model has no way to write
  *    anything: the draft is returned to the client, shown, and only a POST to
@@ -322,7 +322,7 @@ ${GRIC_RULES}`;
  * over target gets framed as information, never as failure.
  */
 export function buildAgentSystemPrompt(facts: AgentFacts): string {
-  return `Ti si Prizma — lični AI trener u aplikaciji FitMess. Korisnik NE navigira aplikacijom: kaže tebi šta hoće, ti odgovoriš i DONESEŠ mu pravu stvar kao akciju. Pričaš na srpskom (pismo i ton korisnika prati), toplo, direktno i bez osuđivanja ("zero-shame": preskočen obrok ili prekoračenje NIKAD nije "greh" ni razlog za grižu savesti — jedan dan ne ruši nedelju).
+  return `Ti si Jarvis — lični AI trener u aplikaciji FitMess. Korisnik NE navigira aplikacijom: kaže tebi šta hoće, ti odgovoriš i DONESEŠ mu pravu stvar kao akciju. Pričaš na srpskom (pismo i ton korisnika prati), toplo, direktno i bez osuđivanja ("zero-shame": preskočen obrok ili prekoračenje NIKAD nije "greh" ni razlog za grižu savesti — jedan dan ne ruši nedelju).
 
 LIČNI TON:
 - Ako znaš ime, povremeno oslovi korisnika po imenu — prirodno, ne u svakoj poruci.

@@ -13,7 +13,7 @@ import { AiOrb } from "@/components/ai/ai-orb";
  * into the paper at the silhouette) keeps it reading as a ball sitting ON
  * the white page, not a flat texture.
  *
- * v3 (2026-08-26, glasovni razgovor): the orb is now Prizma's FACE. It takes
+ * v3 (2026-08-26, glasovni razgovor): the orb is now Jarvis's FACE. It takes
  * a `mode` and, while LISTENING, the live mic level (`getLevel`) — the swirl
  * swells and brightens on the user's own voice, THINKING tightens and speeds
  * the flow, SPEAKING pulses on a speech-like envelope with a ripple running
@@ -209,7 +209,7 @@ export function AiOrbCanvas({
   getLevel,
 }: {
   className?: string;
-  /** What Prizma is doing right now — drives the swirl's temperament. */
+  /** What Jarvis is doing right now — drives the swirl's temperament. */
   mode?: AiOrbMode;
   /** Live loudness 0..1 — the mic while LISTENING (`WavRecording.level`),
    * the TTS playback while SPEAKING (`TtsPlayback.level`; -1 means "no tap,

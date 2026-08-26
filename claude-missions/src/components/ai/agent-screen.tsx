@@ -25,7 +25,7 @@ import {
 
 import { transcribeVoiceAction } from "@/app/(app)/ai/actions";
 import { AiOrbCanvas, type AiOrbMode } from "@/components/ai/ai-orb-canvas";
-import { prizmaFont } from "@/components/ai/prizma-font";
+import { prizmaProse, prizmaVoice } from "@/components/ai/prizma-font";
 import type { AgentActionId } from "@/lib/ai/agent-actions";
 import { useT } from "@/components/i18n/locale-provider";
 import { playTtsBlob, type TtsPlayback } from "@/lib/audio/play-tts";
@@ -348,7 +348,7 @@ export function AgentScreen({
           <div className="flex flex-col items-center gap-2.5 text-center">
             <h1
               className={cn(
-                prizmaFont.className,
+                prizmaVoice.className,
                 "text-2xl font-bold tracking-tight text-foreground"
               )}
             >
@@ -356,7 +356,7 @@ export function AgentScreen({
             </h1>
             <p
               className={cn(
-                prizmaFont.className,
+                prizmaVoice.className,
                 "max-w-[30ch] text-[15px] leading-relaxed text-muted-foreground"
               )}
             >
@@ -396,7 +396,7 @@ export function AgentScreen({
               message.role === "user" ? (
                 <div
                   key={index}
-                  className="max-w-[80%] self-end rounded-full border border-border/70 px-4 py-2 text-sm font-medium text-muted-foreground"
+                  className="max-w-[85%] self-end text-right text-sm font-medium leading-relaxed text-muted-foreground"
                 >
                   „{message.text}“
                 </div>
@@ -404,8 +404,9 @@ export function AgentScreen({
                 <div key={index} className="flex flex-col gap-3.5">
                   <p
                     className={cn(
-                      prizmaFont.className,
-                      "whitespace-pre-wrap text-[22px] font-semibold leading-snug tracking-tight text-foreground"
+                      prizmaProse.className,
+                      "whitespace-pre-wrap text-[19px] font-[450] leading-[1.55]",
+                      "tracking-[-0.006em] text-ai-prose"
                     )}
                   >
                     {message.text}
@@ -427,8 +428,9 @@ export function AgentScreen({
             {isSending ? (
               <p
                 className={cn(
-                  prizmaFont.className,
-                  "animate-pulse text-[22px] font-semibold leading-snug tracking-tight text-muted-foreground"
+                  prizmaProse.className,
+                  "animate-pulse text-[19px] font-[450] leading-[1.55]",
+                  "tracking-[-0.006em] text-muted-foreground"
                 )}
               >
                 {t("agent.thinking")}

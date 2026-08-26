@@ -42,6 +42,8 @@
   --color-paper-raised: var(--paper-raised);
   --color-ink: var(--ink);
   --color-ink-bright: var(--ink-bright);
+  /* Prizmino mastilo za citanje -- see `--ai-prose` below. */
+  --color-ai-prose: var(--ai-prose);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -199,6 +201,17 @@
   --mark-sugar: #a83a72;
   --mark-sodium: #2c6e8f;
   --mark-satfat: #9a7112;
+
+  /* --- Prizmino mastilo ---------------------------------------------
+     The ONE place the plate's ultramarine steps aside. Everything else in
+     the app is `--ink`, which is right for labels, numbers and headings but
+     wrong for a paragraph: a whole answer set in ultramarine reads as one
+     coloured block, not as something being said. This is that same ink
+     walked down to near-black -- it still carries the blue (it is not a
+     neutral grey), so Prizma's prose stays on the plate while reading as
+     text. Deliberately NOT `--foreground`: nothing outside her answers may
+     use it. */
+  --ai-prose: #191924;
 
   /* --- Brand -------------------------------------------------------- */
   /* The wordmark accent. Theme-independent by history; now simply the ink. */

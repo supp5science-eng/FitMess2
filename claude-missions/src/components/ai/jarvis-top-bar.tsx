@@ -1,20 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import {
-  AudioLines,
-  ChevronUp,
-  MessageSquare,
-  Settings,
-  X,
-} from "lucide-react";
+import { AudioLines, MessageSquare, Settings } from "lucide-react";
 
 import { useT } from "@/components/i18n/locale-provider";
-import { pulse } from "@/lib/feel/haptic";
 import type { MessageKey } from "@/lib/i18n/messages";
-import { isPullArmed, pullProgress } from "@/lib/ui/pull-to-exit";
 import { cn } from "@/lib/utils";
 
 import "./jarvis-top-bar.css";
@@ -22,14 +13,14 @@ import "./jarvis-top-bar.css";
 /**
  * Jarvis's top bar — the chrome above the `/ai` screen (2026-08-26 redesign).
  *
- * Three pieces, the Perplexity mobile layout: a round button out to profile &
- * settings, the two-mode segmented control in the middle, and the exit back
- * out to the app. That right-hand exit is NOT decoration: the bottom
- * navigation is hidden on this screen, so in an installed PWA (no browser
- * chrome, no back button) it is the only way out of Jarvis — which is exactly
- * why it is a PULL and not a tap. See `PullToExit` below.
+ * Two pieces plus a counterweight, after the Perplexity mobile layout: a round
+ * button out to profile & settings, and the two-mode segmented control. The
+ * exit was the third piece and is not any more — it lives down the right edge
+ * as `JarvisExitRail`, because a control pinned to the top of the screen has
+ * about forty pixels of room above it and a pull that short is over before it
+ * registers as one.
  *
- * Both round buttons get their volume from `.liquid-glass` and their lift from
+ * The settings button gets its volume from `.liquid-glass` and its lift from
  * `jarvis-top-bar.css`, NOT from `.fm-lift` — that file opens with the reason,
  * and it is the difference between a disc and a deflated ball.
  *
@@ -73,7 +64,7 @@ function usePrefersReducedMotion(): boolean {
 }
 
 /**
- * Shared shape of the two round chrome buttons flanking the segments.
+ * The round chrome button beside the segments.
  *
  * Keeps the `border` every card here uses and drops only `fm-lift`: the hard
  * offset was what made the circle read as squashed, the hairline was never the
@@ -84,11 +75,8 @@ function usePrefersReducedMotion(): boolean {
 const ROUND_BUTTON_CLASS = cn(
   "jtb-round liquid-glass relative flex size-10 shrink-0 items-center justify-center",
   "rounded-full border border-border bg-card text-foreground transition-colors",
-  "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+  "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
 );
-
-/** Where the exit lands: the app's home screen. */
-const EXIT_HREF = "/danas";
 
 export function JarvisTopBar({
   mode,
@@ -108,7 +96,7 @@ export function JarvisTopBar({
 
   const activeIndex = Math.max(
     0,
-    MODES.findIndex((item) => item.mode === mode),
+    MODES.findIndex((item) => item.mode === mode)
   );
 
   // Measure the active segment's box relative to the tablist and park the pill
@@ -211,7 +199,7 @@ export function JarvisTopBar({
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                 isActive
                   ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Icon className="size-4 shrink-0" aria-hidden="true" />
@@ -221,144 +209,10 @@ export function JarvisTopBar({
         })}
       </div>
 
-      <PullToExit />
+      {/* Balances the settings button on the left so the pill stays centred.
+          The exit that used to sit here is now `JarvisExitRail`, down the
+          right edge, where a pull has room to be a pull. */}
+      <span aria-hidden="true" className="size-10 shrink-0" />
     </div>
-  );
-}
-
-/**
- * The way out of Jarvis: pull the button up until it is fully red, let go.
- *
- * A tap would be one stray thumb away from throwing the user off a screen they
- * are mid-sentence on, and on this screen there is no second way back — the
- * bottom navigation is hidden and an installed PWA has no browser chrome. A
- * gesture with a distance to it cannot be performed by accident, and the fill
- * says how close it is the whole way, so nobody has to learn where the
- * threshold is: full red means letting go leaves.
- *
- * Three details that are load-bearing rather than decorative:
- *
- * - **The progress never enters React.** It is written onto the node as the
- *   `--jtb-pull` custom property, once per pointer event; only the ARMED flip
- *   is state, because that is the only thing the markup changes (the icon, and
- *   what the live region says). Dragging re-renders nothing.
- * - **The red rises, it does not fade in.** The fill climbs the button from
- *   the bottom as the pull goes up, so the control reads as filling rather
- *   than merely tinting — the level IS the progress, and full is the point
- *   where letting go acts. A buzz lands on that crossing.
- * - **A tap leaves too.** An earlier cut made the pull the ONLY way out, so
- *   that leaving could never happen by accident. In the owner's hands that
- *   read as a broken button, which is the worse failure by a distance: a
- *   control that does nothing when pressed is indistinguishable from one that
- *   is broken, and this is the only door on the screen. So the plain `<a href>`
- *   works — tap, Enter, Space, or no hydration at all — and the pull is an
- *   accelerator on top of it, not a gate in front of it.
- */
-function PullToExit(): React.JSX.Element {
-  const { t } = useT();
-  const router = useRouter();
-  const nodeRef = useRef<HTMLAnchorElement>(null);
-  /** Where the finger went down; `null` whenever no drag is in flight. */
-  const startY = useRef<number | null>(null);
-  /** Live progress, mirrored in a ref so pointerup can read it without state. */
-  const progress = useRef(0);
-  /** Set when a completed pull already navigated, so the click it is followed
-   *  by does not navigate a second time. */
-  const consumed = useRef(false);
-  const [armed, setArmed] = useState(false);
-
-  // `data-dragging` belongs to the pointer handlers, and is deliberately not
-  // also declared in the JSX below: one attribute, one owner. (React leaves a
-  // constant literal alone on re-render, so declaring it would work today --
-  // but it would read as though render owned it, and it would genuinely
-  // clobber the gesture the day the value became dynamic.) Absent, it reads as
-  // its resting state in the stylesheet, which is right for a button nobody is
-  // touching.
-
-  function applyProgress(next: number) {
-    const wasArmed = isPullArmed(progress.current);
-    const nowArmed = isPullArmed(next);
-    progress.current = next;
-    nodeRef.current?.style.setProperty("--jtb-pull", next.toFixed(3));
-
-    // The one moment a delegated press listener cannot see: the pull just
-    // became a decision. Fired on the CROSSING only -- a buzz on every frame
-    // above the line would be a rumble, and a rumble says nothing.
-    if (nowArmed && !wasArmed) pulse("stamp");
-
-    // React bails out on an unchanged value, so this costs a render only on
-    // the two frames where the button crosses the threshold.
-    setArmed(nowArmed);
-  }
-
-  function handlePointerDown(event: React.PointerEvent<HTMLAnchorElement>) {
-    startY.current = event.clientY;
-    consumed.current = false;
-    event.currentTarget.dataset.dragging = "true";
-    // Capture, or the drag dies the moment the finger leaves a 40px circle.
-    if (typeof event.currentTarget.setPointerCapture === "function") {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    }
-  }
-
-  function handlePointerMove(event: React.PointerEvent<HTMLAnchorElement>) {
-    if (startY.current === null) return;
-    applyProgress(pullProgress(startY.current - event.clientY));
-  }
-
-  function handlePointerEnd(event: React.PointerEvent<HTMLAnchorElement>) {
-    if (startY.current === null) return;
-    const leaving = isPullArmed(progress.current);
-
-    startY.current = null;
-    event.currentTarget.dataset.dragging = "false";
-    // Reset first: on the way out this leaves nothing half-red behind for the
-    // back button to come home to.
-    applyProgress(0);
-
-    if (leaving) {
-      // A pull that ends off the button never produces a click, so the
-      // navigation has to happen here; the flag stops the click that DOES
-      // follow a pull ending on it from repeating the trip.
-      consumed.current = true;
-      router.push(EXIT_HREF);
-    }
-  }
-
-  return (
-    <>
-      <Link
-        ref={nodeRef}
-        href={EXIT_HREF}
-        draggable={false}
-        data-testid="jarvis-exit"
-        aria-label={t("jarvis.close")}
-        aria-describedby="jarvis-exit-hint"
-        className={cn(ROUND_BUTTON_CLASS, "jtb-exit")}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerEnd}
-        onPointerCancel={handlePointerEnd}
-        onClick={(event) => {
-          // The ordinary link does the ordinary thing. The one exception is
-          // the click that trails a completed pull, which has already left.
-          if (consumed.current) {
-            consumed.current = false;
-            event.preventDefault();
-          }
-        }}
-      >
-        {armed ? (
-          <X className="size-4.5 text-primary-foreground" aria-hidden="true" />
-        ) : (
-          <ChevronUp className="size-4.5" aria-hidden="true" />
-        )}
-      </Link>
-      {/* The instruction, and then the one thing that changes about it. Kept
-          outside the link so it never becomes part of its accessible name. */}
-      <span id="jarvis-exit-hint" className="sr-only" aria-live="polite">
-        {armed ? t("jarvis.exit.armed") : t("jarvis.exit.hint")}
-      </span>
-    </>
   );
 }

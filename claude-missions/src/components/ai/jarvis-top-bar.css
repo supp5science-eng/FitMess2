@@ -32,95 +32,10 @@
     /* The rim light along the top of the disc. On a circle this is what sells
        the volume — it is the one place the paper catches. */
     inset 0 1px 0 0 color-mix(in srgb, var(--paper) 90%, transparent),
-    /* Contact, then falloff. Both blurred, so neither draws an edge. */
-    0 1px 1.5px 0 color-mix(in srgb, var(--ink) 14%, transparent),
+    /* Contact, then falloff. Both blurred, so neither draws an edge. */ 0 1px
+      1.5px 0 color-mix(in srgb, var(--ink) 14%, transparent),
     0 5px 12px -7px color-mix(in srgb, var(--ink) 60%, transparent);
   box-shadow:
     var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
     var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
-}
-
-/* ---------------------------------------------------------------------
-   PULL TO EXIT — the right-hand button.
-
-   With the bottom navigation gone, this is the only way out of the screen in
-   an installed PWA, which cuts both ways: it must never be missed, and it must
-   never fire by accident. A plain "X" one thumb-width from the mode pill fails
-   the second half. So leaving takes a deliberate upward pull, and the button
-   spends the whole gesture saying how close it is — pale at rest, full
-   `--destructive` at the point where letting go leaves.
-
-   The progress arrives as `--jtb-pull` (0..1), written straight onto the node
-   by the pointer handler. It never goes through React: a drag is a 60 Hz
-   signal and re-rendering the top bar sixty times a second to move one button
-   is the same mistake `--jv-level` avoids on the voice screen.
-   --------------------------------------------------------------------- */
-
-@property --jtb-pull {
-  syntax: "<number>";
-  inherits: false;
-  initial-value: 0;
-}
-
-.jtb-exit {
-  /* The gesture is vertical and so is the scroll it would otherwise start.
-     Without this the browser eats the drag and the button never moves. */
-  touch-action: none;
-  -webkit-user-select: none;
-  user-select: none;
-  transform: translateY(calc(var(--jtb-pull) * -14px));
-}
-
-/* The red rises with the pull as a LAYER over the pale fill, not as a colour
-   interpolated between two tokens: opacity is the one thing every engine
-   ramps identically, and a half-supported `color-mix()` in the middle of a
-   drag would drop the declaration and snap the button back to white.
-   `::before` is `.liquid-glass`'s overprint, so this is `::after` — painted
-   after it, still beneath the icon (`z-index: -1` inside the host's own
-   stacking context). */
-.jtb-exit::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  pointer-events: none;
-  background-color: var(--destructive);
-  opacity: var(--jtb-pull);
-}
-
-/* Only the RELEASE is animated. While the finger is down the button has to
-   answer the finger; a transition there is indistinguishable from lag. */
-.jtb-exit:not([data-dragging="true"]) {
-  transition: transform 260ms cubic-bezier(0.34, 1.4, 0.5, 1);
-}
-.jtb-exit:not([data-dragging="true"])::after {
-  transition: opacity 200ms ease;
-}
-
-/* A tap on a control that only answers to a drag looks broken. Rather than
-   explain the gesture in a tooltip nobody opens, a tap performs a short
-   version of it — the button hops the way it would if you had pulled. */
-.jtb-exit[data-nudge="true"] {
-  animation: jtb-nudge 420ms cubic-bezier(0.34, 1.4, 0.5, 1);
-}
-
-@keyframes jtb-nudge {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  38% {
-    transform: translateY(-7px);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* The colour still ramps — it is the state, not decoration. Only the
-     travel goes, since that is the part that moves. */
-  .jtb-exit,
-  .jtb-exit[data-nudge="true"] {
-    transform: none;
-    animation: none;
-  }
 }

@@ -46,26 +46,3 @@ export function pullProgress(
 export function isPullArmed(progress: number): boolean {
   return progress >= 1;
 }
-
-/**
- * How much of the travel still counts as "they tapped, they did not pull".
- *
- * Nobody presses a 40px circle with a thumb and moves it exactly zero pixels,
- * so an exact-zero test would classify most taps as aborted micro-drags and
- * the button would answer them with nothing at all — which is the one thing a
- * gesture-only control cannot afford, since a dead tap is indistinguishable
- * from a broken button.
- */
-const TAP_SLOP = 0.12;
-
-/**
- * Whether a finished gesture was a tap rather than an abandoned pull.
- *
- * A tap does not leave — that is the point — but it is answered, so the two
- * cases have to be told apart: this one gets the hop that teaches the gesture,
- * a real pull that stopped short just springs back in silence, having already
- * shown the user how far it got.
- */
-export function isPullTap(progress: number): boolean {
-  return progress < TAP_SLOP;
-}

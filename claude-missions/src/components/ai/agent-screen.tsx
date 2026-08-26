@@ -23,6 +23,7 @@ import {
 import { transcribeVoiceAction } from "@/app/(app)/ai/actions";
 import { AiOrbCanvas, type AiOrbMode } from "@/components/ai/ai-orb-canvas";
 import { JarvisComposer } from "@/components/ai/jarvis-composer";
+import { JarvisExitRail } from "@/components/ai/jarvis-exit-rail";
 import { jarvisProse, jarvisVoice } from "@/components/ai/jarvis-font";
 import {
   JarvisTopBar,
@@ -384,14 +385,19 @@ export function AgentScreen({
 
   return (
     <div
-      className="flex min-h-0 flex-1 flex-col"
+      className="relative flex min-h-0 flex-1 flex-col"
       data-testid="agent-screen"
       aria-label={t("agent.title")}
     >
       {/* The chrome this screen has instead of the bottom navigation: settings
-          on the left, the two halves in the middle, the way out on the right.
-          Without the last one there is no way off `/ai` in an installed PWA. */}
+          on the left, the two halves in the middle. */}
       <JarvisTopBar mode={mode} onModeChange={changeMode} />
+
+      {/* And the way out, down the right edge. Without it there is no way off
+          `/ai` in an installed PWA — no bottom navigation, no browser chrome,
+          no back button — so it sits outside the mode switch below and lives
+          in both modes. */}
+      <JarvisExitRail />
 
       {mode === "voice" ? (
         <JarvisVoiceMode

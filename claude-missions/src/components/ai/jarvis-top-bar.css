@@ -32,8 +32,8 @@
     /* The rim light along the top of the disc. On a circle this is what sells
        the volume — it is the one place the paper catches. */
     inset 0 1px 0 0 color-mix(in srgb, var(--paper) 90%, transparent),
-    /* Contact, then falloff. Both blurred, so neither draws an edge. */
-    0 1px 1.5px 0 color-mix(in srgb, var(--ink) 14%, transparent),
+    /* Contact, then falloff. Both blurred, so neither draws an edge. */ 0 1px
+      1.5px 0 color-mix(in srgb, var(--ink) 14%, transparent),
     0 5px 12px -7px color-mix(in srgb, var(--ink) 60%, transparent);
   box-shadow:
     var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
@@ -68,7 +68,7 @@
   touch-action: none;
   -webkit-user-select: none;
   user-select: none;
-  transform: translateY(calc(var(--jtb-pull) * -14px));
+  transform: translateY(calc(var(--jtb-pull) * -22px));
 }
 
 /* The red rises with the pull as a LAYER over the pale fill, not as a colour
@@ -86,7 +86,13 @@
   border-radius: inherit;
   pointer-events: none;
   background-color: var(--destructive);
-  opacity: var(--jtb-pull);
+  /* The fill CLIMBS from the bottom rather than fading in over the whole
+     disc: a level is a quantity you can read at a glance and a tint is not,
+     and the whole contract of this control is that full means "letting go
+     acts". `inset()` clips from the top down, so 0 shows nothing and 1 shows
+     all of it; the pseudo keeps the host's radius, so what rises is shaped
+     like the button. */
+  clip-path: inset(calc((1 - var(--jtb-pull)) * 100%) 0 0 0);
 }
 
 /* Only the RELEASE is animated. While the finger is down the button has to
@@ -95,7 +101,7 @@
   transition: transform 260ms cubic-bezier(0.34, 1.4, 0.5, 1);
 }
 .jtb-exit:not([data-dragging="true"])::after {
-  transition: opacity 200ms ease;
+  transition: clip-path 200ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

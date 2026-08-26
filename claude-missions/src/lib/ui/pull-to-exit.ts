@@ -32,7 +32,7 @@ export const PULL_EXIT_DISTANCE_PX = 64;
  */
 export function pullProgress(
   dy: number,
-  distance: number = PULL_EXIT_DISTANCE_PX
+  distance: number = PULL_EXIT_DISTANCE_PX,
 ): number {
   // `!(… > 0)` rather than `<= 0` so a NaN distance lands here too.
   if (!Number.isFinite(dy) || !(distance > 0)) return 0;

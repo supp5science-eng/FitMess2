@@ -11,10 +11,13 @@ import { PULL_EXIT_DISTANCE_PX } from "@/lib/ui/pull-to-exit";
 // and "a real pull must leave" are both load-bearing, in opposite directions.
 
 const push = vi.hoisted(() => vi.fn());
+const pulse = vi.hoisted(() => vi.fn());
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push }),
 }));
+
+vi.mock("@/lib/feel/haptic", () => ({ pulse }));
 
 /**
  * jsdom ships no `PointerEvent`, so Testing Library's `fireEvent.pointerDown`
@@ -44,6 +47,7 @@ function pull(element: HTMLElement): string {
 
 beforeEach(() => {
   push.mockClear();
+  pulse.mockClear();
 });
 
 afterEach(cleanup);
@@ -63,11 +67,11 @@ describe("JarvisTopBar — mode pill", () => {
 
     expect(screen.getByTestId("jarvis-mode-chat")).toHaveAttribute(
       "aria-selected",
-      "true"
+      "true",
     );
     expect(screen.getByTestId("jarvis-mode-voice")).toHaveAttribute(
       "aria-selected",
-      "false"
+      "false",
     );
   });
 });
@@ -164,6 +168,47 @@ describe("JarvisTopBar — pull to exit", () => {
 
     expect(push).not.toHaveBeenCalled();
     expect(pull(exit)).toBe("0.000");
+  });
+
+  it("test_the_arming_buzz_fires_once_not_every_frame", () => {
+    // The crossing is the event, not the state above it. A pulse per frame
+    // past the line is a rumble, and a rumble carries no information.
+    render(<JarvisTopBar mode="voice" onModeChange={vi.fn()} />);
+    const exit = exitButton();
+
+    fireEvent(exit, pointer("pointerdown", 200));
+    for (const dy of [
+      PULL_EXIT_DISTANCE_PX,
+      PULL_EXIT_DISTANCE_PX + 20,
+      PULL_EXIT_DISTANCE_PX + 60,
+    ]) {
+      fireEvent(exit, pointer("pointermove", 200 - dy));
+    }
+
+    expect(pulse).toHaveBeenCalledTimes(1);
+  });
+
+  it("test_falling_back_under_the_line_lets_the_buzz_arm_again", () => {
+    // Pulling back down un-arms, so the user gets the same confirmation when
+    // they commit a second time.
+    render(<JarvisTopBar mode="voice" onModeChange={vi.fn()} />);
+    const exit = exitButton();
+
+    fireEvent(exit, pointer("pointerdown", 200));
+    fireEvent(exit, pointer("pointermove", 200 - PULL_EXIT_DISTANCE_PX));
+    fireEvent(exit, pointer("pointermove", 200 - PULL_EXIT_DISTANCE_PX / 2));
+    fireEvent(exit, pointer("pointermove", 200 - PULL_EXIT_DISTANCE_PX));
+
+    expect(pulse).toHaveBeenCalledTimes(2);
+  });
+
+  it("test_a_pull_that_never_reaches_the_line_stays_silent", () => {
+    render(<JarvisTopBar mode="voice" onModeChange={vi.fn()} />);
+    const exit = exitButton();
+
+    pullUp(exit, PULL_EXIT_DISTANCE_PX - 4);
+
+    expect(pulse).not.toHaveBeenCalled();
   });
 
   it("test_a_completed_pull_does_not_navigate_twice", () => {

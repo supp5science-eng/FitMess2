@@ -3,9 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { AudioLines, ChevronUp, MessageSquare, Settings, X } from "lucide-react";
+import {
+  AudioLines,
+  ChevronUp,
+  MessageSquare,
+  Settings,
+  X,
+} from "lucide-react";
 
 import { useT } from "@/components/i18n/locale-provider";
+import { pulse } from "@/lib/feel/haptic";
 import type { MessageKey } from "@/lib/i18n/messages";
 import { isPullArmed, pullProgress } from "@/lib/ui/pull-to-exit";
 import { cn } from "@/lib/utils";
@@ -77,7 +84,7 @@ function usePrefersReducedMotion(): boolean {
 const ROUND_BUTTON_CLASS = cn(
   "jtb-round liquid-glass relative flex size-10 shrink-0 items-center justify-center",
   "rounded-full border border-border bg-card text-foreground transition-colors",
-  "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+  "hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
 );
 
 /** Where the exit lands: the app's home screen. */
@@ -101,7 +108,7 @@ export function JarvisTopBar({
 
   const activeIndex = Math.max(
     0,
-    MODES.findIndex((item) => item.mode === mode)
+    MODES.findIndex((item) => item.mode === mode),
   );
 
   // Measure the active segment's box relative to the tablist and park the pill
@@ -204,7 +211,7 @@ export function JarvisTopBar({
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                 isActive
                   ? "text-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                  : "text-muted-foreground hover:text-foreground",
               )}
             >
               <Icon className="size-4 shrink-0" aria-hidden="true" />
@@ -235,6 +242,10 @@ export function JarvisTopBar({
  *   `--jtb-pull` custom property, once per pointer event; only the ARMED flip
  *   is state, because that is the only thing the markup changes (the icon, and
  *   what the live region says). Dragging re-renders nothing.
+ * - **The red rises, it does not fade in.** The fill climbs the button from
+ *   the bottom as the pull goes up, so the control reads as filling rather
+ *   than merely tinting — the level IS the progress, and full is the point
+ *   where letting go acts. A buzz lands on that crossing.
  * - **A tap leaves too.** An earlier cut made the pull the ONLY way out, so
  *   that leaving could never happen by accident. In the owner's hands that
  *   read as a broken button, which is the worse failure by a distance: a
@@ -265,11 +276,19 @@ function PullToExit(): React.JSX.Element {
   // touching.
 
   function applyProgress(next: number) {
+    const wasArmed = isPullArmed(progress.current);
+    const nowArmed = isPullArmed(next);
     progress.current = next;
     nodeRef.current?.style.setProperty("--jtb-pull", next.toFixed(3));
+
+    // The one moment a delegated press listener cannot see: the pull just
+    // became a decision. Fired on the CROSSING only -- a buzz on every frame
+    // above the line would be a rumble, and a rumble says nothing.
+    if (nowArmed && !wasArmed) pulse("stamp");
+
     // React bails out on an unchanged value, so this costs a render only on
     // the two frames where the button crosses the threshold.
-    setArmed(isPullArmed(next));
+    setArmed(nowArmed);
   }
 
   function handlePointerDown(event: React.PointerEvent<HTMLAnchorElement>) {

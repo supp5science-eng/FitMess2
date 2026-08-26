@@ -11,17 +11,17 @@ import {
 import { buildGricRows, type GricRow, type GricRowItem } from "@/lib/gric/rows";
 
 /**
- * Prizma's ONE mutating hand (2026-08-26): the meal draft.
+ * Jarvis's ONE mutating hand (2026-08-26): the meal draft.
  *
  * ## What changed
  *
  * Until now `/api/ai/agent` only ever answered with NAVIGATION: the model
  * picked ids out of `agent-actions.ts` and the client turned them into links.
- * Say "dva jaja i jogurt" to Prizma and she handed you a card that opened
+ * Say "dva jaja i jogurt" to Jarvis and it handed you a card that opened
  * Gric — the same sentence typed a second time, in another screen. That is
- * the one place where "Prizma is the app" visibly stops being true.
+ * the one place where "Jarvis is the app" visibly stops being true.
  *
- * So Prizma may now WRITE a meal — but only through a draft:
+ * So Jarvis may now WRITE a meal — but only through a draft:
  *
  *   model -> `unos` (structured proposal)  ->  client shows it
  *                                          ->  user confirms
@@ -35,7 +35,7 @@ import { buildGricRows, type GricRow, type GricRowItem } from "@/lib/gric/rows";
  * ## Why it reuses Gric wholesale
  *
  * A cucumber must weigh the same whether it was spoken into Gric or said to
- * Prizma — otherwise the day's total depends on which screen the user was on.
+ * Jarvis — otherwise the day's total depends on which screen the user was on.
  * So this module owns NO nutrition math of its own: the model answers in
  * Gric's own shape, `parseGricResponse` parses it, and `buildGricRows` turns
  * items into the rows that get written (`@/lib/gric/rows`). The prompt rules

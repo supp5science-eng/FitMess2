@@ -1,9 +1,9 @@
 import type { MessageKey } from "@/lib/i18n/messages";
 
 /**
- * Prizma v1 action catalog (2026-08-25) — the agent's hands.
+ * Jarvis v1 action catalog (2026-08-25) — the agent's hands.
  *
- * v1 actions are all NAVIGATIONAL: Prizma answers, and when the user's
+ * v1 actions are all NAVIGATIONAL: Jarvis answers, and when the user's
  * message is a request to DO something, she brings the right flow as a card
  * instead of explaining where to tap. The model only ever picks action IDS
  * from this list (constrained by the response schema); the route resolves
@@ -46,7 +46,7 @@ export const AGENT_ACTIONS: Record<AgentActionId, AgentActionDef> = {
     titleKey: "agent.action.prizma_unos.title",
     descKey: "agent.action.prizma_unos.desc",
     promptHint:
-      "FM 2.7 — najtačniji unos obroka (dve fotke + pitanja); prva ponuda kad korisnik hoće da loguje pravi obrok (i kad kaže 'otvori FM 2.7')",
+      "Jarvis — najtačniji unos obroka (dve fotke + pitanja); prva ponuda kad korisnik hoće da loguje pravi obrok (i kad kaže 'otvori Jarvisa')",
   },
   slikaj_obrok: {
     id: "slikaj_obrok",

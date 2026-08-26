@@ -7,7 +7,7 @@ import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
 /**
- * Prizma's composer — the field you write in (2026-08-26 redesign).
+ * Jarvis's composer — the field you write in (2026-08-26 redesign).
  *
  * What it replaces: a ROW of three separate things above a hairline — a text
  * pill, a round mic, a round send. Three floating objects read as a toolbar,
@@ -52,7 +52,7 @@ const GHOST_BUTTON_CLASS = cn(
 /** Five lines at 24px, the point where the card stops growing and scrolls. */
 const MAX_FIELD_HEIGHT = "max-h-[7.5rem]";
 
-export function PrizmaComposer({
+export function JarvisComposer({
   value,
   onValueChange,
   onSubmit,
@@ -115,7 +115,7 @@ export function PrizmaComposer({
        a `ring-*` box-shadow whole (see FOCUS_OUTLINE above). A ring costs no
        layout either way, so the card never shifts when it is tapped. */
     <div
-      data-testid="prizma-composer"
+      data-testid="jarvis-composer"
       className={cn(
         "rounded-3xl transition-shadow duration-150",
         isFocused && "ring-3 ring-ring/45",
@@ -137,7 +137,7 @@ export function PrizmaComposer({
               aria-hidden="true"
             />
             <span className="truncate text-[15px] font-medium text-foreground">
-              {t("prizma.voice.listening")}
+              {t("jarvis.voice.listening")}
             </span>
           </div>
         ) : (
@@ -152,8 +152,8 @@ export function PrizmaComposer({
             maxLength={2000}
             enterKeyHint="send"
             disabled={disabled || voiceState === "transcribing"}
-            placeholder={t("prizma.composer.placeholder")}
-            aria-label={t("prizma.composer.placeholder")}
+            placeholder={t("jarvis.composer.placeholder")}
+            aria-label={t("jarvis.composer.placeholder")}
             data-testid="agent-input"
             className={cn(
               "block w-full resize-none overflow-y-auto bg-transparent px-1",
@@ -170,8 +170,8 @@ export function PrizmaComposer({
         <div className="mt-2.5 flex items-center gap-2">
           <button
             type="button"
-            aria-label={t("prizma.composer.attach")}
-            data-testid="prizma-composer-attach"
+            aria-label={t("jarvis.composer.attach")}
+            data-testid="jarvis-composer-attach"
             disabled={disabled}
             onClick={() => {
               // Visual only for now — the orchestrator wires the photo flow.
@@ -189,8 +189,8 @@ export function PrizmaComposer({
             disabled={disabled || voiceState === "transcribing" || isSending}
             aria-label={
               isListening
-                ? t("prizma.composer.stop")
-                : t("prizma.composer.voice")
+                ? t("jarvis.composer.stop")
+                : t("jarvis.composer.voice")
             }
             data-testid="agent-mic"
             className={cn(
@@ -215,7 +215,7 @@ export function PrizmaComposer({
             type="button"
             onClick={submit}
             disabled={!canSend}
-            aria-label={t("prizma.composer.send")}
+            aria-label={t("jarvis.composer.send")}
             data-testid="agent-send"
             className={cn(
               "liquid-glass flex size-10 shrink-0 items-center justify-center rounded-full",

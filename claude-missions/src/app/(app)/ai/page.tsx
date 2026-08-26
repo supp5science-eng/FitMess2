@@ -9,7 +9,7 @@ import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * `/ai` — Prizma's tab (Jarvis v1): nothing but the agent.
+ * `/ai` — Jarvis's tab (Jarvis v1): nothing but the agent.
  *
  * Server Component: it exists to hand `AgentScreen` a PERSONAL opening —
  * the greeting with the user's first name (Belgrade time of day decides
@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase/server";
  * generic empty line; the screen itself never blocks on these.
  */
 export const metadata: Metadata = {
-  title: "Prizma",
+  title: "Jarvis",
 };
 
 export default async function AiPage() {

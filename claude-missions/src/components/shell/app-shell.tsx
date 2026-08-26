@@ -38,7 +38,7 @@ import { cn } from "@/lib/utils";
  * authenticated app. When someone installs the app or taps "Uđi", the first
  * thing they see is only the auth screen.
  *
- * Chromeless exception: Prizma (`/ai`) is neither. It keeps everything the
+ * Chromeless exception: Jarvis (`/ai`) is neither. It keeps everything the
  * shell gives — the centered column, `bg-background`, the aurora layer, the
  * notch padding and the scroll region — but drops ONLY the bottom navigation,
  * because that screen belongs to the agent and the four tabs would compete
@@ -92,7 +92,7 @@ const FULL_BLEED_PREFIXES = [
 
 /** Chromeless route prefixes: they keep the whole app column but render
  * without the bottom navigation. Prefix-matched like the full-bleed list, so
- * any future sub-screen of Prizma (`/ai/...`) inherits the same treatment. */
+ * any future sub-screen of Jarvis (`/ai/...`) inherits the same treatment. */
 const CHROMELESS_PREFIXES = ["/ai"] as const;
 
 function isChromeless(pathname: string): boolean {

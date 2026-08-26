@@ -37,7 +37,7 @@ import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
  * agent inherits whatever policy the meal estimators run under.
  *
  * Izvršni put (2026-08-26): the answer may also carry `draft` — a proposed
- * meal entry Prizma built from "dva jaja i jogurt". THIS ROUTE STILL WRITES
+ * meal entry Jarvis built from "dva jaja i jogurt". THIS ROUTE STILL WRITES
  * NOTHING. The draft is shown, the user confirms, and only then does the
  * client post it to `POST /api/ai/agent/unos`, which is the one endpoint that
  * touches `logs` and which never calls a model. See `@/lib/ai/agent-draft`.

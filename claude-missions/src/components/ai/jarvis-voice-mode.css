@@ -1,6 +1,6 @@
 /*
- * Jarvis — the voice-only half of Prizma. Everything here exists because a
- * Tailwind class cannot express it: a ring whose size is driven by the live
+ * Jarvis — the voice-only half of the agent screen. Everything here exists
+ * because a Tailwind class cannot express it: a ring whose size is driven by the live
  * mic level (a CSS variable written from `requestAnimationFrame`, never from
  * React state), and the cross-fade the status line plays whenever the words
  * under the orb change.
@@ -9,13 +9,13 @@
  * `prefers-reduced-motion`, like every other animation in this repo.
  */
 
-/* The button is the variable's owner: `--pvm-level` (0..1) is the smoothed
+/* The button is the variable's owner: `--jv-level` (0..1) is the smoothed
    loudness, written by the rAF loop, read by the rings below. */
-.pvm-button {
-  --pvm-level: 0;
+.jv-button {
+  --jv-level: 0;
 }
 
-.pvm-halo {
+.jv-halo {
   position: absolute;
   inset: 0;
   border-radius: 9999px;
@@ -23,14 +23,14 @@
   opacity: 0;
 }
 
-/* LISTENING: the ring IS the voice. Scale and alpha ride `--pvm-level`
+/* LISTENING: the ring IS the voice. Scale and alpha ride `--jv-level`
    directly — no keyframes, so the ring answers the room instead of a clock.
    The short transition only bridges the gap between two frames on a phone
    that drops one; the loop itself already smooths the signal. */
-.pvm-button[data-live="true"] .pvm-halo {
+.jv-button[data-live="true"] .jv-halo {
   opacity: 1;
   border: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
-  transform: scale(calc(1 + var(--pvm-level) * 0.34));
+  transform: scale(calc(1 + var(--jv-level) * 0.34));
   transition:
     transform 90ms linear,
     opacity 180ms ease;
@@ -38,23 +38,23 @@
 
 /* A second, wider ghost of the same signal — it lags the first by being
    softer and larger, which reads as the sound spreading outward. */
-.pvm-button[data-live="true"] .pvm-halo-wide {
+.jv-button[data-live="true"] .jv-halo-wide {
   border-color: color-mix(in srgb, var(--primary) 26%, transparent);
-  transform: scale(calc(1.06 + var(--pvm-level) * 0.6));
+  transform: scale(calc(1.06 + var(--jv-level) * 0.6));
 }
 
 /* IDLE: no live signal to show, so the button breathes slowly instead — an
    invitation, not a status. */
-.pvm-button[data-live="false"][data-idle="true"] .pvm-halo {
+.jv-button[data-live="false"][data-idle="true"] .jv-halo {
   opacity: 1;
   border: 1.5px solid color-mix(in srgb, var(--primary) 30%, transparent);
-  animation: pvm-breathe 3.4s ease-out infinite;
+  animation: jv-breathe 3.4s ease-out infinite;
 }
-.pvm-button[data-live="false"][data-idle="true"] .pvm-halo-wide {
+.jv-button[data-live="false"][data-idle="true"] .jv-halo-wide {
   animation-delay: 1.7s;
 }
 
-@keyframes pvm-breathe {
+@keyframes jv-breathe {
   0% {
     transform: scale(1);
     opacity: 0.7;
@@ -68,17 +68,17 @@
 
 /* The status line remounts on every change (React `key`), so this plays as a
    cross-fade rather than a jump — same trick as `.ai-think-line`. */
-.pvm-line {
-  animation: pvm-fade 380ms ease;
+.jv-line {
+  animation: jv-fade 380ms ease;
 }
-.pvm-hint {
-  animation: pvm-fade 460ms ease;
+.jv-hint {
+  animation: jv-fade 460ms ease;
 }
-.pvm-reply {
-  animation: pvm-fade 520ms ease;
+.jv-reply {
+  animation: jv-fade 520ms ease;
 }
 
-@keyframes pvm-fade {
+@keyframes jv-fade {
   from {
     opacity: 0;
     transform: translateY(4px);
@@ -90,20 +90,20 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pvm-line,
-  .pvm-hint,
-  .pvm-reply,
-  .pvm-button[data-live="false"][data-idle="true"] .pvm-halo,
-  .pvm-button[data-live="false"][data-idle="true"] .pvm-halo-wide {
+  .jv-line,
+  .jv-hint,
+  .jv-reply,
+  .jv-button[data-live="false"][data-idle="true"] .jv-halo,
+  .jv-button[data-live="false"][data-idle="true"] .jv-halo-wide {
     animation: none !important;
   }
   /* Still say "I am hearing you", but say it as a fixed ring rather than a
      moving one — the level loop does not run in this mode. */
-  .pvm-button[data-live="true"] .pvm-halo {
+  .jv-button[data-live="true"] .jv-halo {
     transform: scale(1.12);
     transition: none;
   }
-  .pvm-button[data-live="true"] .pvm-halo-wide {
+  .jv-button[data-live="true"] .jv-halo-wide {
     transform: scale(1.24);
   }
 }

@@ -1115,7 +1115,7 @@ export function NajtacnijeFlow() {
                   whether it was breaded is how the whole flow starts reading
                   like a template. */}
               {prepNeeded ? (
-                <div className="flex flex-col gap-2.5" data-testid="prizma-prep">
+                <div className="flex flex-col gap-2.5" data-testid="jarvis-prep">
                   <span className="text-base font-medium text-foreground">
                     {t("dodaj.prizma.prepQuestion")}
                   </span>

@@ -11,7 +11,7 @@ import { legalMessages } from "@/lib/i18n/messages-parts/legal";
 import { mediaMessages } from "@/lib/i18n/messages-parts/media";
 import { merenjeMessages } from "@/lib/i18n/messages-parts/merenje";
 import { onboardingMessages } from "@/lib/i18n/messages-parts/onboarding";
-import { prizmaMessages } from "@/lib/i18n/messages-parts/prizma";
+import { jarvisMessages } from "@/lib/i18n/messages-parts/jarvis";
 import { profilMessages } from "@/lib/i18n/messages-parts/profil";
 import { sourcesMessages } from "@/lib/i18n/messages-parts/sources";
 import { treningMessages } from "@/lib/i18n/messages-parts/trening";
@@ -34,14 +34,14 @@ const sr = {
   "nav.ai": "AI",
   "nav.profile": "Profil",
 
-  // Prizma — Jarvis agent (AI tab)
+  // Jarvis — Jarvis agent (AI tab)
   "agent.dock.cta": "Pitaj AI…",
-  "agent.title": "Prizma",
+  "agent.title": "Jarvis",
   "agent.placeholder": "Reci ili napiši…",
   "agent.send": "Pošalji",
   "agent.thinking": "Razmišlja…",
   "agent.error": "Nešto je zapelo. Probaj ponovo.",
-  "agent.mic": "Pričaj sa Prizmom",
+  "agent.mic": "Pričaj sa Jarvisom",
   "agent.mic.stop": "Pošalji snimak",
   "agent.listening": "Slušam te…",
   "agent.voice.mic":
@@ -57,7 +57,7 @@ const sr = {
   "agent.greeting.evening": "Dobro veče",
   "agent.context.remaining": "Do sada {eaten} kcal — ostalo ti je {left}.",
   "agent.context.plain": "Danas si na {eaten} kcal.",
-  "agent.action.prizma_unos.title": "FM 2.7",
+  "agent.action.prizma_unos.title": "Jarvis",
   "agent.action.prizma_unos.desc": "Najtačnija procena — dve fotke i par pitanja",
   "agent.action.prizma_unos.badge": "NAJTAČNIJE",
   "agent.action.slikaj_obrok.title": "Slikaj obrok",
@@ -154,7 +154,7 @@ const sr = {
   ...analyticsMessages.sr,
   ...foodMessages.sr,
   ...mediaMessages.sr,
-  ...prizmaMessages.sr,
+  ...jarvisMessages.sr,
   ...adminMessages.sr,
   ...appMessages.sr,
   ...dataMessages.sr,
@@ -173,12 +173,12 @@ const en: Record<MessageKey, string> = {
   "nav.profile": "Profile",
 
   "agent.dock.cta": "Ask AI…",
-  "agent.title": "Prizma",
+  "agent.title": "Jarvis",
   "agent.placeholder": "Say it or type it…",
   "agent.send": "Send",
   "agent.thinking": "Thinking…",
   "agent.error": "Something broke. Try again.",
-  "agent.mic": "Talk to Prizma",
+  "agent.mic": "Talk to Jarvis",
   "agent.mic.stop": "Send the clip",
   "agent.listening": "Listening…",
   "agent.voice.mic": "Can't reach the microphone. Allow mic access and try again.",
@@ -192,7 +192,7 @@ const en: Record<MessageKey, string> = {
   "agent.greeting.evening": "Good evening",
   "agent.context.remaining": "{eaten} kcal so far — {left} left today.",
   "agent.context.plain": "You're at {eaten} kcal today.",
-  "agent.action.prizma_unos.title": "FM 2.7",
+  "agent.action.prizma_unos.title": "Jarvis",
   "agent.action.prizma_unos.desc": "Most accurate — two shots and a few questions",
   "agent.action.prizma_unos.badge": "MOST ACCURATE",
   "agent.action.slikaj_obrok.title": "Snap a meal",
@@ -283,7 +283,7 @@ const en: Record<MessageKey, string> = {
   ...analyticsMessages.en,
   ...foodMessages.en,
   ...mediaMessages.en,
-  ...prizmaMessages.en,
+  ...jarvisMessages.en,
   ...adminMessages.en,
   ...appMessages.en,
   ...dataMessages.en,

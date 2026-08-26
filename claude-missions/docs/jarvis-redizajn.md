@@ -1,18 +1,32 @@
-# Prizma redizajn — zajednički brief
+# Jarvis redizajn — zajednički brief
 
 Ovaj dokument je kontekst za sve koji rade na redizajnu `/ai` ekrana
 (2026-08-26). Pročitaj ga pre nego što napišeš prvu liniju.
 
+## Dva imena koja se ne smeju pomešati
+
+Ovo je bila najskuplja zabuna na ekranu, pa stoji na vrhu:
+
+- **Jarvis** je AI agent — `/ai`, glas i chat. Fajlovi `src/components/ai/jarvis-*`,
+  i18n ključevi `jarvis.*`, persona u `src/lib/ai/agent-chat.ts`.
+- **Prizma** je flow za najtačniji unos hrane — `/dodaj/najtacnije`. Fajlovi
+  `src/lib/ai/prizma.ts`, `shot-guide.*`, `portion-dial.*`, akcija `prizma_unos`,
+  i18n ključevi `dodaj.prizma.*`.
+
+Agent se 2026-08-25 nakratko zvao Prizma, pa je flow preimenovan u „FM 2.7"
+da se sklonio s puta. Vlasnik je 2026-08-26 odlučio obrnuto i konačno: flow
+je opet Prizma, agent je Jarvis. Ako negde vidiš „FM 2.7", to je zaostatak.
+
 ## Šta gradimo
 
-`/ai` je Prizmin ekran — AI agent aplikacije. Vlasnik hoće da radi kao
+`/ai` je Jarvisov ekran — AI agent aplikacije. Vlasnik hoće da radi kao
 mobilna aplikacija Perplexity-ja:
 
 1. **Dva režima**, biraju se segmentnom kontrolom na vrhu ekrana:
-   - **Jarvis** (levo) — SAMO GLAS. Pričaš sa Prizmom, ona sluša, odgovara
+   - **Jarvis** (levo) — SAMO GLAS. Pričaš sa Jarvisom, on sluša, odgovara
      naglas i loguje obroke. Bez tastature, bez konca poruka.
    - **Chat** (desno) — postojeći tekstualni razgovor.
-2. **Bez donje navigacije na tom ekranu.** Kad uđeš u Prizmu, četiri taba
+2. **Bez donje navigacije na tom ekranu.** Kad uđeš u Jarvisa, četiri taba
    nestaju. Ekran je njen.
 3. Gore levo: profil/podešavanja. Gore desno: izlaz nazad u aplikaciju.
 4. Composer (polje za kucanje) prerađen po uzoru na Perplexity: kartica sa
@@ -29,7 +43,7 @@ mobilna aplikacija Perplexity-ja:
   glasa (`startWavRecording`), transkripcija (`transcribeVoiceAction`),
   izgovor odgovora (`playTtsBlob` pa `createSpeaker` kao rezerva), i
   `orbMode` koji vodi orb kroz stanja.
-- `src/components/ai/ai-orb-canvas.tsx` — WebGL orb, Prizmino lice. Prima
+- `src/components/ai/ai-orb-canvas.tsx` — WebGL orb, Jarvisovo lice. Prima
   `mode` (`idle | listening | thinking | speaking`) i `getLevel()` (živa
   jačina zvuka 0..1). NE DIRATI — drugi agent radi na njemu.
 - `src/components/shell/app-shell.tsx` — odlučuje da li ruta dobija
@@ -44,9 +58,9 @@ mobilna aplikacija Perplexity-ja:
   `src/app/globals.css` (`--primary`, `--card`, `--ink`, `--ai-prose`, …).
   Nikad inline heks. Jedna tema („Gravira"), nema `dark:` varijante —
   `src/app/theme.test.ts` obara build ako se vrati.
-- **Sav tekst kroz i18n.** `const { t } = useT()` pa `t("prizma.…")`.
+- **Sav tekst kroz i18n.** `const { t } = useT()` pa `t("jarvis.…")`.
   SVI ključevi koji ti trebaju VEĆ POSTOJE u
-  `src/lib/i18n/messages-parts/prizma.ts`. Čitaj ih, ne dodaj nove — ako ti
+  `src/lib/i18n/messages-parts/jarvis.ts`. Čitaj ih, ne dodaj nove — ako ti
   baš zatreba nov ključ, javi orkestratoru umesto da diraš taj fajl.
 - **Kartice** koriste `components/ui/card.tsx` na `bg-card` podlozi.
 - `cn()` iz `@/lib/utils` za spajanje klasa.
@@ -86,7 +100,7 @@ providnoj podlozi. Levo od pilule okrugli avatar, desno okruglo dugme.
 Traka je niska — oko 40px — i čita se kao hrome, ne kao sadržaj.
 
 Kod nas: levo profil/podešavanja, sredina Jarvis | Chat, desno izlaz.
-Napravljeno u `src/components/ai/prizma-top-bar.tsx`.
+Napravljeno u `src/components/ai/jarvis-top-bar.tsx`.
 
 ## Composer
 
@@ -102,7 +116,7 @@ KARTICA, ne red odvojenih kontrola:
 
 Naš stari composer je bio traka alata — pilula za tekst, pa okrugli
 mikrofon, pa okrugli send, sa linijom iznad. To je zamenjeno; vidi
-`src/components/ai/prizma-composer.tsx`.
+`src/components/ai/jarvis-composer.tsx`.
 
 ## Prazan ekran
 
@@ -112,7 +126,7 @@ Tišina je poenta.
 
 ## Bez donje navigacije
 
-Na Prizminom ekranu nema tabova. Izlaz je isključivo dugme gore desno.
+Na Jarvisovom ekranu nema tabova. Izlaz je isključivo dugme gore desno.
 Zato je uveden `CHROMELESS_PREFIXES` u `src/components/shell/app-shell.tsx`.
 
 ---

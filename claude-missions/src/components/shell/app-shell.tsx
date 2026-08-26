@@ -8,6 +8,7 @@ import { AppSplash } from "@/components/shell/app-splash";
 import { AccountsSync } from "@/components/auth/accounts-sync";
 import { InstallNudge } from "@/components/pwa/install-nudge";
 import { PushTapListener } from "@/components/native/push-tap-listener";
+import { cn } from "@/lib/utils";
 
 /**
  * F005: app-wide mobile-first shell.
@@ -35,8 +36,18 @@ import { PushTapListener } from "@/components/native/push-tap-listener";
  * dark chrome (`src/app/(auth)/layout.tsx`) and must never expose the bottom
  * navigation, whose tabs (Danas / Nedelja / Agent / Profil) link into the
  * authenticated app. When someone installs the app or taps "Uđi", the first
- * thing they see is only the auth screen. Every other route keeps the full app
- * shell (centered column + nav).
+ * thing they see is only the auth screen.
+ *
+ * Chromeless exception: Prizma (`/ai`) is neither. It keeps everything the
+ * shell gives — the centered column, `bg-background`, the aurora layer, the
+ * notch padding and the scroll region — but drops ONLY the bottom navigation,
+ * because that screen belongs to the agent and the four tabs would compete
+ * with it. The nav was also what carried `env(safe-area-inset-bottom)`, so
+ * without it the column takes that clearance over and the content still ends
+ * above the home indicator.
+ *
+ * Three modes, then: full shell (column + nav), chromeless (column, no nav)
+ * and full-bleed (neither). Every route not listed below gets the full shell.
  */
 
 /** Routes that render their own full-width layout, without the app column or
@@ -79,6 +90,17 @@ const FULL_BLEED_PREFIXES = [
   "/en",
 ] as const;
 
+/** Chromeless route prefixes: they keep the whole app column but render
+ * without the bottom navigation. Prefix-matched like the full-bleed list, so
+ * any future sub-screen of Prizma (`/ai/...`) inherits the same treatment. */
+const CHROMELESS_PREFIXES = ["/ai"] as const;
+
+function isChromeless(pathname: string): boolean {
+  return CHROMELESS_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
+  );
+}
+
 function isFullBleed(pathname: string): boolean {
   return (
     FULL_BLEED_ROUTES.has(pathname) ||
@@ -104,6 +126,8 @@ export function AppShell({
     return <>{children}</>;
   }
 
+  const chromeless = pathname !== null && isChromeless(pathname);
+
   return (
     <div className="min-h-dvh w-full bg-muted">
       {/* Launch splash: a first-paint brand cover over the app column that
@@ -120,7 +144,15 @@ export function AppShell({
           The full-bleed routes returned above (onboarding, questionnaire,
           auth) pad themselves and never reach here, so nothing double-counts. */}
       <div
-        className="relative isolate mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm"
+        className={cn(
+          "relative isolate mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm",
+          // The nav bar used to carry the home-indicator clearance for the
+          // whole column; on chromeless routes there is no nav left to carry
+          // it, so the column pads itself instead. Everywhere else this stays
+          // off and `AppNavBar` keeps owning the inset, so it never
+          // double-counts.
+          chromeless && "pb-[env(safe-area-inset-bottom)]"
+        )}
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         {/* App aurora: a barely-there iridescent wash in the corners, behind
@@ -132,12 +164,12 @@ export function AppShell({
           aria-hidden="true"
           className="app-aurora pointer-events-none absolute inset-0 -z-10"
         />
-        {/* Content scrolls inside this region only; the nav below keeps its own
-            space, so nothing ever hides behind it. */}
+        {/* Content scrolls inside this region only; where the nav is rendered
+            it keeps its own space below, so nothing ever hides behind it. */}
         <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain">
           {children}
         </div>
-        <AppNavBar />
+        {chromeless ? null : <AppNavBar />}
       </div>
       {/* Keeps the on-device multi-account registry (and the active account's
           rotating token) up to date wherever a signed-in user is. */}

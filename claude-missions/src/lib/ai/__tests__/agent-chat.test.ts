@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { AGENT_ACTION_IDS } from "@/lib/ai/agent-actions";
+import { GRIC_RULES } from "@/lib/ai/gric-estimate";
 import {
   AGENT_RESPONSE_JSON_SCHEMA,
   AGENT_RESPONSE_SCHEMA,
@@ -73,6 +74,19 @@ describe("agent facts sheet", () => {
     expect(prompt).toContain("analitika");
     // Not a doctor -- the health hand-off must be in the standing rules.
     expect(prompt).toContain("Nisi lekar");
+  });
+
+  it("the entry rules say she proposes and waits, and carry Gric's own estimation rules", () => {
+    const prompt = buildAgentSystemPrompt(makeFacts());
+    expect(prompt).toContain("UNOS OBROKA");
+    // A proposal is not a save, and she must never claim otherwise.
+    expect(prompt).toContain("PREDLOG, ne upis");
+    expect(prompt).toContain("NIKAD ne piši da si nešto upisala");
+    // The estimation rules are Gric's, verbatim -- one cucumber, one weight,
+    // whichever screen the user was on.
+    expect(prompt).toContain(GRIC_RULES);
+    // And she must not hand out the Gric card for a job she just did.
+    expect(prompt).toContain('NE nudi akciju "gric"');
   });
 });
 

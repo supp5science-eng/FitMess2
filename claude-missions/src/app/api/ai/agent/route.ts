@@ -35,6 +35,12 @@ import { computeWaterWeek, waterGoalMl } from "@/lib/water/water-week";
  * Quota: each turn charges one AI estimate (`chargeAiEstimate`) — counting
  * is live, enforcement follows the global `ENFORCE_AI_LIMIT` switch, so the
  * agent inherits whatever policy the meal estimators run under.
+ *
+ * Izvršni put (2026-08-26): the answer may also carry `draft` — a proposed
+ * meal entry Prizma built from "dva jaja i jogurt". THIS ROUTE STILL WRITES
+ * NOTHING. The draft is shown, the user confirms, and only then does the
+ * client post it to `POST /api/ai/agent/unos`, which is the one endpoint that
+ * touches `logs` and which never calls a model. See `@/lib/ai/agent-draft`.
  */
 export async function POST(request: NextRequest) {
   const supabase = createServerClient<Database>(
@@ -159,10 +165,16 @@ export async function POST(request: NextRequest) {
       id,
       href: AGENT_ACTIONS[id].href,
     }));
+    // The proposed meal entry, when the user just said what they ate. This
+    // turn WRITES NOTHING: `draft.occasions` is what the client shows, and the
+    // user's confirmation is what posts `draft.items` to `/api/ai/agent/unos`.
+    // Absent whenever the model proposed nothing usable — a bad draft costs
+    // the draft, never the reply.
     return NextResponse.json({
       ok: true,
       reply: parsed.data.reply,
       actions,
+      ...(parsed.data.unos ? { draft: parsed.data.unos } : {}),
     });
   } catch (err) {
     console.error("[/api/ai/agent] model call failed:", err);

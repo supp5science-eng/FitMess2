@@ -11,6 +11,7 @@ import { legalMessages } from "@/lib/i18n/messages-parts/legal";
 import { mediaMessages } from "@/lib/i18n/messages-parts/media";
 import { merenjeMessages } from "@/lib/i18n/messages-parts/merenje";
 import { onboardingMessages } from "@/lib/i18n/messages-parts/onboarding";
+import { prizmaMessages } from "@/lib/i18n/messages-parts/prizma";
 import { profilMessages } from "@/lib/i18n/messages-parts/profil";
 import { sourcesMessages } from "@/lib/i18n/messages-parts/sources";
 import { treningMessages } from "@/lib/i18n/messages-parts/trening";
@@ -153,6 +154,7 @@ const sr = {
   ...analyticsMessages.sr,
   ...foodMessages.sr,
   ...mediaMessages.sr,
+  ...prizmaMessages.sr,
   ...adminMessages.sr,
   ...appMessages.sr,
   ...dataMessages.sr,
@@ -281,6 +283,7 @@ const en: Record<MessageKey, string> = {
   ...analyticsMessages.en,
   ...foodMessages.en,
   ...mediaMessages.en,
+  ...prizmaMessages.en,
   ...adminMessages.en,
   ...appMessages.en,
   ...dataMessages.en,

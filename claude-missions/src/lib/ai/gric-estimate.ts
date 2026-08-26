@@ -208,9 +208,14 @@ export const GRIC_RESPONSE_SCHEMA = {
  * total depends on which button the user pressed. So the rules live here once,
  * and each modality only supplies its own opening line below.
  *
- * Written to be modality-neutral: it says "unos", never "snimak".
+ * Written to be modality-neutral: it says "unos", never "snimak" -- which is
+ * also why Prizma reuses it verbatim (see `agent-chat.ts`): the agent is a
+ * THIRD mouth for the same job, and a cucumber that weighs one thing in Gric
+ * and another when said to Prizma would make the day's total depend on which
+ * screen the user happened to be on. Exported for that one caller; the rules
+ * live here because this is where the shape they produce is defined.
  */
-const GRIC_RULES = `Zadatak: razdvoj unos na POJEDINAČNE stavke, pa ih rasporedi po OBROCIMA (prilikama jedenja), i za svaku stavku daj nutritivne vrednosti ZA POJEDENU KOLIČINU (ne na 100 g).
+export const GRIC_RULES = `Zadatak: razdvoj unos na POJEDINAČNE stavke, pa ih rasporedi po OBROCIMA (prilikama jedenja), i za svaku stavku daj nutritivne vrednosti ZA POJEDENU KOLIČINU (ne na 100 g).
 
 Šta je jedan obrok:
 - Jedan "obrok" = jedna prilika jedenja: sve što je pojedeno ZAJEDNO, u istom trenutku, kao jedan tanjir ili jedna pauza.

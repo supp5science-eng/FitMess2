@@ -4,6 +4,51 @@
 
 ---
 
+# 26.08.2026, kasnije — ElevenLabs usta ugrađena; ključ stigao, mreža još ne ✅/⏳
+
+Vlasnik presudio posle prvog testa glasa: sistemski TTS nije to. Ciljni
+workflow potvrđen: **Gemini sluša → Opus piše → Eleven govori.** ElevenLabs
+ključ je stigao u sesiju (u `.env`) i cela integracija je ugrađena:
+
+- **`src/lib/ai/elevenlabs.ts`**: `synthesizeSpeech` — `eleven_v3` (jedini
+  model sa srpskim; Flash v2.5 staje na hrvatskom), glas i model su ENV
+  config (`ELEVENLABS_VOICE_ID`/`ELEVENLABS_TTS_MODEL`) jer casting glasa
+  tek sledi — promena glasa ne sme da bude deploy. Default glas: George
+  (primer iz dokumentacije), muški placeholder.
+- **`/api/ai/agent/tts`**: tekst odgovora → MP3 (44.1 kHz/128 kbps); auth
+  obavezan, tekst ograničen na 1200 znakova da ruta ne postane tuđa
+  audio-knjiga na našem računu. Grešku vraća kao JSON — klijentski ugovor
+  je „nije ok → sistemski TTS", pa istekao ključ košta lepši glas, nikad
+  razgovor.
+- **`src/lib/audio/play-tts.ts`**: pušta MP3 i meri ŽIVU glasnoću kroz
+  AnalyserNode — orb se dok Prizma govori pomera na stvarni zvuk njenog
+  glasa (izmereno, ne simulirano); envelopa ostaje samo za sistemski TTS
+  (koji nema audio tap). Jedan deljeni AudioContext za celu sesiju (iOS
+  otključavanje zvuka lepi se za kontekst).
+- **`agent-screen.tsx`**: `ttsAvailable` prop sa servera (da klijent ne
+  troši zahtev otkrivajući da ključa nema); Eleven prvo, sistemska usta
+  fallback; novi snimak ili odlazak sa ekrana seče govor.
+- Čuvari ažurirani: `.env.example` + `docs/deploy.md` (AS_003/AS_007 zeleni).
+
+## ⏳ Šta koči živi test ODAVDE (dva klika + jedan ključ)
+
+1. **Mrežna politika okruženja ne pušta `api.elevenlabs.io`** — proxy vraća
+   403 „Host not in allowlist". Vlasnik: claude.ai/code → environment →
+   Network egress → dodaj `api.elevenlabs.io`. Zbog toga ElevenLabs ključ
+   iz `.env` još NIJE verifikovan (zahtev ne stiže do ElevenLabsa).
+2. **Novi Anthropic ključ nikad nije stigao** — stari je 401 (rotiran
+   26.08. ujutru). Bez njega srednji korak (Opus piše) i dalje ide na
+   Gemini fallback. Čim vlasnik nalepi ključ: u `.env` ovde + Vercel env.
+3. Za produkciju: `ELEVENLABS_API_KEY` (+ po želji `ELEVENLABS_VOICE_ID`)
+   dodati u Vercel env — tabela u `docs/deploy.md`.
+
+Sledeće po planu kad mreža pusti: verifikacija ključa, pa **casting glasa**
+(isti srpski tekst × v3 srpski/Flash hrvatski × 2 muška glasa → MP3 +
+latencije, vlasnik bira uvom) i doterivanje latencije (streaming po
+rečenicama, cilj ~2,5–4 s do prvog zvuka).
+
+---
+
 # 26.08.2026 — Prizma priča: glasovni razgovor i orb koji živi uz njega ✅
 
 Vlasnikova želja: „da priča sa nama, ali interaktivno — swirl se pomera dok

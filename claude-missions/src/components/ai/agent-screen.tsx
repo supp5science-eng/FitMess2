@@ -27,6 +27,7 @@ import { transcribeVoiceAction } from "@/app/(app)/ai/actions";
 import { AiOrbCanvas, type AiOrbMode } from "@/components/ai/ai-orb-canvas";
 import type { AgentActionId } from "@/lib/ai/agent-actions";
 import { useT } from "@/components/i18n/locale-provider";
+import { playTtsBlob, type TtsPlayback } from "@/lib/audio/play-tts";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import { createSpeaker, type Speaker } from "@/lib/audio/speak";
 import type { MessageKey } from "@/lib/i18n/messages";
@@ -119,11 +120,15 @@ function storeMessages(messages: AgentMessage[]): void {
 export function AgentScreen({
   greeting,
   contextLine,
+  ttsAvailable = false,
 }: {
   /** "Dobro jutro, Marko." — composed server-side from the profile. */
   greeting: string;
   /** "Do sada 1.250 kcal — ostalo ti je 650." or null when unknown. */
   contextLine: string | null;
+  /** Whether the server has an ElevenLabs key — spoken replies then go
+   * through `/api/ai/agent/tts` first, system TTS stays the fallback. */
+  ttsAvailable?: boolean;
 }) {
   const { t } = useT();
   const [messages, setMessages] = useState<AgentMessage[]>(readStoredMessages);
@@ -139,6 +144,7 @@ export function AgentScreen({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const recordingRef = useRef<WavRecording | null>(null);
   const speakerRef = useRef<Speaker | null>(null);
+  const playbackRef = useRef<TtsPlayback | null>(null);
 
   const isIdle = messages.length === 0 && !isSending;
 
@@ -152,9 +158,19 @@ export function AgentScreen({
     return () => {
       recordingRef.current?.cancel();
       recordingRef.current = null;
+      playbackRef.current?.stop();
+      playbackRef.current = null;
       speakerRef.current?.stop();
     };
   }, []);
+
+  /** Cut whatever Prizma is saying right now (both mouths). */
+  function stopSpeaking() {
+    playbackRef.current?.stop();
+    playbackRef.current = null;
+    speakerRef.current?.stop();
+    setIsSpeaking(false);
+  }
 
   /** What the orb should be doing right now. Listening wins (the mic is
    * live), then the wait for Prizma, then her speaking, then rest. */
@@ -167,12 +183,15 @@ export function AgentScreen({
           ? "speaking"
           : "idle";
 
-  /** Live mic loudness for the orb — stable identity, reads through the ref
-   * so the canvas effect never rebuilds. */
-  const getLevel = useCallback(
-    () => recordingRef.current?.level?.() ?? 0,
-    []
-  );
+  /** Live loudness for the orb — stable identity, reads through the refs so
+   * the canvas effect never rebuilds. While listening this is the mic;
+   * while speaking it is the ElevenLabs playback (-1 = system TTS, no tap —
+   * the orb then composes its own envelope). */
+  const getLevel = useCallback(() => {
+    if (recordingRef.current) return recordingRef.current.level?.() ?? 0;
+    if (playbackRef.current) return playbackRef.current.level();
+    return -1;
+  }, []);
 
   async function send(text: string, options?: { spoken?: boolean }) {
     const clean = text.trim();
@@ -216,14 +235,12 @@ export function AgentScreen({
       ];
       setMessages(complete);
       storeMessages(complete);
-      // Spoken in -> spoken out. `speak` returns false when the device has
-      // no ex-Yu voice; the reply then simply stays on screen, orb at rest.
+      // Spoken in -> spoken out: ElevenLabs first (the real voice, with a
+      // live level for the orb), system TTS as the fallback mouth — which
+      // itself returns false when the device has no ex-Yu voice; the reply
+      // then simply stays on screen, orb at rest.
       if (options?.spoken) {
-        speakerRef.current ??= createSpeaker();
-        speakerRef.current.speak(payload.reply, {
-          onStart: () => setIsSpeaking(true),
-          onEnd: () => setIsSpeaking(false),
-        });
+        void speakReply(payload.reply);
       }
     } catch {
       setError(t("agent.error"));
@@ -237,11 +254,44 @@ export function AgentScreen({
     void send(draft);
   }
 
+  /** Prizma says one reply aloud: ElevenLabs when deployed, system TTS
+   * when not (or when the fetch/playback fails). Never throws — a voice
+   * failure costs the sound, never the conversation on screen. */
+  async function speakReply(reply: string) {
+    stopSpeaking();
+    if (ttsAvailable) {
+      try {
+        const response = await fetch("/api/ai/agent/tts", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text: reply }),
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          playbackRef.current = await playTtsBlob(blob, {
+            onEnd: () => {
+              playbackRef.current = null;
+              setIsSpeaking(false);
+            },
+          });
+          setIsSpeaking(true);
+          return;
+        }
+      } catch {
+        // Fall through to the system mouth.
+      }
+    }
+    speakerRef.current ??= createSpeaker();
+    speakerRef.current.speak(reply, {
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+    });
+  }
+
   /** Mic tap #1: open the ear. Must run inside the tap (permission prompt). */
   async function startListening() {
     if (voiceState !== "idle" || isSending) return;
-    speakerRef.current?.stop();
-    setIsSpeaking(false);
+    stopSpeaking();
     setError(null);
     try {
       recordingRef.current = await startWavRecording();

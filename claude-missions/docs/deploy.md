@@ -67,6 +67,9 @@ code or Vercel config is needed for that behavior.
    | `SUPABASE_PUBLISHABLE_KEY` | Production + Preview |
    | `SUPABASE_SECRET_KEY` | Production only (server-only secret) |
    | `ANTHROPIC_API_KEY` | Production only (server-only secret — Prizmin mozak na Claude Opus 5; prazno = agent pada nazad na Gemini) |
+   | `ELEVENLABS_API_KEY` | Production only (server-only secret — Prizmin glas kroz `/api/ai/agent/tts`; prazno = sistemski TTS na uređaju) |
+   | `ELEVENLABS_VOICE_ID` | Production + Preview (optional — glas; prazno = ugrađeni default dok casting ne izabere Prizmin) |
+   | `ELEVENLABS_TTS_MODEL` | Production + Preview (optional — prazno = `eleven_v3`, jedini sa srpskim) |
    | `GEMINI_API_KEY` | Production only (server-only secret) |
    | `GEMINI_MODEL` | Production + Preview |
    | `GEMINI_MEAL_MODEL` | Production + Preview (optional — blank uses the built-in default) |

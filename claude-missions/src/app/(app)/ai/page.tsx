@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { AgentScreen } from "@/components/ai/agent-screen";
+import { hasElevenKey } from "@/lib/ai/elevenlabs";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { getTodayData } from "@/lib/home/today";
 import { computeDayTotals } from "@/lib/home/totals";
@@ -70,5 +71,13 @@ export default async function AiPage() {
         : t("agent.greeting.evening");
   const greeting = name ? `${greetingWord}, ${name}.` : `${greetingWord}.`;
 
-  return <AgentScreen greeting={greeting} contextLine={contextLine} />;
+  return (
+    <AgentScreen
+      greeting={greeting}
+      contextLine={contextLine}
+      // Whether the ElevenLabs mouth is deployed — decided server-side so
+      // the client never wastes a request discovering there is no key.
+      ttsAvailable={hasElevenKey()}
+    />
+  );
 }

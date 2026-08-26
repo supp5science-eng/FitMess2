@@ -162,8 +162,10 @@ export function AiOrbCanvas({
   className?: string;
   /** What Prizma is doing right now — drives the swirl's temperament. */
   mode?: AiOrbMode;
-  /** Live mic loudness 0..1 while LISTENING (from `WavRecording.level`).
-   * Optional: without it, listening falls back to a steady attentive glow. */
+  /** Live loudness 0..1 — the mic while LISTENING (`WavRecording.level`),
+   * the TTS playback while SPEAKING (`TtsPlayback.level`; -1 means "no tap,
+   * use the composed envelope"). Optional: without it, listening falls back
+   * to a steady attentive glow and speaking to the envelope. */
   getLevel?: () => number;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -264,7 +266,10 @@ export function AiOrbCanvas({
       } else if (current.mode === "speaking") {
         targetActivity = 0.7;
         targetSpeak = 1;
-        targetEnergy = speechEnvelope(seconds);
+        // ElevenLabs playback reports the REAL loudness (>= 0); system TTS
+        // has no audio tap and returns -1, so the composed envelope steps in.
+        const live = current.getLevel ? current.getLevel() : -1;
+        targetEnergy = live >= 0 ? live : speechEnvelope(seconds);
       }
       energy += (targetEnergy - energy) * (targetEnergy > energy ? 0.5 : 0.12);
       activity += (targetActivity - activity) * 0.08;

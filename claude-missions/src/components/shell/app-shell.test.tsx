@@ -10,6 +10,22 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: routerPushMock }),
 }));
 
+// `AccountsSync` (mounted by the shell) builds a real browser Supabase client
+// on mount, which throws without `NEXT_PUBLIC_SUPABASE_URL` / the publishable
+// key in the environment. Nothing here is about the account registry, so the
+// client is stubbed the way the auth component tests do it and the layout
+// assertions below stay credential-free.
+vi.mock("@/lib/supabase/client", () => ({
+  createClient: () => ({
+    auth: {
+      getSession: () => Promise.resolve({ data: { session: null } }),
+      onAuthStateChange: () => ({
+        data: { subscription: { unsubscribe: () => {} } },
+      }),
+    },
+  }),
+}));
+
 import { AppShell } from "./app-shell";
 
 describe("AppShell (F005 base shell)", () => {
@@ -17,13 +33,15 @@ describe("AppShell (F005 base shell)", () => {
     // AS-125: renders correctly at the 375px baseline with no horizontal
     // scroll. The inner column is capped at 430px (comfortably above the
     // 375px baseline) and forces overflow-x hidden so a stray wide child
-    // can never introduce a horizontal scrollbar.
+    // can never introduce a horizontal scrollbar. `:not(.fm-splash)` skips the
+    // launch splash, the other direct grandchild of the container, which is
+    // still rendered on the first shell render of this file.
     const { container } = render(
       <AppShell>
         <p>sadrzaj</p>
       </AppShell>
     );
-    const column = container.querySelector(":scope > div > div");
+    const column = container.querySelector(":scope > div > div:not(.fm-splash)");
     expect(column).not.toBeNull();
     expect(column?.className).toMatch(/max-w-\[430px\]/);
     expect(column?.className).toMatch(/overflow-x-hidden/);
@@ -44,7 +62,7 @@ describe("AppShell (F005 base shell)", () => {
     expect(outer?.className).toMatch(/w-full/);
     expect(outer?.className).toMatch(/bg-muted/);
 
-    const column = container.querySelector(":scope > div > div");
+    const column = container.querySelector(":scope > div > div:not(.fm-splash)");
     expect(column?.className).toMatch(/mx-auto/);
   });
 
@@ -57,7 +75,7 @@ describe("AppShell (F005 base shell)", () => {
         <p>sadrzaj</p>
       </AppShell>
     );
-    const column = container.querySelector(":scope > div > div");
+    const column = container.querySelector(":scope > div > div:not(.fm-splash)");
     expect(column?.className).toMatch(/bg-background/);
     expect(container.querySelector(".dark")).toBeNull();
   });
@@ -120,6 +138,58 @@ describe("AppShell (F005 base shell)", () => {
       expect(container.querySelector(".max-w-\\[430px\\]")).toBeNull();
     }
   );
+
+  it.each([["/ai"], ["/ai/podesavanja"]])(
+    "renders Prizma route %s chromeless: keeps the app column, drops the bottom nav",
+    (pathname) => {
+      // Prizma owns the screen, so the four tabs (and the "+" trigger) step
+      // aside — but unlike the full-bleed routes above she still lives inside
+      // the shell: the centered mobile column, the background and the scroll
+      // region all stay. That difference is the whole point of the third mode.
+      usePathnameMock.mockReturnValue(pathname);
+      const { container } = render(
+        <AppShell>
+          <p>prizma sadrzaj</p>
+        </AppShell>
+      );
+      expect(screen.getByText("prizma sadrzaj")).toBeInTheDocument();
+      expect(
+        screen.queryByRole("navigation", { name: "Glavna navigacija" })
+      ).toBeNull();
+      const column = container.querySelector(".max-w-\\[430px\\]");
+      expect(column).not.toBeNull();
+      expect(column?.className).toMatch(/bg-background/);
+    }
+  );
+
+  it("pads the chromeless column clear of the home indicator", () => {
+    // The bottom nav carried `env(safe-area-inset-bottom)` for everyone
+    // (see `app-nav-bar.tsx`); with it gone the column has to carry it, or the
+    // last of the content sits under the iPhone home indicator.
+    usePathnameMock.mockReturnValue("/ai");
+    const { container } = render(
+      <AppShell>
+        <p>prizma sadrzaj</p>
+      </AppShell>
+    );
+    const column = container.querySelector(".max-w-\\[430px\\]");
+    expect(column?.className).toMatch(/pb-\[env\(safe-area-inset-bottom\)\]/);
+  });
+
+  it("leaves the home-indicator inset to the nav on ordinary routes", () => {
+    // Guards the other half: `AppNavBar` still owns the inset on full-shell
+    // routes, so the column must not add a second copy of it.
+    usePathnameMock.mockReturnValue("/danas");
+    const { container } = render(
+      <AppShell>
+        <p>naslovna sadrzaj</p>
+      </AppShell>
+    );
+    const column = container.querySelector(".max-w-\\[430px\\]");
+    expect(column?.className).not.toMatch(
+      /pb-\[env\(safe-area-inset-bottom\)\]/
+    );
+  });
 
   it("renders the marketing landing (/) full-bleed: no app column, no bottom nav", () => {
     // The public landing page supplies its own full-width chrome, so the

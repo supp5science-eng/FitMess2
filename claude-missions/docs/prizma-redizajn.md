@@ -68,3 +68,66 @@ mobilna aplikacija Perplexity-ja:
 Kratak izveštaj: koje si fajlove napisao, koje propse komponenta prima,
 šta je namerno ostavljeno orkestratoru da spoji, i sve na šta si naleteo a
 nije bilo u zadatku.
+
+---
+
+# Referenca: mobilna aplikacija Perplexity
+
+Vlasnik je kao uzor dao mobilnu aplikaciju Perplexity. Novi agent u novom
+chatu neće videti te snimke, pa je ovde zapisano šta se sa njih uzima.
+Ovo je opis cilja, ne recept — ako nešto od navedenog ne odgovara Gravira
+temi, tema pobeđuje.
+
+## Gornja traka
+
+Pilula sa dva segmenta u sredini ekrana. Aktivni segment je bela pilula sa
+mekom senkom KOJA KLIZI kad se prebaci; neaktivni je samo ikona + tekst na
+providnoj podlozi. Levo od pilule okrugli avatar, desno okruglo dugme.
+Traka je niska — oko 40px — i čita se kao hrome, ne kao sadržaj.
+
+Kod nas: levo profil/podešavanja, sredina Jarvis | Chat, desno izlaz.
+Napravljeno u `src/components/ai/prizma-top-bar.tsx`.
+
+## Composer
+
+Ovo je bila glavna zamerka na naš stari ekran. Kod Perplexity-ja je JEDNA
+KARTICA, ne red odvojenih kontrola:
+
+- zaobljena kartica, blago izdignuta, na dnu ekrana;
+- tekst zauzima ceo gornji red kartice;
+- ispod teksta, UNUTAR iste kartice, red kontrola: levo `+` i čip, desno
+  ikone i puno okruglo dugme za slanje;
+- kad se tapne, kartica poraste, tekst se prelama, kartica ostaje
+  prilepljena tačno iznad tastature.
+
+Naš stari composer je bio traka alata — pilula za tekst, pa okrugli
+mikrofon, pa okrugli send, sa linijom iznad. To je zamenjeno; vidi
+`src/components/ai/prizma-composer.tsx`.
+
+## Prazan ekran
+
+Ogroman prazan prostor sa logotipom u sredini, pa tek pri dnu tri predloga
+kao redovi razdvojeni vlas-linijom, pa composer. Bez naslova, bez kartica.
+Tišina je poenta.
+
+## Bez donje navigacije
+
+Na Prizminom ekranu nema tabova. Izlaz je isključivo dugme gore desno.
+Zato je uveden `CHROMELESS_PREFIXES` u `src/components/shell/app-shell.tsx`.
+
+---
+
+# Gde da gledaš pre nego što pitaš
+
+| Pitanje | Fajl |
+|---|---|
+| Kako izgleda boja / token | `src/app/globals.css`, `:root` blok |
+| Sme li druga tema | `src/app/theme.test.ts` — obara build |
+| Kako se meri klizeći indikator | `src/components/shell/bottom-nav.tsx` |
+| Kako se kolocira CSS uz komponentu | `src/components/ai/ai-thinking.css` |
+| Kako se piše pure funkcija + test | `src/lib/week/`, `src/lib/weight/` |
+| Kako ruta upisuje uz RLS | `src/app/api/logs/route.ts` |
+| Kako se snima glas | `src/lib/audio/record-wav.ts` |
+| Kako se govori naglas | `src/lib/audio/play-tts.ts`, `speak.ts` |
+| Kako orb prima stanja | `src/components/ai/ai-orb-canvas.tsx` |
+| Belgrade dani i nedelje | `src/lib/dates.ts` |

@@ -31,10 +31,15 @@ import { AiOrb } from "@/components/ai/ai-orb";
  * broad marbled pools threaded with hair-thin filaments. Two consequences
  * fall out of that curve and are handled in the shader, not papered over:
  * fbm's lowest octave wanders, which would swing the whole orb pale or
- * near-black, so the field is high-passed against that exact octave; and
- * the ink now burns out to PAPER WHITE across the last fifth of the radius
- * instead of fading to a pale blue haze, so the roundings are a rim of
- * light rather than a washed-out fringe.
+ * near-black, so the field is high-passed against that exact octave.
+ *
+ * v5 (2026-08-26): v4 burnt the ink out to paper white at the silhouette,
+ * which looked right on the black-backed reference clip and disappeared on
+ * our white page — the circle had no edge to start at. The burn is now the
+ * TURN of a sphere instead of a ring: white only where the key light grazes
+ * the shoulder, deep ink where it turns away, and a contour closing the
+ * circle so the lit side has an edge too. The orb reads as a marble sitting
+ * on the paper rather than a disc dissolving into it.
  *
  * three.js is already a dependency (the 3D klon), so this is one
  * orthographic plane + ShaderMaterial — no model, no lights, one draw call.
@@ -165,26 +170,24 @@ const FRAGMENT_SHADER = /* glsl */ `
     // Loudness lights the ink from within.
     col *= 1.0 + 0.20 * uEnergy;
 
-    // THE WHITE SHOULDER. The ink keeps its full saturation across the body
-    // and then burns out to paper-white over the last fifth of the radius,
-    // so the sphere is ringed in light instead of going pale and muddy at
-    // the edge. The fluid ruffles where the burnout starts (the same warp
-    // that draws the ink), so the ring breathes with the swirl instead of
-    // sitting on it like a decal.
-    float edge = 0.86 + 0.05 * (w2.x - 0.5) - 0.05 * uEnergy;
-    float wash = smoothstep(edge, 0.97, r);
-    col = mix(col, vec3(1.0), pow(wash, 0.55));
-    // ...and a band of light lives IN that shoulder, added rather than
-    // mixed, so the ink's own dark veins cannot punch holes in the ring.
-    float halo = exp(-pow((r - 0.94) / 0.065, 2.0));
-    col = min(vec3(1.0), col + halo * 0.55);
+    // THE TURN OF THE SPHERE. A ball reads as round because the light does
+    // NOT wrap it evenly: the shoulder facing the key light burns to paper
+    // white, the shoulder turning away sinks into ink. An even ring of white
+    // all the way round reads as a decal pasted onto a flat disc instead.
+    float turn = smoothstep(0.66, 0.995, r);
+    col = mix(col, vec3(1.0), turn * pow(light, 1.4) * 0.80);
+    col = mix(col, vec3(0.106, 0.098, 0.55), turn * (1.0 - light) * 0.85);
+    // ...and a contour closes the circle. The lit shoulder is white and so is
+    // the page, so without this the orb has no edge to start at on that side
+    // — which is the whole reason the ink is not allowed to burn out fully.
+    float contour = smoothstep(0.88, 0.985, r);
+    col = mix(col, vec3(0.22, 0.21, 0.72), contour * 0.8);
 
-    // The silhouette dissolves once the ink has already burnt to white, so
-    // the orb melts into the page with no grey fringe to give it away. The
-    // fade pulls inward by exactly what the voice swell pushed out, so a
-    // shouting user cannot inflate the sphere past the canvas and leave a
-    // straight cut across it.
-    float alpha = 1.0 - smoothstep(0.985 - 0.06 * uEnergy, 1.025 - 0.06 * uEnergy, r);
+    // The silhouette is a clean circle now, so the fade is only wide enough
+    // to keep it from stair-stepping. It pulls inward by exactly what the
+    // voice swell pushed out, so a shouting user cannot inflate the sphere
+    // past the canvas and leave a straight cut across it.
+    float alpha = 1.0 - smoothstep(0.955 - 0.06 * uEnergy, 0.99 - 0.06 * uEnergy, r);
     gl_FragColor = vec4(col, alpha);
   }
 `;

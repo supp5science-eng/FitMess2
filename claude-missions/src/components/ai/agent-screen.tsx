@@ -5,11 +5,9 @@ import {
   useEffect,
   useRef,
   useState,
-  type FormEvent,
 } from "react";
 import Link from "next/link";
 import {
-  ArrowUp,
   Camera,
   ChartColumnBig,
   Dumbbell,
@@ -18,20 +16,26 @@ import {
   Mic,
   Scale,
   Settings,
-  Square,
   Target,
   type LucideIcon,
 } from "lucide-react";
 
 import { transcribeVoiceAction } from "@/app/(app)/ai/actions";
 import { AiOrbCanvas, type AiOrbMode } from "@/components/ai/ai-orb-canvas";
+import { PrizmaComposer } from "@/components/ai/prizma-composer";
 import { prizmaProse, prizmaVoice } from "@/components/ai/prizma-font";
+import {
+  PrizmaTopBar,
+  type PrizmaMode,
+} from "@/components/ai/prizma-top-bar";
+import { PrizmaVoiceMode } from "@/components/ai/prizma-voice-mode";
 import type { AgentActionId } from "@/lib/ai/agent-actions";
 import { useT } from "@/components/i18n/locale-provider";
 import { playTtsBlob, type TtsPlayback } from "@/lib/audio/play-tts";
 import { startWavRecording, type WavRecording } from "@/lib/audio/record-wav";
 import { createSpeaker, type Speaker } from "@/lib/audio/speak";
 import type { MessageKey } from "@/lib/i18n/messages";
+import { useKeyboardInset } from "@/lib/ui/use-keyboard-inset";
 import { cn } from "@/lib/utils";
 
 /**
@@ -158,6 +162,11 @@ export function AgentScreen({
     "idle" | "listening" | "transcribing"
   >("idle");
   const [isSpeaking, setIsSpeaking] = useState(false);
+  /** Which half of the screen is showing. Chat is the default on purpose:
+   * it is what this tab has always opened as, it needs no microphone
+   * permission to be useful, and it shows the thread the user left behind.
+   * Jarvis is one tap away and asks for the mic only when tapped. */
+  const [mode, setMode] = useState<PrizmaMode>("chat");
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const recordingRef = useRef<WavRecording | null>(null);
   const speakerRef = useRef<Speaker | null>(null);
@@ -188,6 +197,24 @@ export function AgentScreen({
     speakerRef.current?.stop();
     setIsSpeaking(false);
   }
+
+  /** Switching halves closes the ear and the mouth first. Jarvis and chat
+   * share one recorder and one voice; leaving either running across a switch
+   * is how the mic ends up open on a screen that no longer shows it. */
+  function changeMode(next: PrizmaMode) {
+    if (next === mode) return;
+    recordingRef.current?.cancel();
+    recordingRef.current = null;
+    setVoiceState("idle");
+    stopSpeaking();
+    setError(null);
+    setMode(next);
+  }
+
+  /** The last thing Prizma said — Jarvis shows it small under the orb so a
+   * spoken answer can also be read. */
+  const lastReply =
+    [...messages].reverse().find((m) => m.role === "model")?.text ?? null;
 
   /** What the orb should be doing right now. Listening wins (the mic is
    * live), then the wait for Prizma, then her speaking, then rest. */
@@ -266,11 +293,6 @@ export function AgentScreen({
     }
   }
 
-  function onSubmit(event: FormEvent) {
-    event.preventDefault();
-    void send(draft);
-  }
-
   /** Prizma says one reply aloud: ElevenLabs when deployed, system TTS
    * when not (or when the fetch/playback fails). Never throws — a voice
    * failure costs the sound, never the conversation on screen. */
@@ -344,6 +366,10 @@ export function AgentScreen({
     }
   }
 
+  /** Live keyboard height, so the composer sits ON the keyboard instead of
+   * under it. Reports 0 everywhere the platform already handles it. */
+  const keyboard = useKeyboardInset();
+
   const chips: { key: string; label: string }[] = [
     { key: "today", label: t("agent.chip.today") },
     { key: "dinner", label: t("agent.chip.dinner") },
@@ -356,197 +382,168 @@ export function AgentScreen({
       data-testid="agent-screen"
       aria-label={t("agent.title")}
     >
-      {isIdle ? (
-        /* MIR: the orb is the screen — greeting from live data, three quiet
-           hints. */
-        <div className="flex flex-1 flex-col items-center justify-center gap-7 px-8 pb-6">
-          <AiOrbCanvas className="size-48" mode={orbMode} getLevel={getLevel} />
-          <div className="flex flex-col items-center gap-2.5 text-center">
-            <h1
-              className={cn(
-                prizmaVoice.className,
-                "text-2xl font-bold tracking-tight text-foreground"
-              )}
-            >
-              {greeting}
-            </h1>
-            <p
-              className={cn(
-                prizmaVoice.className,
-                "max-w-[30ch] text-[15px] leading-relaxed text-muted-foreground"
-              )}
-            >
-              {contextLine ?? t("agent.empty")}
-            </p>
-          </div>
-          <div className="flex flex-wrap justify-center gap-2">
-            {chips.map((chip) => (
-              <button
-                key={chip.key}
-                type="button"
-                data-testid={`agent-chip-${chip.key}`}
-                onClick={() => void send(chip.label)}
-                className="rounded-full border border-border bg-card px-3.5 py-2.5 text-[13px] font-medium text-foreground fm-lift hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                {chip.label}
-              </button>
-            ))}
-          </div>
-          {error ? (
-            <p className="text-sm text-destructive" data-testid="agent-error">
-              {error}
-            </p>
-          ) : null}
-        </div>
-      ) : (
-        /* RAZGOVOR: the orb shrinks to a badge; the exchange takes the screen.
-           Spacing carries the grammar — the gap BETWEEN turns is twice the gap
-           WITHIN one, so a question and its answer read as a single thought
-           instead of as two equally distant events (`PRIZMA_TURN_GAP`). */
-        <>
-          <div className="flex shrink-0 justify-center pt-3 pb-1">
-            {/* 32px, not 64: in conversation the orb is a status light, not
-                the subject. It still carries every voice state. */}
-            <AiOrbCanvas className="size-8" mode={orbMode} getLevel={getLevel} />
-          </div>
-          <div
-            ref={scrollRef}
-            className="flex flex-1 flex-col overflow-y-auto overscroll-y-contain px-5 py-3"
-          >
-            {messages.map((message, index) =>
-              message.role === "user" ? (
-                <div
-                  key={index}
-                  className={cn(
-                    "max-w-[78%] self-end rounded-2xl bg-muted px-3.5 py-2.5",
-                    "mb-3.5 text-[14.5px] leading-[1.45] text-foreground",
-                    index > 0 && PRIZMA_TURN_GAP
-                  )}
-                >
-                  {message.text}
-                </div>
-              ) : (
-                <div key={index} className="flex flex-col">
-                  <p
-                    className={cn(
-                      prizmaProse.className,
-                      "whitespace-pre-wrap text-[16px] leading-[1.62] text-ai-prose"
-                    )}
-                  >
-                    {message.text}
-                  </p>
-                  {message.actions?.length ? (
-                    /* A brought flow is a shortcut, not a purchase button —
-                       hairline rows, no card, no lift, no fill. */
-                    <div className="mt-3.5 border-t border-border/40">
-                      {message.actions.map((action, actionIndex) => (
-                        <ActionRow
-                          key={action.id}
-                          action={action}
-                          highlighted={actionIndex === 0}
-                        />
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              )
-            )}
-            {isSending ? (
-              <p
-                className={cn(
-                  prizmaProse.className,
-                  "animate-pulse text-[16px] leading-[1.62] text-muted-foreground"
-                )}
-              >
-                {t("agent.thinking")}
-              </p>
-            ) : null}
-            {error ? (
-              <p
-                className="mt-3.5 text-sm text-destructive"
-                data-testid="agent-error"
-              >
-                {error}
-              </p>
-            ) : null}
-          </div>
-        </>
-      )}
+      {/* The chrome this screen has instead of the bottom navigation: settings
+          on the left, the two halves in the middle, the way out on the right.
+          Without the last one there is no way off `/ai` in an installed PWA. */}
+      <PrizmaTopBar mode={mode} onModeChange={changeMode} />
 
-      {/* Input row, pinned above the nav. While the mic is live the text
-          field gives way to the listening pill; the mic button itself flips
-          into "send the clip". */}
-      <form
-        onSubmit={onSubmit}
-        className="flex shrink-0 items-center gap-2.5 border-t border-border/70 bg-background px-5 py-3.5"
-      >
-        {voiceState === "listening" ? (
-          <div
-            data-testid="agent-listening"
-            className="flex h-12 min-w-0 flex-1 items-center gap-2.5 rounded-full border border-primary/50 bg-primary/[0.06] px-4"
-          >
-            <span
-              className="size-2 shrink-0 animate-pulse rounded-full bg-primary"
-              aria-hidden="true"
-            />
-            <span className="truncate text-sm font-medium text-foreground">
-              {t("agent.listening")}
-            </span>
-          </div>
-        ) : (
-          <input
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            placeholder={t("agent.placeholder")}
-            data-testid="agent-input"
-            maxLength={2000}
-            disabled={voiceState === "transcribing"}
-            className="h-12 min-w-0 flex-1 rounded-full border border-input bg-card px-4 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"
-          />
-        )}
-        <button
-          type="button"
-          onClick={() =>
+      {mode === "voice" ? (
+        <PrizmaVoiceMode
+          orbMode={orbMode}
+          getLevel={getLevel}
+          voiceState={voiceState}
+          isSending={isSending}
+          isSpeaking={isSpeaking}
+          lastReply={lastReply}
+          onMicTap={() =>
             voiceState === "listening"
               ? void stopListening()
               : void startListening()
           }
-          disabled={voiceState === "transcribing" || isSending}
-          aria-label={
-            voiceState === "listening" ? t("agent.mic.stop") : t("agent.mic")
-          }
-          data-testid="agent-mic"
-          className={cn(
-            "flex size-12 shrink-0 items-center justify-center rounded-full",
-            "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-            "disabled:opacity-50",
-            voiceState === "listening"
-              ? "liquid-glass bg-primary text-primary-foreground"
-              : "border border-input bg-card text-foreground hover:bg-muted"
-          )}
-        >
-          {voiceState === "listening" ? (
-            <Square className="size-4 fill-current" aria-hidden="true" />
+          onInterrupt={stopSpeaking}
+          error={error}
+        />
+      ) : (
+        <>
+          {isIdle ? (
+            /* MIR: the orb is the screen — greeting from live data, three
+               quiet hints. */
+            <div className="flex flex-1 flex-col items-center justify-center gap-7 px-8 pb-6">
+              <AiOrbCanvas
+                className="size-48"
+                mode={orbMode}
+                getLevel={getLevel}
+              />
+              <div className="flex flex-col items-center gap-2.5 text-center">
+                <h1
+                  className={cn(
+                    prizmaVoice.className,
+                    "text-2xl font-bold tracking-tight text-foreground"
+                  )}
+                >
+                  {greeting}
+                </h1>
+                <p
+                  className={cn(
+                    prizmaVoice.className,
+                    "max-w-[30ch] text-[15px] leading-relaxed text-muted-foreground"
+                  )}
+                >
+                  {contextLine ?? t("agent.empty")}
+                </p>
+              </div>
+              <div className="flex flex-wrap justify-center gap-2">
+                {chips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    type="button"
+                    data-testid={`agent-chip-${chip.key}`}
+                    onClick={() => void send(chip.label)}
+                    className="rounded-full border border-border bg-card px-3.5 py-2.5 text-[13px] font-medium text-foreground fm-lift hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+              {error ? (
+                <p
+                  className="text-sm text-destructive"
+                  data-testid="agent-error"
+                >
+                  {error}
+                </p>
+              ) : null}
+            </div>
           ) : (
-            <Mic className="size-5" aria-hidden="true" />
+            /* RAZGOVOR: the exchange takes the screen. Spacing carries the
+               grammar — the gap BETWEEN turns is twice the gap WITHIN one,
+               so a question and its answer read as a single thought. */
+            <div
+              ref={scrollRef}
+              className="flex flex-1 flex-col overflow-y-auto overscroll-y-contain px-5 py-3"
+            >
+              {messages.map((message, index) =>
+                message.role === "user" ? (
+                  <div
+                    key={index}
+                    className={cn(
+                      "max-w-[78%] self-end rounded-2xl bg-muted px-3.5 py-2.5",
+                      "mb-3.5 text-[14.5px] leading-[1.45] text-foreground",
+                      index > 0 && PRIZMA_TURN_GAP
+                    )}
+                  >
+                    {message.text}
+                  </div>
+                ) : (
+                  <div key={index} className="flex flex-col">
+                    <p
+                      className={cn(
+                        prizmaProse.className,
+                        "text-[16px] leading-[1.62] whitespace-pre-wrap text-ai-prose"
+                      )}
+                    >
+                      {message.text}
+                    </p>
+                    {message.actions?.length ? (
+                      /* A brought flow is a shortcut, not a purchase button —
+                         hairline rows, no card, no lift, no fill. */
+                      <div className="mt-3.5 border-t border-border/40">
+                        {message.actions.map((action, actionIndex) => (
+                          <ActionRow
+                            key={action.id}
+                            action={action}
+                            highlighted={actionIndex === 0}
+                          />
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                )
+              )}
+              {isSending ? (
+                <p
+                  className={cn(
+                    prizmaProse.className,
+                    "animate-pulse text-[16px] leading-[1.62] text-muted-foreground"
+                  )}
+                >
+                  {t("agent.thinking")}
+                </p>
+              ) : null}
+              {error ? (
+                <p
+                  className="mt-3.5 text-sm text-destructive"
+                  data-testid="agent-error"
+                >
+                  {error}
+                </p>
+              ) : null}
+            </div>
           )}
-        </button>
-        <button
-          type="submit"
-          disabled={
-            isSending || voiceState !== "idle" || draft.trim().length === 0
-          }
-          aria-label={t("agent.send")}
-          data-testid="agent-send"
-          className={cn(
-            "liquid-glass flex size-12 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground",
-            "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-            "disabled:opacity-50"
-          )}
-        >
-          <ArrowUp className="size-5" aria-hidden="true" />
-        </button>
-      </form>
+
+          {/* The composer rides the keyboard. `bottomOffset` is a CSS
+              expression, not a number that passes through React, so the card
+              tracks the keyboard slide frame by frame without re-rendering
+              the thread above it (see `useKeyboardInset`). */}
+          <div
+            className="shrink-0 px-4 pt-2"
+            style={{ paddingBottom: keyboard.bottomOffset }}
+          >
+            <PrizmaComposer
+              value={draft}
+              onValueChange={setDraft}
+              onSubmit={() => void send(draft)}
+              onMicTap={() =>
+                voiceState === "listening"
+                  ? void stopListening()
+                  : void startListening()
+              }
+              voiceState={voiceState}
+              isSending={isSending}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 }

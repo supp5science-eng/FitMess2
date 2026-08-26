@@ -25,6 +25,7 @@ import {
 
 import { transcribeVoiceAction } from "@/app/(app)/ai/actions";
 import { AiOrbCanvas, type AiOrbMode } from "@/components/ai/ai-orb-canvas";
+import { prizmaProse, prizmaVoice } from "@/components/ai/prizma-font";
 import type { AgentActionId } from "@/lib/ai/agent-actions";
 import { useT } from "@/components/i18n/locale-provider";
 import { playTtsBlob, type TtsPlayback } from "@/lib/audio/play-tts";
@@ -38,12 +39,23 @@ import { cn } from "@/lib/utils";
  *
  * The grammar, in one breath: the ORB is the center of the world while
  * Prizma waits (big, with a personal greeting built from live data); once a
- * conversation runs, the orb rises to the top small and the exchange takes
- * the screen — the user's line as a QUIET quote, Prizma's answer as LARGE
- * text (no chat bubbles), and under it the ACTION CARDS she brings when the
+ * conversation runs it shrinks to a 32px status light at the top and the
+ * exchange takes the screen — the user's line in a quiet tinted bubble, her
+ * answer as plain prose, and under it the ACTION ROWS she brings when the
  * message asked for a deed ("hoću da logujem obrok" → Prizma unos / Slikaj /
- * Gric). Tapping a card opens the existing flow; Prizma never explains where
+ * Gric). Tapping a row opens the existing flow; Prizma never explains where
  * to tap.
+ *
+ * THE EXCHANGE (2026-08-26). The first cut of this screen set her answers at
+ * 19px, hung the user's line in the air as a right-aligned quote, and gave
+ * every brought flow a bordered, lifted, accent-filled card with a 44px icon
+ * tile. On a 390px phone that reads as loud and unsorted: heading-sized prose
+ * eats the viewport, a right-aligned quote with no body starts each line in a
+ * different place, and three checkout-weight cards bury the answer they
+ * belong to. What fixed it was not restyling any one of those but giving the
+ * screen a rhythm — see `PRIZMA_TURN_GAP`. Her prose sits at 16px/1.62 (a
+ * paragraph, not a title), the user's line gets a body so it stops floating,
+ * and the flows became hairline rows.
  *
  * Actions arrive from `/api/ai/agent` as catalog ids; all copy and icons
  * resolve client-side from i18n + the icon map below, so the model cannot
@@ -76,6 +88,11 @@ const STORAGE_KEY = "fm_agent_chat_v2";
  * anyway, the model only needs recent thread). Actions are client-side only
  * and are stripped before sending. */
 const SENT_TURNS = 12;
+
+/** The gap that opens BEFORE a new question. Everything inside one turn sits
+ * at `mb-3.5` (14px); this is 26px, so the eye groups a question with its
+ * answer instead of reading the thread as evenly spaced rubble. */
+const PRIZMA_TURN_GAP = "mt-[26px]";
 
 const ACTION_ICONS: Record<AgentActionId, LucideIcon> = {
   prizma_unos: Target,
@@ -345,10 +362,20 @@ export function AgentScreen({
         <div className="flex flex-1 flex-col items-center justify-center gap-7 px-8 pb-6">
           <AiOrbCanvas className="size-48" mode={orbMode} getLevel={getLevel} />
           <div className="flex flex-col items-center gap-2.5 text-center">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            <h1
+              className={cn(
+                prizmaVoice.className,
+                "text-2xl font-bold tracking-tight text-foreground"
+              )}
+            >
               {greeting}
             </h1>
-            <p className="max-w-[30ch] text-[15px] leading-relaxed text-muted-foreground">
+            <p
+              className={cn(
+                prizmaVoice.className,
+                "max-w-[30ch] text-[15px] leading-relaxed text-muted-foreground"
+              )}
+            >
               {contextLine ?? t("agent.empty")}
             </p>
           </div>
@@ -372,32 +399,48 @@ export function AgentScreen({
           ) : null}
         </div>
       ) : (
-        /* RAZGOVOR: the orb rises small; the exchange takes the screen. */
+        /* RAZGOVOR: the orb shrinks to a badge; the exchange takes the screen.
+           Spacing carries the grammar — the gap BETWEEN turns is twice the gap
+           WITHIN one, so a question and its answer read as a single thought
+           instead of as two equally distant events (`PRIZMA_TURN_GAP`). */
         <>
-          <div className="flex shrink-0 justify-center pt-4 pb-1">
-            <AiOrbCanvas className="size-16" mode={orbMode} getLevel={getLevel} />
+          <div className="flex shrink-0 justify-center pt-3 pb-1">
+            {/* 32px, not 64: in conversation the orb is a status light, not
+                the subject. It still carries every voice state. */}
+            <AiOrbCanvas className="size-8" mode={orbMode} getLevel={getLevel} />
           </div>
           <div
             ref={scrollRef}
-            className="flex flex-1 flex-col gap-5 overflow-y-auto overscroll-y-contain px-7 py-4"
+            className="flex flex-1 flex-col overflow-y-auto overscroll-y-contain px-5 py-3"
           >
             {messages.map((message, index) =>
               message.role === "user" ? (
                 <div
                   key={index}
-                  className="max-w-[80%] self-end rounded-full border border-border/70 px-4 py-2 text-sm font-medium text-muted-foreground"
+                  className={cn(
+                    "max-w-[78%] self-end rounded-2xl bg-muted px-3.5 py-2.5",
+                    "mb-3.5 text-[14.5px] leading-[1.45] text-foreground",
+                    index > 0 && PRIZMA_TURN_GAP
+                  )}
                 >
-                  „{message.text}“
+                  {message.text}
                 </div>
               ) : (
-                <div key={index} className="flex flex-col gap-3.5">
-                  <p className="whitespace-pre-wrap text-[22px] font-semibold leading-snug tracking-tight text-foreground">
+                <div key={index} className="flex flex-col">
+                  <p
+                    className={cn(
+                      prizmaProse.className,
+                      "whitespace-pre-wrap text-[16px] leading-[1.62] text-ai-prose"
+                    )}
+                  >
                     {message.text}
                   </p>
                   {message.actions?.length ? (
-                    <div className="flex flex-col gap-2.5">
+                    /* A brought flow is a shortcut, not a purchase button —
+                       hairline rows, no card, no lift, no fill. */
+                    <div className="mt-3.5 border-t border-border/40">
                       {message.actions.map((action, actionIndex) => (
-                        <ActionCard
+                        <ActionRow
                           key={action.id}
                           action={action}
                           highlighted={actionIndex === 0}
@@ -409,12 +452,20 @@ export function AgentScreen({
               )
             )}
             {isSending ? (
-              <p className="animate-pulse text-[22px] font-semibold leading-snug tracking-tight text-muted-foreground">
+              <p
+                className={cn(
+                  prizmaProse.className,
+                  "animate-pulse text-[16px] leading-[1.62] text-muted-foreground"
+                )}
+              >
                 {t("agent.thinking")}
               </p>
             ) : null}
             {error ? (
-              <p className="text-sm text-destructive" data-testid="agent-error">
+              <p
+                className="mt-3.5 text-sm text-destructive"
+                data-testid="agent-error"
+              >
                 {error}
               </p>
             ) : null}
@@ -500,10 +551,13 @@ export function AgentScreen({
   );
 }
 
-/** One brought-flow card: icon, i18n copy, chevron-free (the whole card is
- * the tap). The first card in a group is the recommendation and carries the
- * accent treatment (and, for Prizma unos, its badge). */
-function ActionCard({
+/** One brought flow, as a ROW. It used to be a bordered, lifted, accent-filled
+ * card with a 44px icon tile — the visual weight of a checkout button for what
+ * is only a shortcut, and three of them buried the answer they belonged to.
+ * Now: a bare icon, two lines of text, a hairline underneath. The
+ * recommendation keeps its badge; it no longer needs a coloured slab to be
+ * found, because it is simply first. */
+function ActionRow({
   action,
   highlighted,
 }: {
@@ -516,40 +570,36 @@ function ActionCard({
     action.id === "prizma_unos" ? t("agent.action.prizma_unos.badge") : null;
 
   return (
-    <Link
-      href={action.href}
-      data-testid={`agent-action-${action.id}`}
-      className={cn(
-        "flex items-center gap-3.5 rounded-xl border p-4 text-left transition-colors fm-lift",
-        "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
-        highlighted
-          ? "border-primary/60 bg-primary/[0.08]"
-          : "border-border bg-card hover:bg-muted"
-      )}
-    >
-      <span
+    /* The rule lives on the WRAPPER, never on the link. A `border-b` and a
+       `rounded-lg` on one element make the hairline curve up at both ends —
+       the divider stops looking like a rule and starts looking like the
+       bottom of a card. The wrapper stays square and draws the line; the link
+       keeps the rounding, which only ever shows while a finger is down. */
+    <div className="border-b border-border/40 last:border-b-0">
+      <Link
+        href={action.href}
+        data-testid={`agent-action-${action.id}`}
         className={cn(
-          "flex size-11 shrink-0 items-center justify-center rounded-lg",
-          highlighted
-            ? "liquid-glass bg-primary text-primary-foreground"
-            : "border border-border text-foreground"
+          "flex items-center gap-2.5 py-2.5",
+          "-mx-1.5 rounded-lg px-1.5 transition-colors active:bg-muted",
+          "focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         )}
       >
-        <Icon className="size-5" aria-hidden="true" />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[15px] font-bold text-foreground">
-          {t(`agent.action.${action.id}.title` as MessageKey)}
+        <Icon className="size-[17px] shrink-0 text-primary" aria-hidden="true" />
+        <span className="flex min-w-0 flex-1 flex-col">
+          <span className="text-sm font-semibold text-foreground">
+            {t(`agent.action.${action.id}.title` as MessageKey)}
+          </span>
+          <span className="truncate text-[12.5px] text-muted-foreground">
+            {t(`agent.action.${action.id}.desc` as MessageKey)}
+          </span>
         </span>
-        <span className="truncate text-[13px] text-muted-foreground">
-          {t(`agent.action.${action.id}.desc` as MessageKey)}
-        </span>
-      </span>
-      {badge && highlighted ? (
-        <span className="shrink-0 rounded-full border border-primary/50 bg-primary/15 px-2 py-1 text-[10px] font-bold tracking-wide text-primary">
-          {badge}
-        </span>
-      ) : null}
-    </Link>
+        {badge && highlighted ? (
+          <span className="shrink-0 rounded-full bg-primary/10 px-1.5 py-0.5 text-[9.5px] font-bold tracking-wide text-primary">
+            {badge}
+          </span>
+        ) : null}
+      </Link>
+    </div>
   );
 }

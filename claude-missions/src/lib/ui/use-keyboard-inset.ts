@@ -110,6 +110,34 @@ export const KEYBOARD_INSET_VAR = "--fm-keyboard-inset";
 export const KEYBOARD_BOTTOM_OFFSET = `max(env(safe-area-inset-bottom, 0px), var(${KEYBOARD_INSET_VAR}, 0px))`;
 
 /**
+ * The keyboard's height ALONE — for a composer whose column already carries
+ * the home-indicator clearance itself.
+ *
+ * {@link KEYBOARD_BOTTOM_OFFSET} folds the safe area in because it assumes the
+ * anchored element is the only thing standing between the composer and the
+ * bottom of the screen. Jarvis is not that case: `AppShell` pads the whole
+ * chromeless column by `env(safe-area-inset-bottom)` (there is no bottom
+ * navigation left to carry it), so a composer using the `max()` expression
+ * adds the safe area a SECOND time and floats ~34 px above the keys — the dead
+ * band between the composer and the keyboard that this pair of constants
+ * exists to close. Pair this with {@link KEYBOARD_SAFE_AREA_REMAINDER} on the
+ * column and the two add up to exactly `max(safe, keyboard)`, once.
+ */
+export const KEYBOARD_ONLY_OFFSET = `var(${KEYBOARD_INSET_VAR}, 0px)`;
+
+/**
+ * The home-indicator clearance a column should carry when something INSIDE it
+ * is riding the keyboard with {@link KEYBOARD_ONLY_OFFSET}: the safe area,
+ * minus however much of it the keyboard is already covering, never negative.
+ *
+ * Keyboard closed, the keyboard term is 0 and this is the plain safe area.
+ * Keyboard open, the keys are drawn over the home indicator — the clearance is
+ * already inside the keyboard's own height — so this falls to 0 and the
+ * composer's offset is the whole story. Neither half ever double-counts.
+ */
+export const KEYBOARD_SAFE_AREA_REMAINDER = `max(calc(env(safe-area-inset-bottom, 0px) - var(${KEYBOARD_INSET_VAR}, 0px)), 0px)`;
+
+/**
  * Gaps smaller than this are not a keyboard.
  *
  * In a plain browser tab the collapsing URL bar, rubber-band scrolling and

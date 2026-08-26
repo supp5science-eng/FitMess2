@@ -8,7 +8,7 @@ import { AppSplash } from "@/components/shell/app-splash";
 import { AccountsSync } from "@/components/auth/accounts-sync";
 import { InstallNudge } from "@/components/pwa/install-nudge";
 import { PushTapListener } from "@/components/native/push-tap-listener";
-import { cn } from "@/lib/utils";
+import { KEYBOARD_SAFE_AREA_REMAINDER } from "@/lib/ui/use-keyboard-inset";
 
 /**
  * F005: app-wide mobile-first shell.
@@ -144,16 +144,23 @@ export function AppShell({
           The full-bleed routes returned above (onboarding, questionnaire,
           auth) pad themselves and never reach here, so nothing double-counts. */}
       <div
-        className={cn(
-          "relative isolate mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm",
+        className="relative isolate mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm"
+        style={{
+          paddingTop: "env(safe-area-inset-top)",
           // The nav bar used to carry the home-indicator clearance for the
           // whole column; on chromeless routes there is no nav left to carry
           // it, so the column pads itself instead. Everywhere else this stays
           // off and `AppNavBar` keeps owning the inset, so it never
           // double-counts.
-          chromeless && "pb-[env(safe-area-inset-bottom)]"
-        )}
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
+          //
+          // It is the REMAINDER rather than the flat inset because the one
+          // chromeless route is Jarvis, whose composer rides the keyboard. An
+          // open keyboard is drawn OVER the home indicator, so the clearance is
+          // already inside the height the composer offsets itself by; adding it
+          // here too parked the composer ~34 px above the keys, which is the
+          // gap the owner reported. See `KEYBOARD_SAFE_AREA_REMAINDER`.
+          paddingBottom: chromeless ? KEYBOARD_SAFE_AREA_REMAINDER : undefined,
+        }}
       >
         {/* App aurora: a barely-there iridescent wash in the corners, behind
             all content. `isolate` on the column makes it a stacking context, so

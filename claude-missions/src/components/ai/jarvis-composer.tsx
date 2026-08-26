@@ -26,6 +26,32 @@ import { cn } from "@/lib/utils";
  * request all live in the screen above it. Sending does NOT clear the field
  * either — the caller does that once the turn is actually accepted, so a
  * failed send never eats the sentence.
+ *
+ * ## The minimalism pass (owner review, 2026-08-26)
+ *
+ * The card above was right in structure and wrong in weight. Side by side with
+ * Perplexity's it had FOUR competing edges — a hairline border, a letterpress
+ * lift, a 3 px focus ring, and two more bordered white discs around `+` and
+ * the mic — around what is one place to write a sentence. The owner's word for
+ * the difference was "minimalistički", and every change below is that one
+ * note:
+ *
+ * - **One surface, no edges.** The card is a tint (`bg-muted`) on the white
+ *   ground instead of a white card outlined and lifted off it. The shape is
+ *   read from the fill, the way Perplexity's is, so nothing has to be drawn
+ *   around it. Focus is a 2 px ring at low alpha — present, not shouting.
+ * - **One button, not three.** `+` and the mic lose their discs and become
+ *   bare icons; only send keeps its filled circle, so the eye lands on the one
+ *   control that ends the turn. ("button ostavi" — the send button stays.)
+ * - **The sentence is set as TEXT.** The field is `--ai-prose`, the near-black
+ *   ink Jarvis's own answers use, not the ultramarine `--foreground` every
+ *   label in the app is drawn in: a whole sentence in ultramarine reads as a
+ *   coloured block rather than as something being said, and what is typed here
+ *   is a sentence. The placeholder sits back a step from it.
+ * - **The air comes out.** The card had a 10 px band of nothing between the
+ *   sentence and the controls, on top of generous padding all round — the
+ *   "preveliki razmak". Both are tighter now, so the card is a place to write
+ *   rather than a panel with a field in it.
  */
 
 /**
@@ -40,11 +66,18 @@ import { cn } from "@/lib/utils";
 const FOCUS_OUTLINE =
   "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
 
-/** The two quiet round buttons in the control row (`+` and the idle mic). */
+/**
+ * The two quiet controls in the row (`+` and the idle mic).
+ *
+ * BARE icons, deliberately: they used to be bordered white discs, which put
+ * three circles in a nine-centimetre-wide card and made the row read as a
+ * toolbar again. The tap target is still 36 px — only the ring around it is
+ * gone, so the one circle left in the card is the send button.
+ */
 const GHOST_BUTTON_CLASS = cn(
   "flex size-9 shrink-0 items-center justify-center rounded-full",
-  "border border-border bg-card text-muted-foreground transition-colors",
-  "hover:bg-muted hover:text-foreground focus-visible:outline-none",
+  "bg-transparent text-muted-foreground transition-colors",
+  "hover:bg-foreground/5 hover:text-foreground focus-visible:outline-none",
   "disabled:pointer-events-none disabled:opacity-45",
   FOCUS_OUTLINE
 );
@@ -110,19 +143,20 @@ export function JarvisComposer({
   }
 
   return (
-    /* The ring lives on this outer shell and the card's lift on the inner one.
-       They cannot share an element: `.fm-lift` is unlayered CSS and would eat
-       a `ring-*` box-shadow whole (see FOCUS_OUTLINE above). A ring costs no
-       layout either way, so the card never shifts when it is tapped. */
+    /* Two elements still, even with the lift gone: the ring is a `box-shadow`
+       and `.liquid-glass` on the send button lives in unlayered CSS, so keeping
+       the ring on its own shell is what stops a future surface rule from eating
+       it (see FOCUS_OUTLINE above). A ring costs no layout, so the card never
+       shifts when it is tapped. */
     <div
       data-testid="jarvis-composer"
       className={cn(
-        "rounded-3xl transition-shadow duration-150",
-        isFocused && "ring-3 ring-ring/45",
+        "rounded-[26px] transition-shadow duration-150",
+        isFocused && "ring-2 ring-ring/25",
         className
       )}
     >
-      <div className="fm-lift rounded-3xl border border-border bg-card px-3 pt-3 pb-2.5">
+      <div className="rounded-[26px] bg-muted px-2.5 pt-2.5 pb-2">
         {isListening ? (
           /* The mic is live: the field steps aside for one quiet line. Same
              24px height as the collapsed textarea, so the card holds still. */
@@ -130,7 +164,7 @@ export function JarvisComposer({
             data-testid="agent-listening"
             role="status"
             aria-live="polite"
-            className="flex h-6 items-center gap-2 px-1"
+            className="flex h-6 items-center gap-2 px-1.5"
           >
             <span
               className="size-2 shrink-0 animate-pulse rounded-full bg-primary"
@@ -156,18 +190,20 @@ export function JarvisComposer({
             aria-label={t("jarvis.composer.placeholder")}
             data-testid="agent-input"
             className={cn(
-              "block w-full resize-none overflow-y-auto bg-transparent px-1",
+              "block w-full resize-none overflow-y-auto bg-transparent px-1.5",
               // 16px is not a taste call: anything smaller and iOS Safari
               // zooms the page in when the field takes focus.
-              "text-[16px] leading-6 text-foreground",
-              "placeholder:text-muted-foreground focus:outline-none",
+              // `text-ai-prose` and not `text-foreground`: see the minimalism
+              // pass at the top of this file.
+              "text-[16px] leading-6 text-ai-prose caret-primary",
+              "placeholder:text-muted-foreground/70 focus:outline-none",
               "disabled:opacity-60",
               MAX_FIELD_HEIGHT
             )}
           />
         )}
 
-        <div className="mt-2.5 flex items-center gap-2">
+        <div className="mt-1 flex items-center gap-1">
           <button
             type="button"
             aria-label={t("jarvis.composer.attach")}
@@ -178,7 +214,7 @@ export function JarvisComposer({
             }}
             className={GHOST_BUTTON_CLASS}
           >
-            <Plus className="size-5" aria-hidden="true" />
+            <Plus className="size-[19px]" aria-hidden="true" />
           </button>
 
           <div className="min-w-0 flex-1" />
@@ -207,7 +243,7 @@ export function JarvisComposer({
             {isListening ? (
               <Square className="size-3.5 fill-current" aria-hidden="true" />
             ) : (
-              <Mic className="size-5" aria-hidden="true" />
+              <Mic className="size-[19px]" aria-hidden="true" />
             )}
           </button>
 
@@ -218,13 +254,13 @@ export function JarvisComposer({
             aria-label={t("jarvis.composer.send")}
             data-testid="agent-send"
             className={cn(
-              "liquid-glass flex size-10 shrink-0 items-center justify-center rounded-full",
+              "liquid-glass flex size-9 shrink-0 items-center justify-center rounded-full",
               "bg-primary text-primary-foreground focus-visible:outline-none",
               "disabled:pointer-events-none disabled:opacity-40",
               FOCUS_OUTLINE
             )}
           >
-            <ArrowUp className="size-5" aria-hidden="true" />
+            <ArrowUp className="size-[19px]" aria-hidden="true" />
           </button>
         </div>
       </div>

@@ -1,6 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
+import { KEYBOARD_SAFE_AREA_REMAINDER } from "@/lib/ui/use-keyboard-inset";
+
 const usePathnameMock = vi.fn(() => "/danas");
 const routerPushMock = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -172,8 +174,27 @@ describe("AppShell (F005 base shell)", () => {
         <p>prizma sadrzaj</p>
       </AppShell>
     );
-    const column = container.querySelector(".max-w-\\[430px\\]");
-    expect(column?.className).toMatch(/pb-\[env\(safe-area-inset-bottom\)\]/);
+    const column = container.querySelector<HTMLElement>(".max-w-\\[430px\\]");
+    expect(column?.style.paddingBottom).toContain("safe-area-inset-bottom");
+  });
+
+  it("hands the chromeless column's bottom inset to the keyboard when one is open", () => {
+    // The clearance must YIELD to `--fm-keyboard-inset`, not sit on top of it:
+    // Jarvis's composer offsets itself by the keyboard's height, and an open
+    // keyboard is already drawn over the home indicator. Adding both left a
+    // band of dead screen between the composer and the keys.
+    usePathnameMock.mockReturnValue("/ai");
+    const { container } = render(
+      <AppShell>
+        <p>prizma sadrzaj</p>
+      </AppShell>
+    );
+    const column = container.querySelector<HTMLElement>(".max-w-\\[430px\\]");
+    expect(column?.style.paddingBottom).toBe(KEYBOARD_SAFE_AREA_REMAINDER);
+    expect(KEYBOARD_SAFE_AREA_REMAINDER).toContain("--fm-keyboard-inset");
+    // Subtracted, never summed, and floored at zero.
+    expect(KEYBOARD_SAFE_AREA_REMAINDER).toContain("-");
+    expect(KEYBOARD_SAFE_AREA_REMAINDER).not.toContain("+");
   });
 
   it("leaves the home-indicator inset to the nav on ordinary routes", () => {
@@ -185,10 +206,8 @@ describe("AppShell (F005 base shell)", () => {
         <p>naslovna sadrzaj</p>
       </AppShell>
     );
-    const column = container.querySelector(".max-w-\\[430px\\]");
-    expect(column?.className).not.toMatch(
-      /pb-\[env\(safe-area-inset-bottom\)\]/
-    );
+    const column = container.querySelector<HTMLElement>(".max-w-\\[430px\\]");
+    expect(column?.style.paddingBottom).toBe("");
   });
 
   it("renders the marketing landing (/) full-bleed: no app column, no bottom nav", () => {

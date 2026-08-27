@@ -32,11 +32,10 @@ import type { ExpoConfig } from "expo/config";
  */
 const BUNDLE_ID = "app.fitmess";
 
-/** The plate's paper and ink (`src/theme/tokens.ts`). Repeated as literals
+/** The plate's paper (`src/theme/tokens.ts`). Repeated as a literal
  *  because this file is evaluated by the Expo CLI, outside the app's module
  *  graph and its `@/` path alias. */
 const PAPER = "#ffffff";
-const INK_BRIGHT = "#2f2ce6";
 
 const config: ExpoConfig = {
   name: "FitMess",
@@ -60,11 +59,10 @@ const config: ExpoConfig = {
   scheme: "fitmess",
 
   icon: "./assets/images/icon.png",
-  splash: {
-    image: "./assets/images/splash-icon.png",
-    resizeMode: "contain",
-    backgroundColor: PAPER,
-  },
+  // No top-level `splash` block: from SDK 57 the splash screen is configured
+  // ONLY through the `expo-splash-screen` plugin below. A `splash` key here is
+  // now a type error rather than a silently ignored one — which is the better
+  // failure, since two places configuring one screen is how they drift.
 
   ios: {
     bundleIdentifier: BUNDLE_ID,
@@ -92,7 +90,6 @@ const config: ExpoConfig = {
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundColor: PAPER,
     },
-    edgeToEdgeEnabled: true,
   },
 
   plugins: [
@@ -109,6 +106,10 @@ const config: ExpoConfig = {
     /** The keychain the Supabase session is chunked into
      *  (`src/lib/supabase.ts`). */
     "expo-secure-store",
+    /** Required as a plugin from SDK 57 — `expo install` asked for it by name
+     *  and could not add it itself, because this config is TypeScript rather
+     *  than `app.json`. */
+    "expo-status-bar",
   ],
 
   experiments: {

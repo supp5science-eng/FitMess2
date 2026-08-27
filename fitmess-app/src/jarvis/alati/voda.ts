@@ -33,7 +33,9 @@ registrujAlat({
   ime: "dodajVodu",
   opis:
     "Upisuje popijenu vodu za danas. Koristi kad korisnik kaže da je popio vodu " +
-    "— npr. „popio sam čašu vode", „dodaj pola litra", „još jednu flašu". " +
+    // Single-quoted: the closing Serbian quote is a straight `"` and would end
+    // a double-quoted string here.
+    '— npr. „popio sam čašu vode", „dodaj pola litra", „još jednu flašu". ' +
     "Prosledi ILI `mera` (čaša/flaša/velika flaša) ILI `ml` ako korisnik kaže " +
     "tačnu količinu. Ne šalji ukupnu dnevnu količinu, nego samo ono što je " +
     "sada popio. Za brisanje/ispravku pošalji negativan `ml`.",

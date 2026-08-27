@@ -13,8 +13,11 @@
  */
 
 import { registrujKomponentu } from "./alat";
+import { KarticaDana } from "./komponente/KarticaDana";
 import { KarticaVode } from "./komponente/KarticaVode";
 
+import "./alati/dan";
 import "./alati/voda";
 
+registrujKomponentu("KarticaDana", KarticaDana as never);
 registrujKomponentu("KarticaVode", KarticaVode as never);

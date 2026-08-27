@@ -1,8 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import { KEYBOARD_SAFE_AREA_REMAINDER } from "@/lib/ui/use-keyboard-inset";
-
 const usePathnameMock = vi.fn(() => "/danas");
 const routerPushMock = vi.fn();
 vi.mock("next/navigation", () => ({
@@ -10,22 +8,6 @@ vi.mock("next/navigation", () => ({
   // `PushTapListener` (store app only) asks for the router so a tapped
   // reminder can navigate. It is inert in a browser, but the hook still runs.
   useRouter: () => ({ push: routerPushMock }),
-}));
-
-// `AccountsSync` (mounted by the shell) builds a real browser Supabase client
-// on mount, which throws without `NEXT_PUBLIC_SUPABASE_URL` / the publishable
-// key in the environment. Nothing here is about the account registry, so the
-// client is stubbed the way the auth component tests do it and the layout
-// assertions below stay credential-free.
-vi.mock("@/lib/supabase/client", () => ({
-  createClient: () => ({
-    auth: {
-      getSession: () => Promise.resolve({ data: { session: null } }),
-      onAuthStateChange: () => ({
-        data: { subscription: { unsubscribe: () => {} } },
-      }),
-    },
-  }),
 }));
 
 import { AppShell } from "./app-shell";
@@ -37,7 +19,7 @@ describe("AppShell (F005 base shell)", () => {
     // 375px baseline) and forces overflow-x hidden so a stray wide child
     // can never introduce a horizontal scrollbar. `:not(.fm-splash)` skips the
     // launch splash, the other direct grandchild of the container, which is
-    // still rendered on the first shell render of this file.
+    // painted before the column and would otherwise be matched first.
     const { container } = render(
       <AppShell>
         <p>sadrzaj</p>
@@ -140,75 +122,6 @@ describe("AppShell (F005 base shell)", () => {
       expect(container.querySelector(".max-w-\\[430px\\]")).toBeNull();
     }
   );
-
-  it.each([["/ai"], ["/ai/podesavanja"]])(
-    "renders Prizma route %s chromeless: keeps the app column, drops the bottom nav",
-    (pathname) => {
-      // Prizma owns the screen, so the four tabs (and the "+" trigger) step
-      // aside — but unlike the full-bleed routes above she still lives inside
-      // the shell: the centered mobile column, the background and the scroll
-      // region all stay. That difference is the whole point of the third mode.
-      usePathnameMock.mockReturnValue(pathname);
-      const { container } = render(
-        <AppShell>
-          <p>prizma sadrzaj</p>
-        </AppShell>
-      );
-      expect(screen.getByText("prizma sadrzaj")).toBeInTheDocument();
-      expect(
-        screen.queryByRole("navigation", { name: "Glavna navigacija" })
-      ).toBeNull();
-      const column = container.querySelector(".max-w-\\[430px\\]");
-      expect(column).not.toBeNull();
-      expect(column?.className).toMatch(/bg-background/);
-    }
-  );
-
-  it("pads the chromeless column clear of the home indicator", () => {
-    // The bottom nav carried `env(safe-area-inset-bottom)` for everyone
-    // (see `app-nav-bar.tsx`); with it gone the column has to carry it, or the
-    // last of the content sits under the iPhone home indicator.
-    usePathnameMock.mockReturnValue("/ai");
-    const { container } = render(
-      <AppShell>
-        <p>prizma sadrzaj</p>
-      </AppShell>
-    );
-    const column = container.querySelector<HTMLElement>(".max-w-\\[430px\\]");
-    expect(column?.style.paddingBottom).toContain("safe-area-inset-bottom");
-  });
-
-  it("hands the chromeless column's bottom inset to the keyboard when one is open", () => {
-    // The clearance must YIELD to `--fm-keyboard-inset`, not sit on top of it:
-    // Jarvis's composer offsets itself by the keyboard's height, and an open
-    // keyboard is already drawn over the home indicator. Adding both left a
-    // band of dead screen between the composer and the keys.
-    usePathnameMock.mockReturnValue("/ai");
-    const { container } = render(
-      <AppShell>
-        <p>prizma sadrzaj</p>
-      </AppShell>
-    );
-    const column = container.querySelector<HTMLElement>(".max-w-\\[430px\\]");
-    expect(column?.style.paddingBottom).toBe(KEYBOARD_SAFE_AREA_REMAINDER);
-    expect(KEYBOARD_SAFE_AREA_REMAINDER).toContain("--fm-keyboard-inset");
-    // Subtracted, never summed, and floored at zero.
-    expect(KEYBOARD_SAFE_AREA_REMAINDER).toContain("-");
-    expect(KEYBOARD_SAFE_AREA_REMAINDER).not.toContain("+");
-  });
-
-  it("leaves the home-indicator inset to the nav on ordinary routes", () => {
-    // Guards the other half: `AppNavBar` still owns the inset on full-shell
-    // routes, so the column must not add a second copy of it.
-    usePathnameMock.mockReturnValue("/danas");
-    const { container } = render(
-      <AppShell>
-        <p>naslovna sadrzaj</p>
-      </AppShell>
-    );
-    const column = container.querySelector<HTMLElement>(".max-w-\\[430px\\]");
-    expect(column?.style.paddingBottom).toBe("");
-  });
 
   it("renders the marketing landing (/) full-bleed: no app column, no bottom nav", () => {
     // The public landing page supplies its own full-width chrome, so the

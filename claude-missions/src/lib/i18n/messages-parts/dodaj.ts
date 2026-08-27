@@ -89,7 +89,7 @@ export const dodajMessages = {
     "dodaj.meal.analyzing.line2": "Procenjujem porciju…",
     "dodaj.meal.analyzing.line3": "Računam makronutrijente…",
     "dodaj.meal.defaultName": "Obrok",
-    "dodaj.meal.tryPrizma": "Ne deluje tačno? Probaj Prizmu",
+    "dodaj.meal.tryPrizma": "Ne deluje tačno? Probaj FM 2.7",
 
     // Gric (voice snack) flow
     "dodaj.gric.title": "Gric",
@@ -324,7 +324,7 @@ export const dodajMessages = {
     "dodaj.meal.analyzing.line2": "Estimating the portion…",
     "dodaj.meal.analyzing.line3": "Calculating the macros…",
     "dodaj.meal.defaultName": "Meal",
-    "dodaj.meal.tryPrizma": "Doesn't look right? Try Prizma",
+    "dodaj.meal.tryPrizma": "Doesn't look right? Try FM 2.7",
 
     // Gric (voice snack) flow
     "dodaj.gric.title": "Gric",

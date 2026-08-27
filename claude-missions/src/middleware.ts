@@ -49,29 +49,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Token-authenticated API calls: the native app (React Native, not the
-  // Capacitor shell) has no cookie jar and no browser User-Agent -- its
-  // `fetch` goes out as `okhttp/...` on Android and `CFNetwork/...` on iOS.
-  // Both gates below would therefore bounce it: the phone gate 307s it to
-  // `/samo-za-telefon` because that UA is not a phone browser, and the auth
-  // gate redirects it to `/prijava` because there is no session cookie. A
-  // redirect answering a `fetch` is the quiet kind of failure -- the app sees
-  // an HTML page where it expected JSON, with nothing in any log naming the
-  // middleware. Same trap that once 307-ed `robots.txt` and `offline.html`.
-  //
-  // Narrow on purpose: `/api/*` AND a bearer token. These handlers verify that
-  // token themselves (`getCurrentUserId` over `createClientFromRequest`) and
-  // Postgres RLS scopes every row to its owner, so the cookie-shaped gates
-  // have nothing to add. A bearer header on a PAGE route is deliberately not
-  // covered -- pages are for browsers, and a forged header must not get one
-  // rendered without a session.
-  if (
-    request.nextUrl.pathname.startsWith("/api/") &&
-    request.headers.get("authorization")?.toLowerCase().startsWith("bearer ")
-  ) {
-    return NextResponse.next();
-  }
-
   // `/robots.txt` and `/sitemap.xml` must be reachable by every client. They
   // are generated pages (not static assets), so the matcher below does not
   // exclude them and the phone gate was 307-ing them to `/samo-za-telefon` --

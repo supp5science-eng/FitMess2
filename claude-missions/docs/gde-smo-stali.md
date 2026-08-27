@@ -4,6 +4,58 @@
 
 ---
 
+# 27.08.2026 — Jarvis je uklonjen; aplikacija je vraćena na stanje pre 26.08. ✅
+
+Vlasnikova odluka: Jarvis pravac se napušta, app se vraća na ono što je radilo.
+Razlog nije tehnički — Jarvis je bio odgovor na probleme korisnika kojih još
+nema (app nema nijednog pravog korisnika), pa je prepis plaćao cenu bez pokrića.
+
+## Šta je obrisano
+
+- **`fitmess-app/`** — cela Expo/React Native aplikacija (56 fajlova): temelj,
+  registar alata, Jarvis ruta, dva alata (`dan`, `voda`), EAS profili.
+- **Jarvis sloj u vebu** — `jarvis-top-bar`, `jarvis-exit-rail`,
+  `jarvis-composer`, `jarvis-voice-mode`, `/api/jarvis`, `lib/ai/jarvis.ts`,
+  i18n deo, chromeless režim u `app-shell.tsx` (ono što je sklonilo donju
+  navigaciju sa `/ai`).
+- **`docs/jarvis-redizajn.md`** i **`docs/nativna-aplikacija.md`**.
+
+`claude-missions/` je vraćen **tačno** na `3bfb9f5` (poslednji commit pre
+Jarvisa). Donja navigacija je opet svuda, `/ai` je Prizma kakva je bila 26.08.
+
+## Šta je time izgubljeno (svesno)
+
+U istom prozoru je sleteo i posao koji nije Jarvis, i on odlazi sa njim:
+Prizma koja upisuje obrok uz potvrdu (`agent-draft.ts` + `/api/ai/agent/unos`),
+živa visina tastature, haptika, `theme.test.ts`. Odluka je doneta znajući ovo —
+birana je čistoća stanja, ne očuvanje pojedinačnih feature-a.
+
+## Kako se Jarvis vraća ako zatreba
+
+Ništa nije nepovratno. Sve stoji na GitHubu i na lokalnom tagu:
+
+```bash
+git tag -l jarvis-arhiva-27-08-2026      # ceo Jarvis pravac, poslednje stanje
+git checkout jarvis-arhiva-27-08-2026    # ili: git checkout ec2f48b
+```
+
+## Zatečeno stanje testova (nije posledica ovoga)
+
+Provereno poređenjem sa starim stanjem pod istim uslovima — **nula novih
+padova**. Padaju istih 6 testova i pre i posle: `profil.test.tsx` (4),
+`micro-week-card` (1), `onboarding/pregled` (1). Uz njih 24 integraciona
+fajla traže žive Supabase kredencijale (nema `.env` u kontejneru) i to je
+očekivano. `npm run lint` ima 20 zatečenih grešaka u `scripts/store/*.cjs`
+(`require()` u .cjs) — takođe nije dirano.
+
+Jedina ispravka koja je bila potrebna: `app-shell.test.tsx` je na `3bfb9f5`
+tražio kolonu selektorom `:scope > div > div` i nalazio launch splash
+(`fm-splash` je uveden u `a34f947`, pre Jarvisa). Uzeta je ista ispravka koju
+je projekat kasnije sam napisao — `:not(.fm-splash)`. Test-only; ponašanje
+aplikacije se ne menja.
+
+---
+
 # 26.08.2026, kasnije — ElevenLabs usta ugrađena; ključ stigao, mreža još ne ✅/⏳
 
 Vlasnik presudio posle prvog testa glasa: sistemski TTS nije to. Ciljni

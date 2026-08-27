@@ -7,7 +7,7 @@ import { getCurrentUserId } from "@/lib/auth/current-user";
 import type { Database } from "@/lib/types/db";
 
 /**
- * `POST /api/ai/agent/tts` — Jarvis's reply, spoken by ElevenLabs.
+ * `POST /api/ai/agent/tts` — Prizma's reply, spoken by ElevenLabs.
  *
  * Takes the reply TEXT the client just received from `/api/ai/agent` and
  * returns an MP3. Text length is clamped to what an agent reply can

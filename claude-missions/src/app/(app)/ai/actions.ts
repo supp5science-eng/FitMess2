@@ -4,7 +4,7 @@ import { aiErrorSr, transcribeSpeech } from "@/lib/ai/gemini";
 import { getCurrentUserId } from "@/lib/auth/current-user";
 import { createClient } from "@/lib/supabase/server";
 
-// Jarvis's ear (glasovni razgovor, 2026-08-26): the spoken clip comes here,
+// Prizma's ear (glasovni razgovor, 2026-08-26): the spoken clip comes here,
 // Gemini writes down the sentence, and the CLIENT then sends that sentence
 // through the ordinary `/api/ai/agent` turn — so voice and typing are the
 // same conversation, with the same history, quota and action cards.

@@ -70,12 +70,10 @@ function buildOptions(t: TFunction): AddSheetOption[] {
     // leads the menu and carries a teal "NAJTAČNIJE" badge to draw people to it.
     {
       key: "najtacnije",
-      // "Prizma" is THIS flow's name, and only this one. It was briefly given
-      // away to the AI agent (renamed here to "FM 2.7" on 2026-08-25) and
-      // taken back on 2026-08-26: the agent is called Jarvis, and the two had
-      // become impossible to tell apart in conversation. The flow itself never
-      // changed through either rename.
-      label: "Prizma",
+      // Renamed from "Prizma" (2026-08-25): "Prizma" is now the AI agent's
+      // name, and one product can't have two Prizmas. The flow itself is
+      // unchanged.
+      label: "FM 2.7",
       icon: Target,
       href: "/dodaj/najtacnije",
       // Says what you GET, not how it works -- the guided two-angle mechanic is

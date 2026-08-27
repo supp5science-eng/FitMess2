@@ -209,14 +209,8 @@
      coloured block, not as something being said. This is that same ink
      walked down to near-black -- it still carries the blue (it is not a
      neutral grey), so Prizma's prose stays on the plate while reading as
-     text. Deliberately NOT `--foreground`.
-
-     Its remit is SENTENCES IN THE CONVERSATION, both directions (widened
-     2026-08-26): her answers, and the one being typed at her in Jarvis's
-     composer. The argument above is the same on the way in -- a sentence
-     the user is still writing is prose, not a label -- and it is what the
-     composer's field is set in. Nothing outside that conversation may use
-     this ink. */
+     text. Deliberately NOT `--foreground`: nothing outside her answers may
+     use it. */
   --ai-prose: #191924;
 
   /* --- Brand -------------------------------------------------------- */
@@ -442,27 +436,6 @@
   initial-value: 130%;
 }
 
-/* ---------------------------------------------------------------------
-   WHY THESE RULES HAND THEIR SHADOW TO `--tw-shadow`.
-   An unlayered declaration outranks every rule in Tailwind's `utilities`
-   layer no matter the specificity — that is how CSS layers are ordered, not
-   a specificity race we could win. So a plain `box-shadow` here silently ate
-   `focus-visible:ring-*` on every element carrying the class, and keyboard
-   focus landed with no visible trace at all (the shared `Button` puts
-   `focus-visible:ring-3` on ALL of its variants, and all of them are
-   `.liquid-glass`).
-   Tailwind v4 already solves this for its own utilities: `box-shadow` is
-   composed from five @property slots, each registered with
-   `initial-value: 0 0 #0000`, which is how `shadow-*` and `ring-*` coexist on
-   one element. Putting our shadow in the `--tw-shadow` slot and keeping the
-   whole stack lets a ring utility paint into `--tw-ring-shadow` while this
-   rule keeps the cascade and its shadow. Unfocused, the four ring slots are
-   transparent no-ops, so the surface renders exactly as before.
-   Moving these rules into `@layer components` instead would ALSO free the
-   ring, but it would hand every `shadow-[…]` utility at the call sites the
-   win — the primary button would lose its inset ramp for the flat 2px offset
-   it also carries. That is why this is the composition and not a layer.
-   --------------------------------------------------------------------- */
 .liquid-glass.bg-primary,
 .liquid-glass.bg-destructive {
   /* The ultramarine ramp is not invented here: `--gauge-grad-*` is the plate's
@@ -481,16 +454,13 @@
       var(--gauge-grad-2) 52%,
       var(--gauge-grad-3) 100%
     );
-  --tw-shadow:
+  box-shadow:
     inset 0 1.5px 0 0 rgba(255, 255, 255, 0.55),
     inset 0 -4px 10px -4px rgba(8, 7, 52, 0.62),
     0 2px 0 0 color-mix(in srgb, var(--ink) 35%, transparent),
     /* The glow is what makes a control read as lit rather than printed. Ink,
        not black: a grey shadow on warm paper reads as dirt. */
     0 8px 18px -10px rgba(21, 19, 156, 0.75);
-  box-shadow:
-    var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-    var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
 }
 .liquid-glass.bg-destructive {
   background-image:
@@ -855,12 +825,7 @@ a[aria-disabled="true"]:active,
    blur-free: on this plate a card is PRESSED into the sheet, it does not
    hover over it. -------------------------------------------------------- */
 .fm-lift {
-  /* Shadow goes in the `--tw-shadow` slot so a focus ring can still draw —
-     see the note above `.liquid-glass.bg-primary`. */
-  --tw-shadow: var(--fm-lift);
-  box-shadow:
-    var(--tw-inset-shadow), var(--tw-inset-ring-shadow),
-    var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  box-shadow: var(--fm-lift);
 }
 
 /* ---------------------------------------------------------------------

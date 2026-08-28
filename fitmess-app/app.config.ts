@@ -76,7 +76,7 @@ const config: ExpoConfig = {
       NSCameraUsageDescription:
         "Kamera se koristi da slikaš obrok i da FitMess proceni šta je na tanjiru.",
       NSMicrophoneUsageDescription:
-        "Mikrofon se koristi kada pričaš sa Jarvisom umesto da kucaš.",
+        "Mikrofon se koristi kada izgovoriš unos umesto da ga kucaš.",
       NSSpeechRecognitionUsageDescription:
         "Prepoznavanje govora pretvara ono što kažeš u tekst na samom telefonu, bez slanja snimka.",
       NSPhotoLibraryUsageDescription:

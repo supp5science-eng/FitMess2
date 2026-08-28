@@ -8,7 +8,6 @@ import { AppSplash } from "@/components/shell/app-splash";
 import { AccountsSync } from "@/components/auth/accounts-sync";
 import { InstallNudge } from "@/components/pwa/install-nudge";
 import { PushTapListener } from "@/components/native/push-tap-listener";
-import { KEYBOARD_SAFE_AREA_REMAINDER } from "@/lib/ui/use-keyboard-inset";
 
 /**
  * F005: app-wide mobile-first shell.
@@ -34,20 +33,12 @@ import { KEYBOARD_SAFE_AREA_REMAINDER } from "@/lib/ui/use-keyboard-inset";
  * Auth exception: the sign-in / sign-up screens (`/prijava`, `/registracija`,
  * ...) also render full-bleed — they own the whole viewport with their own
  * dark chrome (`src/app/(auth)/layout.tsx`) and must never expose the bottom
- * navigation, whose tabs (Danas / Nedelja / Agent / Profil) link into the
+ * navigation, whose tabs (Danas / Nedelja / Profil) link into the
  * authenticated app. When someone installs the app or taps "Uđi", the first
  * thing they see is only the auth screen.
  *
- * Chromeless exception: Jarvis (`/ai`) is neither. It keeps everything the
- * shell gives — the centered column, `bg-background`, the aurora layer, the
- * notch padding and the scroll region — but drops ONLY the bottom navigation,
- * because that screen belongs to the agent and the four tabs would compete
- * with it. The nav was also what carried `env(safe-area-inset-bottom)`, so
- * without it the column takes that clearance over and the content still ends
- * above the home indicator.
- *
- * Three modes, then: full shell (column + nav), chromeless (column, no nav)
- * and full-bleed (neither). Every route not listed below gets the full shell.
+ * Two modes, then: full shell (column + nav) and full-bleed (neither). Every
+ * route not listed below gets the full shell.
  */
 
 /** Routes that render their own full-width layout, without the app column or
@@ -90,17 +81,6 @@ const FULL_BLEED_PREFIXES = [
   "/en",
 ] as const;
 
-/** Chromeless route prefixes: they keep the whole app column but render
- * without the bottom navigation. Prefix-matched like the full-bleed list, so
- * any future sub-screen of Jarvis (`/ai/...`) inherits the same treatment. */
-const CHROMELESS_PREFIXES = ["/ai"] as const;
-
-function isChromeless(pathname: string): boolean {
-  return CHROMELESS_PREFIXES.some(
-    (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)
-  );
-}
-
 function isFullBleed(pathname: string): boolean {
   return (
     FULL_BLEED_ROUTES.has(pathname) ||
@@ -126,8 +106,6 @@ export function AppShell({
     return <>{children}</>;
   }
 
-  const chromeless = pathname !== null && isChromeless(pathname);
-
   return (
     <div className="min-h-dvh w-full bg-muted">
       {/* Launch splash: a first-paint brand cover over the app column that
@@ -147,19 +125,6 @@ export function AppShell({
         className="relative isolate mx-auto flex h-dvh w-full max-w-[430px] flex-col overflow-x-hidden bg-background shadow-sm"
         style={{
           paddingTop: "env(safe-area-inset-top)",
-          // The nav bar used to carry the home-indicator clearance for the
-          // whole column; on chromeless routes there is no nav left to carry
-          // it, so the column pads itself instead. Everywhere else this stays
-          // off and `AppNavBar` keeps owning the inset, so it never
-          // double-counts.
-          //
-          // It is the REMAINDER rather than the flat inset because the one
-          // chromeless route is Jarvis, whose composer rides the keyboard. An
-          // open keyboard is drawn OVER the home indicator, so the clearance is
-          // already inside the height the composer offsets itself by; adding it
-          // here too parked the composer ~34 px above the keys, which is the
-          // gap the owner reported. See `KEYBOARD_SAFE_AREA_REMAINDER`.
-          paddingBottom: chromeless ? KEYBOARD_SAFE_AREA_REMAINDER : undefined,
         }}
       >
         {/* App aurora: a barely-there iridescent wash in the corners, behind
@@ -176,7 +141,7 @@ export function AppShell({
         <div className="flex flex-1 flex-col overflow-y-auto overflow-x-hidden overscroll-y-contain">
           {children}
         </div>
-        {chromeless ? null : <AppNavBar />}
+        <AppNavBar />
       </div>
       {/* Keeps the on-device multi-account registry (and the active account's
           rotating token) up to date wherever a signed-in user is. */}

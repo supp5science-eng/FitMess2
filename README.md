@@ -32,8 +32,6 @@ phone — desktop shows a QR to hand off)
   smoothed trend (not scary daily noise) and how far you are from your goal.
 - ⚙️ **Settings & privacy** (`/profil`) — goal, personal data, eating rules,
   plus GDPR‑style **data export** and account deletion.
-- 🤖 **FitMess Agent** (`/agent`) — a conversational logging assistant, coming
-  soon.
 
 Everything is in Serbian (sr‑Latn), informal *"ti"*, mobile‑first at 375px, and
 printed in one theme — **"Gravira"**: a vivid ultramarine ink on pale warm
@@ -53,7 +51,7 @@ paper, with a halftone stipple ground. There is no light/dark switch.
 | **Charts** | Hand‑rolled SVG/CSS — no charting library |
 | **Validation** | zod |
 | **Observability** | PostHog (EU, consent‑gated) · Sentry (EU) |
-| **Extras** | Web Push (PWA notifications) · `barcode-detector` · Gemini (vision/agent) |
+| **Extras** | Web Push (PWA notifications) · `barcode-detector` · Gemini (vision) |
 
 Charts are deliberately dependency‑light: the calorie ring, day bars, and
 weight trend are all drawn by hand in SVG.
@@ -74,7 +72,6 @@ claude-missions/
 │   │   │   ├── danas/        # home — daily calorie ring + meals
 │   │   │   ├── analitika/    # weekly dashboard + weight trend
 │   │   │   ├── dodaj/        # add food: search, portion, scanner, label, photo
-│   │   │   ├── agent/        # FitMess Agent (coming soon)
 │   │   │   └── profil/       # settings, goal, data, privacy, appearance
 │   │   ├── (auth)/           # sign in / up, password reset, phone
 │   │   ├── admin/            # food catalog review queue

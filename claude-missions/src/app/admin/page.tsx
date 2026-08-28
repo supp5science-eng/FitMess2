@@ -31,12 +31,6 @@ export default async function AdminPage() {
       label: t("admin.section.troskovi.label"),
       description: t("admin.section.troskovi.desc"),
     },
-    // Proba 3D klona -- privremena, zivi dok se ne odluci ide li 3D u app.
-    {
-      href: "/admin/klon3d",
-      label: "Klon 3D",
-      description: "Okreni figuru napravljenu iz cetiri nacrtana pogleda",
-    },
     // Dijagnostika, ne feature -- isto bez i18n ključa. Postoji zato što se
     // "koje modele naš ključ vidi" inače ne može proveriti bez terminala ili
     // bez lepljenja tajne u adresnu liniju.

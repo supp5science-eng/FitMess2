@@ -91,35 +91,16 @@ src/
     _layout.tsx        koren — sesija, splash gate, native stack
     (auth)/prijava     prijava
     (app)/index        početna (dokazni ekran)
-    (app)/jarvis       Jarvis
-  jarvis/
-    alat.ts            REGISTAR ALATA — srce; pročitaj ovo prvo
-    mozak.ts           razgovor sa serverom i petlja alata
-    alati/             pojedinačni alati (voda.ts kao šablon)
-    komponente/        ono što alat sme da nacrta
   lib/
     supabase.ts        klijent + sesija u keychain-u
     auth.tsx           ko je prijavljen
     feedback.ts        haptika
   theme/tokens.ts      „Gravira" paleta, prepisana sa sajta
-  ui/                  Text, Button, Wordmark
+  ui/                  Text, Button, Wordmark, KarticaVode
 ```
 
 Backend nije ovde: sajt `fitmess.app` i Supabase su isti kao do sada
 (`../claude-missions`).
-
----
-
-## Dva pravila koja ne treba kršiti
-
-**Model ne dira bazu.** Bira alat, popuni argumente; upis radi naš kod u
-`src/jarvis/alati/`.
-
-**Model ne crta ekran.** Bira alat; alat imenuje komponentu koju smo mi
-napisali (`src/jarvis/komponente/`).
-
-Posledica: **Jarvis je tačno onoliko sposoban koliko alata ima.** Dodavanje
-sposobnosti je dva koraka — napiši alat, uvezi ga u `src/jarvis/registracija.ts`.
 
 ---
 
@@ -136,5 +117,5 @@ Isti projekat i isti ključ kao sajt — `sb_publishable_` ključ je namenjen da
 bude u klijentu, RLS je ono što stvarno štiti redove.
 
 **Anthropic i ElevenLabs ključevi ovde NE smeju.** Svako ko skine aplikaciju
-može da ih izvuče. Zato Jarvis priča preko `fitmess.app/api/jarvis`, koji drži
-ključ.
+može da ih izvuče. Sve što traži tajnu ide preko rute na `fitmess.app`, koja
+drži ključ.

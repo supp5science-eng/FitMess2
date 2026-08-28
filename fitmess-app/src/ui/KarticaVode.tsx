@@ -5,13 +5,10 @@ import { colors, lift, radius, spacing } from "@/theme/tokens";
 import { Text } from "@/ui/Text";
 
 /**
- * What Jarvis shows when water is logged — the first example of an answer that
- * is a screen rather than a sentence.
+ * What the app shows when water is logged.
  *
- * "Ukupno danas 1250 mililitara od cilja 2500" takes four seconds to say and
- * is gone the moment it is said. A bar that is half full is read in a glance
- * and is still there. Jarvis says the short half out loud ("upisano") and
- * hands the number to the eye.
+ * "Ukupno danas 1250 mililitara od cilja 2500" is a mouthful; a bar that is
+ * half full is read in a glance and is still there.
  *
  * The fill ANIMATES from where it was to where it is, and that is the point of
  * the component rather than a decoration: the user's own contribution is the

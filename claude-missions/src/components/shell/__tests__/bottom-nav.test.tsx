@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-// F005: the bottom nav renders four tabs (the AI tab joined 2026-08-25,
-// marked by its watercolour orb), marks the active one via aria-current from
-// the current pathname, and mounts the sliding liquid-glass lens. The lens's
+// F005: the bottom nav renders three tabs, marks the active one via
+// aria-current from the current pathname, and mounts the sliding
+// liquid-glass lens. The lens's
 // exact pixel position is measured from the DOM at runtime (0 in jsdom), so
 // these tests assert structure/active-state, not geometry.
 
@@ -19,14 +19,14 @@ describe("BottomNav", () => {
     pathnameMock.mockReset();
   });
 
-  it("renders all four Serbian tabs as links", () => {
+  it("renders all three Serbian tabs as links", () => {
     pathnameMock.mockReturnValue("/danas");
     render(<BottomNav />);
 
-    for (const label of ["Početna", "Analitika", "AI", "Profil"]) {
+    for (const label of ["Početna", "Analitika", "Profil"]) {
       expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
     }
-    expect(screen.getAllByRole("link")).toHaveLength(4);
+    expect(screen.getAllByRole("link")).toHaveLength(3);
   });
 
   it("marks the current route's tab with aria-current=page", () => {
@@ -39,16 +39,6 @@ describe("BottomNav", () => {
     );
     expect(screen.getByRole("link", { name: "Početna" })).not.toHaveAttribute(
       "aria-current"
-    );
-  });
-
-  it("marks the AI tab active on /ai", () => {
-    pathnameMock.mockReturnValue("/ai");
-    render(<BottomNav />);
-
-    expect(screen.getByRole("link", { name: "AI" })).toHaveAttribute(
-      "aria-current",
-      "page"
     );
   });
 
@@ -71,7 +61,7 @@ describe("BottomNav", () => {
     // No nav tab owns an /dodaj route -> the lens fades out.
     expect(lens).toHaveStyle({ opacity: "0" });
     // And nothing is marked active.
-    for (const label of ["Početna", "Analitika", "AI", "Profil"]) {
+    for (const label of ["Početna", "Analitika", "Profil"]) {
       expect(screen.getByRole("link", { name: label })).not.toHaveAttribute(
         "aria-current"
       );

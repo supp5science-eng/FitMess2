@@ -72,9 +72,8 @@ function buildOptions(t: TFunction): AddSheetOption[] {
       key: "najtacnije",
       // "Prizma" is THIS flow's name, and only this one. It was briefly given
       // away to the AI agent (renamed here to "FM 2.7" on 2026-08-25) and
-      // taken back on 2026-08-26: the agent is called Jarvis, and the two had
-      // become impossible to tell apart in conversation. The flow itself never
-      // changed through either rename.
+      // taken back on 2026-08-26. The flow itself never changed through
+      // either rename.
       label: "Prizma",
       icon: Target,
       href: "/dodaj/najtacnije",

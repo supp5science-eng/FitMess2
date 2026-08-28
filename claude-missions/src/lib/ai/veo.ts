@@ -115,7 +115,24 @@ async function expectOk(response: Response, what: string): Promise<unknown> {
 /* Otkrivanje modela -- ne nagađaj ime, pitaj ključ                    */
 /* ------------------------------------------------------------------ */
 
-export type VideoModelRow = { name: string; methods: string[] };
+export type VideoModelRow = {
+  name: string;
+  methods: string[];
+  /**
+   * Da li ovaj model ume da priča protokolom koji ova datoteka govori.
+   *
+   * ⚠️ NA GEMINI KLJUČU POSTOJE DVA RAZLIČITA PROTOKOLA ZA VIDEO, i to je
+   * zamka koja je 28.08. koštala jednog pokušaja. Veo ide na
+   * `models/<ime>:predictLongRunning`; Omni NE -- on ide na `/v1beta/interactions`,
+   * potpuno drugi endpoint sa drugim telom. Poslati Omni na predictLongRunning
+   * vrati `404 NOT_FOUND`, što izgleda kao da model ne postoji na ključu iako
+   * uredno postoji.
+   *
+   * Zato lista ne sme da bude spisak imena nego spisak imena SA PROTOKOLOM, i
+   * zato ekran nudi samo ono što kod ume da odradi.
+   */
+  radiOvde: boolean;
+};
 
 /**
  * Koje video modele ovaj ključ stvarno vidi.
@@ -136,16 +153,21 @@ export async function listVideoModels(): Promise<VideoModelRow[]> {
   )) as { models?: { name?: string; supportedGenerationMethods?: string[] }[] };
 
   return (json.models ?? [])
-    .map((model) => ({
-      name: (model.name ?? "?").replace(/^models\//, ""),
-      methods: model.supportedGenerationMethods ?? [],
-    }))
+    .map((model) => {
+      const name = (model.name ?? "?").replace(/^models\//, "");
+      const methods = model.supportedGenerationMethods ?? [];
+      return {
+        name,
+        methods,
+        radiOvde: methods.some((method) => /predictLongRunning/i.test(method)),
+      };
+    })
     .filter(
       (model) =>
-        model.methods.some((method) => /predictLongRunning/i.test(method)) ||
-        // Omni je video model ali se ne zove ni "veo" ni "video" i ne ide kroz
-        // predictLongRunning -- bez njega u filteru lista bi tvrdila da ga na
-        // ključu nema.
+        model.radiOvde ||
+        // Omni se ne zove ni "veo" ni "video" i ne ide kroz predictLongRunning.
+        // Ostaje u listi da bi se VIDELO da postoji na ključu -- ali označen
+        // kao nedostupan, umesto da ga ekran ponudi pa poziv vrati 404.
         /veo|video|omni/i.test(model.name)
     );
 }
@@ -184,6 +206,19 @@ export type OrbitOptions = {
  */
 export async function startOrbitVideo(options: OrbitOptions): Promise<string> {
   const model = options.model || process.env.GEMINI_VIDEO_MODEL || VIDEO_MODEL;
+
+  // Uhvati pogrešan protokol PRE nego što se potroši poziv. Bez ovoga Google
+  // vrati `404 ... is not found for API version v1beta`, što svakog ko to
+  // pročita ubedi da model ne postoji na kljucu -- a postoji, samo govori
+  // drugim jezikom (vidi `VideoModelRow.radiOvde`).
+  if (/omni/i.test(model)) {
+    throw new GeminiError(
+      `Model "${model}" ne ide kroz predictLongRunning nego kroz Interactions ` +
+        `API (/v1beta/interactions), koji ovde još nije napisan. Izaberi Veo ` +
+        `model iz liste, ili ostavi prazno za podrazumevani.`,
+      400
+    );
+  }
 
   const json = (await expectOk(
     await googleFetch(
@@ -343,6 +378,12 @@ export function veoErrorSr(err: unknown): string {
     return "Trenutno je gužva kod nas. Probaj za koji minut.";
   }
   if (err instanceof GeminiError) {
+    // Pogrešan protokol se javlja kao 400 iz provere iznad, i ima svoju
+    // rečenicu -- inače bi se stopio sa "ključ ne radi", što je sasvim druga
+    // stvar i vodi u pogrešnu istragu.
+    if (err.status === 400 && err.message.includes("Interactions")) {
+      return "Taj model se ne poziva ovako. Izaberi Veo model iz liste iznad, ili ostavi prazno.";
+    }
     if (err.status === 404 || err.message.includes("API_KEY_INVALID")) {
       return "Video trenutno ne radi kod nas — nije do tvojih slika. Proveri /admin/okret koji video modeli postoje na ključu.";
     }

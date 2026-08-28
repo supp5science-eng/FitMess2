@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { VideoModelRow } from "@/lib/ai/veo";
 import { downscaleImage } from "@/lib/image/downscale";
 import {
   buildOkretKadarPrompt,
@@ -54,7 +55,7 @@ type Faza =
   | { vrsta: "orbit"; smer: OkretSmer }
   | { vrsta: "secem" };
 
-export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
+export function OkretBench({ videoModeli }: { videoModeli: VideoModelRow[] }) {
   const [slike, setSlike] = useState<Slika[]>([]);
   const [saPortretom, setSaPortretom] = useState(true);
 
@@ -282,8 +283,13 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
           </p>
         ) : (
           <>
+            {/* Dva protokola, ne jedan. Veo ide na predictLongRunning; Omni na
+                /v1beta/interactions, koji ovde još nije napisan. Nedostupni se
+                VIDE (da se zna da postoje na ključu) ali se ne biraju — inače
+                poziv vrati 404 koji izgleda kao da modela nema. */}
             <p className="mt-1 text-xs text-muted-foreground">
-              Ostavi prazno za podrazumevani, ili izaberi drugi.
+              Ostavi prazno za podrazumevani. Zasivljeni postoje na ključu, ali
+              se pozivaju drugim protokolom koji ovde još nije napisan.
             </p>
             <select
               value={model}
@@ -291,9 +297,10 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
               className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
             >
               <option value="">(podrazumevani)</option>
-              {videoModeli.map((name) => (
-                <option key={name} value={name}>
-                  {name}
+              {videoModeli.map((red) => (
+                <option key={red.name} value={red.name} disabled={!red.radiOvde}>
+                  {red.name}
+                  {red.radiOvde ? "" : " — drugi protokol"}
                 </option>
               ))}
             </select>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { listVideoModels } from "@/lib/ai/veo";
+import { listVideoModels, type VideoModelRow } from "@/lib/ai/veo";
 
 import { OkretBench } from "./okret-bench";
 
@@ -41,10 +41,10 @@ export default async function OkretPage() {
    * Pad ovog poziva NE SME da obori stranicu: klupa i dalje radi za kadar
    * (koji ide preko image modela) čak i kad je video nedostupan.
    */
-  let videoModeli: string[] = [];
+  let videoModeli: VideoModelRow[] = [];
   let greskaModela: string | null = null;
   try {
-    videoModeli = (await listVideoModels()).map((model) => model.name);
+    videoModeli = await listVideoModels();
   } catch (err) {
     greskaModela = err instanceof Error ? err.message.slice(0, 300) : String(err);
   }

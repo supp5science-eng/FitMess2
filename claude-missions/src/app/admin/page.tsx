@@ -33,18 +33,12 @@ export default async function AdminPage() {
     },
     // Proba okreta -- klupa na kojoj se bira kadar i dotera sablon, pre nego
     // sto avatar ide na pocetni ekran. Bez i18n kljuca, kao i ostale probe.
+    // Nasledjuje /admin/klon3d, koji je isto pitanje postavio za pravi 3D mesh
+    // i odgovorio odrecno; ta stranica je obrisana sa mainom 28.08.
     {
       href: "/admin/okret",
       label: "Okret",
       description: "Slike → kadar → orbit → frejmovi koje vrtis prstom",
-    },
-    // Proba 3D klona -- privremena, zivi dok se ne odluci ide li 3D u app.
-    // Odgovor je za sada odrecan (lice prezivi rekonstrukciju kao vosak), pa
-    // stranica stoji kao dokaz sta je probano, a rad ide preko /admin/okret.
-    {
-      href: "/admin/klon3d",
-      label: "Klon 3D",
-      description: "Okreni figuru napravljenu iz cetiri nacrtana pogleda",
     },
     // Dijagnostika, ne feature -- isto bez i18n ključa. Postoji zato što se
     // "koje modele naš ključ vidi" inače ne može proveriti bez terminala ili

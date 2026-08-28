@@ -12,10 +12,11 @@ import { OkretBench } from "./okret-bench";
  * prevlačenjem prsta, izgleda dovoljno dobro da bude ono čime se aplikacija
  * predstavlja na početnom ekranu.
  *
- * Nasleđuje `/admin/klon3d`, koji je isto pitanje postavio za pravi 3D mesh i
- * odgovorio odrečno (24.08.2026: četiri nacrtana pogleda -> image-to-3D -> lice
- * kao vosak). Razlika je u tome što ovde kadrovi OSTAJU FOTOGRAFIJE do kraja --
- * nema rekonstrukcije koja ih pretvara u geometriju.
+ * Isto pitanje je 24.08.2026. postavljeno za pravi 3D mesh -- klon nacrtan kao
+ * četiri pogleda, pa image-to-3D -- i odgovor je bio odrečan: lice preživi
+ * rekonstrukciju kao vosak. Ta proba je živela na `/admin/klon3d` i obrisana je
+ * sa mainom 28.08. Razlika ovde je u tome što kadrovi OSTAJU FOTOGRAFIJE do
+ * kraja -- nema rekonstrukcije koja ih pretvara u geometriju.
  *
  * `/admin/layout.tsx` već zaključava celu sekciju na `profiles.is_admin`.
  */

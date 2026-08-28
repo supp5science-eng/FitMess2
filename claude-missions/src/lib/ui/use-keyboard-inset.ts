@@ -115,13 +115,12 @@ export const KEYBOARD_BOTTOM_OFFSET = `max(env(safe-area-inset-bottom, 0px), var
  *
  * {@link KEYBOARD_BOTTOM_OFFSET} folds the safe area in because it assumes the
  * anchored element is the only thing standing between the composer and the
- * bottom of the screen. Jarvis is not that case: `AppShell` pads the whole
- * chromeless column by `env(safe-area-inset-bottom)` (there is no bottom
- * navigation left to carry it), so a composer using the `max()` expression
- * adds the safe area a SECOND time and floats ~34 px above the keys — the dead
- * band between the composer and the keyboard that this pair of constants
- * exists to close. Pair this with {@link KEYBOARD_SAFE_AREA_REMAINDER} on the
- * column and the two add up to exactly `max(safe, keyboard)`, once.
+ * bottom of the screen. A column that already pads itself by
+ * `env(safe-area-inset-bottom)` is not that case: a composer using the `max()`
+ * expression adds the safe area a SECOND time and floats ~34 px above the keys
+ * — the dead band this pair of constants exists to close. Pair this with
+ * {@link KEYBOARD_SAFE_AREA_REMAINDER} on the column and the two add up to
+ * exactly `max(safe, keyboard)`, once.
  */
 export const KEYBOARD_ONLY_OFFSET = `var(${KEYBOARD_INSET_VAR}, 0px)`;
 

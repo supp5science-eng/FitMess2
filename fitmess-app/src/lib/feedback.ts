@@ -31,7 +31,7 @@ export const feedback = {
   tap: () => safely(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)),
 
   /** A press that commits something the user can see change — opening a sheet,
-   *  picking a meal, sending a message to Jarvis. */
+   *  picking a meal, submitting a form. */
   press: () => safely(() => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)),
 
   /** A slider crossing a notch, a picker landing on a value. Deliberately the

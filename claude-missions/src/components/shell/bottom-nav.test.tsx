@@ -9,16 +9,14 @@ import { usePathname } from "next/navigation";
 import { BottomNav } from "./bottom-nav";
 
 describe("BottomNav (F005 base shell)", () => {
-  it("test_AS_002_bottom_nav_renders_four_serbian_tab_labels", () => {
+  it("test_AS_002_bottom_nav_renders_three_serbian_tab_labels", () => {
     // AS-002: all copy on the shell, including the nav, is Serbian sr-Latn.
-    // ("AI" joined 2026-08-25 and is the same in both languages.)
     render(<BottomNav />);
     expect(
       screen.getByRole("navigation", { name: "Glavna navigacija" })
     ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Početna/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Analitika/ })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /AI/ })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Profil/ })).toBeInTheDocument();
   });
 
@@ -31,10 +29,6 @@ describe("BottomNav (F005 base shell)", () => {
     expect(screen.getByRole("link", { name: /Analitika/ })).toHaveAttribute(
       "href",
       "/analitika"
-    );
-    expect(screen.getByRole("link", { name: /AI/ })).toHaveAttribute(
-      "href",
-      "/ai"
     );
     expect(screen.getByRole("link", { name: /Profil/ })).toHaveAttribute(
       "href",
@@ -59,7 +53,7 @@ describe("BottomNav (F005 base shell)", () => {
 
   it("every nav item is a real anchor element, so it is reachable and activatable via keyboard alone", () => {
     render(<BottomNav />);
-    for (const name of [/Početna/, /Analitika/, /AI/, /Profil/]) {
+    for (const name of [/Početna/, /Analitika/, /Profil/]) {
       const link = screen.getByRole("link", { name });
       expect(link.tagName).toBe("A");
       expect(link).not.toHaveAttribute("tabindex", "-1");

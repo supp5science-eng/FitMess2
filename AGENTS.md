@@ -17,7 +17,7 @@ the repo root is the build workspace.
 ## Where things live (`claude-missions/src`)
 
 - `app/(app)/` — authenticated screens: `danas` (home), `analitika` (weekly +
-  weight), `dodaj/*` (add food), `agent` (coming soon), `profil` (settings).
+  weight), `dodaj/*` (add food), `profil` (settings).
 - `app/(auth)/`, `app/admin/`, `app/api/*` — auth flows, food‑catalog admin, route handlers.
 - `components/` — `ui/` primitives (Button, Input, **Card**, …), plus feature
   folders: `home/`, `weekly/`, `analytics/`, `food/`, `shell/`, `settings/`.

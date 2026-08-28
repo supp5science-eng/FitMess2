@@ -182,7 +182,7 @@ describe("useKeyboardInset", () => {
 
   it("test_split_offsets_add_up_to_the_combined_one_and_never_double", () => {
     // The other way to spend the same budget, for a composer whose COLUMN
-    // already carries the safe area (Jarvis: `AppShell`'s chromeless branch).
+    // already carries the safe area itself.
     // The composer takes the keyboard alone, the column takes whatever is left
     // of the safe area — so closed it is `safe + 0`, open it is `0 + keyboard`,
     // and neither state pays for the home indicator twice. Getting this wrong

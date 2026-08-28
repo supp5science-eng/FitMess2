@@ -12,8 +12,8 @@ import { colors } from "@/theme/tokens";
  *    bubble over the UI — one of the loudest tells that an "app" is a page.
  *    RN's default is already non-selectable; this component makes that a rule
  *    rather than a default, so the only selectable text in FitMess is text a
- *    call site deliberately asks for (`selectable`) — a Jarvis reply the user
- *    may genuinely want to copy, and nothing else.
+ *    call site deliberately asks for (`selectable`) — text the user may
+ *    genuinely want to copy, and nothing else.
  *
  * 2. TYPE SCALING IS BOUNDED. The system font-size slider must be honoured —
  *    refusing it is an accessibility failure and Apple checks for it — but

@@ -2,6 +2,13 @@
 
 Odluka doneta 26–27.08.2026. **Rad je počeo 27.08.2026.**
 
+> **Napomena (28.08.2026):** Jarvis je uklonjen iz obe aplikacije — i sa sajta
+> (`/ai`, `/api/jarvis`, `jarvis-*` komponente) i iz native aplikacije
+> (`fitmess-app/src/jarvis/`). Ovaj dokument se od tog datuma čita kao **zapis
+> odluke**, ne kao opis onoga što u kodu stoji; poglavlje 3 opisuje arhitekturu
+> koje više nema. Ostali razlozi za prelazak na native (brzina paljenja,
+> haptika, native stack, prepoznavanje govora na uređaju) i dalje važe.
+
 Ovaj dokument nastavlja `izlazak-u-store.md`, koji je 06.08.2026. izmerio i
 **odbio** prepis u klijentsku aplikaciju. Ta odluka je bila tačna za cilj koji
 je tada postojao. Cilj se promenio, pa se promenila i odluka — zapisano ovde

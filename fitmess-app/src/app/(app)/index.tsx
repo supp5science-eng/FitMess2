@@ -1,4 +1,3 @@
-import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import { ActivityIndicator, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -6,20 +5,18 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth";
 import { feedback } from "@/lib/feedback";
 import { supabase } from "@/lib/supabase";
-import { nadjiAlat } from "@/jarvis/alat";
-import { KarticaVode } from "@/jarvis/komponente/KarticaVode";
 import { colors, spacing } from "@/theme/tokens";
 import { Button } from "@/ui/Button";
+import { KarticaVode } from "@/ui/KarticaVode";
 import { Text } from "@/ui/Text";
 import { Wordmark } from "@/ui/Wordmark";
 
 /**
  * The proof screen.
  *
- * Not the final home — that becomes Jarvis. This exists to prove, on a real
- * phone with real data, that the chain works end to end without a web view
- * anywhere in it: keychain session → Supabase with RLS → a registered tool →
- * a component the tool named → the Taptic Engine.
+ * This exists to prove, on a real phone with real data, that the chain works
+ * end to end without a web view anywhere in it: keychain session → Supabase
+ * with RLS → a component → the Taptic Engine.
  *
  * Every one of the five complaints that started the rebuild is answerable on
  * this screen:
@@ -27,18 +24,20 @@ import { Wordmark } from "@/ui/Wordmark";
  *   - the button buzzes on press-in
  *   - a long press on any text raises nothing
  *   - the transitions are UIKit's, not a JS imitation
- *   - the keyboard, when Jarvis lands here, is ours to control
+ *   - the keyboard, when a field lands here, is ours to control
  */
 
-/** Belgrade calendar day. The app owns what "danas" means — the same rule the
- *  tools rely on, so a tool never has to ask a model for the date. */
+/** Belgrade calendar day. The app owns what "danas" means. */
 function danasUBeogradu(): string {
   return new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Belgrade" }).format(new Date());
 }
 
+/** One glass, the same 250 ml the sheet on the web offers. */
+const CASA_ML = 250;
+const MAX_ML = 20000;
+
 export default function PocetnaScreen() {
   const { session, signOut } = useAuth();
-  const router = useRouter();
   const korisnikId = session?.user.id ?? null;
   const danas = danasUBeogradu();
 
@@ -68,19 +67,37 @@ export default function PocetnaScreen() {
     void ucitaj();
   }, [ucitaj]);
 
-  /** Runs the real registered tool, exactly as Jarvis will run it — same
-   *  entry point, same context, same result. The only thing missing here is
-   *  the model that picks it. */
+  /**
+   * Read-then-write rather than a bare increment: the total has to be clamped,
+   * and `water_intake` holds one row per user per day. The amount written is a
+   * QUANTITY, never a total — two glasses a second apart must add up, not
+   * overwrite each other (the same reason the web route takes `deltaMl`).
+   */
   const dodajCasu = async () => {
     if (!korisnikId || radim) return;
-    const alat = nadjiAlat("dodajVodu");
-    if (!alat) return;
 
     setRadim(true);
-    const rezultat = await alat.izvrsi({ mera: "casa" }, { korisnikId, danas });
+    const { data: postojece, error: greskaCitanja } = await supabase
+      .from("water_intake")
+      .select("ml")
+      .eq("user_id", korisnikId)
+      .eq("day", danas)
+      .maybeSingle();
+
+    if (greskaCitanja) {
+      setRadim(false);
+      feedback.error();
+      setGreska("Nismo uspeli da pročitamo vodu za danas.");
+      return;
+    }
+
+    const ukupno = Math.max(0, Math.min(MAX_ML, (postojece?.ml ?? 0) + CASA_ML));
+    const { error: greskaUpisa } = await supabase
+      .from("water_intake")
+      .upsert({ user_id: korisnikId, day: danas, ml: ukupno }, { onConflict: "user_id,day" });
     setRadim(false);
 
-    if (rezultat.greska) {
+    if (greskaUpisa) {
       feedback.error();
       setGreska("Nismo uspeli da upišemo vodu.");
       return;
@@ -88,9 +105,8 @@ export default function PocetnaScreen() {
 
     feedback.success();
     setGreska(null);
-    const noviMl = (rezultat.ekran?.props.ml as number) ?? 0;
-    setPromena((rezultat.ekran?.props.promena as number) ?? 0);
-    setMl(noviMl);
+    setPromena(CASA_ML);
+    setMl(ukupno);
   };
 
   return (
@@ -104,8 +120,8 @@ export default function PocetnaScreen() {
         <Text variant="title">Radi bez veba.</Text>
         <Text variant="body">
           Ovaj ekran je iscrtan iz koda koji je u samoj aplikaciji. Nema WebView-a, nema
-          čekanja na mrežu pre prvog kadra. Dugme ispod poziva pravi alat iz Jarvisovog
-          registra — isti onaj koji će Jarvis zvati kad mu kažeš da si popio vodu.
+          čekanja na mrežu pre prvog kadra. Dugme ispod upisuje vodu pravo u bazu, pod
+          istim RLS pravilima kao i sajt.
         </Text>
 
         {ml === null ? (
@@ -124,12 +140,6 @@ export default function PocetnaScreen() {
         {/* Deliberately a button rather than a tab bar: which screens survive
             as screens is still an open question, and a tab bar would be a
             guess at the answer baked into navigation. */}
-        <Button
-          title="Otvori Jarvisa"
-          variant="secondary"
-          onPress={() => router.push("/(app)/jarvis")}
-          block
-        />
         <Button title="Odjavi se" variant="ghost" onPress={() => void signOut()} block />
       </ScrollView>
     </SafeAreaView>

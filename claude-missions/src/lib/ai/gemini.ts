@@ -1041,7 +1041,18 @@ async function postGenerateImage(
  */
 export async function generateAvatarClone(
   photos: readonly InlineImage[],
-  prompt: string
+  prompt: string,
+  /**
+   * Both optional and both defaulted to the klon's own values, so this stays
+   * the same call it has always been for `generateKlon` below.
+   *
+   * They exist for the OKRET (`src/lib/avatar/okret-prompt.ts`), which needs
+   * the same transport with two things different: a full-figure frame is 9:16
+   * rather than 3:4 (a standing person in 3:4 spends half the picture on empty
+   * air), and a photographic frame wants a lower temperature than a drawing --
+   * every degree of freedom here is a degree in which a real face drifts.
+   */
+  options?: { aspectRatio?: string; temperature?: number }
 ): Promise<InlineImage> {
   return postGenerateImage({
     contents: [
@@ -1060,8 +1071,8 @@ export async function generateAvatarClone(
       // sentence alongside the picture and reject a request that forbids it.
       // The sentence is dropped above.
       responseModalities: ["TEXT", "IMAGE"],
-      imageConfig: { aspectRatio: "3:4" },
-      temperature: 0.9,
+      imageConfig: { aspectRatio: options?.aspectRatio ?? "3:4" },
+      temperature: options?.temperature ?? 0.9,
     },
   });
 }
@@ -1077,7 +1088,7 @@ export async function generateAvatarClone(
  * copy of features that already exist, and every degree of freedom it gets is
  * a degree in which the nose can drift.
  */
-async function generateReferencePortrait(
+export async function generateReferencePortrait(
   photos: readonly InlineImage[]
 ): Promise<InlineImage> {
   return postGenerateImage({

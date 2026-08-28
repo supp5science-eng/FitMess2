@@ -31,7 +31,16 @@ export default async function AdminPage() {
       label: t("admin.section.troskovi.label"),
       description: t("admin.section.troskovi.desc"),
     },
+    // Proba okreta -- klupa na kojoj se bira kadar i dotera sablon, pre nego
+    // sto avatar ide na pocetni ekran. Bez i18n kljuca, kao i ostale probe.
+    {
+      href: "/admin/okret",
+      label: "Okret",
+      description: "Slike → kadar → orbit → frejmovi koje vrtis prstom",
+    },
     // Proba 3D klona -- privremena, zivi dok se ne odluci ide li 3D u app.
+    // Odgovor je za sada odrecan (lice prezivi rekonstrukciju kao vosak), pa
+    // stranica stoji kao dokaz sta je probano, a rad ide preko /admin/okret.
     {
       href: "/admin/klon3d",
       label: "Klon 3D",

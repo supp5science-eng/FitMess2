@@ -9,10 +9,8 @@ import {
 } from "@/lib/ai/veo";
 import {
   buildOkretVideoPrompt,
-  okretAspect,
-  OKRET_KADROVI,
+  OKRET_ASPECT,
   okretNegativePrompt,
-  type OkretKadar,
 } from "@/lib/avatar/okret-prompt";
 
 /**
@@ -39,7 +37,6 @@ export const maxDuration = 300;
 
 type Telo = {
   korak?: "start" | "status";
-  kadar?: string;
   slika?: string;
   mime?: string;
   prompt?: string;
@@ -124,15 +121,6 @@ export async function POST(request: Request) {
   /* ---------------------------------------------------------------- */
   /* start -- zakazivanje                                              */
   /* ---------------------------------------------------------------- */
-  const kadarRaw = String(telo.kadar ?? "portret");
-  if (!OKRET_KADROVI.includes(kadarRaw as OkretKadar)) {
-    return NextResponse.json(
-      { ok: false, error_sr: `Nepoznat kadar: ${kadarRaw}` },
-      { status: 400 }
-    );
-  }
-  const kadar = kadarRaw as OkretKadar;
-
   if (!telo.slika) {
     return NextResponse.json(
       { ok: false, error_sr: "Nema kadra od kog bi orbit krenuo." },
@@ -142,7 +130,7 @@ export async function POST(request: Request) {
 
   const stepeni = Number.isFinite(telo.stepeni) ? Number(telo.stepeni) : 180;
   const prompt =
-    String(telo.prompt ?? "").trim() || buildOkretVideoPrompt(kadar, stepeni);
+    String(telo.prompt ?? "").trim() || buildOkretVideoPrompt(stepeni);
 
   try {
     const operacija = await startOrbitVideo({
@@ -150,7 +138,7 @@ export async function POST(request: Request) {
       slikaMime: telo.mime || "image/png",
       prompt,
       negativePrompt: okretNegativePrompt(),
-      aspectRatio: okretAspect(kadar),
+      aspectRatio: OKRET_ASPECT,
       resolution: telo.rezolucija ?? "720p",
       model: telo.model,
     });

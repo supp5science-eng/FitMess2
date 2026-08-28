@@ -5,74 +5,81 @@ import {
   buildOkretVideoPrompt,
   MAX_OKRET_SLIKA,
   MIN_OKRET_SLIKA,
-  okretAspect,
-  OKRET_KADROVI,
+  OKRET_ASPECT,
+  okretNegativePrompt,
   okretVremenaFrejmova,
   proveriBrojSlika,
 } from "@/lib/avatar/okret-prompt";
 
 /**
  * Okret nasleđuje jedini invarijant klona -- ŠABLON JE ISTI ZA SVAKOGA -- i
- * dodaje jedan svoj: orbit sme da menja UGAO i ništa drugo.
+ * dodaje dva svoja: orbit sme da menja UGAO i ništa drugo, a odeća se UZIMA sa
+ * fotografija umesto da se izmišlja.
  *
- * Oba se lako izgube tihо. Prompt koji se razlikuje po korisniku pravi avatare
- * koji ne mogu da stoje jedan pored drugog, a video prompt koji dozvoli da se
- * čovek pomeri pravi niz u kom je svaki kadar druga poza -- i to se ne vidi na
- * pojedinačnoj slici, nego tek kad se prevuče prstom.
+ * Sva tri se lako izgube tiho. Prompt koji se razlikuje po korisniku pravi
+ * avatare koji ne mogu da stoje jedan pored drugog; video prompt koji dozvoli
+ * da se čovek pomeri pravi niz u kom je svaki kadar druga poza; a pravilo o
+ * odeći je jedina razlika u odnosu na klon, gde je isto pravilo OKRENUTO.
  */
 describe("okret: šablon kadra", () => {
   it("se između dva korisnika razlikuje samo po broju slika", () => {
-    const pet = buildOkretKadarPrompt("portret", 5).replace("5 fotografija", "N");
-    const dvadeset = buildOkretKadarPrompt("portret", 20).replace(
-      "20 fotografija",
-      "N"
-    );
+    const pet = buildOkretKadarPrompt(5).replace("5 fotografija", "N");
+    const dvadeset = buildOkretKadarPrompt(20).replace("20 fotografija", "N");
     expect(pet).toBe(dvadeset);
   });
 
   it("kaže modelu koliko slika gleda", () => {
-    expect(buildOkretKadarPrompt("figura", 7)).toContain("7 fotografija");
+    expect(buildOkretKadarPrompt(7)).toContain("7 fotografija");
   });
 
-  it("traži fotografiju, a ne crtež — to je cela razlika od klona", () => {
-    for (const kadar of OKRET_KADROVI) {
-      const prompt = buildOkretKadarPrompt(kadar, MIN_OKRET_SLIKA);
-      expect(prompt).toContain("FOTOGRAFIJU");
-      expect(prompt).toContain("a ne kao");
-      expect(prompt).toContain("3D render");
-    }
+  it("imenuje žanr u prvoj rečenici", () => {
+    // Uska, prepoznatljiva odrednica vredi više od deset prideva iza nje.
+    expect(buildOkretKadarPrompt(10).split("\n")[0]).toContain(
+      "veb-prodavnicu"
+    );
   });
 
-  it("drži belu pozadinu u obe varijante — avatar se slaže na papir", () => {
-    for (const kadar of OKRET_KADROVI) {
-      const prompt = buildOkretKadarPrompt(kadar, MIN_OKRET_SLIKA);
-      expect(prompt).toContain("Čisto bela");
-      expect(prompt).toContain("Bez senke na podu");
-    }
+  it("traži SVETLO SIVU pozadinu, ne belu — v1 je baš na tome pao", () => {
+    const prompt = buildOkretKadarPrompt(MIN_OKRET_SLIKA);
+    expect(prompt).toContain("SVETLO SIVE");
+    expect(prompt).toContain("NIJE\n  čisto beo");
+    // "Izrezan i nalepljen" je ono što bela pozadina proizvede.
+    expect(prompt).toContain("nije izrezan i nalepljen");
   });
 
-  it("razlikuje dva kadra tačno tamo gde treba", () => {
-    const portret = buildOkretKadarPrompt("portret", 10);
-    const figura = buildOkretKadarPrompt("figura", 10);
-
-    expect(portret).toContain("Glava i ramena");
-    expect(figura).toContain("Cela figura");
-    // Odeća postoji samo tamo gde se vidi telo koje je nosi.
-    expect(figura).toContain("patike");
-    expect(portret).not.toContain("patike");
+  it("nosi fotografski rečnik, a ne pridev 'realistično'", () => {
+    const prompt = buildOkretKadarPrompt(MIN_OKRET_SLIKA);
+    expect(prompt).toContain("85mm");
+    expect(prompt).toContain("f/5.6");
+    expect(prompt).toContain("softboksa");
   });
 
-  it("zabranjuje uzimanje odeće i pozadine sa fotografija", () => {
-    const prompt = buildOkretKadarPrompt("portret", MIN_OKRET_SLIKA);
-    expect(prompt).toContain("ŠTA NIKAKO NE UZIMAŠ");
-    expect(prompt).toContain("Odeću, pozadinu, osvetljenje, pozu");
+  it("izričito zabranjuje ono što sliku odaje kao generisanu", () => {
+    const prompt = buildOkretKadarPrompt(MIN_OKRET_SLIKA);
+    expect(prompt).toContain("NE OVAKO");
+    expect(prompt).toContain("retuširanja");
+    expect(prompt).toContain("plitke dubinske oštrine");
+    expect(prompt).toContain("plastične i voštane kože");
+  });
+
+  it("UZIMA odeću sa fotografija — obrnuto od klona", () => {
+    const prompt = buildOkretKadarPrompt(MIN_OKRET_SLIKA);
+    expect(prompt).toContain("UZIMA SE SA FOTOGRAFIJA, NIKAD SE NE IZMIŠLJA");
+    // Rečenica koja nosi celo pravilo: bez nje model bira lepše, ne jasnije.
+    expect(prompt).toContain("najbolje VIDIŠ");
+    expect(prompt).toContain("Ne mešaj komade sa različitih fotografija");
+  });
+
+  it("drži kadar na glavi i ramenima", () => {
+    const prompt = buildOkretKadarPrompt(10);
+    expect(prompt).toContain("Glava i ramena");
+    expect(prompt).toContain("3:4");
+    expect(OKRET_ASPECT).toBe("3:4");
   });
 
   it("pominje referentni portret samo kad ga stvarno ima", () => {
-    expect(buildOkretKadarPrompt("portret", 8, true)).toContain(
-      "POSLEDNJA priložena slika"
-    );
-    expect(buildOkretKadarPrompt("portret", 8, false)).not.toContain(
+    expect(buildOkretKadarPrompt(8, true)).toContain("POSLEDNJA priložena slika");
+    expect(buildOkretKadarPrompt(8, false)).not.toContain(
       "POSLEDNJA priložena slika"
     );
   });
@@ -80,28 +87,46 @@ describe("okret: šablon kadra", () => {
 
 describe("okret: šablon orbita", () => {
   it("pomera kameru, a ne čoveka — inače je svaki kadar druga poza", () => {
-    const prompt = buildOkretVideoPrompt("portret");
+    const prompt = buildOkretVideoPrompt();
     expect(prompt).toContain("Kreće se SAMO kamera");
     expect(prompt).toContain("OSOBA JE POTPUNO NEPOMIČNA");
   });
 
   it("zabranjuje tri načina na koja se niz raspadne", () => {
-    const prompt = buildOkretVideoPrompt("figura");
+    const prompt = buildOkretVideoPrompt();
     expect(prompt).toContain("Ne trepće");
     expect(prompt).toContain("Bez zuma");
     expect(prompt).toContain("Ostaje na istoj visini");
   });
 
-  it("deli traženi luk na dve polovine oko čoveka", () => {
-    expect(buildOkretVideoPrompt("portret", 180)).toContain("90 stepeni");
-    expect(buildOkretVideoPrompt("portret", 180)).toContain("ukupno 180 stepeni");
-    expect(buildOkretVideoPrompt("portret", 120)).toContain("60 stepeni");
+  it("drži istu sivu pozadinu kroz ceo luk", () => {
+    // Bez ovoga model "očisti" pozadinu u belo negde na sredini, pa se pola
+    // frejmova ne slaže sa drugom polovinom.
+    expect(buildOkretVideoPrompt()).toContain("bešavna svetlo siva");
   });
 
-  it("se između dva korisnika ne razlikuje ni po čemu", () => {
-    expect(buildOkretVideoPrompt("portret", 180)).toBe(
-      buildOkretVideoPrompt("portret", 180)
-    );
+  it("deli traženi luk na dve polovine oko čoveka", () => {
+    expect(buildOkretVideoPrompt(180)).toContain("90 stepeni");
+    expect(buildOkretVideoPrompt(180)).toContain("ukupno 180 stepeni");
+    expect(buildOkretVideoPrompt(120)).toContain("60 stepeni");
+  });
+});
+
+describe("okret: negativni prompt", () => {
+  it("NE zabranjuje sivu pozadinu — šablon je traži", () => {
+    // v1 je zabranjivao "grey background" dok je šablon tražio sivu. Te dve
+    // instrukcije su se tukle, i to se plaća celim jednim orbitom.
+    const negativ = okretNegativePrompt();
+    expect(negativ).not.toContain("siva pozadina");
+    expect(negativ).toContain("tamna pozadina");
+    expect(negativ).toContain("obojena pozadina");
+  });
+
+  it("zabranjuje pomeranje osobe i rezove", () => {
+    const negativ = okretNegativePrompt();
+    expect(negativ).toContain("osoba se okreće");
+    expect(negativ).toContain("trepće");
+    expect(negativ).toContain("rez");
   });
 });
 
@@ -117,11 +142,6 @@ describe("okret: brojevi", () => {
     const mnogo = proveriBrojSlika(23);
     expect(mnogo.ok).toBe(false);
     if (!mnogo.ok) expect(mnogo.error_sr).toContain("Izbaci 3");
-  });
-
-  it("daje portretu 3:4, a figuri 9:16", () => {
-    expect(okretAspect("portret")).toBe("3:4");
-    expect(okretAspect("figura")).toBe("9:16");
   });
 });
 

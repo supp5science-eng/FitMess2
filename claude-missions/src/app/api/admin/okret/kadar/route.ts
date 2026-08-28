@@ -9,10 +9,8 @@ import {
 import { requireAdminApi } from "@/lib/auth/admin";
 import {
   buildOkretKadarPrompt,
-  okretAspect,
-  OKRET_KADROVI,
+  OKRET_ASPECT,
   proveriBrojSlika,
-  type OkretKadar,
 } from "@/lib/avatar/okret-prompt";
 
 /**
@@ -58,15 +56,6 @@ export async function POST(request: Request) {
       { status: 400 }
     );
   }
-
-  const kadarRaw = String(formData.get("kadar") ?? "portret");
-  if (!OKRET_KADROVI.includes(kadarRaw as OkretKadar)) {
-    return NextResponse.json(
-      { ok: false, error_sr: `Nepoznat kadar: ${kadarRaw}` },
-      { status: 400 }
-    );
-  }
-  const kadar = kadarRaw as OkretKadar;
 
   const files = formData
     .getAll("slike")
@@ -128,14 +117,14 @@ export async function POST(request: Request) {
   }
 
   const prompt =
-    prepisan || buildOkretKadarPrompt(kadar, photos.length, portret !== null);
+    prepisan || buildOkretKadarPrompt(photos.length, portret !== null);
 
   try {
     const slika = await generateAvatarClone(
       portret ? [...photos, portret] : photos,
       prompt,
       {
-        aspectRatio: okretAspect(kadar),
+        aspectRatio: OKRET_ASPECT,
         // Niže nego kod crteža. Ovde se ne traži slika sa životom u njoj nego
         // verna fotografija lica koje već postoji, a svaki stepen slobode je
         // stepen u kom nos odluta.

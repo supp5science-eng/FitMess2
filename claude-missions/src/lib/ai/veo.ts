@@ -143,7 +143,10 @@ export async function listVideoModels(): Promise<VideoModelRow[]> {
     .filter(
       (model) =>
         model.methods.some((method) => /predictLongRunning/i.test(method)) ||
-        /veo|video/i.test(model.name)
+        // Omni je video model ali se ne zove ni "veo" ni "video" i ne ide kroz
+        // predictLongRunning -- bez njega u filteru lista bi tvrdila da ga na
+        // ključu nema.
+        /veo|video|omni/i.test(model.name)
     );
 }
 

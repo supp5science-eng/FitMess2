@@ -10,7 +10,6 @@ import {
   MIN_OKRET_SLIKA,
   okretVremenaFrejmova,
   proveriBrojSlika,
-  type OkretKadar,
 } from "@/lib/avatar/okret-prompt";
 
 /**
@@ -47,7 +46,6 @@ type Faza =
 
 export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
   const [slike, setSlike] = useState<Slika[]>([]);
-  const [kadar, setKadar] = useState<OkretKadar>("portret");
   const [saPortretom, setSaPortretom] = useState(true);
 
   const [promptKadra, setPromptKadra] = useState("");
@@ -121,7 +119,6 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
 
     try {
       const form = new FormData();
-      form.set("kadar", kadar);
       form.set("portret", saPortretom ? "1" : "0");
       if (promptKadra.trim()) form.set("prompt", promptKadra.trim());
       for (const item of slike) {
@@ -172,7 +169,6 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           korak: "start",
-          kadar,
           slika: slikaKadra.b64,
           mime: slikaKadra.mime,
           prompt: promptVidea.trim() || undefined,
@@ -329,31 +325,10 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
       {/* ── Kadar ───────────────────────────────────────────────── */}
       <section className="flex flex-col gap-3">
         <h2 className="text-base font-semibold text-foreground">2. Kadar</h2>
-        <div className="grid grid-cols-2 gap-2">
-          {(
-            [
-              ["portret", "Glava i ramena", "kao referenca, 3:4"],
-              ["figura", "Cela figura", "nosi odeću i telo, 9:16"],
-            ] as const
-          ).map(([value, naslov, opis]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setKadar(value)}
-              className={`rounded-xl border px-3 py-3 text-left ${
-                kadar === value
-                  ? "border-primary bg-primary/5"
-                  : "border-border bg-background"
-              }`}
-            >
-              <span className="block text-sm font-medium text-foreground">
-                {naslov}
-              </span>
-              <span className="block text-xs text-muted-foreground">{opis}</span>
-            </button>
-          ))}
-        </div>
-
+        <p className="text-xs text-muted-foreground">
+          Glava i ramena, bešavna svetlo siva pozadina. Odlučeno 28.08. — nema
+          varijanti.
+        </p>
         <label className="flex items-center gap-2 text-sm text-foreground">
           <input
             type="checkbox"
@@ -368,7 +343,7 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
           vrednost={promptKadra}
           naVrednost={setPromptKadra}
           podrazumevano={() =>
-            buildOkretKadarPrompt(kadar, slike.length || 12, saPortretom)
+            buildOkretKadarPrompt(slike.length || 12, saPortretom)
           }
         />
 
@@ -429,7 +404,7 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
           naslov="Šablon za orbit"
           vrednost={promptVidea}
           naVrednost={setPromptVidea}
-          podrazumevano={() => buildOkretVideoPrompt(kadar, stepeni)}
+          podrazumevano={() => buildOkretVideoPrompt(stepeni)}
         />
 
         <button

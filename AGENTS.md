@@ -79,6 +79,11 @@ live in `claude-missions/docs/`:
   `src/lib/avatar/`, `src/app/klon`, `src/app/api/klon`, or the klon gate in
   `route-protection.ts`.** It carries what is still unfinished, the switch that
   turns the feature on, and six traps already paid for once.
+- [`docs/okret.md`](./claude-missions/docs/okret.md) — the okret (photos in, a
+  turnable avatar out). **Read it before touching `src/lib/avatar/okret-prompt.ts`,
+  `src/lib/ai/veo.ts`, `src/app/admin/okret`, or `src/app/api/admin/okret`.**
+  Carries where the work stopped (the video call), eight traps already paid for
+  once, and the decisions that are settled so they are not re-litigated.
 - [`docs/naplata.md`](./claude-missions/docs/naplata.md) — billing state and the
   two mistakes not to repeat.
 - [`docs/prijava-sa-google.md`](./claude-missions/docs/prijava-sa-google.md),

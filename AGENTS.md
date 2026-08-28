@@ -84,6 +84,13 @@ live in `claude-missions/docs/`:
   `src/lib/ai/veo.ts`, `src/app/admin/okret`, or `src/app/api/admin/okret`.**
   Carries where the work stopped (the video call), eight traps already paid for
   once, and the decisions that are settled so they are not re-litigated.
+- [`docs/pocetna-avatar.md`](./claude-missions/docs/pocetna-avatar.md) — the
+  PLAN for putting the okret avatar on the `/danas` home screen. **Read it
+  before adding anything to `src/app/(app)/danas/layout.tsx`, the
+  `IntakePager`, or before starting `src/lib/avatar/okret.ts`.** Nothing in it
+  is built yet; it carries where the avatar goes, the three walls on that
+  screen (a third horizontal gesture, the per-day remount, a photograph in an
+  engraved theme) and the decisions that are settled.
 - [`docs/naplata.md`](./claude-missions/docs/naplata.md) — billing state and the
   two mistakes not to repeat.
 - [`docs/prijava-sa-google.md`](./claude-missions/docs/prijava-sa-google.md),

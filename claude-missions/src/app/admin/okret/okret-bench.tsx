@@ -74,6 +74,7 @@ export function OkretBench({ videoModeli }: { videoModeli: VideoModelRow[] }) {
   // Dva snimka, po jedan na svaku stranu, oba sa ISTE fotografije.
   const [snimci, setSnimci] = useState<Partial<Record<OkretSmer, string>>>({});
   const [frejmovi, setFrejmovi] = useState<string[]>([]);
+  const [odbaceni, setOdbaceni] = useState<string[]>([]);
 
   const radi = faza.vrsta !== "mirno";
 
@@ -196,6 +197,10 @@ export function OkretBench({ videoModeli }: { videoModeli: VideoModelRow[] }) {
         return;
       }
       setPromptVidea(pokrenut.prompt ?? "");
+      // Ako je Google odbio neke parametre, kod je sisao niz lestvicu i posao
+      // je ipak pokrenut -- ali sa manje kontrole. Kaze se odmah, jer utice na
+      // to kako se rezultat gleda.
+      setOdbaceni(pokrenut.odbaceniParametri ?? []);
 
       // Petlja je OVDE, a ne na serveru: Veo ume da radi minutima, a serverless
       // funkcija bi se presekla i to bi izgledalo kao da model ne radi.
@@ -463,6 +468,19 @@ export function OkretBench({ videoModeli }: { videoModeli: VideoModelRow[] }) {
         </div>
 
         {faza.vrsta === "orbit" && <Sat key={faza.smer} />}
+
+        {odbaceni.length > 0 && (
+          <div className="rounded-xl border border-border bg-muted/40 p-3">
+            <p className="text-xs text-foreground">
+              Google nije prihvatio ove parametre, pa su izbačeni:{" "}
+              <code className="text-[11px]">{odbaceni.join(", ")}</code>
+            </p>
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Snimak je ipak pokrenut. Ako je otpao negativePrompt, očekuj
+              slabiju kontrolu nad pokretom — pošalji mi ovaj spisak.
+            </p>
+          </div>
+        )}
 
         {OKRET_SMEROVI.filter((smer) => snimci[smer]).map((smer) => (
           <div key={smer} className="flex flex-col gap-1">

@@ -149,7 +149,7 @@ export async function POST(request: Request) {
     String(telo.prompt ?? "").trim() || buildOkretVideoPrompt(smer, stepeni);
 
   try {
-    const operacija = await startOrbitVideo({
+    const pokrenut = await startOrbitVideo({
       slikaBase64: telo.slika,
       slikaMime: telo.mime || "image/png",
       prompt,
@@ -159,7 +159,15 @@ export async function POST(request: Request) {
       model: telo.model,
     });
 
-    return NextResponse.json({ ok: true, operacija, prompt });
+    return NextResponse.json({
+      ok: true,
+      operacija: pokrenut.operacija,
+      // Nazad ide i sta je OTPALO iz zahteva. Ako je otpao negativePrompt,
+      // snimak ce biti losiji -- i to treba da se zna PRE nego sto se rezultat
+      // oceni, a ne da se tiho promeni ponasanje.
+      odbaceniParametri: pokrenut.odbaceniParametri,
+      prompt,
+    });
   } catch (err) {
     console.error("[okret] start pao:", err);
     return NextResponse.json(

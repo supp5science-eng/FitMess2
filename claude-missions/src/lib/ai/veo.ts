@@ -204,12 +204,55 @@ export type OrbitOptions = {
  * prima i tiho odbija zahtev. Nije isti oblik tela i ne sme se prepisati iz
  * `gemini.ts`.
  */
-export async function startOrbitVideo(options: OrbitOptions): Promise<string> {
+export type OrbitStart = {
+  /** Ime posla, za `orbitStatus`. */
+  operacija: string;
+  /**
+   * Koji su parametri STVARNO prošli. Prazno znači da je prošao pun zahtev.
+   *
+   * Vraća se nazad da bi klupa mogla da pokaže šta je odbačeno umesto da se
+   * tiho promeni ponašanje -- ako je otpao `negativePrompt`, snimak će biti
+   * lošiji i to treba da se zna PRE nego što se rezultat oceni.
+   */
+  odbaceniParametri: string[];
+};
+
+/**
+ * Zakazuje orbit i vraća IME POSLA -- ne čeka da se završi.
+ *
+ * ⚠️ ZAŠTO SE NE ČEKA U ISTOM ZAHTEVU. Veo ume da radi i po nekoliko minuta.
+ * Serverless funkcija se preseca mnogo pre toga, a presečen zahtev izgleda
+ * korisniku identično kao model koji ne radi -- ekran zauvek stoji na "pravimo",
+ * bez ijednog reda u logu koji na to pokazuje. Zato: jedan kratak zahtev
+ * zakaže posao, pregledač pita `orbitStatus` na svakih nekoliko sekundi, i
+ * čekanje ne troši nijednu serverless sekundu.
+ *
+ * ⚠️ SLIKA IDE KAO `bytesBase64Encoded`. Ovo je druga stvar nego svuda drugde u
+ * aplikaciji: `generateContent` prima slike kao `inline_data`, Veo ih tako NE
+ * prima i tiho odbija zahtev. Nije isti oblik tela i ne sme se prepisati iz
+ * `gemini.ts`.
+ *
+ * ⚠️ PARAMETRI SE SKIDAJU U KORACIMA, i to je namerno.
+ *
+ * `prompt` i `image` su jedino što sigurno postoji. Sve ostalo -- `aspectRatio`,
+ * `resolution`, `negativePrompt`, `generateAudio`, `personGeneration` -- zavisi
+ * od modela i od verzije API-ja, i JEDAN nepodržan parametar obara CEO poziv sa
+ * `400 INVALID_ARGUMENT`. Taj 400 ne kaže koji je kriv, pa se bez ovoga traži
+ * ručno, po jedan po jedan, uz plaćanje svakog pokušaja.
+ *
+ * Zato se ide odozgo nadole: pun zahtev, pa bez ukrasa, pa goli minimum. Prvi
+ * koji prođe je odgovor, i vraća se spisak onoga što je otpalo. Isti obrazac
+ * koji `postToModel` u `gemini.ts` već koristi za ključ -- probaj, pa na TAČNO
+ * TU grešku probaj drugačije.
+ */
+export async function startOrbitVideo(
+  options: OrbitOptions
+): Promise<OrbitStart> {
   const model = options.model || process.env.GEMINI_VIDEO_MODEL || VIDEO_MODEL;
 
   // Uhvati pogrešan protokol PRE nego što se potroši poziv. Bez ovoga Google
   // vrati `404 ... is not found for API version v1beta`, što svakog ko to
-  // pročita ubedi da model ne postoji na kljucu -- a postoji, samo govori
+  // pročita ubedi da model ne postoji na ključu -- a postoji, samo govori
   // drugim jezikom (vidi `VideoModelRow.radiOvde`).
   if (/omni/i.test(model)) {
     throw new GeminiError(
@@ -220,46 +263,102 @@ export async function startOrbitVideo(options: OrbitOptions): Promise<string> {
     );
   }
 
-  const json = (await expectOk(
-    await googleFetch(
+  const instances = [
+    {
+      prompt: options.prompt,
+      image: {
+        bytesBase64Encoded: options.slikaBase64,
+        mimeType: options.slikaMime,
+      },
+    },
+  ];
+
+  /** Lestvica: od punog zahteva do golog minimuma. */
+  const lestvica: { parametri: Record<string, unknown>; odbaceni: string[] }[] = [
+    {
+      parametri: {
+        aspectRatio: options.aspectRatio,
+        resolution: options.resolution ?? "720p",
+        ...(options.negativePrompt
+          ? { negativePrompt: options.negativePrompt }
+          : {}),
+        generateAudio: false,
+        personGeneration: "allow_adult",
+      },
+      odbaceni: [],
+    },
+    {
+      // Najsumnjivija tri prva ispadaju: `personGeneration` je Vertex-ov pojam
+      // koji razvojni API ne mora da zna, `generateAudio` se zove razlicito
+      // izmedju verzija, a `resolution` neki modeli uopste ne primaju.
+      parametri: {
+        aspectRatio: options.aspectRatio,
+        ...(options.negativePrompt
+          ? { negativePrompt: options.negativePrompt }
+          : {}),
+      },
+      odbaceni: ["resolution", "generateAudio", "personGeneration"],
+    },
+    {
+      parametri: { aspectRatio: options.aspectRatio },
+      odbaceni: [
+        "resolution",
+        "generateAudio",
+        "personGeneration",
+        "negativePrompt",
+      ],
+    },
+    {
+      // Goli minimum. Ako ni ovo ne prodje, problem nije u parametrima.
+      parametri: {},
+      odbaceni: [
+        "aspectRatio",
+        "resolution",
+        "generateAudio",
+        "personGeneration",
+        "negativePrompt",
+      ],
+    },
+  ];
+
+  let poslednja: GeminiError | null = null;
+
+  for (const stepenik of lestvica) {
+    const response = await googleFetch(
       `models/${model}:predictLongRunning`,
       {
         method: "POST",
-        body: {
-          instances: [
-            {
-              prompt: options.prompt,
-              image: {
-                bytesBase64Encoded: options.slikaBase64,
-                mimeType: options.slikaMime,
-              },
-            },
-          ],
-          parameters: {
-            aspectRatio: options.aspectRatio,
-            resolution: options.resolution ?? "720p",
-            ...(options.negativePrompt
-              ? { negativePrompt: options.negativePrompt }
-              : {}),
-            // Nema govora, nema muzike, nema ambijenta. Zvuk se ovde ne koristi
-            // ni za šta -- iz videa se seku slike -- a njegovo generisanje se
-            // naplaćuje i produžava posao.
-            generateAudio: false,
-            // Bez ovoga model ume da odbije da nacrta odraslu osobu sa
-            // priložene fotografije, što se javlja kao prazan rezultat.
-            personGeneration: "allow_adult",
-          },
-        },
+        body: { instances, parameters: stepenik.parametri },
       },
       REQUEST_TIMEOUT_MS
-    ),
-    "predictLongRunning"
-  )) as { name?: string };
+    );
 
-  if (!json.name) {
-    throw new GeminiError("Veo nije vratio ime posla (operation.name)");
+    if (response.ok) {
+      const json = (await response.json()) as { name?: string };
+      if (!json.name) {
+        throw new GeminiError("Veo nije vratio ime posla (operation.name)");
+      }
+      if (stepenik.odbaceni.length > 0) {
+        console.info(
+          `[veo] prošlo bez parametara: ${stepenik.odbaceni.join(", ")}`
+        );
+      }
+      return { operacija: json.name, odbaceniParametri: stepenik.odbaceni };
+    }
+
+    const detalj = await response.text().catch(() => "");
+    poslednja = new GeminiError(
+      `Veo predictLongRunning ${response.status}: ${detalj.slice(0, 400)}`,
+      response.status
+    );
+
+    // Silazi niz lestvicu SAMO na 400. Svaki drugi status (404 nema modela,
+    // 403 nema pristupa, 429 kvota) se ponavljanjem nece popraviti -- samo bi
+    // cetiri puta potrosio isti neuspeh.
+    if (response.status !== 400) throw poslednja;
   }
-  return json.name;
+
+  throw poslednja ?? new GeminiError("Veo nije odgovorio");
 }
 
 export type OrbitStatus =

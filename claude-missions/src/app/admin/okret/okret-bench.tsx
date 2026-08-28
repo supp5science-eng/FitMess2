@@ -8,8 +8,12 @@ import {
   buildOkretVideoPrompt,
   MAX_OKRET_SLIKA,
   MIN_OKRET_SLIKA,
+  OKRET_FREJMOVA_PO_SNIMKU,
+  OKRET_SMEROVI,
   okretVremenaFrejmova,
   proveriBrojSlika,
+  spojiOkret,
+  type OkretSmer,
 } from "@/lib/avatar/okret-prompt";
 
 /**
@@ -33,15 +37,21 @@ import {
 
 const MAX_DIM = 768;
 const KVALITET = 0.85;
-/** Koliko frejmova se seče. Ne utiče na cenu -- video je već plaćen. */
-const PODRAZUMEVANO_FREJMOVA = 19;
+/** Po snimku. Dva snimka + izvorna fotografija = 19 kadrova na 180 stepeni. */
+const PODRAZUMEVANO_FREJMOVA = OKRET_FREJMOVA_PO_SNIMKU;
+
+/** Naslovi smerova, kako stoje na dugmadima. */
+const SMEROVI: Record<OkretSmer, string> = {
+  "nos-levo": "Nos ulevo",
+  "nos-desno": "Nos udesno",
+};
 
 type Slika = { id: string; file: File; url: string };
 
 type Faza =
   | { vrsta: "mirno" }
   | { vrsta: "kadar" }
-  | { vrsta: "orbit"; od: number }
+  | { vrsta: "orbit"; smer: OkretSmer }
   | { vrsta: "secem" };
 
 export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
@@ -50,7 +60,7 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
 
   const [promptKadra, setPromptKadra] = useState("");
   const [promptVidea, setPromptVidea] = useState("");
-  const [stepeni, setStepeni] = useState(180);
+  const [stepeni, setStepeni] = useState(90);
   const [rezolucija, setRezolucija] = useState<"720p" | "1080p">("720p");
   const [model, setModel] = useState("");
   const [brojFrejmova, setBrojFrejmova] = useState(PODRAZUMEVANO_FREJMOVA);
@@ -60,7 +70,8 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
   const [detalj, setDetalj] = useState<string | null>(null);
 
   const [slikaKadra, setSlikaKadra] = useState<{ b64: string; mime: string } | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  // Dva snimka, po jedan na svaku stranu, oba sa ISTE fotografije.
+  const [snimci, setSnimci] = useState<Partial<Record<OkretSmer, string>>>({});
   const [frejmovi, setFrejmovi] = useState<string[]>([]);
 
   const radi = faza.vrsta !== "mirno";
@@ -114,7 +125,7 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
     setFaza({ vrsta: "kadar" });
     // Novi kadar poništava sve što je iz starog izvedeno -- inače se lako gleda
     // orbit napravljen od prethodne slike i misli da je od ove.
-    setVideoUrl(null);
+    setSnimci({});
     setFrejmovi([]);
 
     try {
@@ -153,15 +164,13 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
   /* Korak 2 -- orbit (zakaži, pa pitaj)                               */
   /* ---------------------------------------------------------------- */
 
-  async function napraviOrbit() {
+  async function napraviOrbit(smer: OkretSmer) {
     if (!slikaKadra) return;
 
     setGreska(null);
     setDetalj(null);
     setFrejmovi([]);
-    setVideoUrl(null);
-    const pocetak = Date.now();
-    setFaza({ vrsta: "orbit", od: pocetak });
+    setFaza({ vrsta: "orbit", smer });
 
     try {
       const start = await fetch("/api/admin/okret/orbit", {
@@ -169,6 +178,7 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           korak: "start",
+          smer,
           slika: slikaKadra.b64,
           mime: slikaKadra.mime,
           prompt: promptVidea.trim() || undefined,
@@ -207,7 +217,7 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
         if (!json.gotovo) continue;
 
         const blob = base64UBlob(json.video, json.mime ?? "video/mp4");
-        setVideoUrl(URL.createObjectURL(blob));
+        setSnimci((prev) => ({ ...prev, [smer]: URL.createObjectURL(blob) }));
         setFaza({ vrsta: "mirno" });
         return;
       }
@@ -226,20 +236,35 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
   /* ---------------------------------------------------------------- */
 
   const iseci = useCallback(async () => {
-    if (!videoUrl) return;
+    if (!slikaKadra) return;
     setFaza({ vrsta: "secem" });
     setGreska(null);
 
     try {
-      const isečeni = await isecivFrejmove(videoUrl, brojFrejmova);
-      setFrejmovi(isečeni);
+      // Nulti frejm svakog snimka JESTE izvorna fotografija, pa se izostavlja
+      // (`preskociPrvi`) -- inače bi se ista slika pojavila tri puta zaredom u
+      // sredini i skrol bi tu za tren "zastao".
+      const levo = snimci["nos-levo"]
+        ? await isecivFrejmove(snimci["nos-levo"], brojFrejmova, true)
+        : [];
+      const desno = snimci["nos-desno"]
+        ? await isecivFrejmove(snimci["nos-desno"], brojFrejmova, true)
+        : [];
+
+      setFrejmovi(
+        spojiOkret(
+          `data:${slikaKadra.mime};base64,${slikaKadra.b64}`,
+          levo,
+          desno
+        )
+      );
     } catch (err) {
       setGreska("Sečenje frejmova nije uspelo.");
       setDetalj(String(err).slice(0, 400));
     } finally {
       setFaza({ vrsta: "mirno" });
     }
-  }, [videoUrl, brojFrejmova]);
+  }, [snimci, slikaKadra, brojFrejmova]);
 
   /* ---------------------------------------------------------------- */
 
@@ -372,7 +397,7 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
 
         <div className="grid grid-cols-2 gap-3">
           <label className="text-sm text-foreground">
-            Luk (stepeni)
+            Luk po snimku
             <input
               type="number"
               min={60}
@@ -396,46 +421,63 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
           </label>
         </div>
         <p className="text-xs text-muted-foreground">
-          180° je profil do profila, kao referenca. Preko toga model mora da
-          izmisli potiljak — i izmisliće drugu frizuru.
+          90° po snimku. Dva snimka sa ISTE fotografije daju pun luk od profila
+          do profila, a prava slika ostaje u sredini niza — najdalji kadar je
+          onda 90° od nje, a ne 180°.
         </p>
 
         <Sablon
           naslov="Šablon za orbit"
           vrednost={promptVidea}
           naVrednost={setPromptVidea}
-          podrazumevano={() => buildOkretVideoPrompt(stepeni)}
+          podrazumevano={() => buildOkretVideoPrompt("nos-levo", stepeni)}
         />
 
-        <button
-          type="button"
-          onClick={napraviOrbit}
-          disabled={radi || !slikaKadra}
-          className="rounded-lg bg-primary px-4 py-3 text-sm font-medium text-primary-foreground disabled:opacity-40"
-        >
-          {faza.vrsta === "orbit" ? "Pravim orbit…" : "Napravi orbit"}
-        </button>
+        <div className="grid grid-cols-2 gap-2">
+          {OKRET_SMEROVI.map((smer) => (
+            <button
+              key={smer}
+              type="button"
+              onClick={() => napraviOrbit(smer)}
+              disabled={radi || !slikaKadra}
+              className={`rounded-lg px-3 py-3 text-sm font-medium disabled:opacity-40 ${
+                snimci[smer]
+                  ? "border border-border bg-background text-foreground"
+                  : "bg-primary text-primary-foreground"
+              }`}
+            >
+              {faza.vrsta === "orbit" && faza.smer === smer
+                ? "Pravim…"
+                : snimci[smer]
+                  ? `${SMEROVI[smer]} ✓`
+                  : SMEROVI[smer]}
+            </button>
+          ))}
+        </div>
 
-        {faza.vrsta === "orbit" && <Sat od={faza.od} />}
+        {faza.vrsta === "orbit" && <Sat key={faza.smer} />}
 
-        {videoUrl && (
-          <video
-            src={videoUrl}
-            controls
-            playsInline
-            className="w-full rounded-xl border border-border"
-          />
-        )}
+        {OKRET_SMEROVI.filter((smer) => snimci[smer]).map((smer) => (
+          <div key={smer} className="flex flex-col gap-1">
+            <span className="text-xs text-muted-foreground">{SMEROVI[smer]}</span>
+            <video
+              src={snimci[smer]}
+              controls
+              playsInline
+              className="w-full rounded-xl border border-border"
+            />
+          </div>
+        ))}
       </section>
 
       {/* ── Frejmovi ────────────────────────────────────────────── */}
-      {videoUrl && (
+      {Object.keys(snimci).length > 0 && (
         <section className="flex flex-col gap-3">
           <h2 className="text-base font-semibold text-foreground">
             4. Frejmovi
           </h2>
           <label className="text-sm text-foreground">
-            Koliko kadrova
+            Koliko kadrova PO SNIMKU
             <input
               type="number"
               min={5}
@@ -446,7 +488,9 @@ export function OkretBench({ videoModeli }: { videoModeli: string[] }) {
             />
           </label>
           <p className="text-xs text-muted-foreground">
-            Seče se iz već plaćenog videa — broj kadrova ne utiče na cenu.
+            Dva snimka po {brojFrejmova} + izvorni kadar u sredini ={" "}
+            {brojFrejmova * 2 + 1} kadrova na 180°. Seče se iz već plaćenih
+            snimaka — broj kadrova ne utiče na cenu.
           </p>
           <button
             type="button"
@@ -623,15 +667,18 @@ function Sablon({
 /**
  * Koliko traje. Bez ovoga se ne zna da li posao radi ili je zamro.
  *
- * Broji se od `od` naviše umesto da se pamti `Date.now()` -- render mora da
- * bude čist, a i prvi kadar je onda tačno 0:00 umesto onoga što sat zatekne.
+ * Broji od svog montiranja naviše, bez ijednog čitanja časovnika -- ni u telu
+ * komponente ni u efektu. Pozivalac ga montira ispočetka za svaki snimak
+ * (`key={smer}`), pa je početak uvek tačno 0:00. Sekunda može da odluta ako
+ * pregledač uspori tab u pozadini; za pokazivač napretka to je prihvatljivo, a
+ * render ostaje čist.
  */
-function Sat({ od }: { od: number }) {
+function Sat() {
   const [sek, setSek] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setSek(Math.floor((Date.now() - od) / 1000)), 1000);
+    const id = setInterval(() => setSek((prev) => prev + 1), 1000);
     return () => clearInterval(id);
-  }, [od]);
+  }, []);
   return (
     <p className="text-xs text-muted-foreground">
       Traje {Math.floor(sek / 60)}:{String(sek % 60).padStart(2, "0")} — obično
@@ -659,7 +706,14 @@ function base64UBlob(base64: string, mime: string): Blob {
  * dodele daje prethodni kadar -- i to izgleda kao da model pravi duplikate.
  * Zato se čeka `seeked`, jedan po jedan.
  */
-async function isecivFrejmove(url: string, broj: number): Promise<string[]> {
+async function isecivFrejmove(
+  url: string,
+  broj: number,
+  /** Preskoči nulti frejm. Kod slike-u-video on JESTE ulazna fotografija, a ta
+   *  fotografija u spojenom nizu već stoji u sredini (`spojiOkret`) -- bez ovoga
+   *  bi se ista slika pojavila tri puta zaredom i skrol bi tu za tren zastao. */
+  preskociPrvi = false
+): Promise<string[]> {
   const video = document.createElement("video");
   video.src = url;
   video.muted = true;
@@ -677,7 +731,12 @@ async function isecivFrejmove(url: string, broj: number): Promise<string[]> {
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Nema canvas konteksta");
 
-  const vremena = okretVremenaFrejmova(video.duration, broj);
+  // Kad se nulti frejm preskače, seče se broj+1 pa se prvi odbaci -- tako
+  // preostali kadrovi ostaju ravnomerno razmaknuti po luku.
+  const vremena = okretVremenaFrejmova(
+    video.duration,
+    preskociPrvi ? broj + 1 : broj
+  ).slice(preskociPrvi ? 1 : 0);
   const frejmovi: string[] = [];
 
   for (const t of vremena) {

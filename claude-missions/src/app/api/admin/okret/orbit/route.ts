@@ -10,7 +10,9 @@ import {
 import {
   buildOkretVideoPrompt,
   OKRET_ASPECT,
+  OKRET_SMEROVI,
   okretNegativePrompt,
+  type OkretSmer,
 } from "@/lib/avatar/okret-prompt";
 
 /**
@@ -37,6 +39,7 @@ export const maxDuration = 300;
 
 type Telo = {
   korak?: "start" | "status";
+  smer?: string;
   slika?: string;
   mime?: string;
   prompt?: string;
@@ -128,9 +131,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const stepeni = Number.isFinite(telo.stepeni) ? Number(telo.stepeni) : 180;
+  // Smer je obavezan: jedan snimak pokriva jednu stranu. Dva snimka sa iste
+  // fotografije daju pun luk (vidi `spojiOkret`), a jedan snimak koji pokusa
+  // oba ode do profila pa se VRATI -- izmereno 28.08. na snimku od 10s, od
+  // kojih je upotrebljivo bilo oko 3,5.
+  const smerRaw = String(telo.smer ?? "nos-levo");
+  if (!OKRET_SMEROVI.includes(smerRaw as OkretSmer)) {
+    return NextResponse.json(
+      { ok: false, error_sr: `Nepoznat smer: ${smerRaw}` },
+      { status: 400 }
+    );
+  }
+  const smer = smerRaw as OkretSmer;
+
+  const stepeni = Number.isFinite(telo.stepeni) ? Number(telo.stepeni) : undefined;
   const prompt =
-    String(telo.prompt ?? "").trim() || buildOkretVideoPrompt(stepeni);
+    String(telo.prompt ?? "").trim() || buildOkretVideoPrompt(smer, stepeni);
 
   try {
     const operacija = await startOrbitVideo({

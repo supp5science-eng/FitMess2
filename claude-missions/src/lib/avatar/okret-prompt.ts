@@ -237,7 +237,45 @@ export function buildOkretKadarPrompt(
 }
 
 /**
- * Instrukcija za orbit video -- najosetljiviji tekst u celoj datoteci.
+ * Kuda se glava okrene do kraja snimka.
+ *
+ * Imenovano po TOME GDE NOS ZAVRŠI U KADRU, a ne po „levo/desno" osobe, i to
+ * namerno: „okrene se ulevo" znači jedno gledaocu a drugo osobi, i ta zabuna
+ * košta jedan ceo snimak pre nego što se primeti. Gde nos pokazuje u slici je
+ * jednoznačno i proverljivo golim okom.
+ */
+export type OkretSmer = "nos-levo" | "nos-desno";
+
+export const OKRET_SMEROVI: readonly OkretSmer[] = ["nos-levo", "nos-desno"];
+
+/**
+ * DVA SNIMKA, NE JEDAN. Nađeno na snimku od 28.08.2026.
+ *
+ * Prvi pokušaj je tražio luk „od 45° levo do 45° desno" u jednom snimku. To je
+ * bilo nemoguće, i greška je bila u instrukciji a ne u modelu: KOD SLIKE-U-VIDEO
+ * ULAZNA SLIKA JE NULTI FREJM. Kamera fizički ne može da krene sa -45° kad
+ * snimak počinje tačno tamo gde je fotografija. Model je tu protivrečnost
+ * razrešio jedino kako je mogao -- otišao do profila pa se VRATIO na frontalu,
+ * i ostatak snimka prostajao.
+ *
+ * Merenje na tom snimku: 10 sekundi ukupno, od čega ~3,5s pravog okreta
+ * (0° -> ~90°), ~2s povratka i ~4,5s stajanja. Upotrebljivo je bilo oko
+ * trećine, i to samo na JEDNU stranu.
+ *
+ * Zato dva snimka, oba SA ISTE fotografije, svaki na svoju stranu po 90°:
+ *
+ *     [nos-levo, obrnut]  +  fotografija  +  [nos-desno]
+ *          9 kadrova            1 kadar        9 kadrova   = 19 kadrova, 180°
+ *
+ * Dve dobiti, i druga je veća nego što izgleda. Prva -- ništa se ne troši na
+ * povratak, pa je ceo snimak upotrebljiv. Druga -- PRAVA FOTOGRAFIJA JE U
+ * SREDINI NIZA, a ne na kraju. Greška identiteta raste sa udaljenošću od
+ * sidra, pa je najgori kadar sada na 90° od stvarne slike umesto na 180°.
+ */
+export const OKRET_LUK_PO_SNIMKU = 90;
+
+/**
+ * Instrukcija za jedan orbit snimak -- najosetljiviji tekst u celoj datoteci.
  *
  * Tri stvari se ponavljaju do dosade, jer su tri načina na koja se okret
  * raspadne, a svaki izgleda kao da model „ne valja":
@@ -250,21 +288,32 @@ export function buildOkretKadarPrompt(
  * 3. NEMA ZUMA I NEMA POMERANJA VISINE. Ako se rastojanje menja, glava raste i
  *    opada dok prevlačiš prst, i ceo utisak 3D-a nestaje.
  *
+ * Uz njih, jedna nova i najvažnija: JEDAN SMER, BEZ POVRATKA. Rečenica
+ * „ne vraćaj se" stoji izričito, jer je povratak ono što je model uradio sam od
+ * sebe kad mu je prvi put dat protivrečan luk.
+ *
  * Pozadina se izričito drži SVETLO SIVOM kroz ceo snimak, ista kao na ulaznom
  * kadru. Bez toga video model rado „očisti" pozadinu u belo negde na sredini
  * luka, i onda se pola frejmova ne slaže sa drugom polovinom.
- *
- * `stepeni` je luk koji kamera pređe. Podrazumevano 180 (profil do profila,
- * tačno kao referenca) -- potiljak se namerno ne traži, jer ga model mora da
- * izmisli i izmisliće drugu frizuru nego što je napred.
  */
-export function buildOkretVideoPrompt(stepeni = 180): string {
-  const pola = Math.round(stepeni / 2);
+export function buildOkretVideoPrompt(
+  smer: OkretSmer,
+  stepeni = OKRET_LUK_PO_SNIMKU
+): string {
+  const ivica = smer === "nos-levo" ? "LEVOJ" : "DESNOJ";
 
   return [
-    `Kamera polako kruži oko osobe sa priložene slike, u jednom neprekidnom,`,
-    `ravnomernom pokretu, od ${pola} stepeni sa jedne strane do ${pola} stepeni`,
-    `sa druge -- ukupno ${stepeni} stepeni. Kreće se SAMO kamera.`,
+    `Studijski portret na bešavnoj svetlo sivoj pozadini. Kamera polako kruži`,
+    `oko osobe sa priložene slike.`,
+    ``,
+    `Snimak POČINJE tačno na priloženoj fotografiji -- frontalno, lice u`,
+    `objektiv. Odatle kamera kreće u JEDNOM SMERU i ide ${stepeni} stepeni, do`,
+    `punog profila u kom nos pokazuje ka ${ivica} ivici kadra.`,
+    ``,
+    `SAMO JEDAN SMER, BEZ POVRATKA:`,
+    `- Kamera se ni u jednom trenutku ne vraća ka polaznoj tački.`,
+    `- Ne staje, ne usporava i ne stoji na kraju. Snimak se završava u profilu.`,
+    `- Ceo snimak je jedan neprekidan luk, od prvog do poslednjeg kadra.`,
     ``,
     `OSOBA JE POTPUNO NEPOMIČNA, kao statua:`,
     `- Ne okreće se, ne pomera glavu, ne pomera ramena, ne prebacuje težinu.`,
@@ -284,7 +333,8 @@ export function buildOkretVideoPrompt(stepeni = 180): string {
     `  sa istim blagim potamnjenjem ka uglovima.`,
     `- Svetlo ostaje isto, ravnomerno sa obe strane, bez senki koje putuju po`,
     `  licu ili po pozadini.`,
-    `- Odeća, frizura i lice ostaju identični priloženoj slici, na svakom uglu.`,
+    `- Odeća, frizura, naočare i lice ostaju identični priloženoj slici, na`,
+    `  svakom uglu.`,
     ``,
     `Bez rezova, bez druge scene, bez teksta i bez muzike. Jedan neprekidan`,
     `kadar, kao snimak sa okretne platforme u fotografskom studiju.`,
@@ -310,6 +360,10 @@ export function okretNegativePrompt(): string {
     "hoda",
     "zum",
     "promena visine kamere",
+    // Ovo troje je ono što je pojelo dve trećine prvog snimka.
+    "kamera se vraća",
+    "kamera staje",
+    "kamera menja smer",
     "rez",
     "promena scene",
     "druga osoba",
@@ -325,6 +379,7 @@ export function okretNegativePrompt(): string {
     "3D render",
     "lik iz video igre",
     "plastična koža",
+    "izobličene naočare",
   ].join(", ");
 }
 
@@ -372,3 +427,41 @@ export function okretVremenaFrejmova(
     Number((pocetak + i * korak).toFixed(3))
   );
 }
+
+/**
+ * Spaja dva snimka u jedan niz kadrova, od profila do profila.
+ *
+ * Oba snimka kreću sa ISTE fotografije, svaki na svoju stranu. Da bi se dobio
+ * neprekidan luk, levi se okreće naopako i stavlja ispred, a fotografija ide
+ * tačno u sredinu:
+ *
+ *     [nos-levo, obrnut]  +  fotografija  +  [nos-desno]
+ *          9 kadrova           1 kadar        9 kadrova   = 19 kadrova
+ *
+ * Nulti frejm svakog snimka JESTE ta ista fotografija, pa se izostavlja iz oba
+ * niza -- inače bi se ista slika pojavila tri puta zaredom u sredini, i skrol
+ * bi na sredini luka za tren "zastao".
+ *
+ * `kadar` je izvorna fotografija, a ne frejm iz snimka: ona je jedina koja nije
+ * prošla kroz video model i zato je najoštrija u celom nizu. Ujedno je i sidro
+ * -- greška identiteta raste sa udaljenošću od nje, pa stoji na sredini gde je
+ * najdalji kadar udaljen 90°, a ne 180°.
+ */
+export function spojiOkret(
+  kadar: string,
+  nosLevo: readonly string[],
+  nosDesno: readonly string[]
+): string[] {
+  return [...nosLevo].reverse().concat(kadar, [...nosDesno]);
+}
+
+/**
+ * Koliko se kadrova seče iz JEDNOG snimka.
+ *
+ * Devet po strani plus izvorna fotografija daje 19 kadrova na 180°, odnosno
+ * jedan na svakih 10 stepeni -- gustina na kojoj prevlačenje prstom deluje
+ * neprekidno. Ispod desetak ukupno se vidi da preskače.
+ *
+ * Ne utiče na cenu: snimak je već plaćen, sečenje je besplatno.
+ */
+export const OKRET_FREJMOVA_PO_SNIMKU = 9;

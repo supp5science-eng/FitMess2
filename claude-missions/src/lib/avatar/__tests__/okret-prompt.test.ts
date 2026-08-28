@@ -6,7 +6,9 @@ import {
   MAX_OKRET_SLIKA,
   MIN_OKRET_SLIKA,
   OKRET_ASPECT,
+  OKRET_LUK_PO_SNIMKU,
   okretNegativePrompt,
+  spojiOkret,
   okretVremenaFrejmova,
   proveriBrojSlika,
 } from "@/lib/avatar/okret-prompt";
@@ -87,28 +89,76 @@ describe("okret: šablon kadra", () => {
 
 describe("okret: šablon orbita", () => {
   it("pomera kameru, a ne čoveka — inače je svaki kadar druga poza", () => {
-    const prompt = buildOkretVideoPrompt();
-    expect(prompt).toContain("Kreće se SAMO kamera");
+    const prompt = buildOkretVideoPrompt("nos-levo");
+    expect(prompt).toContain("Kamera polako kruži");
     expect(prompt).toContain("OSOBA JE POTPUNO NEPOMIČNA");
   });
 
+  it("traži JEDAN smer bez povratka — to je pojelo dve trećine prvog snimka", () => {
+    // Kod slike-u-video ulazna slika JE nulti frejm. Luk "od 45° levo do 45°
+    // desno" je nemoguć, i model ga razreši tako što ode i vrati se.
+    const prompt = buildOkretVideoPrompt("nos-desno");
+    expect(prompt).toContain("SAMO JEDAN SMER, BEZ POVRATKA");
+    expect(prompt).toContain("ni u jednom trenutku ne vraća");
+    expect(prompt).toContain("Snimak POČINJE tačno na priloženoj fotografiji");
+  });
+
+  it("smer imenuje po ivici kadra ka kojoj nos pokazuje", () => {
+    // "Okrene se ulevo" znači jedno gledaocu a drugo osobi; gde nos završi u
+    // slici je jednoznačno i proverljivo golim okom.
+    expect(buildOkretVideoPrompt("nos-levo")).toContain("LEVOJ ivici");
+    expect(buildOkretVideoPrompt("nos-desno")).toContain("DESNOJ ivici");
+  });
+
+  it("se između dva smera razlikuje SAMO po ivici", () => {
+    const levo = buildOkretVideoPrompt("nos-levo").replace("LEVOJ", "X");
+    const desno = buildOkretVideoPrompt("nos-desno").replace("DESNOJ", "X");
+    expect(levo).toBe(desno);
+  });
+
   it("zabranjuje tri načina na koja se niz raspadne", () => {
-    const prompt = buildOkretVideoPrompt();
+    const prompt = buildOkretVideoPrompt("nos-levo");
     expect(prompt).toContain("Ne trepće");
     expect(prompt).toContain("Bez zuma");
     expect(prompt).toContain("Ostaje na istoj visini");
   });
 
   it("drži istu sivu pozadinu kroz ceo luk", () => {
-    // Bez ovoga model "očisti" pozadinu u belo negde na sredini, pa se pola
-    // frejmova ne slaže sa drugom polovinom.
-    expect(buildOkretVideoPrompt()).toContain("bešavna svetlo siva");
+    expect(buildOkretVideoPrompt("nos-levo")).toContain("bešavna svetlo siva");
   });
 
-  it("deli traženi luk na dve polovine oko čoveka", () => {
-    expect(buildOkretVideoPrompt(180)).toContain("90 stepeni");
-    expect(buildOkretVideoPrompt(180)).toContain("ukupno 180 stepeni");
-    expect(buildOkretVideoPrompt(120)).toContain("60 stepeni");
+  it("po snimku traži 90 stepeni, ne 180", () => {
+    expect(OKRET_LUK_PO_SNIMKU).toBe(90);
+    expect(buildOkretVideoPrompt("nos-levo")).toContain("90 stepeni");
+  });
+});
+
+describe("okret: spajanje dva snimka", () => {
+  const levo = ["l1", "l2", "l3"];
+  const desno = ["d1", "d2", "d3"];
+
+  it("stavlja pravu fotografiju tačno u sredinu", () => {
+    const niz = spojiOkret("KADAR", levo, desno);
+    expect(niz).toHaveLength(7);
+    expect(niz[3]).toBe("KADAR");
+  });
+
+  it("okreće levi snimak naopako da luk bude neprekidan", () => {
+    // Levi snimak ide 0° -> 90°; da bi niz tekao od profila ka frontali,
+    // mora unazad.
+    expect(spojiOkret("K", levo, desno)).toEqual([
+      "l3", "l2", "l1", "K", "d1", "d2", "d3",
+    ]);
+  });
+
+  it("ne dira ulazne nizove", () => {
+    spojiOkret("K", levo, desno);
+    expect(levo).toEqual(["l1", "l2", "l3"]);
+    expect(desno).toEqual(["d1", "d2", "d3"]);
+  });
+
+  it("radi i kad jedan snimak fali", () => {
+    expect(spojiOkret("K", [], desno)).toEqual(["K", "d1", "d2", "d3"]);
   });
 });
 

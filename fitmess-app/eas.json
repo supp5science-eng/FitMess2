@@ -9,6 +9,7 @@
       "distribution": "internal",
       "channel": "development",
       "env": {
+        "APP_VARIANT": "development",
         "EXPO_NO_CAPABILITY_SYNC": "1"
       },
       "ios": {

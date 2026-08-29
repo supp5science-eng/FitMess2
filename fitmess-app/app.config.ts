@@ -30,7 +30,37 @@ import type { ExpoConfig } from "expo/config";
  * one line to something like `app.fitmess.native` BEFORE the first store
  * submission — after it, the id is spent.
  */
-const BUNDLE_ID = "app.fitmess";
+const BUNDLE_ID_PRODUCTION = "app.fitmess";
+
+/**
+ * ⚠️ THE DEV BUILD MUST NOT SHARE THE PRODUCTION IDENTIFIER. Learned on the
+ * first install, 30.08.2026.
+ *
+ * A bundle identifier is not a name, it is an app's IDENTITY. The phone that
+ * already carries the App Store build answered the dev build with "FitMess is
+ * already installed" — because to iOS it was not a second app, it was the same
+ * app arriving from somewhere else. The only choices on offer were to replace
+ * the live app or to give up.
+ *
+ * A separate id gives the two apps two icons, two keychains and two sets of
+ * data, and the store build keeps working while we break things next to it.
+ *
+ * The second gain is bigger than the first: `eas build` syncs a bundle id's
+ * capabilities to whatever this config declares, and on 30.08.2026 it asked
+ * Apple to switch OFF push and Sign in with Apple on the live identifier. It
+ * was refused by luck. Pointed at `app.fitmess.dev`, that sync can only ever
+ * shape an identifier nothing depends on.
+ *
+ * ⚠️ Push and Sign in with Apple are granted PER IDENTIFIER. When the native
+ * app grows either, `app.fitmess.dev` needs its own capability and its own
+ * APNs key — the production ones do not reach it, and that is the point.
+ */
+const BUNDLE_ID_DEV = "app.fitmess.dev";
+
+/** Set by the `development` build profile in eas.json, and by nothing else. */
+const IS_DEV = process.env.APP_VARIANT === "development";
+
+const BUNDLE_ID = IS_DEV ? BUNDLE_ID_DEV : BUNDLE_ID_PRODUCTION;
 
 /** The plate's paper (`src/theme/tokens.ts`). Repeated as a literal
  *  because this file is evaluated by the Expo CLI, outside the app's module
@@ -38,7 +68,10 @@ const BUNDLE_ID = "app.fitmess";
 const PAPER = "#ffffff";
 
 const config: ExpoConfig = {
-  name: "FitMess",
+  /** The label under the icon. Both apps sit on the same home screen, so the
+   *  dev one says so — otherwise the wrong icon gets opened and the bug hunt
+   *  starts in the app that was never rebuilt. */
+  name: IS_DEV ? "FitMess dev" : "FitMess",
   slug: "fitmess",
   version: "1.0.0",
   orientation: "portrait",
@@ -56,7 +89,13 @@ const config: ExpoConfig = {
    * `fitmess://` is the address it comes back to. It is also what a push
    * notification tap and a shared photo will use later.
    */
-  scheme: "fitmess",
+  /**
+   * ⚠️ Separate for the dev build, for the same reason the identifier is: iOS
+   * lets two installed apps claim one scheme and then picks between them by no
+   * rule anyone can rely on. An OAuth redirect that lands in the wrong FitMess
+   * fails in the way that costs the most time — silently, and only sometimes.
+   */
+  scheme: IS_DEV ? "fitmessdev" : "fitmess",
 
   icon: "./assets/images/icon.png",
   // No top-level `splash` block: from SDK 57 the splash screen is configured

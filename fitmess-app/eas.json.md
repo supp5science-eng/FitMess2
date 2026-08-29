@@ -42,3 +42,43 @@ listinga, isti korisnici, iste recenzije) ili paralelno. Tu idu `ascAppId`,
 
 ⚠️ Dok je prazan, `eas submit` ne može slučajno da pošalje nešto u store i
 prepiše aplikaciju koju je Apple odobrio 23.08.2026.
+
+## `EXPO_NO_CAPABILITY_SYNC: "1"` u sva tri profila
+
+**Ovo je najopasnija stvar koju je prvi build otkrio, 30.08.2026.**
+
+`eas build` pre potpisivanja „usklađuje" sposobnosti bundle ID-a sa onim što
+piše u `app.config.ts`. Uskladiti znači i **ugasiti** ono što konfiguracija ne
+pominje. Prvi pokušaj je zatražio tačno ovo:
+
+```
+Failed to patch capabilities: [
+  { capabilityType: 'PUSH_NOTIFICATIONS', option: 'OFF' },
+  { capabilityType: 'APPLE_ID_AUTH',      option: 'OFF' }
+]
+```
+
+`app.fitmess` **nije prazan identifikator** — nosi aplikaciju koju je Apple
+odobrio 23.08.2026, sa push notifikacijama i „Prijavi se sa Apple". Da je
+zahtev prošao, produkcijskoj aplikaciji bi otkazali push i Apple prijava, a
+nigde ne bi pisalo zašto: ni u aplikaciji, ni u store-u, ni u našem logu.
+Simptom bi bio „notifikacije su prestale da rade" nedelju dana kasnije.
+
+Prošao nije, i to čistom srećom — Apple je odbio ceo zahtev zbog nevezanog
+razloga (`The bundle 'M5YJ54C5Z3' cannot be deleted`). Provereno posle toga
+preko ASC API-ja: `IN_APP_PURCHASE`, `PUSH_NOTIFICATIONS`, `APPLE_ID_AUTH` sve
+tri i dalje uključene.
+
+Sinhronizacija nije potrebna ni za šta — buildu trebaju sertifikat i profil,
+ne prava da menja identifikator. Zato je isključena u sva tri profila.
+
+⚠️ **Ovo polje samo po sebi možda nije dovoljno.** `env` iz `eas.json` sigurno
+važi na EAS serveru; usklađivanje sposobnosti se dešava **lokalno**, u CLI-ju,
+pre nego što se išta pošalje. Ako CLI ikad ponovo pokuša da gasi sposobnosti,
+promenljiva se postavlja u ljusci pre komande:
+
+```powershell
+$env:EXPO_NO_CAPABILITY_SYNC = "1"
+```
+
+Dok se `app.fitmess` deli sa aplikacijom u store-u, ovo se ne uklanja.

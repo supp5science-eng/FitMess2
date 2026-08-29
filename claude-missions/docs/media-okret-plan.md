@@ -17,7 +17,7 @@ Nasleđuje `okret.md` (fabrika) i zamenjuje `pocetna-avatar.md` (mesto na ekranu
     ↓
 Nano Banana Pro  →  JEDNA slika: glava i ramena, svetlo siva pozadina
     ↓                              ← ovo je "kadar", i on je SIDRO
-Veo  →  dva snimka po 8s sa istog kadra: jedan nalevo, jedan nadesno
+Omni  →  dva snimka po 8s sa istog kadra: jedan nalevo, jedan nadesno
     ↓
 frejmovi se vade iz oba, snimci se BRIŠU
     ↓
@@ -108,21 +108,33 @@ izbacuje i ništa se ne pomera.
 
 ---
 
-## 🤔 Veo, ne Omni
+## ✅ ODLUKA: Omni, ne Veo — i to je vlasnikova odluka, ne preporuka
 
-Rekao si Omni. Predlog je **Veo**, iz jednog konkretnog razloga:
+**Oba snimka su Omni.** Vlasnik je 29.08. izričito rekao: *„neću da radim sa
+veo modelima."* Ne preispitivati.
 
-Omni prima **1–5 referentnih slika**; Veo prima **jednu**. Ali ovaj tok šalje
-**tačno jednu** — kadar. Prednost Omnija se ovde ne koristi ni za šta, a cena
-je: nov endpoint (`/v1beta/interactions`) koji nije napisan, oblik tela koji
-nije potvrđen, i `ai.google.dev` blokiran sa build servera. Svako nagađanje se
-plaća po pokušaju, a imamo osam pokušaja ukupno.
+⚠️ Ja sam prvo zaključio suprotno, iz metapodataka snimka (`encoder=Google`).
+**To ne razlikuje ništa** — Google-ov enkoder stoji i na Omni izlazu. Jedini
+pouzdan trag je ko je snimak naručio, a to zna samo vlasnik.
 
-Veo je već napisan, već dokazan na ključu, i **tvoja dva snimka su verovatno
-njegova** — `encoder=Google`, imenovanje kao iz Google Flow-a.
+**Šta ta odluka košta, da se zna unapred:**
 
-Ako se kasnije pokaže da Omni bolje drži lice, prelazak je jedna funkcija —
-ali ne sada, ne sa $10.
+- `veo.ts` (otkrivanje modela, lestvica parametara, preuzimanje) **ne koristi se**
+  za ovaj tok. Ostaje u repou, ne briše se — logika lestvice je i dalje tačna.
+- Mora da se napiše **Interactions API** (`POST /v1beta/interactions`), koji
+  danas ne postoji. `startOrbitVideo` sada namerno **odbija** svaki model sa
+  „omni" u imenu i baca grešku — to je prva stvar koja pada.
+- Oblik tela za kačenje slika nije potvrđen, a `ai.google.dev` je blokiran sa
+  build servera. **Nagađanje se plaća po pokušaju.**
+
+**Zato faza 2 ne počinje nagađanjem oblika zahteva.** Najjeftiniji put do tačne
+putanje: u Google AI Studio napraviti bilo koji video iz slike → **„Get code"** →
+iz tog isečka se poziv piše iz prve, bez ijednog spaljenog kredita. Isto što
+`okret.md` već preporučuje pod „Ako se ide na Omni".
+
+Dobra strana odluke: Omni prima **1–5 referentnih slika** (Veo jednu) i podržava
+doradu kroz više poteza. Danas tok šalje jednu (kadar), ali kad avatar bude
+morao da drži i odeću i lice kroz više verzija, to prestaje da bude višak.
 
 ---
 
@@ -137,9 +149,13 @@ ali ne sada, ne sa $10.
 Obrnutim redom se $10 spali na osam pokušaja, a ne zna se je li kriv prompt,
 model ili sečenje.
 
-**Poluga koja se prvo proba:** `veo-3.1-lite-generate-preview` i `-fast`. Okret
-kamere je jednostavan pokret bez radnje — ako lite drži lice, cena po korisniku
-pada osetno. To je **prvi plaćeni test**, ne pun model.
+⚠️ **Cena za Omni nije potvrđena** — brojevi gore su iz `okret.md` i mereni su na
+Veo-u. Prva stvar koja se beleži na prvom plaćenom pozivu je **stvarna cena po
+snimku**, pre nego što se planira išta dalje.
+
+**Poluga na koju se računa:** dužina snimka. Tvoja dva su 8s i ceo luk im treba,
+ali ako Omni ume kraće a da stigne do profila, to je direktna ušteda. Meri se
+posle prvog uspešnog snimka, ne pre.
 
 ---
 
@@ -171,10 +187,11 @@ odeća uzeta sa fotografija, bez ulepšavanja.
 
 ### Faza 2 — prvi plaćeni orbit · **~$0,30–0,60**
 
-Jedan snimak, `lite`. Provuče se kroz gotov lanac iz faze 0. Ako lice preživi —
-ostajemo na lite i cena po korisniku pada. Ako ne — `fast`, pa pun.
+Jedan snimak, kroz Interactions API, po putanji prepisanoj iz „Get code" (vidi
+odluku o Omniju gore). Provuče se kroz gotov lanac iz faze 0 i tu se vidi je li
+lice preživelo — i koliko je stvarno koštalo.
 
-⚠️ Ovde se otkriva i traje li `durationSeconds: 8` na ovom API-ju. Tvoji snimci
+⚠️ Ovde se otkriva i traje li osam sekundi na Interactions API-ju. Tvoji snimci
 su 8s i ceo luk im treba; 6s možda ne stigne do profila. Parametar ide **na dno
 lestvice** u `veo.ts`, da ne obori poziv ako ga model ne prima.
 

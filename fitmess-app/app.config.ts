@@ -117,9 +117,19 @@ const config: ExpoConfig = {
   },
 
   extra: {
-    /** Filled in by `eas init` on first build. Left absent rather than
-     *  guessed: a wrong project id points builds and OTA updates at someone
-     *  else's project. */
+    eas: {
+      /** Napisao `eas init --account marko212` 29.08.2026.
+       *
+       *  ⚠️ Ovo NIJE pogodjeno i ne sme da se menja rucno. Pogresan id salje
+       *  buildove i OTA update-ove u tudji projekat, i to bez ijedne greske --
+       *  build prodje, samo zavrsi kod nekog drugog.
+       *
+       *  `eas init` ume sam da upise ovo polje samo u `app.json`. Ova
+       *  konfiguracija je TypeScript, pa komanda javi "Cannot automatically
+       *  write to dynamic config" i ostavi ID na ekranu. To nije greska nego
+       *  ocekivano; ID se prepisuje ovde. */
+      projectId: "ff4f721b-1999-4bfa-9416-9163df96e07c",
+    },
   },
 };
 

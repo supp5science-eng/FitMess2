@@ -81,11 +81,47 @@ const config: ExpoConfig = {
         "Prepoznavanje govora pretvara ono što kažeš u tekst na samom telefonu, bez slanja snimka.",
       NSPhotoLibraryUsageDescription:
         "Galerija se koristi da izabereš već slikan obrok.",
+
+      /**
+       * "We use no encryption beyond what Apple already exempts" — HTTPS is
+       * exempt, and that is all this app does.
+       *
+       * ⚠️ Absent, this is not an error anywhere: the build succeeds, uploads,
+       * and then sits in TestFlight as "Missing Compliance", undeliverable to
+       * any tester until someone answers the question by hand in App Store
+       * Connect. It cost us that exact hour in August on the Capacitor shell.
+       */
+      ITSAppUsesNonExemptEncryption: false,
     },
+
+    /** See the `updates` block below. `appVersion` ties the JS an OTA update
+     *  may replace to the binary's `version`, so a build can never be handed a
+     *  bundle compiled against native code it does not contain. */
+    runtimeVersion: { policy: "appVersion" },
+  },
+
+  /**
+   * EAS Update — the reason this rebuild does not cost us "git push and
+   * everyone has it".
+   *
+   * A new JS bundle reaches every installed app without a store review, the
+   * same boundary Capacitor had: change JS, it ships; change native code (a
+   * library, a permission, an icon), it needs a new binary. The build profile
+   * picks which stream an app listens to via `channel` in eas.json.
+   *
+   * ⚠️ Installed BEFORE the first build on purpose. `expo-updates` is native
+   * code, so adding it later would mean throwing that binary away and building
+   * again — and the profiles already name channels that would silently do
+   * nothing until it existed.
+   */
+  updates: {
+    url: "https://u.expo.dev/ff4f721b-1999-4bfa-9416-9163df96e07c",
   },
 
   android: {
     package: BUNDLE_ID,
+    /** Same reason as `ios.runtimeVersion`. */
+    runtimeVersion: { policy: "appVersion" },
     adaptiveIcon: {
       foregroundImage: "./assets/images/android-icon-foreground.png",
       backgroundColor: PAPER,

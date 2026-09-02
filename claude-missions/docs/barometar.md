@@ -66,17 +66,29 @@ Put do ovde je bio dug (fitnes izazovi → klađenje na drugare → teretana
 
 ### Ko ih pravi
 
-**Korisnici predlažu, mi odobravamo.** Polymarket nema deset fiksnih pitanja —
-ima stotine ludih, i zato je zanimljiv. Ali svako pitanje bez pravila presude
-je budući spor, pa ide kroz red:
+**Urednik prvo, korisnici drugo.** Polymarketov feed nije spontan — uređen
+je, i zato je zanimljiv. Tako i ovde:
 
-- Predlog sadrži: pitanje, **pravilo presude** (vidi niže), izvor, vreme
-  zatvaranja trgovine, vreme presude, kategoriju, početnu verovatnoću.
-- Odobrenje u roku od nekoliko sati (mi, ručno, u MVP-u). Odbijeno → razlog.
-- **Kreator dobija 1% volumena** svog tržišta. To je motiv da ljudi pišu
-  dobra pitanja, a ne mi. Manifold ovim drži hiljade tržišta mesečno.
-- Posle par nedelja: **pouzdani kreatori** (N odobrenih, 0 poništenih)
-  objavljuju bez reda.
+- **Urednik (vlasnik) svakog dana otvara 3–10 tržišta** po onome što je
+  trending: X, Reddit, vesti, ono što se priča. Ovo je glavni izvor tržišta i
+  glavni posao u prvim mesecima. Nije „pisanje pitanja" nego **uređivanje
+  novina koje imaju cenu**.
+- **AI predlaže kandidate ujutru:** iz feedova (RSS, X trending, r/serbia)
+  izvuče 10–20 mogućih pitanja, za svako *nacrta pravilo presude* i označi
+  ako gazi uređivačku politiku. Urednik bira i odobrava jednim tapom.
+  Alat: `/admin/predlozi`.
+- **Korisnici predlažu** sopstvena tržišta iz app-a. AI pre-pregled proveri
+  četiri polja i politiku, dopiše pravilo ako fali; urednik (ili AI za jasne
+  slučajeve) odobrava u roku od par sati. Odbijeno → razlog.
+- **Kreator dobija 1% volumena** svog tržišta — motiv da ljudi predlažu
+  dobra pitanja. Posle par nedelja **pouzdani kreatori** (N odobrenih,
+  0 poništenih) objavljuju bez reda.
+
+**„Cool" je kriterijum, ne smetnja.** Polymarket ima „hoće li se Isus Hrist
+vratiti pre 2027" — i to je namerno: zabavno, deli se, i upija valutu.
+Apsurdna i zabavna tržišta su dobrodošla („Novak na Egzitu 2027?", „sneg u
+Beogradu na Vidovdan?"); pravilo presude im je trivijalno („po konsenzusu
+verodostojnih medija"), ali i dalje piše.
 
 ### Šta MVP podržava
 

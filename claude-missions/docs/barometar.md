@@ -221,8 +221,8 @@ tamo ulazi *slika sa procentom*, ne app.
   prenosi se.
 - **X bot sa pomeranjima:** „Blokada Pravnog: 62% → 81% u poslednja 2h."
   Polymarket živi od ovih screenshotova. Bot ih pravi sam.
-- **Pozivnica sa bonusom:** ko dovede prijatelja, oboje dobiju pola dnevnice
-  × 30. Jeftino, a pravi lanac.
+- **Pozivnica sa bonusom:** ko dovede prijatelja, oboje dobiju bonus od
+  ~5% minimalca (jedini priliv osim plate, i jedini razlog da bude mali). Jeftino, a pravi lanac.
 - **Nedeljni thread na r/serbia**: „Šta Srbija predviđa ove nedelje" — top 5
   tržišta i najveća pomeranja. Ručno prve nedelje.
 - **Embed za medije:** iframe sa živim procentom. Novinar koji ubaci
@@ -254,7 +254,7 @@ komentara je berza; sa komentarima je forum sa ulogom. Nama treba forum.
 | `market_pools` | AMM stanje: `yes_shares`, `no_shares`, `p`, `k` — jedan red po tržištu, ažurira se u transakciji sa `trades` |
 | `trades` | ko, tržište, strana, iznos, deonice, cena pre/posle, fee, `created_at` — append-only |
 | `positions` | ko, tržište, `yes_shares`, `no_shares`, prosečna cena — izvedeno iz `trades`, materijalizovano radi brzine |
-| `ledger_entries` | **double-entry, append-only**: `user_id`, `amount_minor`, `kind` ('plata','dnevnica','trade_in','trade_out','payout','refund','fee','creator_cut','referral'), `ref_market_id`, `ref_trade_id`. Stanje se **računa**, nikad ne stoji kao kolona koja može da odluta |
+| `ledger_entries` | **double-entry, append-only**: `user_id`, `amount_minor`, `kind` ('plata','trade_in','trade_out','payout','refund','fee','creator_cut','referral'), `ref_market_id`, `ref_trade_id`. Stanje se **računa**, nikad ne stoji kao kolona koja može da odluta |
 | `resolutions` | tržište, ishod, ko, kad, citirani izvor — javno |
 | `disputes` | tržište, ko, obrazloženje, status |
 | `comments` | tržište, ko, tekst |
@@ -353,7 +353,7 @@ admin ekran.
   jedno značenje, a neto potrošeno ima.
 - **Trade = jedna RPC u transakciji:** proveri saldo → ažuriraj pool → upiši
   trade → upiši ledger → upiši price_point. Nikad iz više poziva.
-- **Cron:** plata prvog u 00:00, dnevnica svakog dana, zatvaranje tržišta po
+- **Cron:** plata prvog u 00:00, zatvaranje tržišta po
   `close_at`, obračun „najveća pomeranja", X bot, AI predlozi ujutru.
 - **Dizajn:** nije Gravira. Tamno, gusto, brojevi krupno — berza, ne
   dnevnik. Nova tema, novi brend.

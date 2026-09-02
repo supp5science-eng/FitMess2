@@ -51,16 +51,23 @@ Put do ovde je bio dug (fitnes izazovi → klađenje na drugare → teretana
 
 - **Plata prvog u mesecu:** svako dobije iznos = neto minimalac po važećoj
   odluci Vlade (konfiguracija, ne hardkod; menja se jednom godišnje).
-- **Dnevnica:** mali dnevni priliv (~1% minimalca) da niko nije mrtav 25 dana
-  ako prospe sve trećeg. Rang meri **neto vrednost** (keš + pozicije po
-  trenutnoj ceni), pa prosipanje i dalje boli.
-- **Mesec = sezona.** Rang se resetuje prvog, all-time rekord i dosije ostaju.
-  Metafora se sama zatvara: „do plate ti je ostalo 4.200".
+- **Plata se DODAJE na ono što je ostalo.** Nema reseta. Ko je dobro trgovao
+  u septembru, u oktobar ulazi sa dva minimalca i po. Ko je prosuo, ulazi
+  sa jednim. Zarada se nosi dalje — to je razlog da se igra pametno, ne
+  „ionako se briše prvog".
+- **Nema dnevnice.** Ko izgubi sve, **ne može da kupuje** do sledeće plate.
+  Može da proda pozicije koje drži (to je izlaz, ne ulazak), ali novi ulog
+  ne. Prosipanje minimalca trećeg znači 27 dana gledanja. To i jeste poenta:
+  valuta mora da boli, inače procenat ne znači ništa.
+- **Rang meseca = zarada od prve u mesecu** (neto vrednost sad minus neto
+  vrednost odmah posle plate). **Rang all-time = neto vrednost.** Neto
+  vrednost = keš + pozicije po trenutnoj ceni. Dosije i rekordi se nikad
+  ne brišu.
 - **Jedan telefon = jedan nalog.** Inače se farmuju minimalci. FitMess već
   ima verifikaciju telefona (`profiles.phone`, `(auth)/telefon`) — prenosi se.
 - **Fee 1% na svaku trgovinu** — ne zbog prihoda (valuta je naša), nego kao
   ponor koji drži inflaciju pod kontrolom kad svako svakog meseca dobije novu
-  platu.
+  platu na staru.
 
 ## Tržišta
 
@@ -115,8 +122,8 @@ Ništa više od toga. Polymarketu je tržište „hoće li Zelenski nositi odelo
 predlog.
 
 **Opšte pravilo platforme** (piše u uslovima, ne na svakom tržištu): ako
-ishod ne može da se utvrdi po pravilu, tržište se **poništava** i svima se
-vraća po ceni ulaska. To je ventil koji čuva glavu — bez njega je svaka
+ishod ne može da se utvrdi po pravilu, tržište se **poništava** i svakome se
+vraća neto potrošeno na njemu. To je ventil koji čuva glavu — bez njega je svaka
 nejasna presuda optužba za nameštanje.
 
 ### Životni ciklus
@@ -127,7 +134,7 @@ odobreno = otvoreno  → trguje se
 zatvoreno            → trgovina stala, čeka presudu
 presuđeno (DA | NE)  → 24h prozor za prigovor
 konačno              → isplata pozicija
-poništeno            → refund po ceni ulaska (iz bilo kog stanja posle otvoreno)
+poništeno            → refund neto potrošenog (iz bilo kog stanja posle otvoreno)
 ```
 
 ## Trgovanje: AMM, ne parimutuel
@@ -264,13 +271,22 @@ RLS kao u FitMess-u: sve što je user-owned ima own-row politike; `markets`,
 - Nagrade u robi / sponzori (prvo brojke, pa razgovor sa sponzorom)
 - Nativna aplikacija (web + PWA; store review nam ne treba za link sa X-a)
 - Savet rezolvera (mi presuđujemo)
-- Limit pozicije, margina, „lending"
+- Limit pozicije, margina, „lending", dnevnica ili bilo koji drugi priliv
+  osim plate
 - Kalibracija / Brier
 - Engleski
 
-## Prvih 20 tržišta (da vidimo da li umemo da napišemo pravilo)
+## Admin je prvi ekran, ne feed
 
-Kategorije i primeri — svako pre otvaranja dobija pravilo presude:
+**Ne otvara se nijedno tržište iz koda.** Sva tržišta i sve presude unosi
+administrator (vlasnik) kroz `/admin`, od prvog dana. Redosled izrade ide
+tim putem: prvo admin koji ume da otvori tržište, zatvori ga, presudi i
+poništi — pa tek onda javni feed koji to prikazuje. Seed u bazi su samo
+kategorije i konfiguracija (iznos minimalca, fee, seed likvidnosti).
+
+Lista ispod je **vežba pisanja pravila**, ne sadržaj za bazu: ako za neko
+od ovih ne umemo da napišemo pravilo tako da se ne spori — nema smisla ni
+admin ekran.
 
 **Blokade i fakulteti**
 - Pravni fakultet u Beogradu u blokadi 15.09. u 12:00? *(izvor: saopštenje
@@ -292,8 +308,10 @@ Kategorije i primeri — svako pre otvaranja dobija pravilo presude:
 - Zvezda prolazi grupu LŠ? / Partizan ispred Zvezde na tabeli 01.11.?
 - Srbija — kvalifikacije, plasman?
 
-**Estrada i TV**
+**Estrada, TV, zabava**
 - Pobednik rijalitija X je Y? *(DA/NE po osobi; više ishoda je v2)*
+- Milena i Baka pomirili se pre 2027? *(izvor: zajednička objava ili
+  saglasno izveštavanje dva tabloida — pravilo piše i za zabavu)*
 - Srbija u finalu Evrovizije 2027?
 
 **Ekonomija i svakodnevica**
@@ -301,12 +319,6 @@ Kategorije i primeri — svako pre otvaranja dobija pravilo presude:
   cenovnik)*
 - Sneg u Beogradu (RHMZ, merna stanica Vračar, >1cm) do 01.12.?
 - Inflacija (RZS, godišnja) iznad X% za septembar?
-
-**Tehnologija i internet**
-- Aplikacija X uklonjena iz srpskog App Store-a do datuma?
-
-Ako za neko od ovih ne umemo da napišemo pravilo tako da se ne spori —
-ne otvaramo ga. To je test, ne lista želja.
 
 ## Tehnički pravac
 
@@ -348,18 +360,22 @@ ne otvaramo ga. To je test, ne lista želja.
 
 ## Redosled izrade
 
-1. **Motor** (nedelja 1): AMM + ledger + tabele + RPC za trade, sve sa
-   testovima. Nema UI. Ako matematika nije tačna, ništa iznad nema smisla.
-2. **Tržište i feed** (nedelja 2): `/`, `/t/[slug]`, kupi/prodaj, grafik,
-   OG kartica. Prvih 20 tržišta ručno u bazu.
-3. **Nalog i portfolio** (nedelja 3): telefon, handle, plata/dnevnica,
-   `/portfolio`, `/@handle`, `/rang`.
-4. **Predlog i presuda** (nedelja 4): `/novo`, `/admin/red`, prigovor,
-   poništavanje, log presude.
-5. **Distribucija** (nedelja 4–5): X bot, pozivnica, r/serbia thread, embed.
+1. **Motor** ✅ — AMM, fee, presuda, refund; čiste funkcije sa testovima
+   (`barometar/src/lib/market/`).
+2. **Baza i admin** — tabele, RLS, RPC za trade u transakciji; `/admin`:
+   otvori tržište (pitanje, pravilo presude, kategorija, close/resolve
+   vreme, početna verovatnoća, seed), zatvori, presudi DA/NE sa citiranim
+   izvorom, poništi. Plata kao ručna admin akcija pre nego što bude cron.
+   **Bez ovoga nema ničeg javnog.**
+3. **Tržište i feed** — `/`, `/t/[slug]`, kupi/prodaj, grafik, OG kartica.
+4. **Nalog i portfolio** — telefon, handle, `/portfolio`, `/@handle`,
+   `/rang`, plata kao cron.
+5. **Predlog i presuda od korisnika** — `/novo`, red za odobrenje,
+   `/admin/predlozi` sa AI kandidatima, prigovor, javni log presude.
+6. **Distribucija** — X bot, pozivnica, r/serbia thread, embed.
 
-Lansiranje: zatvoreno, 50 ljudi sa X-a i Reddita koje znamo, jedan mesec
-sezone. Ako posle prve plate ljudi dođu po drugu — otvaramo.
+Lansiranje: zatvoreno, 50 ljudi sa X-a i Reddita koje znamo, jedan mesec.
+Ako posle prve plate ljudi dođu po drugu — otvaramo.
 
 ## Otvorena pitanja
 

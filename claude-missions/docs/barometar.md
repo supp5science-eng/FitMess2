@@ -149,15 +149,26 @@ je sadržaj („Nemanja all-in na blokadu"), ne problem.
 
 Dozvoljeno je sve što je **ishod u svetu koji se može proveriti** — politika,
 protesti, estrada, rijaliti, sport, kurs, vreme, Evrovizija, javne ličnosti u
-javnoj ulozi (ostavka, kandidatura, izjava, presuda suda).
+javnoj ulozi (ostavka, kandidatura, izjava, presuda suda). Uključujući akcije
+država, vojski i policije, ma koliko nasilne: „SAD udaraju Iran do 1.10.",
+„policija raščistila blokadu Filološkog do 1.10." — ide. Država ne odlučuje
+zbog nečije pozicije na našem tržištu; tržište je posmatrač.
 
-Zabranjeno, bez izuzetka:
+Pitanje nije *da li ishod uključuje nasilje*, nego dvoje: **može li ga
+učesnik izazvati** i **da li je meta konkretna osoba**. Zabranjeno, bez
+izuzetka:
 
-1. **Nasilje, povreda, smrt, hapšenje** bilo koga — tržište daje motiv da se
-   izazove (Polymarketov najružniji problem, „assassination markets").
-2. **Privatne osobe.** Javna ličnost u javnoj ulozi da; komšija ne.
-3. **Ishodi koje učesnik tržišta može sam da izazove jeftino** („hoće li neko
-   ispisati X na zidu fakulteta").
+1. **Povreda, smrt, hapšenje imenovane osobe.** „Ministar X podneo ostavku"
+   da (institucionalni ishod, Polymarket ima „Hamnei van vlasti"); „ministar
+   X uhapšen / povređen" ne (tržište na patnju osobe).
+2. **Ishodi koje jedan učesnik može sam, jeftino, da izazove** — incident na
+   konkretnom skupu, grafit na zidu, prekid događaja. Tržište bi plaćalo
+   nekome da ga napravi. Ovo je Polymarketov najružniji problem
+   („assassination markets") i naša najčešća siva zona: *„policija interveniše
+   na protestu u petak"* ne ide (provokator ga isprovocira za sat), a
+   *„policija raščistila blokadu do 1. oktobra"* ide (odluka koja se donosi
+   nedeljama).
+3. **Privatne osobe.** Javna ličnost u javnoj ulozi da; komšija ne.
 
 Sve ostalo — uključujući „luda" pitanja — je dozvoljeno. To je tačka.
 

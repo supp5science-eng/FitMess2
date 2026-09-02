@@ -78,7 +78,7 @@ je, i zato je zanimljiv. Tako i ovde:
   ako gazi uređivačku politiku. Urednik bira i odobrava jednim tapom.
   Alat: `/admin/predlozi`.
 - **Korisnici predlažu** sopstvena tržišta iz app-a. AI pre-pregled proveri
-  četiri polja i politiku, dopiše pravilo ako fali; urednik (ili AI za jasne
+  pravilo presude i politiku, dopiše pravilo ako fali; urednik (ili AI za jasne
   slučajeve) odobrava u roku od par sati. Odbijeno → razlog.
 - **Kreator dobija 1% volumena** svog tržišta — motiv da ljudi predlažu
   dobra pitanja. Posle par nedelja **pouzdani kreatori** (N odobrenih,
@@ -97,21 +97,27 @@ AMM je drugačiji, UI je drugačiji, rezolucija je teža.
 
 ### Pravilo presude — obavezno, pre otvaranja
 
-Ovo je jedina stvar koja Polymarketu pravi probleme i sa milionskim timom
-(tržište „hoće li Zelenski nositi odelo", 200M$, tuča oko definicije odela).
-Zato svako tržište ima četiri polja, i bez njih se ne otvara:
+Jedno tekstualno polje, Polymarket format. Jasno šta je DA, šta je NE, ko
+kaže:
 
 ```
-Definicija:  šta tačno znači DA. („nastava po zvaničnom rasporedu se ne
-             održava u glavnoj zgradi")
-Izvor:       hijerarhija. („saopštenje fakulteta; ako ga nema, dva od tri:
-             N1, RTS, Nova")
-Trenutak:    datum i sat po Beogradu. („15.09. u 12:00")
-Ako nejasno: PONIŠTAVA SE, svima se vraća po ceni ulaska.
+Rešava se DA ako se nastava po zvaničnom rasporedu ne održava u glavnoj
+zgradi Pravnog fakulteta u Beogradu 15. septembra 2026. u 12:00 po
+beogradskom vremenu. U suprotnom NE.
+
+Izvor: zvanično saopštenje fakulteta; ako ga nema, saglasno izveštavanje
+dva od tri medija (N1, RTS, Nova).
 ```
 
-„Poništeno" je ventil koji nam čuva glavu. Bez njega svaka nejasna presuda
-je optužba za nameštanje.
+Ništa više od toga. Polymarketu je tržište „hoće li Zelenski nositi odelo"
+(200M$) puklo na definiciji odela — pravilo ne mora biti dugačko, mora biti
+**nedvosmisleno**. AI pre-pregled to proverava pre nego što urednik vidi
+predlog.
+
+**Opšte pravilo platforme** (piše u uslovima, ne na svakom tržištu): ako
+ishod ne može da se utvrdi po pravilu, tržište se **poništava** i svima se
+vraća po ceni ulaska. To je ventil koji čuva glavu — bez njega je svaka
+nejasna presuda optužba za nameštanje.
 
 ### Životni ciklus
 
@@ -223,7 +229,7 @@ tamo ulazi *slika sa procentom*, ne app.
 |---|---|
 | `/` | feed tržišta: *popularno* (volumen 24h), *novo*, *uskoro se zatvara*, *najveća pomeranja*; kategorije |
 | `/t/[slug]` | tržište: pitanje, procenat velikim, grafik, kupi DA / kupi NE, tvoja pozicija, pravilo presude, komentari, log presude |
-| `/novo` | predlog tržišta: 4 polja pravila presude su obavezna, ne fusnota |
+| `/novo` | predlog tržišta: pravilo presude je obavezno polje, ne fusnota |
 | `/portfolio` | keš, pozicije po tržištu sa trenutnom vrednošću, P&L |
 | `/rang` | mesec / all-time |
 | `/@handle` | javni profil: brojevi, dosije, bedževi |
@@ -237,7 +243,7 @@ komentara je berza; sa komentarima je forum sa ulogom. Nama treba forum.
 | tabela | šta drži |
 |---|---|
 | `profiles` | `handle` (jedinstven), `phone`, `is_resolver`, `is_trusted_creator` |
-| `markets` | pitanje, `slug`, `category`, `rule_definition`, `rule_source`, `resolve_at`, `close_at`, `status`, `created_by`, `initial_p`, `outcome`, `resolved_by`, `resolved_at`, `resolution_note` |
+| `markets` | pitanje, `slug`, `category`, `resolution_rule`, `resolve_at`, `close_at`, `status`, `created_by`, `initial_p`, `outcome`, `resolved_by`, `resolved_at`, `resolution_note` |
 | `market_pools` | AMM stanje: `yes_shares`, `no_shares`, `p`, `k` — jedan red po tržištu, ažurira se u transakciji sa `trades` |
 | `trades` | ko, tržište, strana, iznos, deonice, cena pre/posle, fee, `created_at` — append-only |
 | `positions` | ko, tržište, `yes_shares`, `no_shares`, prosečna cena — izvedeno iz `trades`, materijalizovano radi brzine |
@@ -264,7 +270,7 @@ RLS kao u FitMess-u: sve što je user-owned ima own-row politike; `markets`,
 
 ## Prvih 20 tržišta (da vidimo da li umemo da napišemo pravilo)
 
-Kategorije i primeri — svako pre otvaranja dobija četiri polja pravila:
+Kategorije i primeri — svako pre otvaranja dobija pravilo presude:
 
 **Blokade i fakulteti**
 - Pravni fakultet u Beogradu u blokadi 15.09. u 12:00? *(izvor: saopštenje
@@ -299,7 +305,7 @@ Kategorije i primeri — svako pre otvaranja dobija četiri polja pravila:
 **Tehnologija i internet**
 - Aplikacija X uklonjena iz srpskog App Store-a do datuma?
 
-Ako za neko od ovih ne umemo da napišemo četiri polja tako da se ne spore —
+Ako za neko od ovih ne umemo da napišemo pravilo tako da se ne spori —
 ne otvaramo ga. To je test, ne lista želja.
 
 ## Tehnički pravac

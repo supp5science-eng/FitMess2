@@ -212,8 +212,8 @@ Za korisnika sa X-a i Reddita koji se svađa o politici, ovo je mesto gde se
 
 ## Distribucija: kartica je proizvod
 
-Nema app store-a u MVP-u. **Web, PWA, link.** Ulazna vrata su X i Reddit, a
-tamo ulazi *slika sa procentom*, ne app.
+App je u store-u, ali ulazna vrata su X i Reddit — a tamo ulazi *slika sa
+procentom*, ne ikonica. Link → landing sa procentom → „Otvori u aplikaciji".
 
 - **OG kartica za svako tržište:** pitanje, procenat, mini-grafik, „šta ti
   misliš?". Link zalepljen na X/Reddit renderuje broj. Bez ovog ništa ostalo
@@ -231,6 +231,9 @@ tamo ulazi *slika sa procentom*, ne app.
   svake sezone.
 
 ## Ekrani
+
+Rute su logičke — u app-u su expo-router ekrani, na vebu postoje samo
+`/t/[slug]` (landing) i `/admin/*`.
 
 | ruta | šta |
 |---|---|
@@ -269,7 +272,7 @@ RLS kao u FitMess-u: sve što je user-owned ima own-row politike; `markets`,
 
 - Više ishoda po tržištu (samo DA/NE)
 - Nagrade u robi / sponzori (prvo brojke, pa razgovor sa sponzorom)
-- Nativna aplikacija (web + PWA; store review nam ne treba za link sa X-a)
+- Veb aplikacija za korisnike (veb je samo landing po tržištu + admin)
 - Savet rezolvera (mi presuđujemo)
 - Limit pozicije, margina, „lending", dnevnica ili bilo koji drugi priliv
   osim plate
@@ -322,21 +325,36 @@ admin ekran.
 
 ## Tehnički pravac
 
-- **Folder `barometar/` u ovom repou**, ne novi repo. Razlog: GitHub pristup,
+- **Novi projekat, isti repo.** Potpuno nova aplikacija (novi Expo app,
+  novi Supabase, novi brend, nova prijava u store) — ali kao folder
+  `barometar/` u ovom repou, ne kao novi repo. Razlog: GitHub pristup,
   Claude sesije, deploy navike i ovaj dokument već žive ovde; novi repo je
   novo podešavanje svega toga ni za šta. Izdvajanje kasnije je jedan `git
   subtree split` ako ikad zatreba.
-- **Nikad unutar FitMess aplikacije.** Ne kao ruta, ne kao tab, ne kroz isti
-  Next app pod drugim hostom. FitMess je *remote* Capacitor ljuska — ceo sajt
-  je sadržaj store aplikacije (`docs/naplata.md`), i recenzent koji naleti na
-  tržišta u fitnes aplikaciji je odbijen binarni fajl. Plus: druga publika,
-  drugi brend. Deli se **kod**, ne **aplikacija**.
-- **Web + PWA, bez store-ova u MVP-u.** Ulaz je link sa X-a i Reddita, ne
-  ikonica. Sve što je urađeno za FitMess store (Apple prijava, review,
-  compliance) ovde **nije potrebno** — ne radi se ponovo jer se ne radi
-  uopšte. Ako jednog dana bude nativna aplikacija, to je nova prijava pod
-  novim imenom sa „simulated gambling" ocenom (17+/18+), i to je posao za
-  tada.
+- **Prava nativna aplikacija: Expo / React Native.** Vlasnikova odluka
+  (02.09.2026): „hoću pravu app, ne kao što smo se zajebali sa FitMessom".
+  Ne Capacitor ljuska, ne PWA. Temelj se kopira iz `fitmess-app/` (Expo 57,
+  RN 0.86, expo-router, EAS build + update, dev-client, Supabase klijent) —
+  taj posao je već plaćen, vidi `docs/nativna-aplikacija.md` za razloge
+  zašto WebView nije dovoljan (paljenje, haptika, native stack).
+- **Nikad unutar FitMess aplikacije.** Ne kao ruta, ne kao tab. Druga
+  publika, drugi brend, drugi binarni fajl, druga prijava u store.
+- **Store od prvog dana, sa znanjem šta nas čeka.** Igračka valuta bez
+  isplate je u store-ovima dozvoljena kategorija: Apple 5.3 („simulated
+  gambling", ocena 17+), Google „Simulated gambling" content rating. Play-
+  money prediction aplikacije postoje u oba store-a. Tri stvari koje
+  recenzent gleda, i koje su ionako naša pravila: **nema kupovine valute**
+  (IAP za valutu bi nas gurnuo u pravu kategoriju klađenja), **nema isplate**,
+  **UI ne liči na kladionicu sa pravim novcem**. Ocena 17+/18+ se prijavljuje
+  odmah, ne krije.
+- **Veb postoji samo kao vrata, ne kao proizvod.** Link sa X-a ili Reddita
+  mora negde da se otvori kad app nije instaliran: jedna stranica po tržištu
+  sa procentom, grafikom i „Otvori u aplikaciji / Preuzmi" (universal link /
+  app link). OG kartica se renderuje tu. To je landing, ne app — bez
+  trgovine, bez naloga.
+- **Admin je veb** (`/admin`, mali Next.js), jer je alat za jednu osobu, a
+  ne ide u binarni fajl koji recenzent gleda. Ako vlasnik hoće admin i u
+  app-u — može, kasnije.
 - **Novi Supabase projekat**, novi Vercel projekat, novi domen. Čisto
   razdvajanje podataka — FitMess korisnici nisu Barometar korisnici.
 - **Kopira se iz `claude-missions/`:** auth flow i verifikacija telefona,
@@ -367,12 +385,15 @@ admin ekran.
    vreme, početna verovatnoća, seed), zatvori, presudi DA/NE sa citiranim
    izvorom, poništi. Plata kao ručna admin akcija pre nego što bude cron.
    **Bez ovoga nema ničeg javnog.**
-3. **Tržište i feed** — `/`, `/t/[slug]`, kupi/prodaj, grafik, OG kartica.
-4. **Nalog i portfolio** — telefon, handle, `/portfolio`, `/@handle`,
-   `/rang`, plata kao cron.
+3. **Aplikacija: tržište i feed** — Expo app iz `fitmess-app/` temelja:
+   feed, ekran tržišta, kupi/prodaj, grafik. Plus veb landing po tržištu
+   sa OG karticom i universal/app linkom.
+4. **Nalog i portfolio** — telefon, handle, portfolio, profil, rang u
+   app-u; plata kao cron. EAS build, TestFlight / interni Play track.
 5. **Predlog i presuda od korisnika** — `/novo`, red za odobrenje,
    `/admin/predlozi` sa AI kandidatima, prigovor, javni log presude.
-6. **Distribucija** — X bot, pozivnica, r/serbia thread, embed.
+6. **Distribucija i store** — X bot, pozivnica, r/serbia thread, embed;
+   prijava u App Store i Play sa ocenom 17+/18+.
 
 Lansiranje: zatvoreno, 50 ljudi sa X-a i Reddita koje znamo, jedan mesec.
 Ako posle prve plate ljudi dođu po drugu — otvaramo.

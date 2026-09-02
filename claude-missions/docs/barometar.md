@@ -325,12 +325,13 @@ admin ekran.
 
 ## Tehnički pravac
 
-- **Novi projekat, isti repo.** Potpuno nova aplikacija (novi Expo app,
-  novi Supabase, novi brend, nova prijava u store) — ali kao folder
-  `barometar/` u ovom repou, ne kao novi repo. Razlog: GitHub pristup,
-  Claude sesije, deploy navike i ovaj dokument već žive ovde; novi repo je
-  novo podešavanje svega toga ni za šta. Izdvajanje kasnije je jedan `git
-  subtree split` ako ikad zatreba.
+- **Novi projekat, NOVI REPO.** Vlasnikova odluka (02.09.2026): „ne želim
+  da se išta meša". Potpuno nova aplikacija — novi Expo app, novi Supabase,
+  novi brend, nova prijava u store — u sopstvenom repou. Ovaj dokument i
+  motor (`barometar/src/lib/market/`) su nastali u FitMess repou i **sele
+  se tamo**; ovde ostaje samo ovaj fajl kao zapis odluke, sa linkom na novi
+  repo kad bude postojao. Iz FitMess-a se kopira kod (Expo temelj, auth,
+  telefon), ne istorija.
 - **Prava nativna aplikacija: Expo / React Native.** Vlasnikova odluka
   (02.09.2026): „hoću pravu app, ne kao što smo se zajebali sa FitMessom".
   Ne Capacitor ljuska, ne PWA. Temelj se kopira iz `fitmess-app/` (Expo 57,

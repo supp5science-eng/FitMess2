@@ -310,14 +310,39 @@ ne otvaramo ga. To je test, ne lista želja.
 
 ## Tehnički pravac
 
-- **Novi repo, isti stack:** Next.js + Supabase + Tailwind, kao FitMess. Novi
-  Supabase projekat (čisto razdvajanje). Kopira se: auth flow, verifikacija
-  telefona, share-card generator, push infrastruktura, `dates.ts` (Beograd).
-- **Sav novac-math u `lib/`, testiran:** AMM, ledger, neto vrednost, rang.
+- **Folder `barometar/` u ovom repou**, ne novi repo. Razlog: GitHub pristup,
+  Claude sesije, deploy navike i ovaj dokument već žive ovde; novi repo je
+  novo podešavanje svega toga ni za šta. Izdvajanje kasnije je jedan `git
+  subtree split` ako ikad zatreba.
+- **Nikad unutar FitMess aplikacije.** Ne kao ruta, ne kao tab, ne kroz isti
+  Next app pod drugim hostom. FitMess je *remote* Capacitor ljuska — ceo sajt
+  je sadržaj store aplikacije (`docs/naplata.md`), i recenzent koji naleti na
+  tržišta u fitnes aplikaciji je odbijen binarni fajl. Plus: druga publika,
+  drugi brend. Deli se **kod**, ne **aplikacija**.
+- **Web + PWA, bez store-ova u MVP-u.** Ulaz je link sa X-a i Reddita, ne
+  ikonica. Sve što je urađeno za FitMess store (Apple prijava, review,
+  compliance) ovde **nije potrebno** — ne radi se ponovo jer se ne radi
+  uopšte. Ako jednog dana bude nativna aplikacija, to je nova prijava pod
+  novim imenom sa „simulated gambling" ocenom (17+/18+), i to je posao za
+  tada.
+- **Novi Supabase projekat**, novi Vercel projekat, novi domen. Čisto
+  razdvajanje podataka — FitMess korisnici nisu Barometar korisnici.
+- **Kopira se iz `claude-missions/`:** auth flow i verifikacija telefona,
+  share-card generator (`src/lib/share/`), `dates.ts` (Beograd), push
+  infrastruktura, Supabase klijent i RLS obrasci.
+- **Sav novac-math u `lib/`, testiran:** AMM, fee, presuda, refund,
+  neto vrednost, rang. Ništa što UI prikazuje se ne računa u komponenti.
+- **Platforma je jedini likvidnosni provajder.** Seed po tržištu je naš;
+  prodaja deonica se izvodi kao kupovina suprotne strane pa otkup para
+  (DA+NE = 1), kao na Manifoldu. Platforma apsorbuje razliku — valuta je
+  naša, to je u redu.
+- **Poništeno = refund neto potrošenog** po korisniku po tržištu (kupovine
+  minus prodaje). Ne „po ceni ulaska" — sa više kupovina i prodaja to nema
+  jedno značenje, a neto potrošeno ima.
 - **Trade = jedna RPC u transakciji:** proveri saldo → ažuriraj pool → upiši
   trade → upiši ledger → upiši price_point. Nikad iz više poziva.
 - **Cron:** plata prvog u 00:00, dnevnica svakog dana, zatvaranje tržišta po
-  `close_at`, obračun „najveća pomeranja", X bot.
+  `close_at`, obračun „najveća pomeranja", X bot, AI predlozi ujutru.
 - **Dizajn:** nije Gravira. Tamno, gusto, brojevi krupno — berza, ne
   dnevnik. Nova tema, novi brend.
 

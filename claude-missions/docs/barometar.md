@@ -1,6 +1,11 @@
-# Barometar — prediction market za Srbiju (MVP plan)
+# Protectum — prediction market za Srbiju (MVP plan)
 
-Stanje na dan **02.09.2026**. Radno ime „Barometar" — ime nije odlučeno.
+> **Preseljeno.** Živa verzija ovog plana je `docs/plan.md` u
+> `supp5science-eng/protectum`. Ovde ostaje zapis odluke da FitMess i
+> Protectum ne dele ništa osim ekipe. Ne ažurirati ovde.
+
+Stanje na dan **02.09.2026**. Ime: **Protectum** — latinski „nadstrešnica",
+veza sa onim što se desilo. Repo: `supp5science-eng/protectum`.
 Ovo je **novi proizvod, ne FitMess feature**: druga publika, drugo ime,
 drugi domen. Deli stack, ekipu i delove koda (auth, telefon, share kartice).
 
@@ -246,7 +251,7 @@ procentom*, ne ikonica. Link → landing sa procentom → „Otvori u aplikaciji
 - **Nedeljni thread na r/serbia**: „Šta Srbija predviđa ove nedelje" — top 5
   tržišta i najveća pomeranja. Ručno prve nedelje.
 - **Embed za medije:** iframe sa živim procentom. Novinar koji ubaci
-  „78% na Barometru" nam radi distribuciju.
+  „78% na Protectumu" nam radi distribuciju.
 - **Kartica profila:** „udvostručio minimalac u septembru" — deli se posle
   svake sezone.
 
@@ -348,9 +353,9 @@ admin ekran.
 - **Novi projekat, NOVI REPO.** Vlasnikova odluka (02.09.2026): „ne želim
   da se išta meša". Potpuno nova aplikacija — novi Expo app, novi Supabase,
   novi brend, nova prijava u store — u sopstvenom repou. Ovaj dokument i
-  motor (`barometar/src/lib/market/`) su nastali u FitMess repou i **sele
-  se tamo**; ovde ostaje samo ovaj fajl kao zapis odluke, sa linkom na novi
-  repo kad bude postojao. Iz FitMess-a se kopira kod (Expo temelj, auth,
+  motor su nastali u FitMess repou i **preseljeni su** u
+  `supp5science-eng/protectum`; u FitMess-u ostaje samo ovaj fajl kao zapis
+  odluke. Iz FitMess-a se kopira kod (Expo temelj, auth,
   telefon), ne istorija.
 - **Prava nativna aplikacija: Expo / React Native.** Vlasnikova odluka
   (02.09.2026): „hoću pravu app, ne kao što smo se zajebali sa FitMessom".
@@ -377,7 +382,7 @@ admin ekran.
   ne ide u binarni fajl koji recenzent gleda. Ako vlasnik hoće admin i u
   app-u — može, kasnije.
 - **Novi Supabase projekat**, novi Vercel projekat, novi domen. Čisto
-  razdvajanje podataka — FitMess korisnici nisu Barometar korisnici.
+  razdvajanje podataka — FitMess korisnici nisu Protectum korisnici.
 - **Kopira se iz `claude-missions/`:** auth flow i verifikacija telefona,
   share-card generator (`src/lib/share/`), `dates.ts` (Beograd), push
   infrastruktura, Supabase klijent i RLS obrasci.
@@ -400,7 +405,7 @@ admin ekran.
 ## Redosled izrade
 
 1. **Motor** ✅ — AMM, fee, presuda, refund; čiste funkcije sa testovima
-   (`barometar/src/lib/market/`).
+   (`src/lib/market/`).
 2. **Baza i admin** — tabele, RLS, RPC za trade u transakciji; `/admin`:
    otvori tržište (pitanje, pravilo presude, kategorija, close/resolve
    vreme, početna verovatnoća, seed), zatvori, presudi DA/NE sa citiranim
@@ -421,7 +426,7 @@ Ako posle prve plate ljudi dođu po drugu — otvaramo.
 
 ## Otvorena pitanja
 
-- **Ime i domen.** Barometar je placeholder.
+- **Domen.**
 - **Iznos seeda po tržištu** — pola minimalca je pretpostavka; premalo = cena
   skače na svaku kupovinu, previše = cena se ne miče i dosadno je. Proba.
 - **Da li kreator sme da trguje na svom tržištu.** Polymarket: da. Manifold:

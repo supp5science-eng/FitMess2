@@ -18,6 +18,26 @@ pravu, vidi se; ko je pričao — takođe.
 
 Slogan-kandidat: **„Stavi minimalac tamo gde su ti usta."**
 
+## Pozicija: source of truth, ne kladionica
+
+Vlasnikova odluka (02.09.2026), i to je ono što se govori javno:
+
+1. **Mi nismo ni za koga.** Tu smo da pružimo prave informacije. Ne pišemo
+   uvodnike, nemamo „našu procenu", ne komentarišemo ishode. Mi napišemo
+   pitanje i pravilo, gomila sa ulogom napiše broj, mi presudimo po pravilu
+   i pokažemo izvor. U zemlji gde svaki broj dolazi iz „njihovih" ili
+   „naših" medija, broj koji pravi gomila sa ulogom je jedini koji obe
+   strane mogu da citiraju. Neutralnost je proizvod, ne poza. Ako urednik
+   ima mišljenje — ima nalog kao svi i minimalac kao svi.
+2. **Svi su isti.** Svako dobije istu količinu, u isto vreme. Jedino što
+   sme da pravi razliku je znanje. Nema kupovine, nema bonusa u valuti ni
+   za šta — ni za pozivnicu, ni za lojalnost, ni za sponzora. Pozivnica i
+   sve ostalo nagrađuju se **bedžom**, nikad valutom.
+
+Betting sa pravim novcem je cilj kasnije, kroz licenciranog partnera ili
+sopstvenu licencu. Do tada se ne pozicioniramo kao kladionica ni u jednoj
+reči, i to nije samo pravna odluka nego brend.
+
 ## Zašto ovo, a ne nešto drugo
 
 Put do ovde je bio dug (fitnes izazovi → klađenje na drugare → teretana
@@ -221,8 +241,8 @@ procentom*, ne ikonica. Link → landing sa procentom → „Otvori u aplikaciji
   prenosi se.
 - **X bot sa pomeranjima:** „Blokada Pravnog: 62% → 81% u poslednja 2h."
   Polymarket živi od ovih screenshotova. Bot ih pravi sam.
-- **Pozivnica sa bonusom:** ko dovede prijatelja, oboje dobiju bonus od
-  ~5% minimalca (jedini priliv osim plate, i jedini razlog da bude mali). Jeftino, a pravi lanac.
+- **Pozivnica:** ko dovede prijatelja dobija bedž („doveo 5", „doveo 20"),
+  ne valutu — „svi su isti" nema izuzetak. Jeftino, a pravi lanac.
 - **Nedeljni thread na r/serbia**: „Šta Srbija predviđa ove nedelje" — top 5
   tržišta i najveća pomeranja. Ručno prve nedelje.
 - **Embed za medije:** iframe sa živim procentom. Novinar koji ubaci
@@ -257,12 +277,12 @@ komentara je berza; sa komentarima je forum sa ulogom. Nama treba forum.
 | `market_pools` | AMM stanje: `yes_shares`, `no_shares`, `p`, `k` — jedan red po tržištu, ažurira se u transakciji sa `trades` |
 | `trades` | ko, tržište, strana, iznos, deonice, cena pre/posle, fee, `created_at` — append-only |
 | `positions` | ko, tržište, `yes_shares`, `no_shares`, prosečna cena — izvedeno iz `trades`, materijalizovano radi brzine |
-| `ledger_entries` | **double-entry, append-only**: `user_id`, `amount_minor`, `kind` ('plata','trade_in','trade_out','payout','refund','fee','creator_cut','referral'), `ref_market_id`, `ref_trade_id`. Stanje se **računa**, nikad ne stoji kao kolona koja može da odluta |
+| `ledger_entries` | **double-entry, append-only**: `user_id`, `amount_minor`, `kind` ('plata','trade_in','trade_out','payout','refund','fee','creator_cut'), `ref_market_id`, `ref_trade_id`. Stanje se **računa**, nikad ne stoji kao kolona koja može da odluta |
 | `resolutions` | tržište, ishod, ko, kad, citirani izvor — javno |
 | `disputes` | tržište, ko, obrazloženje, status |
 | `comments` | tržište, ko, tekst |
 | `price_points` | tržište, `p`, `t` — istorija za grafik i za „najveća pomeranja" |
-| `referrals` | ko koga, kad, isplaćeno |
+| `referrals` | ko koga, kad — za bedž, ne za isplatu |
 
 RLS kao u FitMess-u: sve što je user-owned ima own-row politike; `markets`,
 `price_points`, `resolutions`, `comments` su javno čitljivi; pisanje u
